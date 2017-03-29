@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Main-Class: PVS.polyhedra.stellation.Main
+Created-By: (Vladimir Bulatov, 1998,2001) 
+

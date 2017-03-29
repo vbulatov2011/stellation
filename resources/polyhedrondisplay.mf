@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Main-Class: PVS.polyhedra.PolyhedronDisplay
+Created-By: (Vladimir Bulatov, 2002) 
+
