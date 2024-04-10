@@ -39,7 +39,7 @@
     <jvmarg line="${jvmrunargs}"/>
     <classpath>
       <pathelement path="${classes.dir};" />
-      <fileset dir="${lib}" includes="**/*.jar" excludes="" />
+      <!--<fileset dir="${lib}" includes="**/*.jar" excludes="" />-->
       <pathelement path="${test.classes.dir}" />
       <pathelement path="${res.dir};" />
     </classpath>
