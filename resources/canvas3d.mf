@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Main-Class: PVS.g3d.Canvas3D
+Created-By: (Vladimir Bulatov, 2002) 
+
