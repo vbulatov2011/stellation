@@ -379,7 +379,7 @@ public class SSCell implements Comparator {
 
     }
 
-    static final double EPS = 1.e-10;
+    static final double EPS = 1.e-4;
 
     /**
        orders cells of this cell in order, which corresponds to 

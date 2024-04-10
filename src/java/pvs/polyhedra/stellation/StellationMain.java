@@ -1290,7 +1290,7 @@ public class StellationMain implements PVSObserver{
         stellationPath = getSaveAsPathJ();
         stellationPath.replace('\\', '/');
         save();
-
+        m_mainFrame.setTitle(getFileName());
     }
 
     String getSaveAsPath(){
