@@ -1,23 +1,27 @@
 package pvs.polyhedra;
 
-import java.io.*;
+import static pvs.utils.Output.printf;
+
 import java.awt.Color;
 import java.awt.Frame;
-import java.util.StringTokenizer;
-import java.util.Vector;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.io.StreamTokenizer;
 //import java.util.FastHashtable;
 import java.util.Enumeration;
+import java.util.StringTokenizer;
+import java.util.Vector;
 
-import pvs.utils.QSort;
 import pvs.utils.Comparator;
-import pvs.utils.Fmt;
 import pvs.utils.FastHashtable;
+import pvs.utils.IntegerComparator;
+import pvs.utils.QSort;
 //import pvs.utils.Vector;
 import pvs.utils.WindowOutputStream;
-import pvs.utils.DestroyableFrame;
-import pvs.utils.IntegerComparator;
-
-import static pvs.utils.Output.printf;
 
 
 

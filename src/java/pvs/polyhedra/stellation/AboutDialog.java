@@ -24,16 +24,16 @@ package pvs.polyhedra.stellation;
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-import java.awt.event.*;
-import java.awt.Dialog;
 import java.awt.Button;
-import java.awt.Frame;
+import java.awt.Dialog;
 import java.awt.Font;
-import java.awt.TextArea;
-import java.awt.Event;
-import java.awt.Panel;
-import java.awt.GridBagLayout;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Panel;
+import java.awt.TextArea;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import pvs.utils.WindowUtils;
 

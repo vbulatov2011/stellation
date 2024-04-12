@@ -1,18 +1,42 @@
 package pvs.polyhedra;
 
-import java.awt.event.*;
-import java.awt.*;
-import java.awt.geom.*;
-import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
+import java.awt.Button;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FileDialog;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Label;
+import java.awt.Menu;
+import java.awt.MenuBar;
+import java.awt.MenuItem;
+import java.awt.Panel;
+import java.awt.TextField;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.Reader;
+import java.io.StreamTokenizer;
+import java.util.Vector;
 
-
-import pvs.polyhedra.Vector3D;
-import pvs.utils.*;
-import pvs.Expression.*;
+import pvs.Expression.Expr;
+import pvs.Expression.Variable;
 import pvs.polyhedra.stellation.DlgPrint;
+import pvs.utils.FixedStreamTokenizer;
+import pvs.utils.PVSObserver;
+import pvs.utils.WindowOutputStream;
+import pvs.utils.WindowUtils;
 
 
 public class PolygonDisplay  implements PVSObserver {

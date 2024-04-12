@@ -1,18 +1,27 @@
 package pvs.Expression;
 
 
-import java.io.*;
-import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.net.URL;
-import java.applet.*;
+import java.awt.Button;
+import java.awt.Choice;
+import java.awt.Color;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Label;
+import java.awt.Panel;
+import java.awt.TextArea;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.PrintStream;
+import java.util.StringTokenizer;
 
-
-import pvs.polyhedra.Vector3D;
 import pvs.polyhedra.Plane;
-import pvs.utils.*;
-import pvs.Expression.*;
+import pvs.polyhedra.Vector3D;
+import pvs.utils.WindowOutputStream;
+import pvs.utils.WindowUtils;
 
 
 public class VectorCalculator {

@@ -1,7 +1,7 @@
 package pvs.polyhedra;
 
-import pvs.utils.QSort;
 import pvs.utils.Comparator;
+import pvs.utils.QSort;
 
 
 /**

@@ -1,6 +1,6 @@
 package pvs.polyhedra.stellation;
 
-import pvs.polyhedra.*;
+import pvs.polyhedra.SSCell;
 
 public class SelectionCell {
   

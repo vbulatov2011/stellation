@@ -24,11 +24,11 @@ package pvs.utils;
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-import java.awt.Graphics;
 import java.awt.Color;
-import java.awt.Point;
+import java.awt.Graphics;
 import java.awt.Image;
-import java.awt.image.*;
+import java.awt.Point;
+import java.awt.image.ImageObserver;
 import java.util.Vector;
 
 public class Graphics2D extends Object {

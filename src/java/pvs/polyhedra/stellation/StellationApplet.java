@@ -1,6 +1,6 @@
 package pvs.polyhedra.stellation;
 
-import java.applet.*;
+import java.applet.Applet;
 
 public class StellationApplet extends Applet{
 

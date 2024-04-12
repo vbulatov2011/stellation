@@ -12,70 +12,100 @@ package pvs.polyhedra.stellation;
    - color highlighting of cells - done
 */
 
-import java.io.*;
-import java.util.Enumeration;
-import java.util.Vector;
-import java.util.Hashtable;
-import java.awt.*;
-import java.awt.event.*;
-import java.net.URL;
-import java.applet.*;
-import java.awt.image.BufferedImage;
-import java.awt.geom.AffineTransform;
-import java.util.StringTokenizer;
-import javax.imageio.ImageIO;
-import javax.swing.JFileChooser;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.filechooser.FileFilter;
-import java.util.prefs.Preferences;
-
-
-import pvs.polyhedra.Stellation;
-import pvs.polyhedra.Polyhedron;
-import pvs.polyhedra.PolygonDisplay;
-import pvs.polyhedra.Vector3D;
-import pvs.polyhedra.SSCell;
-import pvs.polyhedra.SFace;
-import pvs.polyhedra.StellationCanvas;
-import pvs.polyhedra.Plane;
-import pvs.polyhedra.Symmetry;
-import pvs.polyhedra.Matrix3D;
-
-import pvs.utils.WindowOutputStream;
-import pvs.utils.PVSObserver;
-import pvs.utils.WindowUtils;
-import pvs.utils.BorderPanel;
-import pvs.utils.LabelBitmap;
-import pvs.utils.QSort;
-import pvs.utils.Comparator;
-import pvs.utils.Fmt;
-import pvs.utils.Arrays;
-
-import pvs.Expression.VectorCalculator;
-
-import pvs.utils.FixedStreamTokenizer;
-import pvs.utils.Output;
-
-import pvs.g3d.Model3D;
-import pvs.g3d.Canvas3D;
-
-import static pvs.utils.Output.printf;
-import static pvs.utils.Output.print;
-import static pvs.utils.Output.println;
-import static pvs.utils.Output.fmt;
-import static java.lang.Math.*;
-import static pvs.polyhedra.stellation.Utils.transformVectors;
-import static pvs.polyhedra.stellation.Utils.parsePlanes;
-import static pvs.polyhedra.stellation.Utils.setFont;
-import static pvs.polyhedra.stellation.Utils.getBoxTransform;
 import static pvs.polyhedra.stellation.Utils.chop;
+import static pvs.polyhedra.stellation.Utils.getBoxTransform;
+import static pvs.polyhedra.stellation.Utils.getCanonicalVectors;
 import static pvs.polyhedra.stellation.Utils.getPlanesString;
 import static pvs.polyhedra.stellation.Utils.getString;
-import static pvs.polyhedra.stellation.Utils.getCanonicalVectors;
+import static pvs.polyhedra.stellation.Utils.parsePlanes;
 import static pvs.polyhedra.stellation.Utils.planesToVectors;
+import static pvs.polyhedra.stellation.Utils.setFont;
+import static pvs.polyhedra.stellation.Utils.transformVectors;
 import static pvs.polyhedra.stellation.Utils.vectorsToPlanes;
-
+import static pvs.utils.Output.fmt;
+import static pvs.utils.Output.print;
+import static pvs.utils.Output.printf;
+import static pvs.utils.Output.println;
 import static pvs.utils.WindowUtils.constrain;
+
+import java.applet.Applet;
+import java.awt.Button;
+import java.awt.CheckboxMenuItem;
+import java.awt.Choice;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FileDialog;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.ItemSelectable;
+import java.awt.Label;
+import java.awt.Menu;
+import java.awt.MenuBar;
+import java.awt.MenuItem;
+import java.awt.Panel;
+import java.awt.PrintJob;
+import java.awt.RenderingHints;
+import java.awt.TextField;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.Reader;
+import java.io.StreamTokenizer;
+import java.net.URL;
+import java.util.StringTokenizer;
+import java.util.Vector;
+import java.util.prefs.Preferences;
+
+import javax.imageio.ImageIO;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
+import pvs.Expression.VectorCalculator;
+import pvs.g3d.Canvas3D;
+import pvs.g3d.Model3D;
+import pvs.polyhedra.Plane;
+import pvs.polyhedra.PolygonDisplay;
+import pvs.polyhedra.Polyhedron;
+import pvs.polyhedra.SSCell;
+import pvs.polyhedra.Stellation;
+import pvs.polyhedra.StellationCanvas;
+import pvs.polyhedra.Symmetry;
+import pvs.polyhedra.Vector3D;
+import pvs.utils.Arrays;
+import pvs.utils.Comparator;
+import pvs.utils.FixedStreamTokenizer;
+import pvs.utils.LabelBitmap;
+import pvs.utils.Output;
+import pvs.utils.PVSObserver;
+import pvs.utils.WindowOutputStream;
+import pvs.utils.WindowUtils;
 
 /**
    main class for Stellation program 

@@ -1,25 +1,24 @@
 package pvs.polyhedra.stellation;
 
-import java.awt.geom.AffineTransform;
+import static java.lang.Double.parseDouble;
+import static java.lang.Math.abs;
+import static java.lang.Math.floor;
+import static pvs.utils.Output.fmt;
+import static pvs.utils.Output.printf;
+
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Font;
-
-import pvs.polyhedra.Vector3D;
-import pvs.polyhedra.Matrix3D;
-import pvs.polyhedra.Symmetry;
-import pvs.polyhedra.Plane;
-
-import java.util.Vector;
-import java.util.Hashtable;
+import java.awt.geom.AffineTransform;
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.StringTokenizer;
+import java.util.Vector;
 
-
-import static pvs.utils.Output.printf;
-import static pvs.utils.Output.fmt;
-import static java.lang.Math.*;
-import static java.lang.Double.parseDouble;
+import pvs.polyhedra.Matrix3D;
+import pvs.polyhedra.Plane;
+import pvs.polyhedra.Symmetry;
+import pvs.polyhedra.Vector3D;
 
 public class Utils {
 

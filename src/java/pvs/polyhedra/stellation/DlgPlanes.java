@@ -1,25 +1,34 @@
 package pvs.polyhedra.stellation;
 
-import java.io.*;
-import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.net.URL;
-import java.applet.*;
-
-
-import pvs.polyhedra.Plane;
-import pvs.polyhedra.*;
-import pvs.utils.*;
-import pvs.Expression.*;
-
-import static pvs.utils.WindowUtils.constrain;
+import static pvs.polyhedra.stellation.Utils.copyPlanes;
+import static pvs.polyhedra.stellation.Utils.getString;
 import static pvs.utils.Output.fmt;
 import static pvs.utils.Output.printf;
-import static pvs.polyhedra.stellation.Utils.getString;
-import static pvs.polyhedra.stellation.Utils.copyPlanes;
-import static pvs.polyhedra.stellation.Utils.planesToVectors;
-import static pvs.polyhedra.stellation.Utils.vectorsToPlanes;
+import static pvs.utils.WindowUtils.constrain;
+
+import java.awt.Button;
+import java.awt.Choice;
+import java.awt.Dialog;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Label;
+import java.awt.Panel;
+import java.awt.TextArea;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.Vector;
+
+import pvs.Expression.Expr;
+import pvs.Expression.Parser;
+import pvs.Expression.Variable;
+import pvs.polyhedra.Plane;
+import pvs.polyhedra.Symmetry;
+import pvs.polyhedra.Vector3D;
+import pvs.utils.Fmt;
 
 public class DlgPlanes {
 

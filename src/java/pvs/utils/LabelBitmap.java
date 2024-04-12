@@ -1,7 +1,9 @@
 package pvs.utils;
 
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.Canvas;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Image;
 
 public class LabelBitmap extends Canvas {
   

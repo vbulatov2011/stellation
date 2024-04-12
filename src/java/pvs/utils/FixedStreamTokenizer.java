@@ -9,8 +9,9 @@ package pvs.utils;
  * Use is subject to license terms.
  * 
  */
-
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 
 
 /**

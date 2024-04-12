@@ -1,17 +1,31 @@
 package pvs.polyhedra.stellation;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.util.*;
+import java.awt.Button;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Panel;
+import java.awt.Scrollbar;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.util.StringTokenizer;
+import java.util.Vector;
 
-import pvs.utils.WindowUtils;
-import pvs.utils.PVSObserver;
-import pvs.utils.DestroyableFrame;
+import pvs.polyhedra.SSCell;
 import pvs.utils.Fmt;
-import pvs.utils.BorderPanel;
 import pvs.utils.Output;
-
-import pvs.polyhedra.*;
+import pvs.utils.PVSObserver;
+import pvs.utils.WindowUtils;
 
 
 public class SelectionPanel extends Panel implements PVSObserver {

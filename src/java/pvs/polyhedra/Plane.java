@@ -1,9 +1,8 @@
 package pvs.polyhedra;
 
-import Jama.Matrix;
-import pvs.utils.Fmt;
-
 import static pvs.utils.Output.fmt;
+
+import Jama.Matrix;
 
 public class Plane {
   

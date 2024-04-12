@@ -1,22 +1,41 @@
 package pvs.polyhedra.stellation;
 
-import java.io.*;
-import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.geom.*;
-import java.net.URL;
-import java.applet.*;
-import java.awt.print.*;
+import java.awt.BasicStroke;
+import java.awt.Button;
+import java.awt.Canvas;
+import java.awt.Color;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Label;
+import java.awt.Panel;
+import java.awt.RenderingHints;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.GeneralPath;
+import java.awt.geom.Rectangle2D;
+import java.awt.print.PageFormat;
+import java.awt.print.Paper;
+import java.awt.print.Printable;
+import java.awt.print.PrinterJob;
+import java.util.Vector;
 
-import pvs.polyhedra.*;
-import pvs.utils.WindowUtils;
+import pvs.Expression.Parser;
+import pvs.polyhedra.PolyShape;
+import pvs.utils.Dlg_Preferences;
 import pvs.utils.Parameter;
+import pvs.utils.ParameterBoolean;
 import pvs.utils.ParameterDouble;
 import pvs.utils.ParameterInt;
-import pvs.utils.ParameterBoolean;
-import pvs.utils.Dlg_Preferences;
-import pvs.Expression.*;
+import pvs.utils.WindowUtils;
 
 
 public class DlgPrint {

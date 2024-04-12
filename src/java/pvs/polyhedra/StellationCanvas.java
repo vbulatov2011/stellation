@@ -1,22 +1,50 @@
 package pvs.polyhedra;
  
 
-import java.awt.event.*;
-import java.awt.*;
-import java.awt.geom.*;
-import java.io.*;
+import java.awt.Button;
+import java.awt.Canvas;
+import java.awt.Checkbox;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FileDialog;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.MenuItem;
+import java.awt.Panel;
+import java.awt.PopupMenu;
+import java.awt.Scrollbar;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.geom.GeneralPath;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.Vector;
 
-import pvs.utils.Point2;
+import pvs.utils.EventCallback;
 import pvs.utils.Graphics2D;
-import pvs.utils.Viewport;
-import pvs.utils.ViewRect;
 import pvs.utils.GraphicsPS;
 import pvs.utils.PVSObserver;
-import pvs.utils.WindowUtils;
-import pvs.utils.EventCallback;
-import pvs.utils.TimeoutCallback;
+import pvs.utils.Point2;
 import pvs.utils.Timeout;
+import pvs.utils.TimeoutCallback;
+import pvs.utils.ViewRect;
+import pvs.utils.Viewport;
+import pvs.utils.WindowUtils;
  
 public class StellationCanvas extends Panel implements Runnable{
 

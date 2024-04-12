@@ -1,6 +1,7 @@
 package pvs.polyhedra;
 
-import pvs.utils.*;
+import pvs.utils.Comparator;
+import pvs.utils.FastHashtable;
 
 /**
   3 dimensional stellation cell, 

@@ -1,13 +1,25 @@
 package pvs.polyhedra.stellation;
 
-import java.awt.*;
-import java.util.*;
-import java.awt.event.*;
+import java.awt.Canvas;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Vector;
 
-import pvs.utils.PVSObserver;
+import pvs.polyhedra.SSCell;
+import pvs.polyhedra.StellationCanvas;
 import pvs.utils.DestroyableFrame;
 import pvs.utils.Fmt;
-import pvs.polyhedra.*;
+import pvs.utils.PVSObserver;
 
 
 

@@ -1,15 +1,24 @@
 package pvs.polyhedra;
 
-import java.util.Vector;
-import java.io.*;
-import java.util.Hashtable;
+import static pvs.utils.Output.printf;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.io.StreamTokenizer;
+import java.util.Hashtable;
+import java.util.Vector;
+
+import pvs.g3d.STLWriter;
+import pvs.utils.DoubleComparator;
 import pvs.utils.Fmt;
 import pvs.utils.QSort;
-import pvs.utils.DoubleComparator;
-import pvs.g3d.STLWriter;
-
-import static pvs.utils.Output.printf;
 
 public class Polyhedron {
 

@@ -1,23 +1,14 @@
 package pvs.g3d;
 
-/**
- *
- * Author: Daeron Meyer
- * Copyright (c) 1995 by The Geometry Center, University of Minnesota
- * Distributed under the terms of the GNU Library General Public License
- * 12-14-95
- *
- */
-
-import java.applet.Applet;
-import java.awt.Graphics;
 import java.awt.Color;
-import java.awt.Event;
-import java.lang.*;
-import java.io.*;
+import java.awt.Graphics;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StreamTokenizer;
 import java.net.URL;
-
-import pvs.utils.Fmt;
 /**
  *  class Model3D: a class for rendering 3D models
  *

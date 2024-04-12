@@ -1,7 +1,8 @@
 package pvs.utils;
 
-import java.awt.*;
-import java.awt.image.*;
+import java.awt.Image;
+import java.awt.image.ColorModel;
+import java.awt.image.ImageConsumer;
 
 public class PixelConsumer implements ImageConsumer {
   boolean complete = false;

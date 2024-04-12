@@ -7,8 +7,20 @@
 
 package pvs.polyhedra;
 
-import java.awt.*;
-import java.applet.*;
+import java.awt.BorderLayout;
+import java.awt.Button;
+import java.awt.Checkbox;
+import java.awt.Color;
+import java.awt.Event;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Label;
+import java.awt.Panel;
+import java.awt.Scrollbar;
 import java.util.Vector;
 
 import pvs.utils.WindowUtils;

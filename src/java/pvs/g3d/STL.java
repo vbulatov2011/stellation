@@ -12,8 +12,14 @@ Floating point numbers are represented as IEEE floating point numbers and the en
 
 
 import java.awt.Color;
-import java.io.*;
-import java.util.*;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.Hashtable;
+import java.util.Vector;
 
 public class STL {
 

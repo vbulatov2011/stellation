@@ -1,18 +1,9 @@
 package pvs.polyhedra;
 
-import java.awt.event.*;
-import java.awt.*;
-import java.awt.geom.*;
-import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
+import java.io.PrintWriter;
 
-
-import pvs.polyhedra.Vector3D;
-import pvs.polyhedra.Plane;
-import pvs.utils.*;
-import pvs.Expression.*;
+import pvs.utils.FixedStreamTokenizer;
+import pvs.utils.PVSObserver;
 
 
 /**************

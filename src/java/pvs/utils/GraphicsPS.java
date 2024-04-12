@@ -9,12 +9,17 @@ package pvs.utils;
 /*
    modified 1996 by V.Bulatov@ic.ac.uk  
  */
-
-import java.awt.*;
-import java.awt.image.*;
-import java.io.*;
-import java.lang.*;
-import java.util.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Polygon;
+import java.awt.Rectangle;
+import java.awt.Shape;
+import java.awt.image.ImageObserver;
+import java.io.OutputStream;
+import java.io.PrintStream;
 
 public class GraphicsPS extends java.awt.Graphics {
 

@@ -1,6 +1,6 @@
 package pvs.polyhedra;
-import java.awt.geom.GeneralPath;
 import java.awt.Color;
+import java.awt.geom.GeneralPath;
 
 public class PolyShape {
 

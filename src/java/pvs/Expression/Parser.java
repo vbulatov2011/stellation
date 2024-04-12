@@ -1,13 +1,15 @@
 
 package pvs.Expression;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.StreamTokenizer;
+import java.io.StringBufferInputStream;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
-import java.util.Enumeration;
 
-import pvs.utils.QSort;
 import pvs.utils.Comparator;
+import pvs.utils.QSort;
 /** 
   Parses strings representing mathematical formulas with variables.
   The following operators, in descending order of precedence, are

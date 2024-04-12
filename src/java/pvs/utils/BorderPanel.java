@@ -1,6 +1,10 @@
 package pvs.utils;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Insets;
+import java.awt.Panel;
 
 public class BorderPanel extends Panel
 {

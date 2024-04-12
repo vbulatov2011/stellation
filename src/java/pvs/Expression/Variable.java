@@ -5,8 +5,6 @@
 
 package pvs.Expression;
 
-import java.util.Hashtable;
-
 /**
  * Variables associate values with names.
  */

@@ -1,28 +1,12 @@
 package pvs.g3d;
 
-/**
- *
- * Copyright (c) 2001-2017  Vladimir Bulatov
- *
- */
-
-import java.applet.Applet;
-import java.awt.Graphics;
 import java.awt.Color;
-import java.awt.Event;
-import java.awt.event.*;
-import java.lang.*;
-import java.io.*;
-import java.net.URL;
+import java.awt.Graphics;
 
-import pvs.utils.Fmt;
+import pvs.polyhedra.Vector3D;
 import pvs.utils.FastHashtable;
 import pvs.utils.FastVector;
-
-import pvs.polyhedra.Vector3D;
-import pvs.utils.PVSObserver;
-
-import pvs.polyhedra.Vector3D;
+import pvs.utils.Fmt;
 
 public class Stellation3D extends Model3D {
 

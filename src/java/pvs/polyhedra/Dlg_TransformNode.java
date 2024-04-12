@@ -1,18 +1,18 @@
 package pvs.polyhedra;
 
-import java.awt.event.*;
-import java.awt.*;
-import java.awt.geom.*;
-import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
+import java.awt.Button;
+import java.awt.Color;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Label;
+import java.awt.Panel;
+import java.awt.TextArea;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
-
-import pvs.polyhedra.Vector3D;
-import pvs.utils.*;
-import pvs.Expression.*;
-import pvs.polyhedra.stellation.DlgPrint;
+import pvs.utils.WindowUtils;
 
 /**
  *   class Dlg_TranformNode

@@ -1,12 +1,12 @@
 package pvs.polyhedra;
 
-import java.util.Vector;
 import java.util.Hashtable;
-import java.util.Enumeration;
+import java.util.Vector;
+
 import pvs.utils.Comparator;
-import pvs.utils.QSort;
-import pvs.utils.Fmt;
 import pvs.utils.FastHashtable;
+import pvs.utils.Fmt;
+import pvs.utils.QSort;
 
 
 /**

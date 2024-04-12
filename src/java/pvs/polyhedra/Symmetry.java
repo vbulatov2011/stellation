@@ -1,13 +1,13 @@
 package pvs.polyhedra;
 
-import java.util.Hashtable;
+import static pvs.utils.Output.println;
+
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Vector;
 
-import pvs.utils.*;
-
-import static pvs.utils.Output.println;
-import static pvs.utils.Output.printf;
+import pvs.utils.QSort;
+import pvs.utils.StringComparator;
 
 public class Symmetry {
 

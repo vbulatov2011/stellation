@@ -1,6 +1,11 @@
 package pvs.utils;
 
-import java.awt.*;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Rectangle;
 
 public class WindowUtils extends Object{
   /*

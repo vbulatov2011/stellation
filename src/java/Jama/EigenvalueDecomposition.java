@@ -1,6 +1,5 @@
 package Jama;
-import Jama.util.*;
-
+import Jama.util.Maths;
 import pvs.utils.Fmt;
 
 /** Eigenvalues and eigenvectors of a real matrix. 

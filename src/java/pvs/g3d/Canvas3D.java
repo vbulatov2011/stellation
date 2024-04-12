@@ -1,34 +1,50 @@
 package pvs.g3d;
 
-/**
- *
- * Author: Daeron Meyer
- * Copyright (c) 1995 by The Geometry Center, University of Minnesota
- * Distributed under the terms of the GNU Library General Public License
- * 12-14-95
- * Modified by V.Bulatov
- */
-
-import java.applet.Applet;
-import java.awt.*;
-
-import java.io.*;
-import java.awt.event.*;
-import java.awt.image.*;
+import java.awt.Button;
+import java.awt.Canvas;
+import java.awt.Checkbox;
+import java.awt.Choice;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FileDialog;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Panel;
+import java.awt.PopupMenu;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 //import java.net.URL;
-
-import pvs.utils.WindowUtils;
-import pvs.utils.BorderPanel;
-import pvs.utils.DestroyableFrame;
-import pvs.utils.GraphicsPS;
-import pvs.utils.EventCallback;
-import pvs.utils.TimeoutCallback;
-import pvs.utils.Timeout;
-import pvs.utils.Fmt;
-import pvs.utils.PVSObserver;
+import java.awt.image.MemoryImageSource;
+import java.awt.image.PixelGrabber;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 
 import pvs.polyhedra.Vector3D;
-import static pvs.utils.Output.printf;
+import pvs.utils.BorderPanel;
+import pvs.utils.DestroyableFrame;
+import pvs.utils.EventCallback;
+import pvs.utils.Fmt;
+import pvs.utils.GraphicsPS;
+import pvs.utils.PVSObserver;
+import pvs.utils.Timeout;
+import pvs.utils.TimeoutCallback;
+import pvs.utils.WindowUtils;
 
 /**
  *  Canvas3D: An canvas to display and interact with OFF object 
