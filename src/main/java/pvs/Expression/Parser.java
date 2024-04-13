@@ -365,9 +365,9 @@ public class Parser {
       }
 
       // it should be new variable then
-      Expr var = Expr.make_var_ref (getVariable(tokens.sval));
+      Expr v = Expr.make_var_ref (getVariable(tokens.sval));
       next ();
-      return var;
+      return v;
     }
     case '(': {
       next ();

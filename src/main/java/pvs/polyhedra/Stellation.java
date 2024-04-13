@@ -2240,10 +2240,10 @@ public class Stellation {
     public static int[][][] readStellations(String fname){
         Vector st = new Vector();
         try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(fname)));
+            BufferedReader instr = new BufferedReader(new InputStreamReader(new FileInputStream(fname)));
             //DataInputStream in = new DataInputStream(new FileInputStream(fname));
             String line;
-            while((line = in.readLine()) != null){
+            while((line = instr.readLine()) != null){
                 int [][] stellation = parseStellationLine(line);
                 if(stellation != null){
                     st.addElement(stellation);

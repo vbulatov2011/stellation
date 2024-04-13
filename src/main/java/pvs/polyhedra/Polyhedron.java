@@ -139,11 +139,11 @@ public class Polyhedron {
     /*
       reads OFF files 
     */
-    public void readOFF(InputStream in){
+    public void readOFF(InputStream instr){
 
         try {
             int nvert = 0, nfaces = 0, nedges = 0; 
-            Reader r = new BufferedReader(new InputStreamReader(in));
+            Reader r = new BufferedReader(new InputStreamReader(instr));
             StreamTokenizer stream = new StreamTokenizer (r);
             stream.eolIsSignificant(false);
             stream.commentChar('#');

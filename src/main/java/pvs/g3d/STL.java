@@ -158,10 +158,10 @@ public class STL {
 
   public static STL readFacesSet( String fname ) throws IOException {
     
-    FileInputStream in = new FileInputStream(fname);
-    DataInputStream data = new DataInputStream(in);
+    FileInputStream instr = new FileInputStream(fname);
+    DataInputStream data = new DataInputStream(instr);
     
-    in.skip(80);
+    instr.skip(80);
     
     int size = readInt(data);      
     System.out.println("size: " + size);
@@ -172,7 +172,7 @@ public class STL {
     for(int f = 0; f < size; f++){
       // normal
       //readFloat(data);  readFloat(data); readFloat(data);
-      in.skip(3*4);
+      instr.skip(3*4);
       for(int i = 0; i < 3; i++){
         Vec3f vnew = readVec3f(data);
         Vec3f vold = (Vec3f)vtable.get(vnew);
@@ -185,10 +185,10 @@ public class STL {
         vold.fcount++;
         ifaces[f][i] = vold.index*3;
       }
-      in.skip(2);        
+      instr.skip(2);        
     }
     
-    in.close();
+    instr.close();
     int vcount = vvector.size();
     System.out.println("vcount: " + vcount);
     double vert[] = new double[vcount*3];

@@ -45,8 +45,8 @@ public abstract class Expr {
   public static Expr make_literal (double v) { 
     return new Literal (v); 
   }
-  public static Expr make_var_ref (Variable var) {
-    return new Var_ref (var);
+  public static Expr make_var_ref (Variable v) {
+    return new Var_ref (v);
   }
   /** 
    * @param rator unary operator

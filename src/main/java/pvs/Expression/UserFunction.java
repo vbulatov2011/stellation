@@ -21,5 +21,5 @@ public interface UserFunction{
     and arbitrary parameter clientData, which  can be used to pass 
     arbitrary client data via parser to this function
    */
-  public double compute(double var[], Object clientData);
+  public double compute(double v[], Object clientData);
 }

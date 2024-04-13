@@ -9,7 +9,7 @@ public class FunctionSin implements UserFunction{
     return 1;
   }
 
-  public double compute(double var[], Object o){
-    return Math.sin(var[0]);
+  public double compute(double v[], Object o){
+    return Math.sin(v[0]);
   }
 }

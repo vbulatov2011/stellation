@@ -9,7 +9,7 @@ public class FunctionMin implements UserFunction{
     return 2;
   }
 
-  public double compute(double var[], Object o){
-    return (var[0] < var[1])? var[0]: var[1];
+  public double compute(double v[], Object o){
+    return (v[0] < v[1])? v[0]: v[1];
   }
 }
