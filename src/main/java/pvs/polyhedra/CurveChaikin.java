@@ -281,7 +281,8 @@ public class CurveChaikin {
     int np = cpts.size();
     // previous
     Point2 p;
-    int i, l;
+    int i;
+    // int l;
     float pts[][];
     boolean periodic = ( closed == CLOSED );
     // draw the current lines

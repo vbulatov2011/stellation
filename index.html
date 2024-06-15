@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+  <script type="module" >
+
+    import { pvs } from "/target/from-java.js";
+    import { java } from "/target/j4ts-2.1.0-SNAPSHOT/bundle.js";
+    
+    const controller = new pvs.polyhedra.stellation.StellationController();
+
+    const fetchUrlText = async ( url ) =>
+    {
+      const response = await fetch( url );
+      if ( !response.ok ) {
+        throw new Error( `Failed to fetch "${url}": ${response.statusText}` )
+      }
+      return response.text();
+    }
+
+    const stellationFile = '/resources/images/off/u27.off';
+    fetchUrlText( stellationFile )
+      .then( resource =>
+        {
+          try {
+            const bytes = /* getBytes */ (resource).split('').map(s => s.charCodeAt(0));
+            const inputStream = new java.io.ByteArrayInputStream( bytes );
+            const polyhedron = new pvs.polyhedra.Polyhedron();
+            polyhedron .readOFF( inputStream );
+            polyhedron .makeCCW();        
+            // polyhedron .printVertices(Output.out);
+            inputStream .close();
+
+            controller .initPolyPlanes( polyhedron );
+          }
+          catch (ioe) {
+            console.log( 'unable to fetch stellation file', stellationFile );
+          }
+        }
+      );
+
+
+
+  </script>
+</head>
+<body>
+  
+</body>
+</html>

@@ -75,7 +75,7 @@ class HashtableEntry {
  * @author	Arthur van Hoff
  */
 public
-class FastHashtable extends Dictionary implements Cloneable {
+class FastHashtable extends Hashtable implements Cloneable {
     /**
      * The hash table data.
      */
@@ -382,7 +382,6 @@ class FastHashtable extends Dictionary implements Cloneable {
      * relatively expensive operation.
      */
     public  Object clone() {
-	try { 
 	    FastHashtable t = (FastHashtable)super.clone();
 	    t.table = new HashtableEntry[table.length];
 	    for (int i = table.length ; i-- > 0 ; ) {
@@ -390,10 +389,6 @@ class FastHashtable extends Dictionary implements Cloneable {
 		    ? (HashtableEntry)table[i].clone() : null;
 	    }
 	    return t;
-	} catch (CloneNotSupportedException e) { 
-	    // this shouldn't happen, since we are Cloneable
-	    throw new InternalError();
-	}
     }
 
     /**

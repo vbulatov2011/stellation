@@ -170,7 +170,7 @@ public class FixedStreamTokenizer {
      * @see     java.io.StreamTokenizer#TT_NUMBER
      * @see     java.io.StreamTokenizer#ttype
      */
-    private double nval; // this is useless parameter, we hide it, to avoid ising it. VB 
+    public double nval; // this is useless parameter, we hide it, to avoid ising it. VB 
 
     /** Private constructor that initializes everything except the streams. */
     private FixedStreamTokenizer() {

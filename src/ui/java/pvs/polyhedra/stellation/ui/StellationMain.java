@@ -14,16 +14,11 @@ package pvs.polyhedra.stellation.ui;
 
 import static pvs.polyhedra.stellation.Utils.chop;
 import static pvs.polyhedra.stellation.Utils.getBoxTransform;
-import static pvs.polyhedra.stellation.Utils.getPlanesString;
-import static pvs.polyhedra.stellation.Utils.getString;
-import static pvs.polyhedra.stellation.Utils.parsePlanes;
 import static pvs.utils.Output.fmt;
-import static pvs.utils.Output.print;
 import static pvs.utils.Output.printf;
 import static pvs.utils.Output.println;
 import static pvs.utils.ui.WindowUtils.constrain;
 
-import java.applet.Applet;
 import java.awt.Button;
 import java.awt.CheckboxMenuItem;
 import java.awt.Choice;
@@ -60,22 +55,15 @@ import java.awt.event.WindowEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.io.Reader;
-import java.io.StreamTokenizer;
-import java.net.URL;
 import java.util.StringTokenizer;
-import java.util.Vector;
 import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
@@ -94,13 +82,10 @@ import pvs.polyhedra.Stellation;
 import pvs.polyhedra.Symmetry;
 import pvs.polyhedra.Vector3D;
 import pvs.polyhedra.stellation.PolyNames;
-import pvs.polyhedra.stellation.StellationData;
-import pvs.polyhedra.stellation.Utils;
+import pvs.polyhedra.stellation.StellationController;
 import pvs.polyhedra.ui.PolygonDisplay;
 import pvs.polyhedra.ui.StellationCanvas;
 import pvs.polyhedra.ui.StellationUI;
-import pvs.utils.Arrays;
-import pvs.utils.Comparator;
 import pvs.utils.FixedStreamTokenizer;
 import pvs.utils.Output;
 import pvs.utils.PVSObserver;
@@ -120,43 +105,27 @@ public class StellationMain implements PVSObserver{
     static final String STOP = "Stop!";
     static final String LASTDIR_PROPERTY = "lastDir";
     static final double DEFAULT_EXPORT_LENGTH_UNIT = 0.01;
+    
+    private StellationController controller;
 
     Font m_font = new Font("Helvetica",Font.PLAIN,12);
-
-    double m_exportLengthUnit = DEFAULT_EXPORT_LENGTH_UNIT; // unit of length (in meters) for export 
-
-
-    String m_polySymmetry = "Ih";
-    String m_stellationSymmetry = "I";
 
     static final int 
         SOURCE_POLY = 1,
         SOURCE_PLANES = 2;
-
-
-    StellationData m_stelData;
-
-    // what is source for stelation 
+    
+    // what is source for stellation 
     int m_source = SOURCE_POLY;
-    Stellation stellation = null;      
-    Polyhedron polyhedron;
     String polyhedronName;
+    
     int currentCategory = 0;
     int currentPoly = 3;
 
-    Vector3D m_polyhedronPlanes[];
-    //Vector3D m_canonicalPlanes[];
-    Plane m_canonicalPlanes[];
-
-    Vector allcells = null; // current Stellation cells 
-    Vector subcells = null; // current Stellation subcells 
-    SSCell[] currentCells; // currently selected cells 
     int [][] cellsIndex;   // indices of currently selected cells
     Model3D model3D = null;
     // set of currently visible cells
     int[][] cellIndex = new int[0][0];
     String stellationPath = NEW_FILE;
-
 
     String outType = "STL"; // what format to write Vrml2, POV, OFF
 
@@ -166,22 +135,13 @@ public class StellationMain implements PVSObserver{
     boolean bMakeCells = false;
     boolean bShowCells = false;
 
-
     static final String NEW_FILE = "stellation.stel";
     final static String EXT_STEL = ".stel";
     final static String EXT_BAK = ".bak";
-
-
-    int maxIntersection = -1; // limit of intersections 
-    int maxLayer = 1000; // limit number of layers
+  
     int vertexUp = 0;
     int faceToShow = 0;
-    int nFaces = 0;
 
-    boolean bWriteCells = false;
-    boolean bWriteLayers = false;
-  
-  
     ActionListener menuDispatcher  = new MenuDispatcher();
   
     static String MakeStellation = "Start";
@@ -262,19 +222,17 @@ public class StellationMain implements PVSObserver{
     static String symnames[] = Symmetry.getSymmetryNames();
     PolyNames polyNames = new PolyNames();
 
-    Applet applet;
-
 
     /**
 
        StellationMain
 
     */
-    public StellationMain( String fname, String stellationSymmetry, Applet applet){
+    public StellationMain( String fname, String stellationSymmetry){
 
         this.stellationPath = fname;    
-        this.m_stellationSymmetry = stellationSymmetry;
-        this.applet = applet;
+        
+        this.controller = new StellationController( fname, stellationSymmetry );
 
         m_mainFrame = new Frame(getFileName());
         Toolkit toolkit = Toolkit.getDefaultToolkit();
@@ -298,12 +256,41 @@ public class StellationMain implements PVSObserver{
             m_mainFrame.validate();
         }
 
-        m_mainFrame.show();
+        m_mainFrame.setVisible( true );
     
         startStellationThread(null);
     
     }
 
+    /**
+       makeNewCellIndex
+    
+    */
+    int[][] makeNewCellIndex(int[] cindex){
+
+        for(int i = 0; i <  cellIndex.length; i++){
+            if((cellIndex[i][0] == cindex[0]) && 
+               (cellIndex[i][1] == cindex[1])){
+                // remove given cell from array
+                int[][] nindex = new int[cellIndex.length - 1][];
+                for(int k = 0; k < i; k++){
+                    nindex[k] = cellIndex[k];
+                }
+                for(int k = i; k < cellIndex.length-1; k++){
+                    nindex[k] = cellIndex[k+1];
+                }
+                return nindex;
+            }
+        }
+    
+        // add new cell to array    
+        int[][] nindex = new int[cellIndex.length+1][];
+        for(int k = 0; k < cellIndex.length; k++){
+            nindex[k] = cellIndex[k];
+        }
+        nindex[cellIndex.length] = cindex;
+        return nindex;
+    }
 
     /**
        initUI
@@ -346,10 +333,10 @@ public class StellationMain implements PVSObserver{
 
         btnSelectPoly.addActionListener(new OnSelectPolyhedron());
 
-        initializePoly();
+        initializePoly( false );
 
         choice_symmetry.addItemListener(new SymmetryListener());
-        choice_symmetry.select(getSymmetryIndex(m_stellationSymmetry));
+        choice_symmetry.select(getSymmetryIndex( this.controller.getStellationSymmetry() ));
 
         Panel polyInfo = new   Panel();polyInfo.setLayout(gridbag);
         Panel polyInfo_1 = new Panel();//polyInfo_1.setLayout(gridbag);
@@ -418,12 +405,12 @@ public class StellationMain implements PVSObserver{
     void initSymmetryUI(){
 
         choice_symmetry.removeAll();
-        symnames = Symmetry.getSubgroups(m_polySymmetry);
+        symnames = Symmetry.getSubgroups( this .controller .getPolySymmetry() );
         for(int i = 0; i < symnames.length; i++){
             choice_symmetry.addItem(symnames[i]);
         }
 
-        choice_symmetry.select(m_stellationSymmetry);
+        choice_symmetry.select( this .controller .getStellationSymmetry() );
           
     }
 
@@ -545,7 +532,7 @@ public class StellationMain implements PVSObserver{
         frameSelection.setBounds(screen.width - screen.height,
                                  0,screen.height/2,screen.height/2);
         frameSelection.validate();
-        frameSelection.show();
+        frameSelection.setVisible( true );
         if(icon != null)
             frameSelection.setIconImage(icon);
     
@@ -588,7 +575,7 @@ public class StellationMain implements PVSObserver{
             if((options & InputEvent.SHIFT_MASK) != 0){
                 addCell = false;
             }
-            int[] cindex = stellation.findCell(currentCells, new Vector3D(center), addCell); 
+            int[] cindex = this.controller .findCell( new Vector3D(center), addCell ); 
 
             if(cindex != null){	
 
@@ -618,11 +605,11 @@ public class StellationMain implements PVSObserver{
             case StellationCanvas.ADD_SUPPORTING_CELLS:
             case StellationCanvas.SUB_SUPPORTING_CELLS:
                 // 1 if we want it to be top face
-                cindex = stellation.findCell(subcells, faceToShow, face, 1);	
+                cindex = this.controller .findCell( faceToShow, face, 1);	
                 break;
             case StellationCanvas.TOGGLE_TOP_CELL:
                 // 0 if we want it to be bottom face
-                cindex = stellation.findCell(subcells, faceToShow, face, 0);		
+                cindex = this.controller .findCell( faceToShow, face, 0);		
                 break;
             }
       
@@ -641,98 +628,25 @@ public class StellationMain implements PVSObserver{
         }
     }
   
-    /**
-       makeNewCellIndex
     
-    */
-    int[][] makeNewCellIndex(int[] cindex){
-
-        for(int i = 0; i <  cellIndex.length; i++){
-            if((cellIndex[i][0] == cindex[0]) && 
-               (cellIndex[i][1] == cindex[1])){
-                // remove given cell from array
-                int[][] nindex = new int[cellIndex.length - 1][];
-                for(int k = 0; k < i; k++){
-                    nindex[k] = cellIndex[k];
-                }
-                for(int k = i; k < cellIndex.length-1; k++){
-                    nindex[k] = cellIndex[k+1];
-                }
-                return nindex;
-            }
-        }
-    
-        // add new cell to array    
-        int[][] nindex = new int[cellIndex.length+1][];
-        for(int k = 0; k < cellIndex.length; k++){
-            nindex[k] = cellIndex[k];
-        }
-        nindex[cellIndex.length] = cindex;
-        return nindex;
-    }
-  
-    public void doTest(){
-
-        stellation = new Stellation( Utils.planesToVectors(m_canonicalPlanes),m_polySymmetry,maxIntersection);
-        nFaces = stellation.faces.length;
-        allcells = stellation.makeCells2(m_polySymmetry, m_stellationSymmetry, maxLayer);
-
-        initSubcells();
-
-    }
-
-    public void doTest1(){
-
-        for(int k = 0; k < allcells.size(); k++){    
-            printf("%2d:", k);
-            Vector layer = (Vector)allcells.elementAt(k);      
-            SSCell array[] = new SSCell[layer.size()];
-            layer.copyInto(array);
-            Arrays.sort(array, 0,array.length, (Comparator)array[0]);
-      
-            //QSort.quickSort(layer,0,layer.size()-1,(SSCell)layer.elementAt(0));
-            //for(int i=0; i < layer.size(); i++){    
-            for(int i=0; i < array.length; i++){
-                //SSCell scell = (SSCell)layer.elementAt(i);
-                SSCell scell = array[i];
-                print(scell.cells.length + ".");
-                print(scell.getNFacets() + ".");
-                print(scell.getNVertices() + " ");
-            }
-            println("");
-        }
-    }
-
-
-    void createSubcells(Vector cells, String symmetry){
-    
-        for(int l = 0; l < cells.size(); l++){
-            Vector layer = (Vector)cells.elementAt(l);
-            for(int c = 0; c < layer.size(); c++){
-                SSCell cell = (SSCell)layer.elementAt(c);
-                cell.setSubCells(Stellation.makeSymmetricalSubCells(cell, symmetry));	
-            }
-        }    
-    }
-
     void initSubcells(){
 
-        subcells = makeSubcells(allcells);
-        stellation.makeConnectivityGraph(subcells);
+        controller .initSubcells();
         /*
           int[] layers = new int[allcells.size()];
           for(int i =0; i < allcells.size(); i++){
           layers[i] = ((Vector)allcells.elementAt(i)).size();
           }
         */
-        selection.setArray(allcells, subcells);
+        selection.setArray( controller .getAllCells(), controller .getSubcells() );
 
         showDiagram(new int[0][0]);
         diagram.init();
 
         choice_face.removeAll();
-        if(stellation.getFaces().length > 0) {
-            Integer [] findex = stellation.getNonEquivalentFaces(m_stellationSymmetry);
+        
+        Integer[] findex = controller .getNonEquivalentFaces();
+        if( findex != null ) {
             if(findex.length > 1){
                 for(int i = 0; i < findex.length; i++){
                     choice_face.addItem(findex[i].toString());
@@ -743,7 +657,7 @@ public class StellationMain implements PVSObserver{
             }
         }
     }
-
+    
     /**
        createMenu
     
@@ -838,7 +752,7 @@ public class StellationMain implements PVSObserver{
         }
 
         dialogOpen.pack();
-        dialogOpen.show(); 
+        dialogOpen.setVisible( true ); 
     
         String name = dialogOpen.getFile();
         String dir = dialogOpen.getDirectory();
@@ -862,8 +776,7 @@ public class StellationMain implements PVSObserver{
             //System.out.println("URL: " + url);
             //InputStream f = url.openStream();
 
-            //String fullname = "/images/off/" + fname+".off";
-            String fullname = "/images/off/" + fname+".gif";
+            String fullname = "/images/off/" + fname +".off";
             InputStream f = null;
             try {
                 f = getClass().getResourceAsStream(fullname);
@@ -871,16 +784,16 @@ public class StellationMain implements PVSObserver{
                 printf("getClass().getResourceAsStream(%s) failed\n", fullname);
             }
             try {
-                if(f == null && applet != null){	  
-                    InputStream ff = getClass().getResourceAsStream("/images/poly/"+fname+"_tmb.gif");
-                    if(ff != null){
-                        //System.out.println("/images/poly/"+fname+"_tmb.gif opened");
-                    }
-                    fullname = "images/off/" + fname+".off";
-                    URL url = new URL(applet.getDocumentBase(), fullname);
-                    println("opening: " + url);
-                    f = url.openStream();
-                }
+//                if(f == null && applet != null){	  
+//                    InputStream ff = getClass().getResourceAsStream("/images/poly/"+fname+"_tmb.gif");
+//                    if(ff != null){
+//                        //System.out.println("/images/poly/"+fname+"_tmb.gif opened");
+//                    }
+//                    fullname = "images/off/" + fname+".off";
+//                    URL url = new URL(applet.getDocumentBase(), fullname);
+//                    println("opening: " + url);
+//                    f = url.openStream();
+//                }
             } catch (Exception e){
                 println("URL.openStream(" + fullname +") failed");	
             }
@@ -896,35 +809,6 @@ public class StellationMain implements PVSObserver{
         return poly;
 
     }
-
-
-    /**
-       readFile
-
-    */
-    void readFile(String fname){
-    
-        Polyhedron poly = new Polyhedron();
-        if(fname.endsWith(".off")){
-            try {
-                FileInputStream f = new FileInputStream(fname);
-                poly.readOFF(f);
-                poly.makeCCW();
-                f.close();
-            } catch(Exception e){
-                e.printStackTrace(Output.out);
-                return;
-            }        
-            println("read " + fname + " OK");Output.out.flush();    
-            stellation = new Stellation(poly,maxIntersection);
-            nFaces = poly.ifaces.length;
-        } else {      
-            Vector3D[] vectors = Stellation.readVectors(fname);
-            nFaces = vectors.length;
-            println(fname+" read OK");Output.out.flush();
-            stellation = new Stellation(vectors,maxIntersection);      
-        }
-    }
    
     /**
        showDiagram
@@ -934,17 +818,19 @@ public class StellationMain implements PVSObserver{
 
         try {
             cellIndex = st;
-            SSCell[] cells = stellation.getStellation(subcells,st);
+            Stellation stellation = this.controller .getStellation();
+            SSCell[] cells = stellation .getStellation( this.controller .getSubcells(), st );
+
             Object[][] facets = Stellation.getStellationDiagram(cells, faceToShow);
       
-            if(stellation.getFaces().length == 0){
+            if( stellation .getFaces().length == 0){
                 println("Can't make stellation!");
                 return; // something wrong
             }
       
             diagram = StellationUI.showStellationDiagram( stellation, facets,
                                                        StellationUI.makeStellationName(st),
-                                                       faceToShow, vertexUp, m_stellationSymmetry, diagram);
+                                                       faceToShow, vertexUp, this.controller .getStellationSymmetry(), diagram);
             if(frameDiagram == null){
         
                 diagram.addObserver(this);    
@@ -968,8 +854,8 @@ public class StellationMain implements PVSObserver{
     */
     void showModel(SSCell[] cells){
     
-        currentCells = cells;
-        Polyhedron poly = stellation.getPolyhedron(cells);
+        this.controller .setCurrentCells( cells );
+        Polyhedron poly = this.controller .getStellation() .getPolyhedron(cells);
         double[] vert = new double[poly.vertices.length*3];
         for(int i = 0, j =0; i < poly.vertices.length; i++){
             Vector3D v = poly.vertices[i];
@@ -996,7 +882,7 @@ public class StellationMain implements PVSObserver{
         //Out.println("poly has edges: " + poly.edges.length);
 
         model3D = new pvs.g3d.Stellation3D(vert,faces,edges,poly.colors,poly.icolor,
-                                           m_stellationSymmetry, m_polyhedronPlanes);
+                                           this.controller.getStellationSymmetry(), this.controller.getPolyhedronPlanes() );
 
         if(m_canvas3D == null){
             m_frame3D = new Frame("3D view");
@@ -1009,7 +895,7 @@ public class StellationMain implements PVSObserver{
             m_frame3D.setBounds(screen.width - screen.height/2,
                               0,screen.height/2,screen.height/2);
             m_frame3D.validate();
-            m_frame3D.show();
+            m_frame3D.setVisible( true );
             if(icon != null)
                 m_frame3D.setIconImage(icon);
         } 
@@ -1055,26 +941,15 @@ public class StellationMain implements PVSObserver{
         public void run(){
       
             btnStart.setLabel(STOP);
-                  
-            if(DEBUG)println("stellationSymmetry: " + m_stellationSymmetry);
-
+            
             int mi = 0;
             try {
                 mi = Integer.valueOf(tfMaxLayer.getText()).intValue();
             } catch (Exception e){
             }
-            if(mi > 0){
-                maxLayer = mi;
-            }
-            //readFile(fname);
-            //Out.println();
-            if(DEBUG) printf("making new Stellation() m_canonicalPlanes: %d\n", m_canonicalPlanes.length);
-            stellation = new Stellation( Utils.planesToVectors(m_canonicalPlanes),m_polySymmetry,maxIntersection);
-            nFaces = stellation.faces.length;
+
+            controller .createStellation( mi );
             
-      
-            allcells = stellation.makeCells2( m_polySymmetry, m_stellationSymmetry, maxLayer);
-      
             initSubcells();
       
             btnStart.setLabel(START);
@@ -1090,63 +965,55 @@ public class StellationMain implements PVSObserver{
 
         AboutDialog d = new AboutDialog(m_mainFrame,"Stellation",true);
         d.pack();
-        d.show();
-
-    }
-
-    /**
-     *
-     *
-     *
-     */
-    void initializePoly(){
-
-        switch(m_source){
-
-        case SOURCE_PLANES: 
-
-            polyImage.setImage(loadImageFromJar("/images/stellation_main.jpg"));  
-            polyInfoFaces.setText(   "faces:    " + m_polyhedronPlanes.length);
-            polyInfoVertices.setText("symmetry: " + m_polySymmetry);
-            polyInfoSymmetry.setText("");
-            tfPolyName.setText("user defined planes");
-            initSymmetryUI();
-            break;
-
-        case SOURCE_POLY:
-            
-            polyhedronName = polyNames.name(currentCategory,currentPoly);
-            String fname = polyNames.fname(currentCategory,currentPoly);
-            Image image = null;
-            try {
-                image = loadImageFromJar("/images/poly/"+fname+"_tmb.gif");
-            } catch (Exception e){
-                e.printStackTrace(Output.out);
-            }
-            polyImage.setImage(image);  
-      
-            polyhedron = readOffFile(fname);
-            if(m_polySymmetry == null){
-                m_polySymmetry = polyNames.symmetry(currentCategory,currentPoly);
-                m_stellationSymmetry = m_polySymmetry;
-            }
-
-            initSymmetryUI();
-            
-            m_polyhedronPlanes = makePolyhedronPlanes(polyhedron);
-            m_canonicalPlanes = Utils.vectorsToPlanes( Utils.getCanonicalVectors(m_polyhedronPlanes, m_polySymmetry));
-            if(DEBUG) printf("m_polyhedronPlanes: %d\n", m_polyhedronPlanes.length);
-            if(DEBUG) printf("m_canonicalPlanes: %d\n", m_canonicalPlanes.length);
-            polyInfoFaces.setText(   "faces:    " + polyhedron.ifaces.length);
-            polyInfoVertices.setText("vertices: " + polyhedron.vertices.length);
-            polyInfoSymmetry.setText("symmetry: " + m_polySymmetry);
-            tfPolyName.setText(polyhedronName);
-            break;
-        }
+        d.setVisible( true );
 
     }
   
-    public void doQuit(){
+   void initializePoly( boolean forceInit )
+   {
+       switch(m_source){
+
+       case SOURCE_PLANES: 
+
+           polyImage.setImage(loadImageFromJar("/images/stellation_main.jpg"));  
+           polyInfoFaces.setText(   "faces:    " + this.controller.getPolyhedronPlanes().length);
+           polyInfoVertices.setText("symmetry: " + this.controller.getPolySymmetry());
+           polyInfoSymmetry.setText("");
+           tfPolyName.setText("user defined planes");
+           initSymmetryUI();
+           break;
+
+       case SOURCE_POLY:
+           
+           polyhedronName = polyNames.name(currentCategory,currentPoly);
+           String fname = polyNames.fname(currentCategory,currentPoly);
+           Image image = null;
+           try {
+               image = loadImageFromJar("/images/poly/"+fname+"_tmb.gif");
+           } catch (Exception e){
+               e.printStackTrace(Output.out);
+           }
+           polyImage.setImage(image);  
+     
+           Polyhedron polyhedron = readOffFile(fname);
+           if( forceInit ){
+               String symm = polyNames.symmetry(currentCategory,currentPoly);
+               this.controller .setSymmetry( symm + "/" + symm );
+           }
+
+           initSymmetryUI();
+           
+           this.controller .initPolyPlanes( polyhedron );
+           
+           polyInfoFaces.setText(   "faces:    " + polyhedron.ifaces.length);
+           polyInfoVertices.setText("vertices: " + polyhedron.vertices.length);
+           polyInfoSymmetry.setText("symmetry: " + this.controller.getPolySymmetry());
+           tfPolyName.setText(polyhedronName);
+           break;
+       }
+   }
+
+   public void doQuit(){
 
         try {
             //frame.close();
@@ -1189,7 +1056,7 @@ public class StellationMain implements PVSObserver{
             } else if(outType.equals("DXF")){
                 dialogExport.setFile(getFileName()+".dxf");
             }
-            dialogExport.show();
+            dialogExport.setVisible( true );
             
             if(dialogExport.getFile() == null)
                 return;
@@ -1200,58 +1067,10 @@ public class StellationMain implements PVSObserver{
             
             File file = new File(exportPath);
             f = new FileOutputStream(file);
+            
             if(DEBUG)printf("saving polyhedron to %s\n",exportPath);
-                  
-            // save to stream 
-            Polyhedron poly = stellation.getPolyhedron(currentCells);
-            poly.scale(m_exportLengthUnit);
 
-            if(DEBUG)printf("   polyhedron scaled by factor %9.5f\n",m_exportLengthUnit);
-
-            String[] desc;
-            switch(m_source){
-            default: 
-            case SOURCE_PLANES:
-                desc = new String[]{
-                    "polyhedron stellation generated from set of planes", 
-                    "  planes: " + getPlanesString(m_canonicalPlanes),
-                    "  symmetry: " + m_polySymmetry + " / " + m_stellationSymmetry,
-                    "  cells: " + selection.getCells(),
-                    "  exported from Stellation Program by Vladimir Bulatov", 
-                    "  http://bulatov.org/polyhedra/stellation_applet/index.html" 
-                };
-                break;                
-            case SOURCE_POLY:
-                desc = new String[]{"polyhedron: " + polyhedronName, 
-                                    "  symmetry: " + m_polySymmetry + " / " + m_stellationSymmetry,
-                                    "  cells: " + selection.getCells(), 
-                                    "  exported from Stellation Program by Vladimir Bulatov", 
-                                    "  http://bulatov.org/polyhedra/stellation_applet/index.html" 
-                };
-                break;
-            }
-
-            if(DEBUG)printf("   init poly data \n");
-
-            poly.setDescription(desc);
-            poly.outFaces = true;
-            poly.outEdges = true;
-            poly.outVertices = true;
-            poly.outColor = false;
-
-            if(DEBUG)printf("start export\n");
-            PrintStream ps = new PrintStream(f);
-            if(outType.equals("POVRAY")){
-                poly.writePOV(ps);
-            } else if(outType.equals("VRML")){
-                poly.writeVrml(ps);	
-            } else if(outType.equals("STL")){
-                poly.writeSTL(ps);	
-            } else if(outType.equals("DXF")){
-                poly.writeDXF(ps);	
-            }
-            if(DEBUG)printf("end export\n");
-            ps.close();
+            this.controller .doExport( f, outType, selection.getCells(), polyhedronName );
 
             writeThumbnail(exportPath + ".png");
             if(f != Output.out){
@@ -1288,29 +1107,7 @@ public class StellationMain implements PVSObserver{
     
         File file = new File(stellationPath);
     
-        try {      
-            OutputStream out = new FileOutputStream(file);
-            PrintWriter pw = new PrintWriter(out);
-          
-            switch(m_source){
-            case SOURCE_PLANES:                
-                pw.println("// stellation generated from a set of planes");
-                pw.println("// exported from Stellation Program by Vladimir.Bulatov@gmail.com"); 
-                pw.println("planes \"" + getPlanesString(m_canonicalPlanes) + "\"");
-                break;
-            case SOURCE_POLY:                
-                pw.println("// stellation generated from polyhedron " + polyhedronName);
-                pw.println("// exported from Stellation Program by Vladimir.Bulatov@gmail.com"); 
-                pw.println("polyhedron \"" + polyhedronName  + "\""); 
-            }    
-            pw.printf("symmetry \"%s/%s\"\n", m_polySymmetry, m_stellationSymmetry);
-            pw.printf("cells \"%s\"\n", selection.getCells());
-            pw.printf("exportLengthUnit \"%s\"", getString(m_exportLengthUnit));
-
-            pw.close();
-        } catch(Exception e){
-            e.printStackTrace();
-        }
+        this.controller .save( file, polyhedronName );
         writeThumbnail(stellationPath+".png");
 
     }
@@ -1331,7 +1128,7 @@ public class StellationMain implements PVSObserver{
         }
         dialogSave.setTitle("save stellation");
         dialogSave.setFile(getFileName());
-        dialogSave.show();
+        dialogSave.setVisible( true );
     
         if(dialogSave.getFile() == null)
             return null;
@@ -1366,99 +1163,28 @@ public class StellationMain implements PVSObserver{
 
         try {
 
-            FileInputStream inp = new FileInputStream(stellationPath);
-      
-            Reader r = new BufferedReader(new InputStreamReader(inp));
-      
-            FixedStreamTokenizer st = makeStreamTokenizer(r);
-            String planes = null;
-            String polyhedron = null;
-            String cells = null;
-            String symmetry = null;
-            String exportLengthUnit = null;
-            
-            while(st.nextToken() != st.TT_EOF){	
-	
-                switch(st.ttype){
-	  
-                case StreamTokenizer.TT_WORD:
-	  
-                    if(st.sval.equalsIgnoreCase("polyhedron")){
-                        st.nextToken();
-                        polyhedron = st.sval;
-                    } else if(st.sval.equalsIgnoreCase("cells")){
-                        st.nextToken();
-                        cells = st.sval;
-                    } else if(st.sval.equalsIgnoreCase("symmetry")){
-                        st.nextToken();
-                        symmetry = st.sval;
-                    } else if(st.sval.equalsIgnoreCase("planes")){
-                        st.nextToken();
-                        planes = st.sval;
-                    } else if(st.sval.equalsIgnoreCase(EXPORT_LENGTH_UNIT)){
-                        st.nextToken();
-                        exportLengthUnit = st.sval;
-                    } else {
-                        
-                        println("line: " + st.lineno());
-                        println("wrong parameter in stellation: \"" + st.sval+"\"");
-	    
-                    }	
-                    break;
-                default: // should not happens 
-                    Output.out.println("line: " + st.lineno());
-                    Output.out.println("wrong character in stellation: \"" + (char)st.ttype+"\"");
-                    break;
-                }
-            }	
+            String response = this.controller .open( stellationPath );
 
-            inp.close();
-      
-            println("planes:" + planes);
-            println("polyhedron: " + polyhedron);
-            println("symmetry: " + symmetry);
-            println("cells: " + cells);
-            println("exportLengthUnit: " + exportLengthUnit);
-            
-            if(polyhedron != null){
+            if ( response != null ) {
 
-                printf("using polyhedron: %s\n",polyhedron);
-                m_source = SOURCE_POLY;
-                int [] cat = PolyNames.findPolyByName(polyhedron);
-                if(cat == null){
-                    printf("can't find polyheddron by name: %s\n", polyhedron);
-                    return;
+                StringTokenizer st = new StringTokenizer( response, "/", false );
+                String polyName = st.nextToken();
+                String cells = st.nextToken();    
+                
+                if ( polyName .equals( StellationController.PLANES_SOURCE ) ) {
+                    m_source = SOURCE_PLANES;
+                } else {
+                    m_source = SOURCE_POLY;
                 }
-        
+
+                int [] cat = PolyNames.findPolyByName(polyName);
                 Output.out.println("found: " + cat[0] + ", " + cat[1]);
                 currentCategory = cat[0];
                 currentPoly = cat[1];
-	
-            } else if(planes != null){      
-                m_source = SOURCE_PLANES;
-                printf("using planes: %s\n", planes);                
-                m_canonicalPlanes = parsePlanes(planes);
-                //m_polyhedronPlanes = transformVectors(planesToVectors(m_canonicalPlanes),m_polySymmetry);
-                if(DEBUG){
-                    printf("parsed planes: %d\n",m_canonicalPlanes.length);
-                    for(int i = 0; i < m_canonicalPlanes.length; i++){
-                        printf("%s\n",m_canonicalPlanes[i]);
-                    }
-                }
-            } else {
-                printf("****no polyhedron or planes was found in the file******* - ignorng\n");
-                return;
-            }
 
-            if(exportLengthUnit != null){
-                m_exportLengthUnit = Double.parseDouble(exportLengthUnit);
-            } else {
-                m_exportLengthUnit = DEFAULT_EXPORT_LENGTH_UNIT;
+                initializePoly( false );
+                startStellationThread(cells);
             }
-                
-            setSymmetry(symmetry);
-            initializePoly();
-            startStellationThread(cells);
 
         } catch(Exception e){
 
@@ -1472,14 +1198,10 @@ public class StellationMain implements PVSObserver{
      *  it takes string of kind "Ih / I"   
      *
      */ 
-    void setSymmetry(String symmetry){
-
-
-        StringTokenizer st = new StringTokenizer(symmetry, " /", false);
-        m_polySymmetry = st.nextToken();
-        m_stellationSymmetry = st.nextToken();
+    void setSymmetry( String symmetry )
+    {
+        this.controller .setSymmetry(symmetry);
         initSymmetryUI();
-    
     }
 
 
@@ -1519,7 +1241,7 @@ public class StellationMain implements PVSObserver{
             } else if(what.equals(miMakePlanes.getLabel())){
                 doMakePlanes(); 
             } else if(what.equals(miConnectivityGraph.getLabel())){
-                printConnectivityGraph();
+                controller .printConnectivityGraph();
             } else if(what.equals("Stop")){
                 stopStellationThread();
             } else if(what.equals(MakeStellation)){
@@ -1527,7 +1249,7 @@ public class StellationMain implements PVSObserver{
 //            } else if(what.equals(btnTest.getLabel())){
 //                doTest();
             } else if(what.equals(btnTest1.getLabel())){
-                doTest1();
+                controller .doTest1();
             }
         }
     }
@@ -1538,12 +1260,14 @@ public class StellationMain implements PVSObserver{
 
     DlgPlanes dlgPlanes;
   
-    void doMakePlanes(){
-
+    void doMakePlanes()
+    {
+        String symm = this.controller .getPolySymmetry();
+        Plane[] planes = this.controller.getCanonicalPlanes();
         if(dlgPlanes == null)
-            dlgPlanes = new DlgPlanes(m_canonicalPlanes, m_polySymmetry);
+            dlgPlanes = new DlgPlanes( planes, symm );
         else 
-            dlgPlanes.setPlanes(m_canonicalPlanes, m_polySymmetry);
+            dlgPlanes.setPlanes( planes, symm );
 
         if(!dlgPlanes.edit(m_mainFrame))
             return;
@@ -1551,72 +1275,28 @@ public class StellationMain implements PVSObserver{
         stellationPath = NEW_FILE;
 
 
-        m_polySymmetry = dlgPlanes.getSymmetry();
-        m_stellationSymmetry = m_polySymmetry;
-        m_canonicalPlanes = dlgPlanes.getGeneratingPlanes();
+        symm = dlgPlanes.getSymmetry();
+        this.controller .setSymmetry( symm + "/" + symm );
+        this.controller .setCanonicalPlanes( dlgPlanes.getGeneratingPlanes() );
 //        m_polyhedronPlanes = transformVectors(planesToVectors(m_canonicalPlanes),m_polySymmetry);
 
         initSymmetryUI();
         m_source = SOURCE_PLANES;
-        initializePoly();
+        initializePoly( false );
         startStellationThread(null);
 
     }
 
-    void printConnectivityGraph(){
-
-        Output.out.println("\nConnectivity Graph:");
-
-        for(int layer = 0; layer < subcells.size(); layer++){
-
-            Vector slayer = (Vector)subcells.elementAt(layer);
-      
-            for(int ind = 0; ind < slayer.size(); ind++){
-                SSCell cell = (SSCell)slayer.elementAt(ind);
-                Output.out.print(layer + "." + ind +": (");
-                for(int i = 0; i < cell.bottom.size(); i++){
-                    SSCell c = (SSCell)cell.bottom.elementAt(i);
-                    Output.out.print(c.layer + "." + c.index + " ");
-                }
-                Output.out.print(") (");
-                for(int i = 0; i < cell.top.size(); i++){
-                    SSCell c = (SSCell)cell.top.elementAt(i);
-                    Output.out.print(c.layer + "." + c.index + " ");
-                }
-                Output.out.println(")");
-            }      
-        }
-    }
-
-    Vector makeSubcells(Vector cells){
-
-        subcells = new Vector();    
-        int nlayers = cells.size();
-        for(int l = 0; l < nlayers; l++){
-            Vector layer = (Vector)cells.elementAt(l);
-            Vector sublayer = new Vector();
-            for(int c = 0; c < layer.size();c++){
-                SSCell cell = (SSCell)layer.elementAt(c);
-                if(cell.subCells != null){
-                    for(int s = 0; s < cell.subCells.length; s++){
-                        sublayer.addElement(cell.subCells[s]);
-                    }
-                }
-            }
-            subcells.addElement(sublayer);
-        }
-        return subcells;
-    }
 
     class SymmetryListener implements ItemListener {
     
         public void itemStateChanged(ItemEvent e){
       
             if(e.getStateChange()== ItemEvent.SELECTED){	
-                m_stellationSymmetry = (String)choice_symmetry.getSelectedItem();
-                createSubcells(allcells,m_stellationSymmetry);
+                String symm = (String)choice_symmetry.getSelectedItem();
+                controller .createSubcells( symm );
                 initSubcells();
-                println("symmetry changed: " + m_stellationSymmetry);
+                println( "symmetry changed: " + symm );
             }
         }
     }
@@ -1650,17 +1330,17 @@ public class StellationMain implements PVSObserver{
         }    
 
         public void windowIconified(WindowEvent e){
-            m_frame3D.hide();
-            frameSelection.hide();
-            frameOutput.hide();
-            frameDiagram.hide();
+            m_frame3D.setVisible(false);;
+            frameSelection.setVisible(false);
+            frameOutput.setVisible(false);
+            frameDiagram.setVisible(false);
         }
 
         public void windowDeiconified(WindowEvent e){
-            m_frame3D.show(m_view3D);
+            m_frame3D.setVisible(m_view3D);
             frameSelection.setVisible(viewCells);
-            frameOutput.show(viewOutput);
-            frameDiagram.show(viewDiagram);
+            frameOutput.setVisible(viewOutput);
+            frameDiagram.setVisible(viewDiagram);
         }
     }
 
@@ -1803,8 +1483,7 @@ public class StellationMain implements PVSObserver{
                 currentCategory = result[0];
                 currentPoly = result[1];
                 m_source = SOURCE_POLY;
-                m_polySymmetry = null; // to force it's initialisation in initializePoly()
-                initializePoly();
+                initializePoly( true );
                 startStellationThread(null);
             }
         }
@@ -1983,7 +1662,7 @@ public class StellationMain implements PVSObserver{
             }
         }
     
-        new StellationMain(fname,stellationSymmetry, null);
+        new StellationMain(fname,stellationSymmetry);
 
     }
 

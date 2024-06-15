@@ -1,6 +1,7 @@
 package pvs.polyhedra;
 
 import static pvs.utils.Output.printf;
+import pvs.utils.FixedStreamTokenizer;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -11,7 +12,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
-import java.io.StreamTokenizer;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -144,14 +144,20 @@ public class Polyhedron {
         try {
             int nvert = 0, nfaces = 0, nedges = 0; 
             Reader r = new BufferedReader(new InputStreamReader(instr));
-            StreamTokenizer stream = new StreamTokenizer (r);
-            stream.eolIsSignificant(false);
-            stream.commentChar('#');
+            
+            FixedStreamTokenizer stream = new FixedStreamTokenizer(r);
+            stream .parseNumbers();
+            stream .wordChars('F','O'); 
+            stream .eolIsSignificant(false);
+            stream .commentChar('#');
+            // In JSweet, the overloaded constructors don't work correctly, so we have to
+            //   set this explicitly.  It is harmless in Java
+            stream .whitespaceChars(0, ' ');
       
-            if(stream.nextToken() != StreamTokenizer.TT_WORD || 
+            if(stream.nextToken() != FixedStreamTokenizer.TT_WORD || 
                !stream.sval.equals("OFF"))
                 throw new IOException("wrong header in OFF stream");
-            while(stream.nextToken()!=StreamTokenizer.TT_NUMBER)
+            while(stream.nextToken()!=FixedStreamTokenizer.TT_NUMBER)
                 ;
             nvert = (int)stream.nval;
             stream.nextToken();nfaces = (int)stream.nval;
@@ -177,7 +183,7 @@ public class Polyhedron {
             Vector color = new Vector();
             stream.eolIsSignificant(true);
             while(num < nfaces ){
-                while(stream.nextToken() != StreamTokenizer.TT_NUMBER){
+                while(stream.nextToken() != FixedStreamTokenizer.TT_NUMBER){
                     ;
                 }
                 int nf = (int)stream.nval;
@@ -190,7 +196,7 @@ public class Polyhedron {
                 // read color specification
                 fcolor = 0;
                 for(int i=0; i < 3; i++){
-                    if(stream.nextToken() != StreamTokenizer.TT_NUMBER)
+                    if(stream.nextToken() != FixedStreamTokenizer.TT_NUMBER)
                         break;
                     fcolor <<= 8; 
                     int c = (stream.nval <= 1.0) ? 
@@ -199,7 +205,7 @@ public class Polyhedron {
                 }
                 icolor[num] = findOffColorIndex(color,fcolor);
                 num++;
-                while(stream.nextToken() != StreamTokenizer.TT_EOL){
+                while(stream.nextToken() != FixedStreamTokenizer.TT_EOL){
                     ;      
                 }
             }

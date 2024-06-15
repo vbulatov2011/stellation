@@ -1,0 +1,152 @@
+  
+  998  cd Downloads/stellation_010914
+  999  ls
+ 1000  java -jar stellation.jar
+ 1001  java -jar stellation.jar
+ 1002  pwd
+ 1003  ls
+ 1004  java -jar jvZome.jar
+ 1005  pushd ~/Downloads/stellation_010914
+ 1006  java -jar stellation.jar
+ 1007  history
+ 1008  pwd
+ 1009  ls
+ 1010  unzip stellation.jar
+ 1011  open .
+ 1012  history
+ 1013  pwd
+ 1014  cd ..
+ 1015  pwd
+ 1016  cd ../vladimir-stellation
+ 1017  mvn init
+ 1018  mvn -h
+ 1019  man mvn
+ 1020  pwd
+ 1021  ls
+ 1022  ls src
+ 1023  mvn archetype:generate -DgroupId=vbulatov -DartifactId=stellation -DarchetypeArtifactId=maven-archetype-quickstart -DarchetypeVersion=1.4 -DinteractiveMode=false
+ 1024  code .
+ 1025  mvn
+ 1026  mvn build
+ 1027  mvn compile
+ 1028  mvn compile
+ 1029  mvn clean compile
+ 1030  mvn clean compile
+ 1031  mvn
+ 1032  mvn generate-js
+ 1033  mvn generate-sources
+ 1034  mvn jsweet
+ 1035  mvn compile
+ 1036  mvn compile
+ 1037  mvn clean compile
+ 1038  mvn generate-sources
+ 1039  mvn generate-sources
+ 1040  java -version
+ 1041  history 1 | grep java
+ 1042  export JAVA_HOME=$(/usr/libexec/java_home -v 11)
+ 1043  java -version
+ 1044  mvn generate-sources
+ 1045  mvn clean compile
+ 1046  mvn clean compile
+ 1047  mvn clean compile
+ 1048  mvn clean compile
+ 1049  mvn clean compile
+ 1050  mvn clean compile
+ 1051  mvn clean compile
+ 1052  mvn clean compile
+ 1053  mvn clean compile
+ 1054  mvn clean compile
+ 1055  mvn clean generate-sources
+ 1056  mvn clean generate-sources
+ 1057  mvn clean generate-sources
+ 1058  mvn clean generate-sources
+ 1059  java -version
+ 1060  mvn clean generate-sources
+ 1061  mvn clean generate-sources
+ 1062  mvn clean generate-sources
+ 1063  mvn clean generate-sources
+ 1064  mvn clean generate-sources
+ 1065  mvn clean generate-sources
+ 1066  mvn clean generate-sources
+ 1067  history 1 | grep java
+ 1068  export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+ 1069  java -version
+ 1070  mvn clean generate-sources
+ 1071  export JAVA_HOME=`/usr/libexec/java_home -v 11`
+ 1072  java -version
+ 1073  mvn clean generate-sources
+ 1074  mvn clean generate-sources
+ 1075  mvn clean generate-sources
+ 1076  mvn clean generate-sources
+ 1077  mvn clean generate-sources
+ 1078  mvn clean generate-sources
+ 1079  mvn clean generate-sources
+ 1080  mvn clean generate-sources
+ 1081  mvn clean generate-sources
+ 1082  /usr/libexec/java_home
+ 1083  /usr/libexec/java_home -v
+ 1084  /usr/libexec/java_home -h
+ 1085  /usr/libexec/java_home -V
+ 1086  export JAVA_HOME=`/usr/libexec/java_home -v 11.0.13`
+ 1087  java -version
+ 1088  mvn clean generate-sources
+ 1089  mvn clean generate-sources
+ 1090  export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+ 1091  java -version
+ 1092  mvn clean generate-sources
+ 1093  export JAVA_HOME=`/usr/libexec/java_home -v 11`
+ 1094  java -version
+ 1095  mvn clean generate-sources
+ 1096  mvn clean generate-sources
+ 1097  mvn clean generate-sources
+ 1098  mvn clean generate-sources
+ 1099  mvn clean generate-sources
+ 1100  mvn clean generate-sources
+ 1101  /usr/libexec/java_home -V
+ 1102  mvn -v
+ 1103  echo $JAVA_HOME
+ 1104  mvn clean generate-sources
+ 1105  mvn clean generate-sources
+ 1106  mvn clean generate-sources
+ 1107  mvn clean generate-sources
+ 1108  javac -version
+ 1109  javac -h
+ 1110  javac --help
+ 1111  javac -source 1.8
+ 1112  javac -source 1.8 src/jsweet
+ 1113  javac --release 8 src/jsweet
+ 1114  javac --release 8 src/jsweet/**/*.java
+ 1115  mvn clean generate-sources
+ 1116  mvn clean generate-sources
+ 1117  javac --help
+ 1118  mvn clean generate-sources
+ 1119  mvn clean generate-sources
+ 1120  mvn clean generate-sources
+ 1121  javac --help
+ 1122  javac --help
+ 1123  mvn clean generate-sources
+ 1124  mvn clean generate-sources
+ 1125  mvn clean generate-sources
+ 1126  mvn clean generate-sources
+ 1127  mvn clean generate-sources
+ 1128  mvn clean generate-sources
+ 1129  javac --help
+ 1130  mvn clean generate-sources
+ 1131  mvn clean generate-sources
+ 1132  mvn clean generate-sources
+ 1133  mvn clean generate-sources
+ 1134  mvn clean generate-sources
+ 1135  mvn clean generate-sources
+ 1136  mvn clean generate-sources
+ 1137  mvn clean generate-sources
+ 1002  mvn clean generate-sources
+ 1003  cat history.txt
+ 1004  java -version
+ 1005  export JAVA_HOME=`/usr/libexec/java_home -v 11`
+ 1006  java -version
+ 1007  mvn clean generate-sources
+ 1008  code .
+ 1009  mvn clean generate-sources
+ 1010  cat history.txt
+ 1011  mvn clean compile
+/Users/vorth/Projects/vladimir-stellation

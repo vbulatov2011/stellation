@@ -481,46 +481,46 @@ public class StellationCanvas extends Panel implements Runnable{
      return vector of PolyShapes for rendering on Graphics2D 
    */
   public Vector getRenderingShapes(){
-    
-    Vector shapes = new Vector();
-    
-    for(int i=0; i < levels.length; i++){      
 
-      //g.setColor(getColor(i));
+      Vector shapes = new Vector();
 
-      GeneralPath path = new GeneralPath();
-      Point2[][] poly = levels[i];
-      if(poly.length == 0)
-	continue;
+      for(int i=0; i < levels.length; i++){      
 
-      for(int j=0; j < poly.length; j++){
-	path.moveTo((float)poly[j][0].x, (float)poly[j][0].y);
-	for(int v = 1; v < poly[j].length; v++){
-	  path.lineTo((float)poly[j][v].x, (float)poly[j][v].y);
-	}
-        path.lineTo((float)poly[j][0].x, (float)poly[j][0].y);
+          //g.setColor(getColor(i));
+
+          GeneralPath path = new GeneralPath();
+          Point2[][] poly = levels[i];
+          if(poly.length == 0)
+              continue;
+
+          for(int j=0; j < poly.length; j++){
+              path.moveTo((float)poly[j][0].x, (float)poly[j][0].y);
+              for(int v = 1; v < poly[j].length; v++){
+                  path.lineTo((float)poly[j][v].x, (float)poly[j][v].y);
+              }
+              path.lineTo((float)poly[j][0].x, (float)poly[j][0].y);
+          }
+          //path.closePath();
+          shapes.addElement(new PolyShape(path,PolyShape.FILL, getColor(i)));
+
       }
-      //path.closePath();
-      shapes.addElement(new PolyShape(path,PolyShape.FILL, getColor(i)));
 
-    }
+      GeneralPath outline = new GeneralPath();
 
-    GeneralPath outline = new GeneralPath();
+      // polygon's outline 
+      for(int j = 0; j < fpoly.length; j++){
 
-    // polygon's outline 
-    for(int j = 0; j < fpoly.length; j++){
-      
-      outline.moveTo((float)fpoly[j][0].x, (float)fpoly[j][0].y);
-      for(int v = 1; v < fpoly[j].length; v++){
-	outline.lineTo((float)fpoly[j][v].x, (float)fpoly[j][v].y);
-      }
-      if(!usePolyline)
-        outline.lineTo((float)fpoly[j][0].x, (float)fpoly[j][0].y);
-    }        
-    //outline.closePath();
-    shapes.addElement(new PolyShape(outline,PolyShape.DRAW, Color.black));
-    
-    return shapes;
+          outline.moveTo((float)fpoly[j][0].x, (float)fpoly[j][0].y);
+          for(int v = 1; v < fpoly[j].length; v++){
+              outline.lineTo((float)fpoly[j][v].x, (float)fpoly[j][v].y);
+          }
+          if(!usePolyline)
+              outline.lineTo((float)fpoly[j][0].x, (float)fpoly[j][0].y);
+      }        
+      //outline.closePath();
+      shapes.addElement(new PolyShape(outline,PolyShape.DRAW, Color.black));
+
+      return shapes;
 
   }
 
@@ -547,55 +547,55 @@ public class StellationCanvas extends Panel implements Runnable{
 
    */
   public void drawContent(Graphics2D g){
-    
-    if(levels == null)
-      return;
-    for(int i=0; i < levels.length; i++){
-      g.setColor(getColor(i));
-      Point2[][] poly = levels[i];
-      for(int j=0; j < poly.length; j++){
-	g.fillPolygon(poly[j]);
-      }
-    }
 
-    // lines
-    if(drawSymmetryLines) {
-      g.setColor(Color.gray); 
-    } else {
-      g.setColor(Color.black);    
-    }
-    // polygon's outline 
-    if(usePolyline){
-      for(int j = 0; j < fpoly.length; j++){      
-        g.drawPolyline(fpoly[j]);
-      }        
-    } else {
-      for(int j = 0; j < fpoly.length; j++){      
-        g.drawPolygon(fpoly[j]);
-      }        
-    }
-    
-    if(drawSymmetryLines) {
-      // symmetry planes 
-      //g.setXORMode(Color.white);
-      g.setColor(Color.black);
-      if(symLines != null){
-	for(int i =0; i < symLines.length; i++){
-	  if(symLines[i] != null)
-	    g.drawLine(symLines[i][0].x,symLines[i][0].y,symLines[i][1].x,symLines[i][1].y);
-	}
+      if(levels == null)
+          return;
+      for(int i=0; i < levels.length; i++){
+          g.setColor(getColor(i));
+          Point2[][] poly = levels[i];
+          for(int j=0; j < poly.length; j++){
+              g.fillPolygon(poly[j]);
+          }
       }
-    }
+
+      // lines
+      if(drawSymmetryLines) {
+          g.setColor(Color.gray); 
+      } else {
+          g.setColor(Color.black);    
+      }
+      // polygon's outline 
+      if(usePolyline){
+          for(int j = 0; j < fpoly.length; j++){      
+              g.drawPolyline(fpoly[j]);
+          }        
+      } else {
+          for(int j = 0; j < fpoly.length; j++){      
+              g.drawPolygon(fpoly[j]);
+          }        
+      }
+
+      if(drawSymmetryLines) {
+          // symmetry planes 
+          //g.setXORMode(Color.white);
+          g.setColor(Color.black);
+          if(symLines != null){
+              for(int i =0; i < symLines.length; i++){
+                  if(symLines[i] != null)
+                      g.drawLine(symLines[i][0].x,symLines[i][0].y,symLines[i][1].x,symLines[i][1].y);
+              }
+          }
+      }
       // symmetry axes 
-    if(drawSymmetryAxes) {      
-      if(symAxes != null){
-	for(int i =0; i < symAxes.length; i++){
-	  if(symAxes[i] != null)
-	    drawAxis(g,symAxes[i],symAxesOrder[i]);
-	}
+      if(drawSymmetryAxes) {      
+          if(symAxes != null){
+              for(int i =0; i < symAxes.length; i++){
+                  if(symAxes[i] != null)
+                      drawAxis(g,symAxes[i],symAxesOrder[i]);
+              }
+          }
       }
-    }
-    
+
   }
 
   void drawAxis(Graphics2D g, Point2 p, int order) {

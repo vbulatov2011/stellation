@@ -164,7 +164,7 @@ public class StellationUI
             canvas = new StellationCanvas(nsfaces, nffaces, axes, planes);
             frame.add("Center",canvas);
             frame.pack();
-            frame.show();         
+            frame.setVisible(true);
             frame.validate();
         } else {
             canvas.setFaces(nsfaces, nffaces, axes, planes);

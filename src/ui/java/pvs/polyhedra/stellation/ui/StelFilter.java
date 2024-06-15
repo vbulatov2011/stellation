@@ -1,4 +1,4 @@
-package pvs.polyhedra.stellation;
+package pvs.polyhedra.stellation.ui;
 
 import java.io.File;
 

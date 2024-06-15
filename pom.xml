@@ -91,11 +91,12 @@
         <version>${jsweet.transpiler.version}</version>
         <configuration>
           <!-- <verbose>true</verbose> -->
-          <tsOut>target/ts</tsOut>
-          <outDir>target/js</outDir>
-          <candiesJsOut>webapp/candies</candiesJsOut>
+          <tsOut>jsweetOut/ts</tsOut>
+          <outDir>jsweetOut/js</outDir>
+          <candiesJsOut>jsweetOut/candies</candiesJsOut>
           <targetVersion>ES6</targetVersion>
           <module>none</module>
+          <bundle>true</bundle>
           <moduleResolution>classic</moduleResolution>
           <javaCompilerExtraOptions>-source,8,-target,8,'</javaCompilerExtraOptions> <!-- The extra comma is important! -->
         </configuration>
