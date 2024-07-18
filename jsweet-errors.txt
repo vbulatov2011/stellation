@@ -1,0 +1,470 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------------< vbulatov:stellation >-------------------------
+[INFO] Building stellation 1.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-clean-plugin:3.1.0:clean (default-clean) @ stellation ---
+[INFO] Deleting /Users/vorth/Projects/vladimir-stellation/target
+[INFO] 
+[INFO] --- jsweet-maven-plugin:3.1.0-SNAPSHOT:clean (clean) @ stellation ---
+[INFO] cleaning jsweet working directory
+[INFO] 
+[INFO] --- build-helper-maven-plugin:3.2.0:add-source (add-source) @ stellation ---
+[INFO] Source directory: /Users/vorth/Projects/vladimir-stellation/src/jsweet added.
+[INFO] 
+[INFO] --- jsweet-maven-plugin:3.1.0-SNAPSHOT:jsweet (generate-js) @ stellation ---
+[INFO] JSweet transpiler version 3.1.0-SNAPSHOT (build date: 2021-04-10 18:01:31)
+[WARNING] dependency type not-jar excluded from candies detection: Dependency {groupId=junit, artifactId=junit, version=4.11, type=jar}
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by org.jsweet.transpiler.util.Util (file:/Users/vorth/.m2/repository/org/jsweet/jsweet-transpiler/3.1.0-SNAPSHOT/jsweet-transpiler-3.1.0-SNAPSHOT.jar) to field com.sun.tools.javac.tree.JCTree.type
+WARNING: Please consider reporting this to the maintainers of org.jsweet.transpiler.util.Util
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'StreamTokenizer'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(1333)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'StreamTokenizer'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(996)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(1333)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(996)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(1339)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1011)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(1340)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1013)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(1343)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1016)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(1349)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1024)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(1355)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1032)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Type 'number' is not assignable to type 'string'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(3226)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Type 'number' is not assignable to type 'string'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterDouble.java(26)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Conversion of type 'string' to type 'number' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(3226)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Conversion of type 'string' to type 'number' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterDouble.java(26)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.lang' has no exported member 'Thread'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(5366)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.lang' has no exported member 'Thread'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Timeout.java(8)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Thread' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(5376)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Thread' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Timeout.java(17)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Thread' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(5382)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Thread' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Timeout.java(25)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Type 'number' is not assignable to type 'string'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(5437)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Type 'number' is not assignable to type 'string'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterInt.java(28)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Conversion of type 'string' to type 'number' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(5437)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Conversion of type 'string' to type 'number' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterInt.java(28)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'printf' does not exist on type 'PrintStream'. Did you mean 'print'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(5580)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'printf' does not exist on type 'PrintStream'. Did you mean 'print'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Output.java(19)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'FileOutputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(7766)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'FileOutputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(47)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(7766)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(47)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'DataInputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(7791)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'DataInputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(78)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'DataInputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(7796)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'DataInputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(86)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'DataInputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(7801)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'DataInputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(94)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'DataInputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(7805)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'DataInputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(100)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'FileInputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(7847)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'FileInputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(161)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(7847)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(161)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'DataInputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(7848)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'DataInputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(162)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'DataInputStream' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(7848)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'DataInputStream' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(162)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'FileOutputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8089)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'FileOutputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(43)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'floatToRawIntBits' does not exist on type 'typeof FloatHelper'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8117)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'floatToRawIntBits' does not exist on type 'typeof FloatHelper'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(43)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'floatToRawIntBits' does not exist on type 'typeof FloatHelper'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8130)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'floatToRawIntBits' does not exist on type 'typeof FloatHelper'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(43)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8152)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(112)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'BufferedOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8154)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'BufferedOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(115)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8186)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(121)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'BufferedOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8188)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'BufferedOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(121)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'RandomAccessFile'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8215)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'RandomAccessFile'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(180)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'RandomAccessFile' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8215)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'RandomAccessFile' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(180)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'StreamTokenizer'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8813)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'StreamTokenizer'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(176)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8813)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(176)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8821)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(191)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8823)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(194)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8828)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(199)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8830)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(201)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8832)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(204)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8834)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(207)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8842)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(221)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8854)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(242)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8860)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(248)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8874)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(269)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8880)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(274)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8898)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(289)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(8904)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(293)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.awt' has no exported member 'Graphics'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(9046)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.awt' has no exported member 'Graphics'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(470)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(12395)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(12469)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'FileInputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(12559)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'FileInputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(12559)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'StreamTokenizer'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(12566)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'StreamTokenizer'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(12566)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(12568)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(12573)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(12575)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13626)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(104)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13627)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(105)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13628)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(106)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13633)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(111)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13634)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(112)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13635)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(113)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13636)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(114)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13637)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(115)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13638)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'Double' does not exist on type 'typeof lang'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(116)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.awt.geom' has no exported member 'AffineTransform'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13663)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.awt.geom' has no exported member 'AffineTransform'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(143)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'AffineTransform' does not exist on type 'typeof geom'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(13670)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'AffineTransform' does not exist on type 'typeof geom'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(153)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(15081)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/PolygonDisplayParser.java(18)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.awt' has no exported member 'Graphics'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(16617)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.awt' has no exported member 'Graphics'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Stellation3D.java(172)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.awt' has no exported member 'Graphics'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(16621)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.awt' has no exported member 'Graphics'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Stellation3D.java(184)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'StreamTokenizer'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17421)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'StreamTokenizer'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(52)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17441)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StringBufferInputStream' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17441)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StringBufferInputStream' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17502)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17512)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17522)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17525)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17528)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17613)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17617)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17621)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17624)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17638)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17644)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(17654)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'FileOutputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(18490)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'FileOutputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(945)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(18490)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(945)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'FileOutputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(18512)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'FileOutputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(967)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(18512)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(967)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'FileInputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(21703)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'FileInputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(164)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(21703)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(164)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(21747)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(213)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Namespace 'java.io' has no exported member 'FileInputStream'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(21770)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Namespace 'java.io' has no exported member 'FileInputStream'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(244)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'? at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(21770)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'? at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(244)
+2024-07-17 20:43:13.013 ERROR TypeScript2JavaScriptWithTsserverTranspiler:120 - TypeScript error: [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/jsweetOut/ts/bundle.ts(21780)
+2024-07-17 20:43:13.013 ERROR output:55 - [ts] Property 'StreamTokenizer' does not exist on type 'typeof io'. at /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(259)
+[ERROR] transpilation failed
+org.apache.maven.plugin.MojoFailureException: transpilation failed with 98 error(s) and 0 warning(s)
+
+=========================================
+TRANSPILATION ERRORS SUMMARY:
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(996,34)[ts] Namespace 'java.io' has no exported member 'StreamTokenizer'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(996,54)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1011,62)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1013,9)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1016,41)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1024,64)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1032,44)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterDouble.java(26,12)[ts] Type 'number' is not assignable to type 'string'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterDouble.java(26,23)[ts] Conversion of type 'string' to type 'number' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Timeout.java(8,3)[ts] Namespace 'java.lang' has no exported member 'Thread'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Timeout.java(17,25)[ts] Property 'Thread' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Timeout.java(25,20)[ts] Property 'Thread' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterInt.java(28,12)[ts] Type 'number' is not assignable to type 'string'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterInt.java(28,24)[ts] Conversion of type 'string' to type 'number' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Output.java(19,24)[ts] Property 'printf' does not exist on type 'PrintStream'. Did you mean 'print'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(47,28)[ts] Namespace 'java.io' has no exported member 'FileOutputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(47,49)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(78,22)[ts] Namespace 'java.io' has no exported member 'DataInputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(86,26)[ts] Namespace 'java.io' has no exported member 'DataInputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(94,10)[ts] Namespace 'java.io' has no exported member 'DataInputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(100,48)[ts] Namespace 'java.io' has no exported member 'DataInputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(161,29)[ts] Namespace 'java.io' has no exported member 'FileInputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(161,49)[ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(162,28)[ts] Namespace 'java.io' has no exported member 'DataInputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(162,48)[ts] Property 'DataInputStream' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(43,13)[ts] Namespace 'java.io' has no exported member 'FileOutputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(43,13)[ts] Property 'floatToRawIntBits' does not exist on type 'typeof FloatHelper'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(43,13)[ts] Property 'floatToRawIntBits' does not exist on type 'typeof FloatHelper'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(112,45)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(115,45)[ts] Property 'BufferedOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(121,6)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(121,6)[ts] Property 'BufferedOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(180,36)[ts] Namespace 'java.io' has no exported member 'RandomAccessFile'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(180,57)[ts] Property 'RandomAccessFile' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(176,34)[ts] Namespace 'java.io' has no exported member 'StreamTokenizer'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(176,55)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(191,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(194,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(199,74)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(201,68)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(204,78)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(207,82)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(221,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(242,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(248,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(269,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(274,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(289,71)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(293,75)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(470,36)[ts] Namespace 'java.awt' has no exported member 'Graphics'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Namespace 'java.io' has no exported member 'FileInputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Namespace 'java.io' has no exported member 'StreamTokenizer'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(104,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(105,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(106,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(111,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(112,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(113,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(114,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(115,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(116,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(143,55)[ts] Namespace 'java.awt.geom' has no exported member 'AffineTransform'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(153,49)[ts] Property 'AffineTransform' does not exist on type 'typeof geom'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/PolygonDisplayParser.java(18,14)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Stellation3D.java(172,36)[ts] Namespace 'java.awt' has no exported member 'Graphics'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Stellation3D.java(184,32)[ts] Namespace 'java.awt' has no exported member 'Graphics'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(52,3)[ts] Namespace 'java.io' has no exported member 'StreamTokenizer'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StringBufferInputStream' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(945,17)[ts] Namespace 'java.io' has no exported member 'FileOutputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(945,38)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(967,17)[ts] Namespace 'java.io' has no exported member 'FileOutputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(967,38)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(164,37)[ts] Namespace 'java.io' has no exported member 'FileInputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(164,57)[ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(213,53)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(244,31)[ts] Namespace 'java.io' has no exported member 'FileInputStream'.
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(244,52)[ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'?
+* /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(259,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+
+
+=========================================
+    at org.jsweet.AbstractJSweetMojo.transpile (AbstractJSweetMojo.java:701)
+    at org.jsweet.JSweetMojo.execute (JSweetMojo.java:43)
+    at org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo (DefaultBuildPluginManager.java:137)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:370)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:351)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:215)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:171)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:163)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:117)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:81)
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:56)
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:128)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:294)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:192)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:105)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:960)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:293)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:196)
+    at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0 (Native Method)
+    at jdk.internal.reflect.NativeMethodAccessorImpl.invoke (NativeMethodAccessorImpl.java:62)
+    at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke (DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke (Method.java:566)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:282)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:225)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:406)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:347)
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.556 s
+[INFO] Finished at: 2024-07-17T20:43:13-07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.jsweet:jsweet-maven-plugin:3.1.0-SNAPSHOT:jsweet (generate-js) on project stellation: transpilation failed: transpilation failed with 98 error(s) and 0 warning(s)
+[ERROR] 
+[ERROR] =========================================
+[ERROR] TRANSPILATION ERRORS SUMMARY:
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(996,34)[ts] Namespace 'java.io' has no exported member 'StreamTokenizer'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(996,54)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1011,62)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1013,9)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1016,41)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1024,64)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/Jama/Matrix.java(1032,44)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterDouble.java(26,12)[ts] Type 'number' is not assignable to type 'string'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterDouble.java(26,23)[ts] Conversion of type 'string' to type 'number' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Timeout.java(8,3)[ts] Namespace 'java.lang' has no exported member 'Thread'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Timeout.java(17,25)[ts] Property 'Thread' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Timeout.java(25,20)[ts] Property 'Thread' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterInt.java(28,12)[ts] Type 'number' is not assignable to type 'string'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/ParameterInt.java(28,24)[ts] Conversion of type 'string' to type 'number' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/utils/Output.java(19,24)[ts] Property 'printf' does not exist on type 'PrintStream'. Did you mean 'print'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(47,28)[ts] Namespace 'java.io' has no exported member 'FileOutputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(47,49)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(78,22)[ts] Namespace 'java.io' has no exported member 'DataInputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(86,26)[ts] Namespace 'java.io' has no exported member 'DataInputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(94,10)[ts] Namespace 'java.io' has no exported member 'DataInputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(100,48)[ts] Namespace 'java.io' has no exported member 'DataInputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(161,29)[ts] Namespace 'java.io' has no exported member 'FileInputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(161,49)[ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(162,28)[ts] Namespace 'java.io' has no exported member 'DataInputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STL.java(162,48)[ts] Property 'DataInputStream' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(43,13)[ts] Namespace 'java.io' has no exported member 'FileOutputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(43,13)[ts] Property 'floatToRawIntBits' does not exist on type 'typeof FloatHelper'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(43,13)[ts] Property 'floatToRawIntBits' does not exist on type 'typeof FloatHelper'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(112,45)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(115,45)[ts] Property 'BufferedOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(121,6)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(121,6)[ts] Property 'BufferedOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(180,36)[ts] Namespace 'java.io' has no exported member 'RandomAccessFile'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/STLWriter.java(180,57)[ts] Property 'RandomAccessFile' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(176,34)[ts] Namespace 'java.io' has no exported member 'StreamTokenizer'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(176,55)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(191,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(194,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(199,74)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(201,68)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(204,78)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(207,82)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(221,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(242,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(248,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(269,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(274,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(289,71)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(293,75)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Model3D.java(470,36)[ts] Namespace 'java.awt' has no exported member 'Graphics'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Namespace 'java.io' has no exported member 'FileInputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Namespace 'java.io' has no exported member 'StreamTokenizer'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Stellation.java(564,6)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(104,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(105,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(106,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(111,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(112,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(113,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(114,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(115,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(116,45)[ts] Property 'Double' does not exist on type 'typeof lang'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(143,55)[ts] Namespace 'java.awt.geom' has no exported member 'AffineTransform'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/Utils.java(153,49)[ts] Property 'AffineTransform' does not exist on type 'typeof geom'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/PolygonDisplayParser.java(18,14)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Stellation3D.java(172,36)[ts] Namespace 'java.awt' has no exported member 'Graphics'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/g3d/Stellation3D.java(184,32)[ts] Namespace 'java.awt' has no exported member 'Graphics'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(52,3)[ts] Namespace 'java.io' has no exported member 'StreamTokenizer'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StringBufferInputStream' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/Expression/Parser.java(54,3)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(945,17)[ts] Namespace 'java.io' has no exported member 'FileOutputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(945,38)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(967,17)[ts] Namespace 'java.io' has no exported member 'FileOutputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/Polyhedron.java(967,38)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(164,37)[ts] Namespace 'java.io' has no exported member 'FileInputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(164,57)[ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(213,53)[ts] Property 'FileOutputStream' does not exist on type 'typeof io'. Did you mean 'FilterOutputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(244,31)[ts] Namespace 'java.io' has no exported member 'FileInputStream'.
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(244,52)[ts] Property 'FileInputStream' does not exist on type 'typeof io'. Did you mean 'FilterInputStream'?
+[ERROR] * /Users/vorth/Projects/vladimir-stellation/src/main/java/pvs/polyhedra/stellation/StellationController.java(259,18)[ts] Property 'StreamTokenizer' does not exist on type 'typeof io'.
+[ERROR] 
+[ERROR] 
+[ERROR] =========================================
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
+dispose client - process=ts.nodejs.NodejsProcess@4ad968bb
