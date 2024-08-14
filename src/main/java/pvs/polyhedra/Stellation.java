@@ -2804,6 +2804,136 @@ public class Stellation {
     
     }
 
+    public class Diagram
+    {
+        public SFace[] faces;
+        public SFace[] ffaces;
+        public Axis[] axes; 
+        public Vector3D[][] planes;
+    }
+    
+    public Diagram createDiagram( int findex, int vertexUp, String symmetry, Object [][] facets )
+    {
+        // findex - which face we are looking at
+        // vertexUp - which vertex of this face should point along Y axis
+
+        int index = 0;
+        //int layer = 10000; // ridiculosly big layer
+        double rMin = 1.e20; // 
+        // search of facet with lowest layer (should be zero for convex polyhedra)
+        SFace[] ffaces = this.faces[findex];
+        //System.out.println("face: " + findex);
+        for(int i=0; i < ffaces.length; i++){
+            double r = ffaces[i].getCenter().length2();
+            if(r < rMin){
+                rMin = r;
+                index = i;
+            }
+      
+            //if(ffaces[i].layer < layer){
+            //  index = i;
+            //layer = ffaces[i].layer;
+            // 
+            //}      
+        }
+
+        // new selected facets 
+        SFace[] nsfaces = new SFace[facets.length];
+        // make copy of faces
+        for(int i = 0; i < nsfaces.length; i++){
+            nsfaces[i] = new SFace((SFace)facets[i][0]);
+            nsfaces[i].layer = ((Integer)facets[i][1]).intValue();
+        }
+        // new facets 
+        SFace[] nffaces = new SFace[ffaces.length];
+        for(int i = 0; i < ffaces.length; i++){
+            nffaces[i] = new SFace(ffaces[i]);
+        }    
+
+        Axis[] symAxes  = Symmetry.getAxes(symmetry);
+        // make a copy of axes 
+        Axis[] axes = new Axis[symAxes.length];
+        Plane plane = this.faces[findex][0].getPlane();
+        for(int i =0; i < axes.length; i++){
+            Vector3D v = Stellation.intersect(plane,symAxes[i].vector);
+            // new axis will keep intersection 
+            if(v != null)
+                axes[i] = new Axis(v, symAxes[i].order);
+        }
+
+        Plane symPlanes[] = Symmetry.getSymmetryPlanes(symmetry);
+        Vector3D [][]planes = new Vector3D[symPlanes.length][];
+        double maxradius = this.getMaxRadius();
+        for(int i =0; i < planes.length; i++){      
+            planes[i] = Stellation.intersect(plane, symPlanes[i], maxradius);
+        }
+
+        SFace face = nffaces[index]; 
+        // find center of selected face 
+        Vector3D center = face.getCenter();
+        // move selected face to center
+        //System.out.println("translation " + round(center.x) + " " + round(center.y) + " " + round(center.z));
+        Stellation.translateFaces(nsfaces, center);
+        Stellation.translateFaces(nffaces, center);
+
+        for(int i =0; i < axes.length; i++){
+            if(axes[i] != null)
+                axes[i].vector.subSet(center);
+        }
+        for(int i =0; i < planes.length; i++){ 
+            if(planes[i] != null){
+                planes[i][0].subSet(center);
+                planes[i][1].subSet(center);
+            }
+        }
+    
+        Vector3D y = new Vector3D(0,1,0);
+        Vector3D z = new Vector3D(0,0,1);
+        Vector3D[] vert = face.vertices;
+        Vector3D normal = vert[1].sub(vert[0]).cross(vert[2].sub(vert[1]));
+        normal.normalize();
+        // rotate face normal to Z-axis
+        //printRotation("rotation ", normal, z);
+        Stellation.rotateFaces(nffaces, normal,z);
+        Stellation.rotateFaces(nsfaces, normal,z);
+        for(int i =0; i < axes.length; i++){
+            if(axes[i] != null)
+                axes[i].vector.rotateSet(normal, z);
+        }
+        for(int i =0; i < planes.length; i++){ 
+            if(planes[i] != null){
+                planes[i][0].rotateSet(normal, z);
+                planes[i][1].rotateSet(normal, z);
+            }
+        }
+
+        if(vertexUp < face.vertices.length){
+
+            Vector3D v1 = new Vector3D(face.vertices[vertexUp]);
+            v1.normalize();
+            // rotate vertexUp to Y-axis
+            //printRotation("rotation ", v1, y);
+            Stellation.rotateFaces(nsfaces, v1,y);
+            Stellation.rotateFaces(nffaces, v1,y);
+            for(int i =0; i < axes.length; i++){
+                if(axes[i] != null)
+                    axes[i].vector.rotateSet(v1,y);
+            }
+            for(int i =0; i < planes.length; i++){ 
+                if(planes[i] != null){
+                    planes[i][0].rotateSet(v1,y);
+                    planes[i][1].rotateSet(v1,y);
+                }
+            }
+        }
+        
+        Diagram diagram = new Diagram();
+        diagram.axes = axes;
+        diagram.faces = nsfaces;
+        diagram.ffaces = nffaces;
+        diagram.planes = planes;
+        return diagram;
+    }
 
 }
 

@@ -828,9 +828,9 @@ public class StellationMain implements PVSObserver{
                 return; // something wrong
             }
       
-            diagram = StellationUI.showStellationDiagram( stellation, facets,
-                                                       StellationUI.makeStellationName(st),
-                                                       faceToShow, vertexUp, this.controller .getStellationSymmetry(), diagram);
+            Stellation.Diagram diagramData = stellation .createDiagram( faceToShow, vertexUp, this.controller .getStellationSymmetry(), facets );
+            
+            diagram = StellationUI.showStellationDiagram( diagramData, StellationUI.makeStellationName(st), diagram );
             if(frameDiagram == null){
         
                 diagram.addObserver(this);    
