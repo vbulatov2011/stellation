@@ -38,7 +38,6 @@ import java.util.Vector;
 import pvs.polyhedra.Axis;
 import pvs.polyhedra.PolyShape;
 import pvs.polyhedra.SFace;
-import pvs.polyhedra.Stellation;
 import pvs.polyhedra.Vector3D;
 import pvs.utils.EventCallback;
 import pvs.utils.PVSObserver;
