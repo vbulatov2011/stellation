@@ -1,19 +1,25 @@
 <?xml version="1.0" standalone="yes"?>
 
-<project basedir="." default="build" name="Stellation">
+<project basedir="." default="jar" name="Stellation">
     <import file="build_common.xml" />
     <property name="classes.dir" value="${basedir}/cls" />
     <property name="javadocs.dir" value="${basedir}/javadoc" />
-    <property name="src.dir" value="${basedir}/src/java/" />
+    <!-- the sources moved: src/main/java is the portable core, src/ui/java the AWT front end.
+         src/jsweet is NOT built here - those are stub classes that shadow java.awt/java.io
+         for the Javascript transpile only, and they break a normal compile. -->
+    <property name="main.src.dir" value="${basedir}/src/main/java" />
+    <property name="ui.src.dir" value="${basedir}/src/ui/java" />
     <property name="lib" value="${basedir}/lib" />
     <property name="res.dir" value="${basedir}/resources" />
-    <property name="classpath" value="${lib}/stellation.jar;"/>
-    <property name="jars" value="stelation.jar" />
-    <property name="jvmrunargs" value=""/>
+    <property name="classpath" value=""/>
+    <property name="jar.file" value="${basedir}/stellation-app.jar" />
+    <property name="main.class" value="pvs.polyhedra.stellation.ui.StellationMain" />
+    <property name="jvmrunargs" value="-Xmx512M"/>
+    <property name="args" value=""/>
 
-<target name="build" 
-     description="Complete clean, setup, compilation, run" 
-     depends="clean,init,compile" />
+<target name="build"
+     description="Complete clean, setup, compilation, packaging"
+     depends="clean,init,compile,jar" />
 
  <!-- Create destination directories -->
 <target name="init" description="Create destination directories">
@@ -24,27 +30,53 @@
 <target name="clean" description="Deletes all the generated artifacts.">
     <delete dir="${javadocs.dir}" />
     <delete dir="${classes.dir}" />
+    <delete file="${jar.file}" />
 </target>
 
-<target name="compile" description="compile java.">
+<target name="compile" depends="init" description="compile java.">
   <echo message="compile classpath: ${classpath}" />
-  <javac srcdir="${src.dir}" destdir="${classes.dir}" classpath="${classpath}" includeAntRuntime="false" debug="true"/> 
+  <javac destdir="${classes.dir}" classpath="${classpath}" includeAntRuntime="false"
+         debug="true" encoding="UTF-8" nowarn="true">
+    <src path="${main.src.dir}" />
+    <src path="${ui.src.dir}" />
+  </javac>
 </target>
 
+<!-- The double-clickable jar: classes plus resources/images, which the code
+     reads back out through getResourceAsStream("/images/off/...") etc. -->
+<target name="jar" depends="compile" description="Build the executable stellation-app.jar">
+  <jar destfile="${jar.file}">
+    <manifest>
+      <attribute name="Main-Class" value="${main.class}" />
+      <attribute name="Created-By" value="Vladimir Bulatov" />
+    </manifest>
+    <fileset dir="${classes.dir}" />
+    <fileset dir="${res.dir}" includes="images/**" />
+  </jar>
+  <echo message="built ${jar.file}" />
+</target>
 
-<target name="runMain" depends="compile" description="Run the application">
-  <echo message="runMain classpath: ${classes.dir}; ${res}" />
+<target name="run" depends="jar" description="Run the application from the jar">
+  <echo message="jvmargs: ${jvmrunargs}" />
+  <java jar="${jar.file}" fork="true">
+    <jvmarg line="${jvmrunargs}"/>
+    <arg line="${args}"/>
+  </java>
+</target>
+
+<target name="runMain" depends="compile" description="Run any class, e.g. -Dclass=pvs.polyhedra.stellation.ui.StellationMain">
+  <echo message="runMain classpath: ${classes.dir}; ${res.dir}" />
   <echo message="jvmargs: ${jvmrunargs}" />
   <java classname="${class}" fork="true">
     <jvmarg line="${jvmrunargs}"/>
+    <arg line="${args}"/>
     <classpath>
-      <pathelement path="${classes.dir};" />
+      <pathelement path="${classes.dir}" />
       <!--<fileset dir="${lib}" includes="**/*.jar" excludes="" />-->
-      <pathelement path="${test.classes.dir}" />
-      <pathelement path="${res.dir};" />
+      <pathelement path="${res.dir}" />
     </classpath>
   </java>
 </target>
-    
+
 </project>
 

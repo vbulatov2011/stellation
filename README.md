@@ -30,6 +30,104 @@ I apologize if I've forgot somebody.
 
 Vladimir Bulatov
 
+## Running the original Java version locally
+
+Browsers can no longer run applets, but the original code was never applet-only:
+`pvs.polyhedra.stellation.ui.StellationMain` has a `main()` and opens plain AWT
+windows.  So it still runs as an ordinary desktop app.
+
+You need a **JDK** (8 or later — a JRE is not enough, the build needs `javac`)
+and **Ant**.
+
+### On Windows: just run the batch files
+
+```bash
+ant-build.bat
+```
+Full rebuild, leaving `stellation-app.jar` next to it.  Then:
+```bash
+ant-run.bat
+```
+to build and launch.  Both take arguments — `ant-build.bat jar` for a specific
+target, `ant-run.bat -i off/u27.off -y I` for the app's own options.
+
+Neither needs anything set up first: `ant-env.bat` (which they both call) hunts
+down a JDK under `C:\Program Files\Java` or Eclipse Adoptium, and an Ant under
+`D:\home\utils`, `C:\apache-ant-*`, `C:\Program Files\apache-ant-*`, or your
+`PATH`.  Set `JAVA_HOME` or `ANT_HOME` yourself and it uses those instead.
+They are double-click safe — they `pause` at the end and on failure, so the
+window sticks around long enough to read.
+
+### The Ant build itself
+
+`build.xml` is the real build; the batch files above are just a wrapper that
+sets `JAVA_HOME` and `ANT_HOME` for you.  Invoking Ant directly, do that part
+yourself first — without a JDK in `JAVA_HOME`, Ant reports "Unable to find a
+javac compiler":
+```bash
+set JAVA_HOME=C:\Program Files\Java\jdk1.8.0_221
+```
+
+| command | what it does |
+|---|---|
+| `ant` | default target — compiles and builds `stellation-app.jar` |
+| `ant clean build` | full rebuild from scratch |
+| `ant run` | builds the jar and launches the app |
+| `ant runMain -Dclass=`*fqcn* | runs any class against `cls` + `resources` |
+
+`compile` builds `src/main/java` (the portable core) and `src/ui/java` (the AWT
+front end) into `cls/`.  `src/jsweet/` is deliberately excluded — those are stub
+classes that shadow `java.awt`/`java.io` for the Javascript transpile only, and
+they break a normal compile.
+
+`jar` then packages `cls/` together with `resources/images`, producing
+`stellation-app.jar`.  The images have to be *inside* the jar: the code reads
+them back out with `getResourceAsStream("/images/off/u27.off")` and friends.
+
+Pass arguments through with `-Dargs=`:
+```bash
+ant run -Dargs="-i off/u27.off -y I"
+```
+
+### The resulting jar
+
+`stellation-app.jar` is self-contained — nothing else needs to sit beside it.
+Double-click it, or:
+```bash
+java -jar stellation-app.jar
+```
+
+On Windows, double-clicking works when `.jar` is associated with `javaw.exe` —
+installing any Oracle/Adoptium JRE sets that up.  Check with `assoc .jar` and
+`ftype jarfile`.  Note that `javaw` has no console, so the diagnostic output the
+app normally prints goes nowhere; run it from a terminal with `java -jar` when
+you want to see it.
+
+`main()` takes `-i` for the `.off` polyhedron file and `-y` for the stellation
+symmetry (default `I`).
+
+### Without Ant
+
+`run.bat` (or `./run.bash` on macOS/Linux/Git Bash) compiles and launches the
+app with nothing but a JDK — straight from `bin/`, skipping the jar step.  It is
+the quickest edit-and-see loop; use Ant when you want the jar.
+
+Or by hand:
+```bash
+javac -d bin -encoding UTF-8 $(find src/main/java src/ui/java -name '*.java')
+java -Xmx512M -cp "bin;resources" pvs.polyhedra.stellation.ui.StellationMain
+```
+`resources` must be on the classpath, for the same `getResourceAsStream` reason.
+(Use `bin:resources` with a colon on macOS/Linux.)
+
+### The old jar
+
+There is also a prebuilt `stellation.jar` from 2001 in this folder, which runs
+with no build step at all via `stellation.bat` (or `java -jar stellation.jar`).
+It is an old snapshot of the code (package `PVS`, not `pvs`) and predates
+everything in `src/`, so prefer `stellation-app.jar` when working on the source.
+The build deliberately does not overwrite it.
+
 ## Updated README
 
 To build and run this project, you need a Java 11 JDK installed.
