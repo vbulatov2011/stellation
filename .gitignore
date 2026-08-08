@@ -2,12 +2,4 @@
 
 cls/
 
-target/
-
-.jsweet/
-
-webapp/candies/
-
-jsweetOut/
-
 *.bak

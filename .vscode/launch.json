@@ -8,8 +8,8 @@
       "type": "chrome",
       "request": "launch",
       "name": "webapp",
-      "url": "http://127.0.0.1:5503/index.html",
-      "webRoot": "${workspaceFolder}"
+      "url": "http://127.0.0.1:5503/docs/index.html",
+      "webRoot": "${workspaceFolder}/docs"
     }
   ]
 }

@@ -4,9 +4,8 @@
     <import file="build_common.xml" />
     <property name="classes.dir" value="${basedir}/cls" />
     <property name="javadocs.dir" value="${basedir}/javadoc" />
-    <!-- the sources moved: src/main/java is the portable core, src/ui/java the AWT front end.
-         src/jsweet is NOT built here - those are stub classes that shadow java.awt/java.io
-         for the Javascript transpile only, and they break a normal compile. -->
+    <!-- src/main/java is the portable core, src/ui/java the AWT front end.
+         src/test/java is not built here - nothing runs those tests at present. -->
     <property name="main.src.dir" value="${basedir}/src/main/java" />
     <property name="ui.src.dir" value="${basedir}/src/ui/java" />
     <property name="lib" value="${basedir}/lib" />

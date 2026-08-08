@@ -1,9 +1,10 @@
 
 # Stellation "Applet"
 
-This project is being ported from Java to Javascript, to run in the web.
+This project has been ported from Java to Javascript, to run in the web.
 The original Java code ran as an applet, but of course that is now impossible.
-See the updated README section below the original one.
+The Javascript version is in `docs/`; the original Java still builds and runs as
+a desktop app.  Both are described below, after the original README.
 
 ## Original README
 
@@ -128,18 +129,27 @@ It is an old snapshot of the code (package `PVS`, not `pvs`) and predates
 everything in `src/`, so prefer `stellation-app.jar` when working on the source.
 The build deliberately does not overwrite it.
 
-## Updated README
+## The Javascript version
 
-To build and run this project, you need a Java 11 JDK installed.
+The web version lives in `docs/` — a hand port of the stellation core to ES
+modules, written against the Java as reference rather than translated from it.
+`docs/js/core.js` is the port proper (`pvs.polyhedra.Stellation`, `SCell`,
+`SSCell`, `SFace`); `app.js` drives the page, `worker.js` runs the expensive
+plane arrangement off the main thread.
 
-Open a shell in this folder, and run
+There is no build step — the files served are the files you edit.  It does need
+a real web server, though, not `file://`: the page uses ES modules, a module
+Worker, and `fetch` for `data/*.json`, all of which are blocked on `file://`.
+
 ```bash
-./build.bash
+python -m http.server 8000 --directory docs
 ```
-That runs the [JSweet transpiler](https://www.jsweet.org/) over the
-Java source code (except for the UI code), converting it to Javascript.
+then open http://localhost:8000.  Any static server will do.
 
-Once that is done, simply launch a web server in this directory, and visit
-`index.html`.  The simplest way to do this is to use Visual Studio Code's "live server".
+`docs/_headers` is the cache policy for Cloudflare Pages, where the site is
+deployed; it has no effect locally.
 
-At the moment, you won't see anything on the page!  All of the output is in the console.
+An earlier attempt machine-translated the Java with the
+[JSweet transpiler](https://www.jsweet.org/).  That route was abandoned in
+favour of the hand port and its files have been removed; it is in the history if
+you ever want it back.

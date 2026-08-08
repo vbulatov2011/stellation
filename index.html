@@ -1,52 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stellation</title>
 
-  <script type="module" >
+<!--
+  The site itself lives in docs/. This page exists so that the repository root
+  is servable too: GitHub Pages can be pointed at either the root or /docs, and
+  with this file both spellings land on the app.
 
-    import { pvs } from "/target/from-java.js";
-    import { java } from "/target/j4ts-2.1.0-SNAPSHOT/bundle.js";
-    
-    const controller = new pvs.polyhedra.stellation.StellationController();
+  Every path here is relative, so it survives being served from a project-page
+  subpath (/reponame/) or from any nested directory on a local server. The
+  explicit index.html is deliberate - a bare "docs/" only works on servers that
+  serve a directory index, which not all of them do.
+-->
+<link rel="canonical" href="docs/index.html">
+<meta http-equiv="refresh" content="0; url=docs/index.html">
 
-    const fetchUrlText = async ( url ) =>
-    {
-      const response = await fetch( url );
-      if ( !response.ok ) {
-        throw new Error( `Failed to fetch "${url}": ${response.statusText}` )
-      }
-      return response.text();
-    }
-
-    const stellationFile = '/resources/images/off/u27.off';
-    fetchUrlText( stellationFile )
-      .then( resource =>
-        {
-          try {
-            const bytes = /* getBytes */ (resource).split('').map(s => s.charCodeAt(0));
-            const inputStream = new java.io.ByteArrayInputStream( bytes );
-            const polyhedron = new pvs.polyhedra.Polyhedron();
-            polyhedron .readOFF( inputStream );
-            polyhedron .makeCCW();        
-            // polyhedron .printVertices(Output.out);
-            inputStream .close();
-
-            controller .initPolyPlanes( polyhedron );
-          }
-          catch (ioe) {
-            console.log( 'unable to fetch stellation file', stellationFile );
-          }
-        }
-      );
-
-
-
-  </script>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: 16px/1.6 system-ui, sans-serif;
+  }
+  a { color: inherit; }
+</style>
 </head>
 <body>
-  
+
+<p>Redirecting to <a href="docs/index.html">Stellation</a>&hellip;</p>
+
+<script>
+  // Instant, and without leaving this page in the back-button history.
+  location.replace('docs/index.html');
+</script>
+
 </body>
 </html>
