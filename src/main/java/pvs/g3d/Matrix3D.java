@@ -35,13 +35,33 @@ public class Matrix3D {
     }
 
 
-    /** Create a new matrix, which rotates fi radian around given axis */
+    /**
+       Create a new matrix, which rotates fi radian around given axis
+
+       A degenerate axis gives the identity. Rotating about no axis at all is
+       not an error the caller can recover from — it is simply no rotation — and
+       the alternative is worse than useless: with a zero or NaN axis every one
+       of the twelve cells below evaluates to NaN, and because the caller
+       multiplies this into the accumulated view matrix, one such call destroys
+       the orientation permanently and the model disappears.
+
+       The guard has to be here as well as in Vec3.normalize(), because this
+       constructor normalizes independently of whatever the caller did, and
+       because for a zero axis the right answer is the identity rather than
+       diag(cos angle). The axis is copied rather than normalized in place, so
+       the caller's vector is left as it was.
+    */
     public Matrix3D (Vec3 axis, double angleRad) {
-      
+
       double c = Math.cos(angleRad), s = Math.sin(angleRad);
       double t = 1.0 - c;
-      
-      axis.normalize();
+
+      double al = axis.length();
+      if(al == 0.0 || Double.isNaN(al) || Double.isNaN(angleRad)){
+        unit();
+        return;
+      }
+      axis = new Vec3(axis.x / al, axis.y / al, axis.z / al);
       init(new Vec3(t * axis.x * axis.x + c,
 		    t * axis.x * axis.y - s * axis.z,
 		    t * axis.x * axis.z + s * axis.y),
