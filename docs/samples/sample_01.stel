@@ -1,0 +1,5 @@
+// stellation generated from polyhedron icosahedron
+// exported from Stellation Program by Vladimir.Bulatov@gmail.com
+polyhedron "icosahedron"
+symmetry "Ih / I"
+cells "{0}"

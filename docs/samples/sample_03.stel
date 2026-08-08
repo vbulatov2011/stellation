@@ -1,0 +1,5 @@
+// stellation generated from polyhedron truncated dodecahedron
+// exported from Stellation Program by Vladimir.Bulatov@gmail.com
+polyhedron "truncated dodecahedron"
+symmetry "Ih / Ih"
+cells "{0}"

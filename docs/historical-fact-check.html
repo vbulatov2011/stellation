@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fact-check: A history of stellations — Stellation</title>
+<meta name="description" content="A claim-by-claim source ledger for Six hundred years of stars, with corrections, qualifications, primary sources and image credits.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/walkthrough.css">
+<link rel="stylesheet" href="css/historical.css">
+<style>
+  main.doc-body { max-width: 900px; }
+  .audit-meta { margin: 0 0 24px; color: var(--dim); font-size: 13px; }
+  .audit-box {
+    margin: 22px 0;
+    padding: 18px 20px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel);
+  }
+  .audit-box h2 { margin: 0 0 8px; font-size: 18px; }
+  .audit-box p:last-child, .audit-box ul:last-child { margin-bottom: 0; }
+  .audit-box ul { margin: 10px 0 0; padding-left: 21px; }
+  .audit-box li { margin: 7px 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 14px 0 0; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--dim); font-size: 12px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent-2); }
+  .dot.corrected { background: #d97706; }
+  .dot.qualified { background: #8b5cf6; }
+  .dot.project { background: #64748b; }
+  .claim-list { display: grid; gap: 10px; }
+  .claim {
+    position: relative;
+    padding: 14px 16px 13px;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent-2);
+    border-radius: 10px;
+    background: var(--panel);
+    scroll-margin-top: 70px;
+  }
+  .claim.corrected { border-left-color: #d97706; }
+  .claim.qualified { border-left-color: #8b5cf6; }
+  .claim.project { border-left-color: #64748b; }
+  .claim:target { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .claim-head { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; }
+  .verdict {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent-2) 16%, transparent);
+    color: var(--accent-2);
+    font: 650 10px var(--mono);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .verdict.corrected { background: color-mix(in srgb, #d97706 16%, transparent); color: #d97706; }
+  .verdict.qualified { background: color-mix(in srgb, #8b5cf6 16%, transparent); color: #8b5cf6; }
+  .verdict.project { background: color-mix(in srgb, #64748b 18%, transparent); color: var(--dim); }
+  .back { margin-left: auto; color: var(--dim) !important; font-size: 11px; text-decoration: none; }
+  .claim p { margin: 0 0 7px; font-size: 14px; line-height: 1.58; }
+  .claim p:last-child { margin-bottom: 0; }
+  .claim b { font-weight: 650; }
+  .evidence { color: var(--dim); font-size: 12.5px !important; }
+  .evidence::before { content: "Sources: "; font-weight: 650; color: var(--text); }
+  .evidence a { white-space: normal; }
+  .evidence a + a::before { content: " · "; color: var(--dim); text-decoration: none; }
+  .note { color: var(--dim); font-size: 13px; }
+  .credit-list { display: grid; gap: 8px; }
+  .credit-row {
+    display: grid;
+    grid-template-columns: minmax(155px, .7fr) minmax(0, 1.8fr);
+    gap: 14px;
+    padding: 11px 13px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel);
+    font-size: 13px;
+  }
+  .credit-row b { font-weight: 650; }
+  .credit-row p { margin: 0; color: var(--dim); }
+  @media (max-width: 650px) {
+    .credit-row { grid-template-columns: 1fr; gap: 3px; }
+    .doc-head .optional { display: none; }
+  }
+  @media print {
+    #rail, .doc-head button { display: none !important; }
+    .doc-head { position: static; }
+    .claim, .credit-row { break-inside: avoid; }
+  }
+</style>
+<script>
+  (() => {
+    const saved = localStorage.getItem('theme') || 'auto';
+    const dark = saved === 'dark' || (saved === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = saved;
+  })();
+</script>
+</head>
+<body class="doc">
+
+<header class="doc-head">
+  <a class="brand" href="index.html">✦ Stellation</a>
+  <span class="crumb">Fact-check</span>
+  <div class="spacer"></div>
+  <a class="ghost" href="historical.html">Read the history</a>
+  <a class="ghost optional" href="bruckner.html">Brückner 1900</a>
+  <a class="ghost optional" href="index.html">Open the app →</a>
+  <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
+</header>
+
+<nav id="rail" aria-label="Fact-check sections"></nav>
+
+<main class="doc-body">
+  <h1>Fact-check: six hundred years of stars</h1>
+  <p class="standfirst">
+    A source ledger for <a href="historical.html">the historical essay</a>. Each entry
+    covers one tightly related cluster of claims and links the evidence used to keep,
+    correct or qualify it. Anecdotes are attributed to the person or document that
+    actually tells them; project-generated geometry is labelled separately.
+  </p>
+  <p class="audit-meta">Checked <time datetime="2026-08-06">6 August 2026</time> · Primary and institutional sources preferred · No Wikipedia-only historical claim is treated as dispositive</p>
+
+  <div class="audit-box">
+    <h2>What changed after checking</h2>
+    <p>The essay has been corrected in place. The most consequential changes were:</p>
+    <ul>
+      <li>the unsupported exact location of the San Marco inlay was removed and its date made explicitly conditional;</li>
+      <li>Leonardo's contribution is now described as 59 woodcuts after his drawings, not plates he printed himself;</li>
+      <li>the disputed <i>stella octangula</i> naming date is left unresolved, and Samuel Ferguson is credited with Hales;</li>
+      <li>Cauchy's rigidity theorem is placed in its separate 1813 memoir;</li>
+      <li>Hess's doctorate is corrected to 1866, and the compound of five octahedra is correctly related to an icosidodecahedron;</li>
+      <li>invented or over-sharpened scene-setting around Brückner, Wheeler, Flather and Petrie was removed;</li>
+      <li>the Moravian-star business history, periodic-crystal qualifier, adenovirus proteins, Acantharia anatomy and Bulatov timeline were corrected.</li>
+    </ul>
+    <div class="legend" aria-label="Verdict key">
+      <span><i class="dot"></i> Supported</span>
+      <span><i class="dot corrected"></i> Corrected in the essay</span>
+      <span><i class="dot qualified"></i> Qualified, disputed or attributed</span>
+      <span><i class="dot project"></i> Project result or editorial observation</span>
+    </div>
+  </div>
+
+  <section id="method" data-year="" data-short="Method & scope">
+    <span class="when">Method</span>
+    <h2>Scope and standard of evidence</h2>
+    <div class="claim-list">
+      <article class="claim" id="m-1">
+        <div class="claim-head"><span class="verdict">Supported</span></div>
+        <p><b>“Every claim” is handled as a factual cluster.</b> Closely connected clauses supported by the same document share an entry; mathematical values, image rights and application behaviour get separate entries. A source proves what it says, not every stronger inference that could be drawn from it.</p>
+        <p class="evidence"><a href="https://guides.library.cornell.edu/critically_analyzing" target="_blank" rel="noopener">Cornell Library, critically analysing sources</a><a href="https://www.archives.gov/education/lessons/worksheets" target="_blank" rel="noopener">US National Archives document-analysis guidance</a></p>
+      </article>
+      <article class="claim project" id="m-2">
+        <div class="claim-head"><span class="verdict project">Project</span></div>
+        <p><b>Interpretation and computation are identified.</b> Phrases such as “closely resembles,” the visibility of a roof from the street, shell selections and volume parity are observations or project results. They are not disguised as conclusions from historical literature.</p>
+        <p class="evidence"><a href="https://github.com/yaroslavvb/stellation" target="_blank" rel="noopener">Port validation notes</a><a href="https://github.com/yaroslavvb/stellation/blob/main/docs/test/validate.mjs" target="_blank" rel="noopener">Validation test source</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="opening" data-year="" data-short="Opening claims">
+    <span class="when">Opening</span>
+    <h2>The standfirst and live figures</h2>
+    <div class="claim-list">
+      <article class="claim" id="o-1">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html">essay</a></div>
+        <p><b>The four opening character sketches are supported:</b> the San Marco panel is attributed to Uccello; Kepler directed his mother's legal defence; Brückner's collection ran to hundreds of models and he donated more than 200; Wheeler withdrew from the 1938 collaboration over Coxeter's exposition.</p>
+        <p class="evidence"><a href="https://www.treccani.it/enciclopedia/paolo-di-dono-detto-paolo-uccello_%28Dizionario-Biografico%29/" target="_blank" rel="noopener">Treccani on Uccello</a><a href="https://www.lrb.co.uk/the-paper/v38/n13/malcolm-gaskill/money-sex-lies-magic" target="_blank" rel="noopener">Gaskill on the Kepler case</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart on Brückner</a><a href="https://doi.org/10.1006/hmat.1996.0028" target="_blank" rel="noopener">Roberts on Wheeler</a></p>
+      </article>
+      <article class="claim project" id="o-2">
+        <div class="claim-head"><span class="verdict project">Project</span><a class="back" href="historical.html">essay</a></div>
+        <p><b>The interactive figures are app behaviour.</b> They can be rotated, and figures that include a Cells panel can be changed shell by shell. “Most,” rather than “all,” is deliberate because some figures show only a solid view.</p>
+        <p class="evidence"><a href="walkthrough.html">Cells walkthrough</a><a href="controls.html">Controls reference</a><a href="https://github.com/yaroslavvb/stellation/blob/main/docs/js/historical.js" target="_blank" rel="noopener">Historical-figure implementation</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="uccello" data-year="c.1430" data-short="Uccello / San Marco">
+    <span class="when">c. 1430?</span>
+    <h2>San Marco and Paolo Uccello</h2>
+    <div class="claim-list">
+      <article class="claim qualified" id="u-1">
+        <div class="claim-head"><span class="verdict qualified">Qualified</span><a class="back" href="historical.html#uccello">history §</a></div>
+        <p><b>The object is real; its authorship and date are not documentary facts.</b> The San Marco pavement contains a perspectival small stellated dodecahedron. Treccani calls Uccello the most probable attribution; Hart found no documentation for either attribution or date. The essay therefore says “traditionally dated” and “attributed.”</p>
+        <p class="evidence"><a href="https://www.treccani.it/enciclopedia/paolo-di-dono-detto-paolo-uccello_%28Dizionario-Biografico%29/" target="_blank" rel="noopener">Treccani</a><a href="https://www.georgehart.com/virtual-polyhedra/uccello.html" target="_blank" rel="noopener">George Hart, Uccello's Polyhedron</a></p>
+      </article>
+      <article class="claim corrected" id="u-2">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#uccello">history §</a></div>
+        <p><b>The precise doorway location was dropped.</b> Public descriptions conflict and no authoritative basilica floor plan was found. The supported claim is only that the panel is set into San Marco's marble pavement.</p>
+        <p class="evidence"><a href="https://www.treccani.it/enciclopedia/paolo-di-dono-detto-paolo-uccello_%28Dizionario-Biografico%29/" target="_blank" rel="noopener">Treccani</a><a href="https://commons.wikimedia.org/wiki/File:Marble_floor_mosaic_Basilica_of_St_Mark_Vencice.jpg" target="_blank" rel="noopener">Object photograph</a></p>
+      </article>
+      <article class="claim qualified" id="u-3">
+        <div class="claim-head"><span class="verdict qualified">Conditional</span><a class="back" href="historical.html#uccello">history §</a></div>
+        <p><b>The “two centuries before Kepler” comparison depends on the conventional date.</b> If the panel is fifteenth-century, it predates Kepler's 1619 treatment by about 190 years. San Marco's medieval pavement is older, but the exact insertion history of this patch is not documented in the checked sources.</p>
+        <p class="evidence"><a href="https://www.georgehart.com/virtual-polyhedra/uccello.html" target="_blank" rel="noopener">Hart</a><a href="https://archive.org/details/ioanniskepplerih00kepl" target="_blank" rel="noopener">Kepler, 1619 scan</a><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6411509/" target="_blank" rel="noopener">Study of Venetian medieval pavements</a></p>
+      </article>
+      <article class="claim qualified" id="u-4">
+        <div class="claim-head"><span class="verdict qualified">Disputed</span><a class="back" href="historical.html#uccello">history §</a></div>
+        <p><b>The date range is honestly unresolved.</b> About 1430 is often repeated; Treccani documents Uccello's Venetian period from after August 1425 to 1430 or early 1431. A published modern history gives 1420, incompatible with Uccello's authorship.</p>
+        <p class="evidence"><a href="https://www.treccani.it/enciclopedia/paolo-di-dono-detto-paolo-uccello_%28Dizionario-Biografico%29/" target="_blank" rel="noopener">Treccani chronology</a><a href="https://iris.unipa.it/retrieve/handle/10447/325250/1221336/325250_Vaccaro_Historical_notes_on_star_geometry_in_mathematics_art_and_nature.pdf" target="_blank" rel="noopener">History printing the 1420 date</a></p>
+      </article>
+      <article class="claim" id="u-5">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#uccello">history §</a></div>
+        <p><b>The Muraro attribution is modern.</b> Treccani traces it to Michelangelo Muraro's contribution to the proceedings of the 1955 Venice art-history congress, published in 1956. The essay no longer claims more about Muraro's detailed reasoning than the accessible record proves.</p>
+        <p class="evidence"><a href="https://www.treccani.it/enciclopedia/paolo-di-dono-detto-paolo-uccello_%28Dizionario-Biografico%29/" target="_blank" rel="noopener">Treccani bibliography and assessment</a></p>
+      </article>
+      <article class="claim qualified" id="u-6">
+        <div class="claim-head"><span class="verdict qualified">Attributed</span><a class="back" href="historical.html#uccello">history §</a></div>
+        <p><b>The night-work and Donatello stories are Vasari's stories.</b> Vasari's first edition appeared in 1550, seventy-five years after Uccello's death. It reports Uccello's obsession with perspective and Donatello's intarsia insult; the essay explicitly treats this as literature, not contemporary evidence.</p>
+        <p class="evidence"><a href="https://sourcebooks.web.fordham.edu/basis/vasari/vasari3.asp" target="_blank" rel="noopener">Vasari, Life of Uccello</a><a href="https://archive.bridgesmathart.org/2012/bridges2012-433.pdf" target="_blank" rel="noopener">Mazzocchio and intarsia context</a></p>
+      </article>
+      <article class="claim corrected" id="u-7">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#uccello">history §</a></div>
+        <p><b>The 1469 hardship and 1474 work record are now exact.</b> Uccello declared himself old, without work and unable to practise, and said his wife was ill. A 1474 lawsuit concerned payment for two panels sold after 1469; it was not a newly documented 1474 commission.</p>
+        <p class="evidence"><a href="https://www.treccani.it/enciclopedia/paolo-di-dono-detto-paolo-uccello_%28Dizionario-Biografico%29/" target="_blank" rel="noopener">Treccani archival chronology</a></p>
+      </article>
+      <article class="claim" id="u-8">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#uccello">history §</a></div>
+        <p><b>Antonia Uccello became a Carmelite and was recorded as <i>pittoressa</i>.</b> No work can be securely attributed to her. The mazzocchio identification as a faceted ring-frame worn under a hood is also supported.</p>
+        <p class="evidence"><a href="https://www.treccani.it/enciclopedia/paolo-di-dono-detto-paolo-uccello_%28Dizionario-Biografico%29/" target="_blank" rel="noopener">Treccani on Antonia</a><a href="https://archive.bridgesmathart.org/2012/bridges2012-433.pdf" target="_blank" rel="noopener">Bridges mazzocchio study</a></p>
+      </article>
+      <article class="claim project" id="u-9">
+        <div class="claim-head"><span class="verdict project">Visual check</span><a class="back" href="historical.html#uccello">history §</a></div>
+        <p><b>The rendered silhouette is a close resemblance, not a measured identity.</b> The cell set <code>{0,1}</code> produces the small stellated dodecahedron; the “pentagram inside a ring” comparison is visual. “Exactly” was removed because no overlay measurement is supplied.</p>
+        <p class="evidence"><a href="https://mathworld.wolfram.com/SmallStellatedDodecahedron.html" target="_blank" rel="noopener">Small stellated dodecahedron geometry</a><a href="https://commons.wikimedia.org/wiki/File:Marble_floor_mosaic_Basilica_of_St_Mark_Vencice.jpg" target="_blank" rel="noopener">Panel photograph</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="leonardo" data-year="1497–1509" data-short="Pacioli & Leonardo">
+    <span class="when">1497–1509</span>
+    <h2>Pacioli's elevations and Leonardo's drawings</h2>
+    <div class="claim-list">
+      <article class="claim corrected" id="l-1">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#leonardo">history §</a></div>
+        <p><b>Pacioli composed the work in Milan in 1497–98; Venice printed it in 1509.</b> The printed book has 59 full-page woodcuts after drawings Leonardo made in 1497—not “plates drawn” or engraved by Leonardo.</p>
+        <p class="evidence"><a href="https://www.thinking3d.ac.uk/Pacioli1509/" target="_blank" rel="noopener">Thinking 3D, Bodleian/St Andrews</a><a href="https://www.loc.gov/resource/rbc0001.2006rosen0763/" target="_blank" rel="noopener">Library of Congress scan</a><a href="https://www.georgehart.com/virtual-polyhedra/leonardo.html" target="_blank" rel="noopener">Hart, Leonardo's Polyhedra</a></p>
+      </article>
+      <article class="claim" id="l-2">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#leonardo">history §</a></div>
+        <p><b>Pacioli's elevation and Kepler's stellation are distinct operations.</b> Pacioli raises equilateral-sided pyramids on faces and introduces new face planes. Stellation extends the original planes. “No new face planes” replaces the misleading shorthand “nothing is added.”</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2014/bridges2014-235.pdf" target="_blank" rel="noopener">Roelofs, Elevations and Stellations</a><a href="https://archive.org/details/ioanniskepplerih00kepl" target="_blank" rel="noopener">Kepler, 1619</a></p>
+      </article>
+      <article class="claim" id="l-3">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#leonardo">history §</a></div>
+        <p><b>The triangular, square and pentagonal limitation belongs to Pacioli's equilateral construction.</b> A regular hexagonal base makes the apex coplanar; the three hexagon-faced Archimedean solids in the book therefore have no elevated counterpart.</p>
+        <p class="evidence"><a href="https://www.rinusroelofs.nl/info/download/info-dl-17-rr-2012-le-mi.pdf" target="_blank" rel="noopener">Roelofs, Leonardo's Mistake</a></p>
+      </article>
+      <article class="claim" id="l-4">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#leonardo">history §</a></div>
+        <p><b>The octahedron face counts are Pacioli's own accounting.</b> Eight three-triangle pyramids plus the eight imagined core faces make 32 triangles, whereas the stellated octahedron consists of eight extended, intersecting face polygons.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2014/bridges2014-235.pdf" target="_blank" rel="noopener">Roelofs 2014</a></p>
+      </article>
+      <article class="claim corrected" id="l-5">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#leonardo">history §</a></div>
+        <p><b>The <i>icosaedron elevatum</i> is not the modern convex Catalan solid.</b> It is a non-convex, equilateral-faced analogue of the triakis icosahedron. The essay now says “relative” and treats the icosahedron as an especially visible contrast, not the only divergence.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2014/bridges2014-235.pdf" target="_blank" rel="noopener">Roelofs 2014</a><a href="https://www.loc.gov/resource/rbc0001.2006rosen0763/" target="_blank" rel="noopener">Original printed plates</a></p>
+      </article>
+      <article class="claim" id="l-6">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#leonardo">history §</a></div>
+        <p><b>The images after Leonardo's drawings are the first known solid-edge <i>vacuus</i> depictions.</b> The broader statement that the idiom became “the standard” everywhere was softened to the demonstrable fact that later artists and model makers reused it.</p>
+        <p class="evidence"><a href="https://www.georgehart.com/virtual-polyhedra/leonardo.html" target="_blank" rel="noopener">Hart, Leonardo's Polyhedra</a></p>
+      </article>
+      <article class="claim corrected" id="l-7">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#leonardo">history §</a></div>
+        <p><b>Leonardo's error and Miller's accidental pseudo-rhombicuboctahedron are not the same mistake.</b> Roelofs shows the resemblance and the material differences. The 1938 count came from Coxeter's enumeration under five selection rules attributed to J. C. P. Miller; Miller was not an author of the book.</p>
+        <p class="evidence"><a href="https://www.rinusroelofs.nl/info/download/info-dl-17-rr-2012-le-mi.pdf" target="_blank" rel="noopener">Roelofs 2012</a><a href="https://www.steelpillow.com/polyhedra/StelFacet/history.html" target="_blank" rel="noopener">Inchbald chronology</a><a href="https://link.springer.com/book/10.1007/978-1-4613-8216-4" target="_blank" rel="noopener">The Fifty-Nine Icosahedra</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="kepler-snow" data-year="1611" data-short="Kepler's snowflake">
+    <span class="when">1611</span>
+    <h2>Kepler's snowflake and the stella octangula</h2>
+    <div class="claim-list">
+      <article class="claim corrected" id="k11-1">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#kepler-1611">history §</a></div>
+        <p><b>Kepler's imperial salary was badly in arrears, not proved wholly unpaid.</b> He framed the tract as a New Year's gift to Johann Matthäus Wacker von Wackenfels and asked why snowflakes are six-cornered.</p>
+        <p class="evidence"><a href="https://www.seh.ox.ac.uk/blog/johannes-kepler-on-snowflakes" target="_blank" rel="noopener">St Edmund Hall, Oxford</a><a href="https://archive.org/details/ioanniskepleriss00kepl" target="_blank" rel="noopener">1611 primary scan</a></p>
+      </article>
+      <article class="claim" id="k11-2">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#kepler-1611">history §</a></div>
+        <p><b>The tract discusses honeycombs, tilings, compressed pomegranate seeds, rhombic dodecahedral cells and equal-sphere/cannonball packing.</b> “Foundational work of structural crystallography” is a sourced historical characterization, less absolute than “the first printed work of crystallography.”</p>
+        <p class="evidence"><a href="https://www.seh.ox.ac.uk/blog/johannes-kepler-on-snowflakes" target="_blank" rel="noopener">Oxford overview</a><a href="https://www.sciencedirect.com/science/article/pii/0083665675901816" target="_blank" rel="noopener">Historical crystallography study</a></p>
+      </article>
+      <article class="claim" id="k11-3">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#kepler-1611">history §</a></div>
+        <p><b>The octahedron has one non-trivial stellation under the conventional face-plane definition.</b> It is the compound of two tetrahedra; its eight tips occupy the vertices of a cube.</p>
+        <p class="evidence"><a href="https://mathworld.wolfram.com/StellaOctangula.html" target="_blank" rel="noopener">MathWorld, Stella Octangula</a><a href="https://mathworld.wolfram.com/OctahedronStellations.html" target="_blank" rel="noopener">Octahedron Stellations</a></p>
+      </article>
+      <article class="claim qualified" id="k11-4">
+        <div class="claim-head"><span class="verdict qualified">Unresolved</span><a class="back" href="historical.html#kepler-1611">history §</a></div>
+        <p><b>The naming date for <i>stella octangula</i> is not secure.</b> MathWorld assigns 1611, but the searchable 1611 tract contains neither the term nor this polyhedron; the located 1619 phrase is in a planar star-polygon discussion. The essay therefore leaves the date unresolved.</p>
+        <p class="evidence"><a href="https://mathworld.wolfram.com/StellaOctangula.html" target="_blank" rel="noopener">MathWorld's 1611 attribution</a><a href="https://archive.org/details/ioanniskepleriss00kepl" target="_blank" rel="noopener">Strena scan</a><a href="https://archive.org/details/ioanniskepplerih00kepl" target="_blank" rel="noopener">Harmonices Mundi scan</a></p>
+      </article>
+      <article class="claim" id="k11-5">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#kepler-1611">history §</a></div>
+        <p><b>The form predates Kepler's documented 1619 treatment.</b> Related examples occur in Pacioli's 1509 elevated octahedron and Jamnitzer's 1568 perspective book. Kepler's securely documented advance is the 1619 general treatment of stellation.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2014/bridges2014-235.pdf" target="_blank" rel="noopener">Roelofs historical comparison</a><a href="https://www.georgehart.com/virtual-polyhedra/kepler-poinsot-info.html" target="_blank" rel="noopener">Hart, Kepler–Poinsot information</a></p>
+      </article>
+      <article class="claim corrected" id="k11-6">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#kepler-1611">history §</a></div>
+        <p><b>The packing theorem timeline now credits both principal authors.</b> The conjecture entered Hilbert's eighteenth problem; Thomas Hales and Samuel Ferguson announced a computer-assisted proof in 1998, the main paper appeared in 2005 after long review, and Flyspeck completed formal verification in 2014.</p>
+        <p class="evidence"><a href="https://arxiv.org/abs/math/9811071" target="_blank" rel="noopener">1998 announcement</a><a href="https://annals.math.princeton.edu/2005/162-3/p01" target="_blank" rel="noopener">2005 Annals proof</a><a href="https://www.cambridge.org/core/journals/forum-of-mathematics-pi/article/formal-proof-of-the-kepler-conjecture/78FBD5E1A3D1BCCB8E0D5B0C463C9FBC" target="_blank" rel="noopener">Formal proof</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="kepler-harmony" data-year="1619" data-short="Harmonices Mundi">
+    <span class="when">1619</span>
+    <h2>Kepler's two regular star polyhedra</h2>
+    <div class="claim-list">
+      <article class="claim qualified" id="k19-1">
+        <div class="claim-head"><span class="verdict qualified">Bounded priority</span><a class="back" href="historical.html#kepler-1619">history §</a></div>
+        <p><b>Histories conventionally credit Kepler with the first explicit definition of polyhedral stellation.</b> Earlier authors pictured star forms and medieval authors treated star polygons, so the essay limits the priority claim to the definition cited in polyhedral histories.</p>
+        <p class="evidence"><a href="https://www.steelpillow.com/polyhedra/StelFacet/history.html" target="_blank" rel="noopener">Inchbald history</a><a href="https://archive.bridgesmathart.org/2014/bridges2014-235.pdf" target="_blank" rel="noopener">Roelofs 2014</a><a href="https://archive.org/details/ioanniskepplerih00kepl" target="_blank" rel="noopener">Primary scan</a></p>
+      </article>
+      <article class="claim" id="k19-2">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#kepler-1619">history §</a></div>
+        <p><b>Kepler treated the pentagram, small stellated dodecahedron and great stellated dodecahedron and recognized the two solids as regular.</b> Their faces are regular star pentagons in identical vertex arrangements.</p>
+        <p class="evidence"><a href="https://archive.org/details/ioanniskepplerih00kepl" target="_blank" rel="noopener">Kepler 1619</a><a href="https://www.georgehart.com/virtual-polyhedra/kepler-poinsot-info.html" target="_blank" rel="noopener">Hart</a></p>
+      </article>
+      <article class="claim" id="k19-3">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#kepler-1619">history §</a></div>
+        <p><b>Construction and modern classification differ.</b> Kepler extended edges and approached the great stellated dodecahedron from an icosahedron; the modern face-plane convention used by the app classifies both Kepler solids as dodecahedron stellations.</p>
+        <p class="evidence"><a href="https://www.steelpillow.com/polyhedra/StelFacet/history.html" target="_blank" rel="noopener">Inchbald</a><a href="https://mathworld.wolfram.com/DodecahedronStellations.html" target="_blank" rel="noopener">Dodecahedron Stellations</a></p>
+      </article>
+      <article class="claim" id="k19-4">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#kepler-1619">history §</a></div>
+        <p><b>The primary plate identifies figures <i>Ss</i> and <i>Tt</i> in Book II.</b> They are the small and great stellated dodecahedra. The book was published at Linz in 1619 while the case against Katharina continued in Württemberg.</p>
+        <p class="evidence"><a href="https://commons.wikimedia.org/wiki/File:Stellated_dodecahedra_Harmonices_Mundi.jpg" target="_blank" rel="noopener">Primary plate</a><a href="https://www.zobodat.at/pdf/Kepler-Gesammelte-Werke_6_0005-0562.pdf" target="_blank" rel="noopener">Critical edition</a><a href="https://www.lrb.co.uk/the-paper/v38/n13/malcolm-gaskill/money-sex-lies-magic" target="_blank" rel="noopener">Case chronology</a></p>
+      </article>
+      <article class="claim corrected" id="k19-5">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#kepler-1619">history §</a></div>
+        <p><b>The dodecahedron has three non-trivial stellations in the conventional sequence.</b> Counting the original as a member yields four figures, so the former unqualified “exactly three” was ambiguous. Jamnitzer pictured a great-dodecahedron-like form before Poinsot's 1809 mathematical treatment.</p>
+        <p class="evidence"><a href="https://mathworld.wolfram.com/DodecahedronStellations.html" target="_blank" rel="noopener">MathWorld sequence</a><a href="https://www.georgehart.com/virtual-polyhedra/kepler-poinsot-info.html" target="_blank" rel="noopener">Hart on precursors</a></p>
+      </article>
+      <article class="claim" id="k19-6">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#kepler-1619">history §</a></div>
+        <p><b>Book II concerns congruences of regular figures; Book V contains the third planetary law.</b> In Book V Kepler dates the first insight to 8 March 1618, its rejection after a faulty calculation, and recovery on 15 May. The work was completed in 1618 and published in 1619.</p>
+        <p class="evidence"><a href="https://www.zobodat.at/pdf/Kepler-Gesammelte-Werke_6_0005-0562.pdf" target="_blank" rel="noopener">Kepler critical edition</a><a href="https://kepler.badw.de/en/on-johannes-kepler/the-planetary-laws.html" target="_blank" rel="noopener">Bavarian Academy Kepler project</a></p>
+      </article>
+      <article class="claim corrected" id="k19-7">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#kepler-1619">history §</a></div>
+        <p><b>Katharina's chronology is now date-accurate.</b> Accusation notice came in December 1615; she stayed in Linz January–September 1617; proceedings opened 9 November 1619; arrest followed in August 1620. She was shown torture instruments on 28 September 1621—not August—and refused to confess; a 4 October ruling acquitted her and she was released within days.</p>
+        <p class="evidence"><a href="https://www.lrb.co.uk/the-paper/v38/n13/malcolm-gaskill/money-sex-lies-magic" target="_blank" rel="noopener">Gaskill / Rublack review</a><a href="https://journals.wlb-stuttgart.de/index.php/sh/article/download/1150/1268/2429" target="_blank" rel="noopener">Württemberg scholarly article</a></p>
+      </article>
+      <article class="claim" id="k19-8">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#kepler-1619">history §</a></div>
+        <p><b>Kepler prepared lengthy point-by-point submissions and bore major costs.</b> Katharina died on 13 April 1622 aged 74. The case cost more than 900 guilders, over two years of Kepler's salary. The unsupported “fifty folios” was removed.</p>
+        <p class="evidence"><a href="https://www.project.uni-stuttgart.de/kepler2022/dokumente/Kepler-Begleitband_screen-Version.pdf" target="_blank" rel="noopener">University of Stuttgart Kepler volume</a><a href="https://collections.fes.de/name/view/411817" target="_blank" rel="noopener">Katharina biographical record</a></p>
+      </article>
+      <article class="claim project" id="k19-9">
+        <div class="claim-head"><span class="verdict project">Project</span><a class="back" href="historical.html#kepler-1619">history §</a></div>
+        <p><b>The shell sets are project selections shown by the live figures.</b> In the dodecahedron cell model, <code>{0,1}</code>, <code>{0,1,2}</code> and <code>{0,1,2,3}</code> produce the small stellated, great and great stellated dodecahedra respectively. The validation suite explicitly asserts the first mesh; the standard identities and the rendered figures support the other two labels.</p>
+        <p class="evidence"><a href="https://github.com/yaroslavvb/stellation/blob/main/docs/test/validate.mjs" target="_blank" rel="noopener">Port validation</a><a href="https://mathworld.wolfram.com/Kepler-PoinsotSolid.html" target="_blank" rel="noopener">Kepler–Poinsot identities</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="poinsot" data-year="1809–1813" data-short="Poinsot & Cauchy">
+    <span class="when">1809–1813</span>
+    <h2>Poinsot's two solids and Cauchy's closure</h2>
+    <div class="claim-list">
+      <article class="claim" id="p-1">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#poinsot">history §</a></div>
+        <p><b>Poinsot described the great dodecahedron and great icosahedron in 1809, apparently without knowing Kepler's two.</b> His entry point was regular star polygons; the great dodecahedron and great icosahedron have star vertex figures, unlike Kepler's star-faced pair.</p>
+        <p class="evidence"><a href="https://mathshistory.st-andrews.ac.uk/Biographies/Poinsot/" target="_blank" rel="noopener">Poinsot biography</a><a href="https://www.numdam.org/item/RHM_2011__17_1_41_0/" target="_blank" rel="noopener">Historical study</a><a href="https://www.steelpillow.com/polyhedra/StelFacet/history.html" target="_blank" rel="noopener">Inchbald</a></p>
+      </article>
+      <article class="claim corrected" id="p-2">
+        <div class="claim-head"><span class="verdict corrected">Clarified</span><a class="back" href="historical.html#poinsot">history §</a></div>
+        <p><b>“Poinsot stellated faces rather than edges” was misleading.</b> The essay now states the structural distinction directly: Kepler's two have pentagram faces; Poinsot's additional two have pentagram vertex figures.</p>
+        <p class="evidence"><a href="https://www.steelpillow.com/polyhedra/StelFacet/history.html" target="_blank" rel="noopener">Inchbald chronology</a><a href="https://www.steelpillow.com/polyhedra/StelFacet/Cauchy1813EngTrans.html" target="_blank" rel="noopener">Cauchy translation</a></p>
+      </article>
+      <article class="claim project" id="p-3">
+        <div class="claim-head"><span class="verdict project">Computed</span><a class="back" href="historical.html#poinsot">history §</a></div>
+        <p><b>The great icosahedron is the only regular star polyhedron in the four that is an icosahedron stellation.</b> It has twelve spikes; the radius ratio φ³ is derived from standard metric formulae. In the app it is mainline G, seven layers including the core—or six shells beyond it—of the eight-layer sequence.</p>
+        <p class="evidence"><a href="https://www.georgehart.com/virtual-polyhedra/kepler-poinsot-info.html" target="_blank" rel="noopener">Kepler–Poinsot classification</a><a href="https://mathworld.wolfram.com/GreatIcosahedron.html" target="_blank" rel="noopener">Great icosahedron metrics</a><a href="https://fortran.orpheusweb.co.uk/Poly/errata.pdf" target="_blank" rel="noopener">1999 stellation tables</a></p>
+      </article>
+      <article class="claim" id="p-4">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#poinsot">history §</a></div>
+        <p><b>Poinsot failed the algebra part of the October 1794 École Polytechnique entrance examination but was admitted.</b> He trained for civil engineering, taught at Lycée Bonaparte when he wrote the memoir, and served as Polytechnique admissions examiner from 1816 to 1826.</p>
+        <p class="evidence"><a href="https://mathshistory.st-andrews.ac.uk/Biographies/Poinsot/" target="_blank" rel="noopener">MacTutor</a><a href="https://mathshistory.st-andrews.ac.uk/DSB/Poinsot.pdf" target="_blank" rel="noopener">Dictionary of Scientific Biography</a></p>
+      </article>
+      <article class="claim qualified" id="p-5">
+        <div class="claim-head"><span class="verdict qualified">Qualified</span><a class="back" href="historical.html#poinsot">history §</a></div>
+        <p><b>Poinsot published little by deliberate choice and preferred synthetic geometry.</b> Hirst's 1857 diary supplies a vivid—not uniquely surviving—room portrait: silver hair, dressing gown, low voice, focused conversation, and a mistaken age estimate of 60–70. Poinsot was 80.</p>
+        <p class="evidence"><a href="https://mathshistory.st-andrews.ac.uk/HistTopics/Hirst_comments/" target="_blank" rel="noopener">Hirst diary transcription</a><a href="https://mathshistory.st-andrews.ac.uk/Biographies/Poinsot/" target="_blank" rel="noopener">Poinsot dates and habits</a></p>
+      </article>
+      <article class="claim" id="p-6">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#poinsot">history §</a></div>
+        <p><b>Cauchy's star-polyhedron memoir was read in February 1811 and printed in 1813, when he was 21.</b> It derives the four regular star polyhedra from the convex regular families, cites Poinsot extensively and contains no Kepler citation.</p>
+        <p class="evidence"><a href="https://www.steelpillow.com/polyhedra/StelFacet/Cauchy1813EngTrans.html" target="_blank" rel="noopener">Cauchy memoir, English translation</a><a href="https://mathshistory.st-andrews.ac.uk/Biographies/Cauchy/" target="_blank" rel="noopener">Cauchy biography</a></p>
+      </article>
+      <article class="claim corrected" id="p-7">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#poinsot">history §</a></div>
+        <p><b>The rigidity theorem was not in the same memoir.</b> The same 1813 cahier contains Euler's formula proof in Part II of “Recherches” and the rigidity theorem in a separate memoir. No checked source supported the picturesque claim that Cauchy wrote it “in the evenings.”</p>
+        <p class="evidence"><a href="https://www.cambridge.org/core/product/identifier/CBO9780511702501A006/type/BOOK_PART" target="_blank" rel="noopener">Separate rigidity memoir</a><a href="https://www.sciencedirect.com/science/article/pii/S0166864120305022" target="_blank" rel="noopener">Modern historical analysis</a></p>
+      </article>
+      <article class="claim" id="p-8">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#poinsot">history §</a></div>
+        <p><b>Cauchy worked at Cherbourg on harbour works for Napoleon's projected invasion fleet.</b> In 1813 he sought Lagrange's vacant Académie seat; Poinsot was elected.</p>
+        <p class="evidence"><a href="https://mathshistory.st-andrews.ac.uk/Biographies/Cauchy/" target="_blank" rel="noopener">Cauchy biography</a><a href="https://mathshistory.st-andrews.ac.uk/Biographies/Poinsot/" target="_blank" rel="noopener">Poinsot biography</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="hess" data-year="1876" data-short="Hess">
+    <span class="when">1876</span>
+    <h2>Edmund Hess and the compounds</h2>
+    <div class="claim-list">
+      <article class="claim corrected" id="h-1">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#hess">history §</a></div>
+        <p><b>Hess's Marburg doctorate was in 1866, not 1864.</b> His dissertation concerned air outflow through narrow apertures. He also studied at Heidelberg, then spent his academic career in his native Marburg.</p>
+        <p class="evidence"><a href="https://www.mathgenealogy.org/id.php?id=59831" target="_blank" rel="noopener">Mathematics Genealogy Project</a><a href="https://play.google.com/store/books/details/Edmund_Hess_Ueber_den_Ausfluss_der_Luft_aus_engen?id=JyYBCYFzBTAC" target="_blank" rel="noopener">1866 dissertation record</a><a href="https://lagis.hessen.de/de/personen/hessische-biografie/alle-eintraege/9859" target="_blank" rel="noopener">Hessische Biografie</a></p>
+      </article>
+      <article class="claim" id="h-2">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#hess">history §</a></div>
+        <p><b>Hess's 1876 paper uses complete plane-intersection figures of the type now called stellation diagrams.</b> Brückner explicitly cites it in §153. Hess systematically treated the five-octahedra, five-/ten-tetrahedra and five-cubes compounds.</p>
+        <p class="evidence"><a href="https://www.digitale-sammlungen.de/en/view/bsb11441251?page=105" target="_blank" rel="noopener">Digitized 1876 paper</a><a href="https://archive.org/details/vieleckeundvielf00bruoft/page/n240/mode/2up" target="_blank" rel="noopener">Brückner §153</a></p>
+      </article>
+      <article class="claim" id="h-3">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#hess">history §</a></div>
+        <p><b>The compound cores are as stated.</b> Five octahedra, five tetrahedra and ten tetrahedra occur as icosahedron stellations; five cubes occurs as a rhombic-triacontahedron stellation.</p>
+        <p class="evidence"><a href="https://fortran.orpheusweb.co.uk/Poly/errata.pdf" target="_blank" rel="noopener">Fifty-Nine tables</a><a href="https://mathworld.wolfram.com/Cube5-Compound.html" target="_blank" rel="noopener">Five-cube compound</a></p>
+      </article>
+      <article class="claim corrected" id="h-4">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#hess">history §</a></div>
+        <p><b>The priority caveat no longer misreads Inchbald.</b> The 1883 date in his timeline concerns Hess's later uniform-polyhedron search. Cauchy was already aware of several compounds in 1812, so 1876 is Hess's secure publication/systematic-treatment date, not necessarily first notice.</p>
+        <p class="evidence"><a href="https://www.steelpillow.com/polyhedra/StelFacet/history.html" target="_blank" rel="noopener">Inchbald timeline</a><a href="https://archive.org/details/vieleckeundvielf00bruoft/page/n240/mode/2up" target="_blank" rel="noopener">Brückner's Hess citation</a></p>
+      </article>
+      <article class="claim corrected" id="h-5">
+        <div class="claim-head"><span class="verdict corrected">Hard correction</span><a class="back" href="historical.html#hess">history §</a></div>
+        <p><b>The thirty outer points of the compound of five octahedra are vertices of an icosidodecahedron, not an octahedron.</b> An octahedron has six vertices. The hollow-versus-full shell warning is an app-specific construction observation.</p>
+        <p class="evidence"><a href="https://mathworld.wolfram.com/Octahedron5-Compound.html" target="_blank" rel="noopener">MathWorld, Octahedron 5-Compound</a><a href="bruckner.html">Interactive Brückner reconstruction</a></p>
+      </article>
+      <article class="claim corrected" id="h-6">
+        <div class="claim-head"><span class="verdict corrected">Qualified</span><a class="back" href="historical.html#hess">history §</a></div>
+        <p><b>Hess's 1876 plate is an early printed example.</b> Neither “the oldest in print” nor a universal genealogy for every later diagram was established, so both priority claims were removed.</p>
+        <p class="evidence"><a href="https://commons.wikimedia.org/wiki/File:Hess_polyhedra_1876_a.jpg" target="_blank" rel="noopener">Hess plate record</a><a href="https://www.digitale-sammlungen.de/en/view/bsb11441251?page=105" target="_blank" rel="noopener">Primary scan</a></p>
+      </article>
+      <article class="claim" id="h-7">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#hess">history §</a></div>
+        <p><b>The crystallography coda checks out.</b> Hess edited Hessel's <i>Krystallometrie</i> in 1897; Hessel derived 32 crystal classes. N. J. Bridge published dodecahedron facetting in <i>Acta Crystallographica</i> in 1974, and Kate Crennell worked in crystallographic computing and produced the 1999 <i>Fifty-Nine</i>.</p>
+        <p class="evidence"><a href="https://journals.iucr.org/j/issues/2015/04/00/kk5194/kk5194.pdf" target="_blank" rel="noopener">IUCr history of Hessel</a><a href="https://journals.iucr.org/paper?buy=yes&amp;cnor=a10699" target="_blank" rel="noopener">Bridge article record</a><a href="https://www.iucr.org/news/newsletter/etc/legacy-articles?issue=145723&amp;result_138864_result_page=26" target="_blank" rel="noopener">IUCr profile of Kate Crennell</a><a href="https://fortran.orpheusweb.co.uk/Poly/59icos.htm" target="_blank" rel="noopener">Crennell edition history</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="bruckner" data-year="1900" data-short="Brückner">
+    <span class="when">1900</span>
+    <h2>Max Brückner's paper models</h2>
+    <div class="claim-list">
+      <article class="claim" id="b-1">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>Johannes Max Brückner (1860–1934) earned a Leipzig doctorate under Felix Klein in 1886 on conformal mapping.</b> He taught at Zwickau from 1887 and Bautzen from 1897 until 1924 and never held a university post; the book's title page identifies him as an Oberlehrer.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart 2019</a><a href="https://archive.org/details/vieleckeundvielf00bruoft" target="_blank" rel="noopener">Primary book</a></p>
+      </article>
+      <article class="claim corrected" id="b-2">
+        <div class="claim-head"><span class="verdict corrected">Qualified</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>The 1900 book has about 220 pages, seven lithographic plates and five collotype double plates—ten photographed sheets—with 146 paper models.</b> They are now described as models from Brückner's collection, not all proved to have been physically made by him.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart's census</a><a href="https://archive.org/details/vieleckeundvielf00bruoft" target="_blank" rel="noopener">Scanned book</a></p>
+      </article>
+      <article class="claim qualified" id="b-3">
+        <div class="claim-head"><span class="verdict qualified">Attributed</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>Collotype provides continuous tonal gradation without a halftone screen.</b> Hart calls this the first major use of photographs to communicate mathematics' visual appeal and argues that the plates explain the book's afterlife. The essay now makes that interpretation explicitly Hart's.</p>
+        <p class="evidence"><a href="https://www.druckkunst-museum.de/en/collotype-printing.html" target="_blank" rel="noopener">Museum für Druckkunst</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart 2019</a></p>
+      </article>
+      <article class="claim" id="b-4">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>Plate IX's identifications check.</b> No. 3 is ten tetrahedra, no. 6 five octahedra, and no. 11 five tetrahedra. Escher's surviving drawing explicitly cites Plate IX, no. 11.</p>
+        <p class="evidence"><a href="https://archive.org/details/vieleckeundvielf00bruoft/page/n258/mode/2up" target="_blank" rel="noopener">Plate IX scan</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart's identifications and Escher evidence</a></p>
+      </article>
+      <article class="claim" id="b-5">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>The final icosahedron stellation appears as Plate XI, no. 14.</b> Brückner showed ten icosahedron stellations. Andrew Hume, developer of Netlib's polyhedron database, coined “echidnahedron” in 1995.</p>
+        <p class="evidence"><a href="https://archive.org/details/vieleckeundvielf00bruoft" target="_blank" rel="noopener">Brückner plates</a><a href="https://fortran.orpheusweb.co.uk/Poly/errata.pdf" target="_blank" rel="noopener">Stellation table</a><a href="https://groups.google.com/g/geometry.research/c/g_75wcDfEt8?hl=en" target="_blank" rel="noopener">Hume's 30 August 1995 post</a><a href="https://mathworld.wolfram.com/Echidnahedron.html" target="_blank" rel="noopener">Echidnahedron history</a></p>
+      </article>
+      <article class="claim corrected" id="b-6">
+        <div class="claim-head"><span class="verdict corrected">Qualified</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>§153 constructs the complete figure of icosahedron planes and numbers concentric intersection rings.</b> Points 3 yield five octahedra; points 6 yield the two five-tetrahedra hands and their ten-tetrahedra union. “Direct ancestor” was replaced by the demonstrable statement that later work uses the same construction.</p>
+        <p class="evidence"><a href="https://archive.org/details/vieleckeundvielf00bruoft/page/n240/mode/2up" target="_blank" rel="noopener">Brückner §153</a></p>
+      </article>
+      <article class="claim qualified" id="b-7">
+        <div class="claim-head"><span class="verdict qualified">Interpretation</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>Brückner said many plate polyhedra were first realized physically by him.</b> Several compound constructions had appeared in Hess, including five cubes, five octahedra, five tetrahedra and ten tetrahedra; Cauchy's earlier awareness complicates “discovery” priority. “Theory versus realisation” is editorial synthesis.</p>
+        <p class="evidence"><a href="https://archive.org/details/vieleckeundvielf00bruoft/page/n217/mode/2up" target="_blank" rel="noopener">Brückner p. 183</a><a href="https://www.steelpillow.com/polyhedra/StelFacet/history.html" target="_blank" rel="noopener">Priority chronology</a></p>
+      </article>
+      <article class="claim" id="b-8">
+        <div class="claim-head"><span class="verdict">Supported anecdote</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>The whitewashing story is genuine.</b> Brückner says isogonal models used oil colours by face edge-count, following Hess's 1893 Munich models. Colour photographed poorly; levigated chalk reduced glare, and the surface would no longer hold drawn edge lines.</p>
+        <p class="evidence"><a href="https://archive.org/details/vieleckeundvielf00bruoft/page/n217/mode/2up" target="_blank" rel="noopener">Brückner's p. 183 footnote</a></p>
+      </article>
+      <article class="claim" id="b-9">
+        <div class="claim-head"><span class="verdict">Supported anecdote</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>The plate arrangement and patience apology are genuine.</b> Brückner says models were placed mainly by size to conserve space, with a broad isohedral/isogonal split, and that complexity and demands on his patience kept some described forms off the plates.</p>
+        <p class="evidence"><a href="https://archive.org/details/vieleckeundvielf00bruoft/page/n217/mode/2up" target="_blank" rel="noopener">Brückner p. 183</a></p>
+      </article>
+      <article class="claim corrected" id="b-10">
+        <div class="claim-head"><span class="verdict corrected">Scene removed</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>Brückner really thanked Hess for loaned models, credited Römmler &amp; Jonas, and invited interested readers to view his collection.</b> The former “knock on his door” and “cupboard” scene was invented colour and has been removed.</p>
+        <p class="evidence"><a href="https://archive.org/details/vieleckeundvielf00bruoft" target="_blank" rel="noopener">Brückner preface</a></p>
+      </article>
+      <article class="claim corrected" id="b-11">
+        <div class="claim-head"><span class="verdict corrected">Qualified</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>The 1906 monograph has nine photographic plates showing 110 models.</b> “Further” was removed because non-overlap was not proved. In 1930–31 Brückner donated more than 200 models to Heidelberg and received an honorary doctorate in 1931.</p>
+        <p class="evidence"><a href="https://disk.mathematik.uni-halle.de/forschung/material/modelle/sterne.pdf" target="_blank" rel="noopener">Halle model history</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart 2019</a></p>
+      </article>
+      <article class="claim qualified" id="b-12">
+        <div class="claim-head"><span class="verdict qualified">Date-limited</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>No original Brückner model was known to survive in the sources consulted.</b> Hart reported no Heidelberg documentation and offered the opinion that paper models were unlikely to survive World War II; German scholarship reports a later clear-out. The essay does not assert a known wartime destruction event.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart 2019</a><a href="https://www.unimuseum.uni-tuebingen.de/fileadmin/content/06_MUT/Presse/2020/2020_04_23_Mathematische_Semesterberichte_Buchbesprechung_Mathematik_mit_Modellen.pdf" target="_blank" rel="noopener">German model-collection review</a></p>
+      </article>
+      <article class="claim corrected" id="b-13">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>Heidelberg holds 18 manuscript volumes of <i>Die Polyeder. Ein Tafelwerk</i>, acquired in 1931 and 1933.</b> The catalogue does not say Brückner delivered them “in person,” so that detail was removed. Stott's models survive at Cambridge/Groningen; Flather's set passed to Cambridge and was photographed for the 1999 edition.</p>
+        <p class="evidence"><a href="https://kalliope-verbund.info/DE-611-HS-3308620" target="_blank" rel="noopener">Kalliope manuscript record</a><a href="https://mathshistory.st-andrews.ac.uk/Biographies/Stott/" target="_blank" rel="noopener">Alicia Boole Stott</a><a href="https://fortran.orpheusweb.co.uk/Poly/59icos.htm" target="_blank" rel="noopener">Flather collection history</a></p>
+      </article>
+      <article class="claim qualified" id="b-14">
+        <div class="claim-head"><span class="verdict qualified">Attributed</span><a class="back" href="historical.html#bruckner">history §</a></div>
+        <p><b>Professional reception is Hart's analysis.</b> The book has no group theory; Klein's later textbook does not cite it; Grünbaum criticized Brückner's classification as ad hoc and incomplete. The Erlangen Program organized geometries by transformation groups, not merely “symmetry groups.”</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart 2019 and references</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="wheeler" data-year="1919–1927" data-short="Wheeler">
+    <span class="when">1919–1927</span>
+    <h2>A. Harry Wheeler in Worcester</h2>
+    <div class="claim-list">
+      <article class="claim" id="w-1">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#wheeler">history §</a></div>
+        <p><b>Wheeler (1873–1950) taught high school in Worcester, wrote two algebra texts and built models by the hundred.</b> He left Clark without a degree in 1899, returned at 47, completed an MA in 1921 and spoke at the 1924 ICM.</p>
+        <p class="evidence"><a href="https://doi.org/10.1006/hmat.1996.0028" target="_blank" rel="noopener">Roberts biography</a><a href="https://www.mathunion.org/fileadmin/ICM/Proceedings/ICM1924.1/ICM1924.1.ocr.pdf" target="_blank" rel="noopener">1924 ICM proceedings</a></p>
+      </article>
+      <article class="claim corrected" id="w-2">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#wheeler">history §</a></div>
+        <p><b>Wheeler selected symmetric face-plane regions he called “elements.”</b> His paper does not say “take the cells behind them”; that was an anachronistic translation into later Du Val/app language.</p>
+        <p class="evidence"><a href="https://www.mathunion.org/fileadmin/ICM/Proceedings/ICM1924.1/ICM1924.1.ocr.pdf" target="_blank" rel="noopener">Wheeler's paper, pp. 701–708</a></p>
+      </article>
+      <article class="claim" id="w-3">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#wheeler">history §</a></div>
+        <p><b>His table contains 22 entries, 20 modulo two mirror pairs.</b> His scheme was more permissive than Miller's later rules and included hollow/disconnected cases; later f₂ and g₁ correspond to Wheeler 21 and 22.</p>
+        <p class="evidence"><a href="https://www.mathunion.org/fileadmin/ICM/Proceedings/ICM1924.1/ICM1924.1.ocr.pdf" target="_blank" rel="noopener">Wheeler 1924</a><a href="https://www.cambridge.org/core/services/aop-cambridge-core/content/view/32F22F4F1F11FC35A191F79D1010AB11/S0025557200170433a.pdf/in_search_of_the_lost_icosahedra.pdf" target="_blank" rel="noopener">Inchbald critique</a></p>
+      </article>
+      <article class="claim" id="w-4">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#wheeler">history §</a></div>
+        <p><b>Wheeler numbered and usually dated models in pencil.</b> The Smithsonian catalogs more than 1,000 model records under his name; this narrower statement replaces the unproved claim that it holds “the bulk” of an unknown total.</p>
+        <p class="evidence"><a href="https://www.americanhistory.si.edu/collections/object-groups/maa-charter/geometric-models-a-harry-wheeler" target="_blank" rel="noopener">Smithsonian Wheeler collection</a><a href="https://api.si.edu/openaccess/api/v1.0/search?q=%22Wheeler%2C%20Albert%20Harry%22%20object_type%3AModels&amp;api_key=DEMO_KEY&amp;rows=0" target="_blank" rel="noopener">Smithsonian catalogue query</a></p>
+      </article>
+      <article class="claim corrected" id="w-5">
+        <div class="claim-head"><span class="verdict corrected">Scene removed</span><a class="back" href="historical.html#wheeler">history §</a></div>
+        <p><b>Wheeler withdrew from the <i>Fifty-Nine</i> collaboration over Coxeter's exposition.</b> His papers support the “involved,” “clumsy” and “tied into knots” objections. Model 370 is dated 26 April 1919 and corresponds to De₁/Plate VIII; no source says it “sat on his desk.”</p>
+        <p class="evidence"><a href="https://doi.org/10.1006/hmat.1996.0028" target="_blank" rel="noopener">Roberts</a><a href="https://americanhistory.si.edu/collections/nmah_1066725" target="_blank" rel="noopener">Smithsonian model 370</a></p>
+      </article>
+      <article class="claim" id="w-6">
+        <div class="claim-head"><span class="verdict">Supported anecdote</span><a class="back" href="historical.html#wheeler">history §</a></div>
+        <p><b>The pupil-photo model is real.</b> The 25.5 cm third stellation was folded without glue by Wheeler and students in June 1927; 15 of 60 faces bear North High pupil photographs and two more bear boys' names.</p>
+        <p class="evidence"><a href="https://www.si.edu/object/geometric-model-deltahedron-third-stellation-icosahedron-harry-wheeler-and-his-students%3Anmah_905026" target="_blank" rel="noopener">Smithsonian object record</a></p>
+      </article>
+      <article class="claim" id="w-7">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#wheeler">history §</a></div>
+        <p><b>The construction materials are documented.</b> Wheeler used paper, tan stock, transparent green celluloid, pencilled numbering and sometimes hinged, glue-free folds. These describe recurring techniques, not every model.</p>
+        <p class="evidence"><a href="https://www.americanhistory.si.edu/collections/object-groups/maa-charter/geometric-models-a-harry-wheeler" target="_blank" rel="noopener">Smithsonian object group</a><a href="https://americanhistory.si.edu/collections/nmah_1066725" target="_blank" rel="noopener">Representative model record</a></p>
+      </article>
+      <article class="claim" id="w-8">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#wheeler">history §</a></div>
+        <p><b>Wheeler held six patents</b> for a pea blower, playing cards, a door, a puzzle, a mathematical model and a blank for hollow polyhedra. The museum's “ingenious amateur” versus public mathematician contrast is explicitly a curatorial assessment.</p>
+        <p class="evidence"><a href="https://patents.google.com/patent/US921764A/en" target="_blank" rel="noopener">Patent 921,764</a><a href="https://patents.google.com/patent/US1292188A/en" target="_blank" rel="noopener">Patent 1,292,188</a><a href="https://americanhistory.si.edu/collections/nmah_1066725" target="_blank" rel="noopener">Smithsonian note</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="fiftynine" data-year="1938–1999" data-short="The Fifty-Nine">
+    <span class="when">1938–1999</span>
+    <h2><i>The Fifty-Nine Icosahedra</i></h2>
+    <div class="claim-list">
+      <article class="claim" id="f-1">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>The 1938 Toronto book has 26 pages, 20 plates, paper covers and a four-shilling-sixpence price.</b> “Standard enumeration under Miller's rules” replaces the opinion stated as fact that it was definitive.</p>
+        <p class="evidence"><a href="https://www.cambridge.org/core/journals/mathematical-gazette/article/fiftynine-icosahedra-by-h-s-m-coxeter-p-du-val-h-t-flather-and-j-f-petrie-26-pp-20-plates-paper-cover-4s-6d-1938-university-of-toronto-studies-mathematical-series-no-6-university-of-toronto-press-humphrey-milford/A8A42C85650E9027A257E0FD7D8DFE23" target="_blank" rel="noopener">Miller's contemporary review</a><a href="https://link.springer.com/book/10.1007/978-1-4613-8216-4" target="_blank" rel="noopener">Book record</a></p>
+      </article>
+      <article class="claim corrected" id="f-2">
+        <div class="claim-head"><span class="verdict corrected">Clarified</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>Coxeter enumerated with a graph organizing compatible face-plane regions.</b> Du Val devised a–h cell notation and hand distinctions; Flather made miniature card models; Petrie drew the difficult perspective plates; J. C. P. Miller supplied five admissibility rules but was not a listed author.</p>
+        <p class="evidence"><a href="https://link.springer.com/content/pdf/bfm:978-1-4613-8216-4/1" target="_blank" rel="noopener">Du Val 1982 preface</a><a href="https://fortran.orpheusweb.co.uk/Poly/errata.pdf" target="_blank" rel="noopener">1999 preface and corrected text</a><a href="https://www.cambridge.org/core/services/aop-cambridge-core/content/view/32F22F4F1F11FC35A191F79D1010AB11/S0025557200170433a.pdf/in_search_of_the_lost_icosahedra.pdf" target="_blank" rel="noopener">Rules reproduced by Inchbald</a></p>
+      </article>
+      <article class="claim" id="f-3">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>The five-rule paraphrase is faithful.</b> It covers common face planes and parts, trigonal symmetry, outside accessibility and exclusion of decomposable composites, with one enantiomorphic exception. The crawling-insect parenthesis really is in the original discussion.</p>
+        <p class="evidence"><a href="https://www.cambridge.org/core/services/aop-cambridge-core/content/view/32F22F4F1F11FC35A191F79D1010AB11/S0025557200170433a.pdf/in_search_of_the_lost_icosahedra.pdf" target="_blank" rel="noopener">Inchbald, original rules and critique</a></p>
+      </article>
+      <article class="claim project" id="f-4">
+        <div class="claim-head"><span class="verdict project">Project / table</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>Mainline A–H accumulates complete shells.</b> A is the icosahedron; C the five-octahedra compound; G the great icosahedron; H the 473-cell final stellation. H's radius is about 8.36 times A in project data; the illustration rescales each to its frame.</p>
+        <p class="evidence"><a href="https://mathworld.wolfram.com/IcosahedronStellations.html" target="_blank" rel="noopener">MathWorld table</a><a href="https://mathworld.wolfram.com/Echidnahedron.html" target="_blank" rel="noopener">H / echidnahedron</a><a href="https://github.com/yaroslavvb/stellation" target="_blank" rel="noopener">Project geometry data</a></p>
+      </article>
+      <article class="claim corrected" id="f-5">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>Flather's occupation is not unknown.</b> Coxeter called him a crystallographer; Du Val said he was not a professional mathematician and died about 1950. His first names and exact vital dates remain elusive. Models attributed to him predate the collaboration; the complete set passed to Cambridge.</p>
+        <p class="evidence"><a href="https://fortran.orpheusweb.co.uk/Poly/errata.pdf" target="_blank" rel="noopener">Coxeter preface</a><a href="https://link.springer.com/content/pdf/bfm:978-1-4613-8216-4/1" target="_blank" rel="noopener">Du Val preface</a><a href="https://www.steelpillow.com/polyhedra/icosa/lost/lost.html" target="_blank" rel="noopener">Pre-collaboration reconstruction</a></p>
+      </article>
+      <article class="claim corrected" id="f-6">
+        <div class="claim-head"><span class="verdict corrected">Softened</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>Petrie was Flinders Petrie's son and could visualize complicated four-dimensional figures.</b> Coxeter recalls his UCL study, wartime capture, prison-camp choir and later tutoring at Dartington of children not doing well in school. He died in a 1972 road accident; the unsupported age 64 was removed.</p>
+        <p class="evidence"><a href="https://namdu.uz/media/Books/pdf/2024/06/21/NamDU-ARM-7050-CANDID_SCIENCE_V.pdf?raw=1" target="_blank" rel="noopener">Coxeter interview, pp. 5–6</a><a href="https://link.springer.com/content/pdf/bfm:978-1-4613-8216-4/1" target="_blank" rel="noopener">Du Val preface</a></p>
+      </article>
+      <article class="claim corrected" id="f-7">
+        <div class="claim-head"><span class="verdict corrected">Agency fixed</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>Du Val singularities are ADE surface singularities named for Patrick Du Val.</b> He did not personally “name” the object after himself. The same mathematician devised the icosahedron cell notation.</p>
+        <p class="evidence"><a href="https://mathshistory.st-andrews.ac.uk/LMS/du_val_lms_obit.pdf" target="_blank" rel="noopener">LMS obituary</a><a href="https://mathshistory.st-andrews.ac.uk/Biographies/Du_Val/" target="_blank" rel="noopener">Du Val biography</a></p>
+      </article>
+      <article class="claim corrected" id="f-8">
+        <div class="claim-head"><span class="verdict corrected">Analogy fixed</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>The two Millers made different contributions.</b> William Hallowes Miller devised (hkl) crystal-plane indices; J. C. P. Miller proposed stellation admissibility rules. J. C. P. Miller and David Wheeler used EDSAC in 1951 to find a 79-digit prime, then the largest known.</p>
+        <p class="evidence"><a href="https://biography.wales/article/s-MILL-HAL-1801.html" target="_blank" rel="noopener">W. H. Miller biography</a><a href="https://mathshistory.st-andrews.ac.uk/Biographies/Sadler/" target="_blank" rel="noopener">MacTutor's account of J. C. P. Miller</a><a href="https://www.nature.com/articles/168838b0" target="_blank" rel="noopener">1951 Nature notice</a></p>
+      </article>
+      <article class="claim corrected" id="f-9">
+        <div class="claim-head"><span class="verdict corrected">Edition added</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>Toronto reprinted the original in 1951.</b> Springer followed in 1982 with Du Val's preface; Tarquin's 1999 third edition was reset/redrawn by Kate and David Crennell and introduced 1–59 indexing. The unsourced claim that this numbering is universally used was removed.</p>
+        <p class="evidence"><a href="https://mathshistory.st-andrews.ac.uk/LMS/du_val_lms_obit.pdf" target="_blank" rel="noopener">Du Val bibliography</a><a href="https://fortran.orpheusweb.co.uk/Poly/59icos.htm" target="_blank" rel="noopener">Crennell edition history</a></p>
+      </article>
+      <article class="claim" id="f-10">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>Ef₁ is one hand of the five-tetrahedra compound, Crennell 47, and one of two fully supported chiral stellations.</b> It is also a familiar paper model, but support status is no longer presented as the cause of popularity.</p>
+        <p class="evidence"><a href="https://mathworld.wolfram.com/IcosahedronStellations.html" target="_blank" rel="noopener">Icosahedron stellations table</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Brückner IX.11 identification</a></p>
+      </article>
+      <article class="claim qualified" id="f-11">
+        <div class="claim-head"><span class="verdict qualified">Conditional</span><a class="back" href="historical.html#fiftynine">history §</a></div>
+        <p><b>Fifty-nine follows from Miller's rules; it is not forced by geometry alone.</b> The rules judge exposed face regions, ignore internal structure, admit disconnected f₂ and exclude some continuous-faced alternatives. “Not a theorem” was softened to “conditional.”</p>
+        <p class="evidence"><a href="https://www.cambridge.org/core/services/aop-cambridge-core/content/view/32F22F4F1F11FC35A191F79D1010AB11/S0025557200170433a.pdf/in_search_of_the_lost_icosahedra.pdf" target="_blank" rel="noopener">Inchbald, In Search of the Lost Icosahedra</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="escher" data-year="1948–1961" data-short="M. C. Escher">
+    <span class="when">1948–1961</span>
+    <h2>Escher working from Brückner</h2>
+    <div class="claim-list">
+      <article class="claim" id="e-1">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#escher">history §</a></div>
+        <p><b>The named works and solids check.</b> <i>Stars</i> (1948) uses three octahedra; <i>Order and Chaos</i> (1950) and <i>Gravitation</i> (1952) use the small stellated dodecahedron; <i>Waterfall</i> (1961) caps its towers with three cubes and the triangular-faced outer hull of the first rhombic-dodecahedron stellation.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart 2019</a><a href="https://escherinhetpaleis.nl/en/about-escher/escher-today/magical-polyhedra" target="_blank" rel="noopener">Escher museum</a></p>
+      </article>
+      <article class="claim" id="e-2">
+        <div class="claim-head"><span class="verdict">Supported anecdote</span><a class="back" href="historical.html#escher">history §</a></div>
+        <p><b>Direct dependence on Brückner is documented.</b> Escher's coloured-pencil studies cite Plate IX nos. 11 and 23. Hart shows that the five-tetrahedra study changes viewpoint rather than tracing the photograph and uses five colours to separate components.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart, drawings and model evidence</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-347-jul29_2019.pdf" target="_blank" rel="noopener">Schattschneider</a></p>
+      </article>
+      <article class="claim" id="e-3">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#escher">history §</a></div>
+        <p><b>Escher's cardboard five-tetrahedra model survives with leaf curves on five faces and underlies the 1958 maple <i>Polyhedron with Flowers</i>.</b> Berend Escher is a plausible, not documented, source for the book; he supplied technical references and published a 1935 crystallography text.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2019/bridges2019-347-jul29_2019.pdf" target="_blank" rel="noopener">Schattschneider</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart</a></p>
+      </article>
+      <article class="claim corrected" id="e-4">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#escher">history §</a></div>
+        <p><b><i>Stars</i> contains many background polyhedra and compounds, several matching Brückner.</b> The former exact “a dozen more of the book's solids” was not established. The central cage is Brückner VIII.12.</p>
+        <p class="evidence"><a href="https://www.nga.gov/artworks/54240-stars" target="_blank" rel="noopener">National Gallery, Stars</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart's identifications</a></p>
+      </article>
+      <article class="claim" id="e-5">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#escher">history §</a></div>
+        <p><b><i>Gravitation</i> is a lithograph and watercolour from June 1952.</b> Its 12 creatures were planned as turtles whose shells are replaced by the perforated polyhedron. <i>Waterfall</i>'s plate-number identifications are supported by Hart.</p>
+        <p class="evidence"><a href="https://escherinhetpaleis.nl/en/about-escher/escher-today/gravity-1952" target="_blank" rel="noopener">Escher museum, Gravity</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart</a></p>
+      </article>
+      <article class="claim corrected" id="e-6">
+        <div class="claim-head"><span class="verdict corrected">Qualified name</span><a class="back" href="historical.html#escher">history §</a></div>
+        <p><b>Escher's solid is the triangular-faced outer hull of the first stellation of the rhombic dodecahedron, not the stellation's face structure itself.</b> The hull has 48 triangular faces; the stellation has 12 self-intersecting hexagonal faces. Recreational sources often identify them loosely, so the essay now states the distinction.</p>
+        <p class="evidence"><a href="https://mathworld.wolfram.com/EschersSolid.html" target="_blank" rel="noopener">MathWorld, Escher's Solid</a><a href="https://www.georgehart.com/virtual-polyhedra/escher.html" target="_blank" rel="noopener">Hart's first-stellation terminology</a></p>
+      </article>
+      <article class="claim" id="e-7">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#escher">history §</a></div>
+        <p><b>Coxeter's 1985 review treated the three-octahedra compound as Escher's independent rediscovery while noting Brückner's prior image.</b> The later annotated-drawing evidence supersedes that romantic inference.</p>
+        <p class="evidence"><a href="https://link.springer.com/article/10.1007/BF03023010" target="_blank" rel="noopener">Coxeter review</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart 2019</a></p>
+      </article>
+      <article class="claim corrected" id="e-8">
+        <div class="claim-head"><span class="verdict corrected">Causality tightened</span><a class="back" href="historical.html#escher">history §</a></div>
+        <p><b>Coxeter's 1957 paper gave Escher a way into <i>Circle Limit I</i>.</b> Figure 7 was a starting point, after which Escher developed the four-print series through 1960. The essay no longer says one diagram simply produced the entire series.</p>
+        <p class="evidence"><a href="https://www.ams.org/notices/201006/rtx100600706p.pdf" target="_blank" rel="noopener">Schattschneider, Notices AMS</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="wenninger" data-year="1971" data-short="Wenninger & makers">
+    <span class="when">1971</span>
+    <h2>Magnus Wenninger and later model makers</h2>
+    <div class="claim-list">
+      <article class="claim" id="wn-1">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#wenninger">history §</a></div>
+        <p><b>Magnus Wenninger (1919–2017) was a Benedictine of Saint John's Abbey and taught in the Bahamas from 1946 to 1971.</b> <i>Polyhedron Models</i> appeared in 1971 and supplied nets and construction instructions.</p>
+        <p class="evidence"><a href="https://saintjohnsabbey.org/father-magnus-joseph-wenninger-osb" target="_blank" rel="noopener">Saint John's Abbey biography</a><a href="https://books.google.com/books/about/Polyhedron_Models.html?id=N8lX2T-4njIC" target="_blank" rel="noopener">Book record</a></p>
+      </article>
+      <article class="claim project" id="wn-2">
+        <div class="claim-head"><span class="verdict project">Book / project check</span><a class="back" href="historical.html#wenninger">history §</a></div>
+        <p><b>The icosahedron shell counts are 20, 30, 60, 20, 60, 120, 12, 30, 60 and 60: 472 outside the core, 473 including it.</b> The project computes these values and checks them against Wenninger's table.</p>
+        <p class="evidence"><a href="https://books.google.com/books/about/Polyhedron_Models.html?id=N8lX2T-4njIC" target="_blank" rel="noopener">Wenninger book</a><a href="https://github.com/yaroslavvb/stellation/blob/main/docs/test/validate.mjs" target="_blank" rel="noopener">Validation test</a><a href="https://mathworld.wolfram.com/IcosahedronStellations.html" target="_blank" rel="noopener">Independent tabulation</a></p>
+      </article>
+      <article class="claim" id="wn-3">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#wenninger">history §</a></div>
+        <p><b>Ulrich Mikloweit co-translated Brückner's 1906 work and makes open-faced paper compounds.</b> Hart documents Marcel Tünnissen's roughly 222-hour compound and Tom Lechner's 2.5 m table-sawn wooden model built over four months.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Hart 2019, later makers</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="architecture" data-year="1589–1899" data-short="Architecture & Moravian star">
+    <span class="when">1589–1899</span>
+    <h2>Star polyhedra on buildings and in windows</h2>
+    <div class="claim-list">
+      <article class="claim qualified" id="a-1">
+        <div class="claim-head"><span class="verdict qualified">Survey + observation</span><a class="back" href="historical.html#built">history §</a></div>
+        <p><b>Tarnai, Krähling and Kabai surveyed three-dimensional star-polyhedron ornaments on buildings, including papal stars in Rome.</b> The statement that the pictured Roman examples are visible from the street is the essay author's observation, not a claim in the paper.</p>
+        <p class="evidence"><a href="https://www.polyhedra-world.nc/stuff/PAP209tarnai.pdf" target="_blank" rel="noopener">Tarnai–Kráhling–Kabai survey</a></p>
+      </article>
+      <article class="claim" id="a-2">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#built">history §</a></div>
+        <p><b>The Piazza del Popolo finial dates to the 1589 re-erection of the Flaminio obelisk under Sixtus V.</b> The survey models its bronze star as a compound of two eight-pointed star dipyramids.</p>
+        <p class="evidence"><a href="https://www.polyhedra-world.nc/stuff/PAP209tarnai.pdf" target="_blank" rel="noopener">Architecture survey</a></p>
+      </article>
+      <article class="claim" id="a-3">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#built">history §</a></div>
+        <p><b>The 1667 Piazza della Minerva monument carries the Chigi mounts and a star the survey reads as an elevated dodecahedron.</b> The comparison with Pacioli's lower equilateral elevation is a geometric observation.</p>
+        <p class="evidence"><a href="https://www.polyhedra-world.nc/stuff/PAP209tarnai.pdf" target="_blank" rel="noopener">Architecture survey</a></p>
+      </article>
+      <article class="claim" id="a-4">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#built">history §</a></div>
+        <p><b>Carlo Marchionni's St Peter's sacristy was built in 1776–84.</b> The Pius VI roof star is a near great stellated dodecahedron; two of its 20 triangular pyramids are omitted to accommodate the cross.</p>
+        <p class="evidence"><a href="https://www.polyhedra-world.nc/stuff/PAP209tarnai.pdf" target="_blank" rel="noopener">Architecture survey</a><a href="https://www.iucr.org/news/newsletter/volume-30/number-4/star-polyhedra" target="_blank" rel="noopener">IUCr, Star polyhedra</a></p>
+      </article>
+      <article class="claim corrected" id="a-5">
+        <div class="claim-head"><span class="verdict corrected">Chronology corrected</span><a class="back" href="historical.html#built">history §</a></div>
+        <p><b>The earliest surviving Moravian-star reference is a 110-point star at the Niesky boys' school in December 1820/January 1821.</b> Stars at Moravian schools are associated with geometry teaching, but the exact inventor is unknown.</p>
+        <p class="evidence"><a href="https://journals.ku.edu/ygas/article/download/18183/16358" target="_blank" rel="noopener">William E. Petig, The Moravian Star: Its Origin and History</a></p>
+      </article>
+      <article class="claim corrected" id="a-6">
+        <div class="claim-head"><span class="verdict corrected">Names and dates fixed</span><a class="back" href="historical.html#built">history §</a></div>
+        <p><b>Pieter Hendrik Verbeek—not “Peter”—opened his Herrnhut art/music/paper shop in 1894, sold stars, patented a sturdy demountable design in 1898 and formed the first factory partnership in 1899.</b> His son Harry managed the reorganized Sterne GmbH from 1925; the son did not found the first factory.</p>
+        <p class="evidence"><a href="https://journals.ku.edu/ygas/article/download/18183/16358" target="_blank" rel="noopener">Petig 2015</a><a href="https://www.herrnhuter-sterne.de/en/Unternehmensgeschichte.html" target="_blank" rel="noopener">Herrnhuter Sterne company history</a></p>
+      </article>
+      <article class="claim corrected" id="a-7">
+        <div class="claim-head"><span class="verdict corrected">Classification fixed</span><a class="back" href="historical.html#built">history §</a></div>
+        <p><b>The familiar 26-point form has 18 square-based and eight triangular-based points on a rhombicuboctahedral core.</b> It is an elevation/augmentation, not a true face-plane stellation. The unsupported worldwide superlative was replaced by “may be the most familiar star polyhedron.”</p>
+        <p class="evidence"><a href="https://journals.ku.edu/ygas/article/download/18183/16358" target="_blank" rel="noopener">Petig, geometry and production</a><a href="https://www.polyhedra-world.nc/stuff/PAP209tarnai.pdf" target="_blank" rel="noopener">Geometric classification</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="quasicrystals" data-year="1982–2011" data-short="Quasicrystals">
+    <span class="when">1982–2011</span>
+    <h2>Five-fold order in metal</h2>
+    <div class="claim-list">
+      <article class="claim corrected" id="q-1">
+        <div class="claim-head"><span class="verdict corrected">Scope corrected</span><a class="back" href="historical.html#quasicrystals">history §</a></div>
+        <p><b>Not every solid on the page has icosahedral symmetry.</b> The dodecahedral and icosahedral examples do; the octahedron and rhombic dodecahedron do not. The essay now limits the symmetry claim accordingly.</p>
+        <p class="evidence"><a href="https://mathworld.wolfram.com/IcosahedralGroup.html" target="_blank" rel="noopener">Icosahedral symmetry</a><a href="https://mathworld.wolfram.com/OctahedralGroup.html" target="_blank" rel="noopener">Octahedral symmetry</a></p>
+      </article>
+      <article class="claim corrected" id="q-2">
+        <div class="claim-head"><span class="verdict corrected">Theorem qualified</span><a class="back" href="historical.html#quasicrystals">history §</a></div>
+        <p><b>The crystallographic restriction applies to periodic lattices.</b> Such a lattice permits only one-, two-, three-, four- and six-fold rotational axes. Five-fold order is therefore excluded from periodic translational order, not from all solids or all matter; the pentagon and icosahedron examples are illustrations, not a proof.</p>
+        <p class="evidence"><a href="https://dictionary.iucr.org/Crystal" target="_blank" rel="noopener">IUCr Online Dictionary, Crystal</a><a href="https://dictionary.iucr.org/Aperiodic_crystal" target="_blank" rel="noopener">Aperiodic crystal</a></p>
+      </article>
+      <article class="claim" id="q-3">
+        <div class="claim-head"><span class="verdict">Supported anecdote</span><a class="back" href="historical.html#quasicrystals">history §</a></div>
+        <p><b>On 8 April 1982 at the US National Bureau of Standards, Shechtman observed ten-fold diffraction in rapidly quenched Al–Mn sample 1725.</b> His notebook reads “10 fold” with three question marks; he recalls saying the Hebrew equivalent of “there is no such animal.”</p>
+        <p class="evidence"><a href="https://www.nist.gov/nist-and-nobel/dan-shechtman/nobel-moment-dan-shechtman" target="_blank" rel="noopener">NIST, The Nobel Moment</a><a href="https://www.nist.gov/image/shechtman-lab-notebook" target="_blank" rel="noopener">NIST notebook image</a></p>
+      </article>
+      <article class="claim qualified" id="q-4">
+        <div class="claim-head"><span class="verdict qualified">First-person account</span><a class="back" href="historical.html#quasicrystals">history §</a></div>
+        <p><b>The textbook and expulsion anecdote is told by Shechtman.</b> Being asked to leave a research group is not necessarily termination of his NBS appointment; the essay retains “as Shechtman tells it.” His first publication attempt was rejected.</p>
+        <p class="evidence"><a href="https://www.nobelprize.org/prizes/chemistry/2011/popular-information/" target="_blank" rel="noopener">Nobel popular information</a><a href="https://www.nist.gov/nist-and-nobel/dan-shechtman/nobel-moment-dan-shechtman" target="_blank" rel="noopener">NIST account</a></p>
+      </article>
+      <article class="claim" id="q-5">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#quasicrystals">history §</a></div>
+        <p><b>Shechtman, Blech, Gratias and John W. Cahn published on 12 November 1984.</b> Levine and Steinhardt's 24 December paper introduced the word “quasicrystal,” six weeks later.</p>
+        <p class="evidence"><a href="https://doi.org/10.1103/PhysRevLett.53.1951" target="_blank" rel="noopener">Shechtman et al., PRL</a><a href="https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.53.2477" target="_blank" rel="noopener">Levine &amp; Steinhardt, PRL</a></p>
+      </article>
+      <article class="claim qualified" id="q-6">
+        <div class="claim-head"><span class="verdict qualified">Attributed</span><a class="back" href="historical.html#quasicrystals">history §</a></div>
+        <p><b>Pauling opposed quasicrystals publicly and proposed twinned cubic alternatives until his 1994 death.</b> The “quasi-scientists” line is reported by Shechtman, not found in the Pauling papers; surviving correspondence is more civil, so the essay does not present the line as a documented quotation.</p>
+        <p class="evidence"><a href="https://paulingblog.wordpress.com/2012/05/16/shechtman-and-pauling-debate-quasicrystal-theory/" target="_blank" rel="noopener">Pauling archive blog</a><a href="https://paulingblog.wordpress.com/2012/05/09/the-pauling-theory-of-quasicrystals/" target="_blank" rel="noopener">Pauling's alternative theory</a></p>
+      </article>
+      <article class="claim" id="q-7">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#quasicrystals">history §</a></div>
+        <p><b>The IUCr adopted a diffraction-based crystal definition in 1992, accommodating aperiodic crystals without repealing the periodic-lattice theorem.</b> Shechtman received the unshared 2011 Nobel Prize in Chemistry.</p>
+        <p class="evidence"><a href="https://dictionary.iucr.org/Crystal" target="_blank" rel="noopener">IUCr definition</a><a href="https://www.nobelprize.org/prizes/chemistry/2011/summary/" target="_blank" rel="noopener">2011 Nobel summary</a></p>
+      </article>
+      <article class="claim project" id="q-8">
+        <div class="claim-head"><span class="verdict project">Image distinction</span><a class="back" href="historical.html#quasicrystals">history §</a></div>
+        <p><b>The displayed diffraction image is a later Zn–Mg–Ho quasicrystal, not Shechtman's original 1982 plate.</b> It exhibits forbidden-to-periodic-lattices rotational order; the essay no longer says the alloy “repeated” the axis while also being non-periodic.</p>
+        <p class="evidence"><a href="https://commons.wikimedia.org/wiki/File:Zn-Mg-HoDiffraction.JPG" target="_blank" rel="noopener">Commons image record</a><a href="https://www.nist.gov/image/shechtman-lab-notebook" target="_blank" rel="noopener">Original notebook context</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="biology" data-year="1962–1985" data-short="Viruses, carbon & Acantharia">
+    <span class="when">1962–1985</span>
+    <h2>Icosahedral biology and C₆₀</h2>
+    <div class="claim-list">
+      <article class="claim corrected" id="bio-1">
+        <div class="claim-head"><span class="verdict corrected">Corrected</span><a class="back" href="historical.html#biology">history §</a></div>
+        <p><b>Caspar and Klug's 1962 theory explains molecular economy through equivalent or quasi-equivalent protein subunits.</b> “Many copies of a single protein” was too strong as a general rule and false in the adenovirus caption.</p>
+        <p class="evidence"><a href="https://pubmed.ncbi.nlm.nih.gov/14019094/" target="_blank" rel="noopener">Caspar &amp; Klug, Cold Spring Harbor Symposia</a><a href="https://www.rpgroup.caltech.edu/virus_bootcamp/assets/pdfs/caspar.pdf" target="_blank" rel="noopener">Full paper</a></p>
+      </article>
+      <article class="claim corrected" id="bio-2">
+        <div class="claim-head"><span class="verdict corrected">Protein detail fixed</span><a class="back" href="historical.html#biology">history §</a></div>
+        <p><b>Adenovirus has 240 hexon trimers on faces, 12 pentons at vertices and a trimeric knobbed fibre at each vertex.</b> It uses distinct capsid proteins; the star-like visual description is observational.</p>
+        <p class="evidence"><a href="https://pdb101.rcsb.org/motm/132" target="_blank" rel="noopener">PDB-101, Adenovirus</a><a href="https://ictv.global/report/chapter/adenoviridae/adenoviridae" target="_blank" rel="noopener">ICTV Adenoviridae</a></p>
+      </article>
+      <article class="claim" id="bio-3">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#biology">history §</a></div>
+        <p><b>Astrovirus takes its name from Greek <i>astron</i>, star.</b> Roughly 10% of particles show the characteristic five- or six-pointed surface star in electron micrographs.</p>
+        <p class="evidence"><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4187635/" target="_blank" rel="noopener">Astrovirus structure review</a><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7148626/" target="_blank" rel="noopener">Virology reference chapter</a></p>
+      </article>
+      <article class="claim" id="bio-4">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#biology">history §</a></div>
+        <p><b>Harold Kroto, James Heath, Sean O'Brien, Robert Curl and Richard Smalley reported C₆₀ in 1985 as a truncated-icosahedral carbon cage and named it buckminsterfullerene after Buckminster Fuller.</b> Kroto, Curl and Smalley shared the 1996 Chemistry Nobel for the discovery of fullerenes.</p>
+        <p class="evidence"><a href="https://doi.org/10.1038/318162a0" target="_blank" rel="noopener">Nature 1985 paper</a><a href="https://www.nobelprize.org/prizes/chemistry/1996/press-release/" target="_blank" rel="noopener">1996 Nobel press release</a></p>
+      </article>
+      <article class="claim project" id="bio-5">
+        <div class="claim-head"><span class="verdict project">Geometry</span><a class="back" href="historical.html#biology">history §</a></div>
+        <p><b>A truncated icosahedron has 12 pentagons, 20 hexagons and 60 vertices.</b> C₆₀ places one carbon atom at each vertex. It has icosahedral symmetry, like the dodecahedral/icosahedral examples—not “everything on the page.”</p>
+        <p class="evidence"><a href="https://mathworld.wolfram.com/TruncatedIcosahedron.html" target="_blank" rel="noopener">Truncated icosahedron</a><a href="https://www.nobelprize.org/prizes/chemistry/1996/press-release/" target="_blank" rel="noopener">C₆₀ structure</a></p>
+      </article>
+      <article class="claim qualified" id="bio-6">
+        <div class="claim-head"><span class="verdict qualified">Artwork qualified</span><a class="back" href="historical.html#biology">history §</a></div>
+        <p><b>Haeckel's <i>Acanthometra</i> plate depicts highly regular 20-spine forms.</b> Modern scholarship treats his plates as scientifically informed idealizations and notes that idealization and embryo imagery were controversial in his lifetime; the caption does not claim a specimen matched the drawing exactly.</p>
+        <p class="evidence"><a href="https://www.sciencedirect.com/science/article/pii/S0960982219315313" target="_blank" rel="noopener">Current Biology on Haeckel imagery</a><a href="https://commons.wikimedia.org/wiki/File:Haeckel_Acanthometra.jpg" target="_blank" rel="noopener">Plate record</a></p>
+      </article>
+      <article class="claim corrected" id="bio-7">
+        <div class="claim-head"><span class="verdict corrected">Anatomy corrected</span><a class="back" href="historical.html#biology">history §</a></div>
+        <p><b>Acantharia are the only organisms known to form entire mineral skeletons of celestite.</b> Depending on lineage, the skeleton has 10 diametric or 20 radial spicules. The former blanket “20 spines passing through the centre” conflated those plans.</p>
+        <p class="evidence"><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3543462/" target="_blank" rel="noopener">Cyst-forming Acantharia review</a><a href="https://www.sciencedirect.com/science/article/pii/S174270612300048X" target="_blank" rel="noopener">Acta Biomaterialia morphology study</a></p>
+      </article>
+      <article class="claim corrected" id="bio-8">
+        <div class="claim-head"><span class="verdict corrected">Range and analogy</span><a class="back" href="historical.html#biology">history §</a></div>
+        <p><b>Müller's law places eight polar, eight tropical and four equatorial spines in the familiar 20-spine form.</b> Species range from about 0.05 to 5 mm, not uniformly one millimetre. “Living stellated polyhedron” is explicitly a visual analogy, not a taxonomic description.</p>
+        <p class="evidence"><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8857179/" target="_blank" rel="noopener">Scientific Reports CT study</a><a href="https://www.sciencedirect.com/topics/earth-and-planetary-sciences/celestine" target="_blank" rel="noopener">Treatise on Geochemistry summary</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="program" data-year="1997–" data-short="Bulatov & this port">
+    <span class="when">1997–</span>
+    <h2>Bulatov's software and the JavaScript port</h2>
+    <div class="claim-list">
+      <article class="claim corrected" id="pr-1">
+        <div class="claim-head"><span class="verdict corrected">Timeline corrected</span><a class="back" href="historical.html#now">history §</a></div>
+        <p><b>Bulatov's interactive stellation pages were online by 1997–98; the Java applet documented in his 2001 paper dates to 2000–01.</b> The older “written between 1998 and 2001” blurred the VRML pages, applet and surviving desktop source.</p>
+        <p class="evidence"><a href="http://bulatov.org/polyhedra/stellation/" target="_blank" rel="noopener">1997 VRML stellation pages</a><a href="http://bulatov.org/polyhedra/stellation_applet/" target="_blank" rel="noopener">Java applet page</a><a href="https://archive.bridgesmathart.org/2001/bridges2001-201.pdf" target="_blank" rel="noopener">Bulatov 2001 paper</a></p>
+      </article>
+      <article class="claim" id="pr-2">
+        <div class="claim-head"><span class="verdict">Supported</span><a class="back" href="historical.html#now">history §</a></div>
+        <p><b>The Cells window makes Du Val-like cell-orbit notation interactive under selectable symmetry.</b> Bulatov's paper describes the method and interface; the paper is the closest contemporary specification.</p>
+        <p class="evidence"><a href="https://archive.bridgesmathart.org/2001/bridges2001-201.pdf" target="_blank" rel="noopener">Bulatov, An Interactive Creation of Polyhedra Stellations</a></p>
+      </article>
+      <article class="claim qualified" id="pr-3">
+        <div class="claim-head"><span class="verdict qualified">Survey result</span><a class="back" href="historical.html#now">history §</a></div>
+        <p><b>No other surveyed stellation program presented the notation in quite the same table-driven form.</b> This is a bounded prior-art survey result, not a universal negative. Stella/Great Stella offers related cell-diagram workflows.</p>
+        <p class="evidence"><a href="https://github.com/yaroslavvb/stellation/blob/main/notes/research/r5-software-prior-art.md" target="_blank" rel="noopener">Software prior-art survey</a></p>
+      </article>
+      <article class="claim project" id="pr-4">
+        <div class="claim-head"><span class="verdict project">Tested</span><a class="back" href="historical.html#now">history §</a></div>
+        <p><b>The JavaScript port matches the Java reference on checked facet counts, cell structure and volumes to six decimal places.</b> The validation suite contains 42 assertions; sample files round-trip byte-identically and the catalog sweep exercises 121 entries.</p>
+        <p class="evidence"><a href="https://github.com/yaroslavvb/stellation" target="_blank" rel="noopener">Validation results</a><a href="https://github.com/yaroslavvb/stellation/blob/main/docs/test/validate.mjs" target="_blank" rel="noopener">42-assertion suite</a><a href="https://github.com/yaroslavvb/stellation/blob/main/docs/test/sweep.mjs" target="_blank" rel="noopener">Catalog sweep</a></p>
+      </article>
+      <article class="claim project" id="pr-5">
+        <div class="claim-head"><span class="verdict project">Build check</span><a class="back" href="historical.html#now">history §</a></div>
+        <p><b>The original Java source still compiles and runs with a contemporary JDK.</b> The four displayed Kepler–Poinsot cards and their cell selections are generated by this port; clicking them loads those selections.</p>
+        <p class="evidence"><a href="https://github.com/vbulatov2011/stellation" target="_blank" rel="noopener">Upstream Java source</a><a href="https://github.com/yaroslavvb/stellation" target="_blank" rel="noopener">Port source and build instructions</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="images" data-year="" data-short="Images & rights">
+    <span class="when">Image audit</span>
+    <h2>Source and licence registry</h2>
+    <p class="note">Each non-program image in the essay is tied to its object or file record below. “Public domain” is based on the source record and age of the underlying work; Creative Commons terms are those shown by the linked file page. The three Escher reproductions remain copyrighted.</p>
+    <div class="credit-list">
+      <div class="credit-row"><b>San Marco pavement</b><p><a href="https://commons.wikimedia.org/wiki/File:Marble_floor_mosaic_Basilica_of_St_Mark_Vencice.jpg" target="_blank" rel="noopener">Wikimedia Commons source record</a> · public-domain historical artwork/photo record; date and attribution remain qualified.</p></div>
+      <div class="credit-row"><b>Uccello mazzocchio</b><p><a href="https://commons.wikimedia.org/wiki/File:Uccello_mazzocchio.jpg" target="_blank" rel="noopener">Commons record</a> · public-domain drawing.</p></div>
+      <div class="credit-row"><b>Leonardo polyhedra</b><p><a href="https://commons.wikimedia.org/wiki/File:Leonardo_polyhedra.png" target="_blank" rel="noopener">Commons montage record</a> and <a href="https://commons.wikimedia.org/wiki/File:Leonardo-72-vacuum.jpg" target="_blank" rel="noopener">hand-coloured <i>vacuus</i> record</a> · public-domain source works.</p></div>
+      <div class="credit-row"><b>Stella octangula model</b><p><a href="https://commons.wikimedia.org/wiki/File:Modell_der_Durchdringung_zweier_Tetraeder_Stella_octangula_nach_Kepler_-P%C3%B6ppe-.jpg" target="_blank" rel="noopener">Commons record</a> · Ramona Trusheim, CC BY-SA 3.0.</p></div>
+      <div class="credit-row"><b>Kepler plate and title</b><p><a href="https://commons.wikimedia.org/wiki/File:Stellated_dodecahedra_Harmonices_Mundi.jpg" target="_blank" rel="noopener">Book II plate</a> and <a href="https://commons.wikimedia.org/wiki/File:Harmonices_Mundi_0001-lg.jpg" target="_blank" rel="noopener">title page</a> · public domain.</p></div>
+      <div class="credit-row"><b>Poinsot portrait</b><p><a href="https://commons.wikimedia.org/wiki/File:Pointsot2.jpg" target="_blank" rel="noopener">Commons record</a> · lithograph after Boilly, public domain.</p></div>
+      <div class="credit-row"><b>Hess plate and portrait</b><p><a href="https://commons.wikimedia.org/wiki/File:Hess_polyhedra_1876_a.jpg" target="_blank" rel="noopener">1876 plate</a> and <a href="https://commons.wikimedia.org/wiki/File:Das_Fotoalbum_f%C3%BCr_Weierstra%C3%9F_030_(Edmund_Hess).jpg" target="_blank" rel="noopener">Moritz Paar portrait</a> · public domain.</p></div>
+      <div class="credit-row"><b>Brückner Plate IX</b><p><a href="https://archive.org/details/vieleckeundvielf00bruoft/page/n258/mode/2up" target="_blank" rel="noopener">Internet Archive scan</a> of the University of Toronto copy · 1900 public-domain plate.</p></div>
+      <div class="credit-row"><b>Wheeler photograph</b><p><a href="https://americanhistory.si.edu/collections/nmah_1157026" target="_blank" rel="noopener">Smithsonian object nmah_1157026</a> · Smithsonian Open Access / CC0.</p></div>
+      <div class="credit-row"><b>Escher works</b><p><a href="https://www.nga.gov/artworks/54240-stars" target="_blank" rel="noopener"><i>Stars</i> record</a>, <a href="https://escherinhetpaleis.nl/en/about-escher/escher-today/gravity-1952" target="_blank" rel="noopener"><i>Gravitation</i> record</a>, <a href="https://www.nga.gov/artworks/61285-waterfall" target="_blank" rel="noopener"><i>Waterfall</i> record</a>, and <a href="https://mcescher.com/" target="_blank" rel="noopener">official rights holder</a>. © The M.C. Escher Company. Low-resolution commentary use is an editorial/legal judgment, not a historical fact or licence grant.</p></div>
+      <div class="credit-row"><b>Wenninger photograph</b><p><a href="https://commons.wikimedia.org/wiki/File:Magnus_Wenninger_polyhedral_models.jpg" target="_blank" rel="noopener">Commons record</a> · Tomruen, CC BY 3.0.</p></div>
+      <div class="credit-row"><b>Flaminio obelisk</b><p><a href="https://commons.wikimedia.org/wiki/File:Flaminio_obelisk.jpg" target="_blank" rel="noopener">Commons record</a> · Livioandronico2013, CC BY-SA 4.0.</p></div>
+      <div class="credit-row"><b>Minerva obelisk</b><p><a href="https://commons.wikimedia.org/wiki/File:Obelisco_della_Minerva_Pantheon_Roma.jpg" target="_blank" rel="noopener">Commons record</a> · Wolfgang Moroder, CC BY-SA 3.0 among offered licences.</p></div>
+      <div class="credit-row"><b>Moravian stars</b><p><a href="https://commons.wikimedia.org/wiki/File:Herrnhuter_Stern_Set.jpg" target="_blank" rel="noopener">Commons record</a> · Gohnarch, CC BY-SA 3.0.</p></div>
+      <div class="credit-row"><b>Quasicrystal diffraction</b><p><a href="https://commons.wikimedia.org/wiki/File:Zn-Mg-HoDiffraction.JPG" target="_blank" rel="noopener">Commons record</a> · Materialscientist, CC BY-SA 3.0; explicitly not Shechtman's 1982 image.</p></div>
+      <div class="credit-row"><b>Adenovirus</b><p><a href="https://commons.wikimedia.org/wiki/File:PDB_2bvi_EBI.jpg" target="_blank" rel="noopener">Commons / PDBe record</a> · PDB entry 2BVI rendering.</p></div>
+      <div class="credit-row"><b>C₆₀ diagram</b><p><a href="https://commons.wikimedia.org/wiki/File:C60_Molecule.svg" target="_blank" rel="noopener">Commons record</a> · user 痛, CC BY-SA 4.0.</p></div>
+      <div class="credit-row"><b>Haeckel Acanthometra</b><p><a href="https://commons.wikimedia.org/wiki/File:Haeckel_Acanthometra.jpg" target="_blank" rel="noopener">Commons record</a> · <i>Kunstformen der Natur</i>, public domain.</p></div>
+      <div class="credit-row"><b>Program renders</b><p>The interactive solids, mainline strip and four card images are generated from this project's meshes. See the <a href="https://github.com/yaroslavvb/stellation" target="_blank" rel="noopener">source repository</a> and validation suite.</p></div>
+    </div>
+  </section>
+
+  <section id="limits" data-year="" data-short="Open questions">
+    <span class="when">Caveats</span>
+    <h2>What remains unresolved</h2>
+    <div class="claim-list">
+      <article class="claim qualified" id="x-1">
+        <div class="claim-head"><span class="verdict qualified">Open</span></div>
+        <p><b>Three points remain deliberately unresolved:</b> the exact date and maker of the San Marco inlay; the first application of <i>stella octangula</i> to the solid; and the present survival status of any original Brückner model beyond what the cited 2019–20 literature knew.</p>
+        <p class="evidence"><a href="https://www.georgehart.com/virtual-polyhedra/uccello.html" target="_blank" rel="noopener">Uccello uncertainty</a><a href="https://archive.org/details/ioanniskepleriss00kepl" target="_blank" rel="noopener">Kepler 1611</a><a href="https://archive.bridgesmathart.org/2019/bridges2019-59.pdf" target="_blank" rel="noopener">Brückner model status</a></p>
+      </article>
+      <article class="claim qualified" id="x-2">
+        <div class="claim-head"><span class="verdict qualified">Correction path</span></div>
+        <p><b>This ledger is meant to be auditable.</b> A better primary source should replace, not merely accumulate beside, a weaker one. Claims about a person's motives or an exhaustive absence of evidence should remain attributed and bounded even when the surrounding chronology is secure.</p>
+        <p class="evidence"><a href="historical.html#sources">Essay sources and caveats</a><a href="https://github.com/yaroslavvb/stellation" target="_blank" rel="noopener">Repository</a></p>
+      </article>
+    </div>
+  </section>
+</main>
+
+<script>
+  const sections = [...document.querySelectorAll('section[data-short]')];
+  const rail = document.getElementById('rail');
+  for (const section of sections) {
+    const a = document.createElement('a');
+    a.href = `#${section.id}`;
+    a.innerHTML = `<em>${section.dataset.year || '·'}</em><span>${section.dataset.short}</span>`;
+    rail.appendChild(a);
+  }
+  const links = [...rail.querySelectorAll('a')];
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+    if (!visible) return;
+    links.forEach(a => a.classList.toggle('on', a.hash === `#${visible.target.id}`));
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    const current = document.documentElement.dataset.themePref || 'auto';
+    const next = current === 'auto' ? 'light' : current === 'light' ? 'dark' : 'auto';
+    localStorage.setItem('theme', next);
+    document.documentElement.dataset.themePref = next;
+    const dark = next === 'dark' || (next === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  });
+</script>
+</body>
+</html>

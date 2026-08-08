@@ -1,0 +1,28 @@
+# Cache policy.
+#
+# A good part of the 6 August session was spent looking at a build from an hour
+# earlier: "collapsing isn't working for some reason" turned out to be a cached
+# copy of app.js, and neither ctrl+shift+R nor ctrl+F5 dislodged it reliably.
+# That is not a browser quirk to work around at the keyboard — it is a cache
+# header. GitHub Pages serves max-age=600 and there is no way to change it,
+# which is one more reason the site now lives on Cloudflare.
+#
+# no-cache does NOT mean "do not cache". It means "cache it, but revalidate
+# before use", so a repeat visit costs one conditional request and gets a 304
+# with no body when nothing has changed. The page stays fast and can never be
+# stale. Stated explicitly rather than relying on the platform default, so it
+# survives a move to a host whose default is worse.
+#
+# Rules in this file ACCUMULATE: two rules matching the same path both apply and
+# their Cache-Control values are concatenated into one nonsensical header. So
+# the paths below must not overlap, and images and data are deliberately left to
+# the platform default rather than given a second, conflicting rule.
+
+/*.html
+  Cache-Control: no-cache
+
+/js/*
+  Cache-Control: no-cache
+
+/css/*
+  Cache-Control: no-cache

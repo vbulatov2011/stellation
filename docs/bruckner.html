@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brückner 1900, interactive — Stellation</title>
+<meta name="description" content="Max Brückner's Vielecke und Vielflache (1900): the plates, the pages that describe them, and the same solids rebuilt live.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/walkthrough.css">
+<link rel="stylesheet" href="css/bruckner.css">
+<script>
+  (() => {
+    const saved = localStorage.getItem('theme') || 'auto';
+    const dark = saved === 'dark' || (saved === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = saved;
+  })();
+</script>
+</head>
+<body class="doc">
+
+<header class="doc-head">
+  <a class="brand" href="index.html">✦ Stellation</a>
+  <span class="crumb">Brückner 1900</span>
+  <div class="spacer"></div>
+  <a class="ghost" href="bruckner-grid.html">The plates, clickable</a>
+  <a class="ghost optional" href="controls.html">Controls</a>
+  <a class="ghost optional" href="historical.html">History</a>
+  <a class="ghost optional" href="walkthrough.html">Cells walkthrough</a>
+  <a class="ghost" href="index.html">Open the app →</a>
+  <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
+</header>
+
+<nav id="rail" aria-label="Contents"></nav>
+
+<main class="doc-body">
+  <div id="loading" class="loading">loading…</div>
+
+  <h1><i>Vielecke und Vielflache</i>, 1900</h1>
+  <p class="standfirst">
+    Max Brückner photographed 146 paper polyhedra he had built himself and printed
+    them as collotype plates — the first major work to use photography to show what
+    mathematical objects look like. This page puts three things side by side: the
+    plates as they were printed, the pages on which he describes each figure, and the
+    same solid rebuilt from scratch by the stellation engine. Where he derives a solid
+    from what he calls the <i>complete figure of the planes</i>, that figure is drawn
+    live, and it can be clicked.
+  </p>
+  <p class="byline">
+    Scan: the University of Toronto copy at the Internet Archive. Text and plate
+    references were read out of the scan itself, not taken from secondary sources.
+  </p>
+
+  <!-- ══════════════════════════════════════════════ the reader -->
+  <div class="reader" id="reader">
+    <div class="reader-head">
+      <b>The book</b>
+      <span id="readerWhere">not open</span>
+      <div class="spacer"></div>
+      <label>page <input id="readerPage" type="number" min="1" max="227" placeholder="206"></label>
+      <button id="readerGo">go</button>
+      <button id="readerToggle">show</button>
+    </div>
+    <div class="reader-hint">
+      Every <b>read the page</b> and <b>see the plate</b> button below opens the scan
+      here. The printed text runs to p. 227; the plates follow it.
+    </div>
+    <div class="reader-frame" id="readerFrame"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="book" data-short="The book">
+    <h2>1 · What the book is</h2>
+    <p>
+      <i>Vielecke und Vielflache. Theorie und Geschichte</i> — polygons and polyhedra,
+      theory and history — was published by B. G. Teubner of Leipzig in 1900. The title
+      page gives the author's job: <i>Dr. Max Brückner, Oberlehrer am Gymnasium zu
+      Bautzen</i>. He was a schoolmaster, and remained one; the book was written in the
+      evenings.
+    </p>
+    <p>
+      Its own subtitle describes the illustrations exactly: <i>Mit 7 lithographierten
+      und 5 Lichtdruck-Doppeltafeln sowie vielen Figuren im Text</i> — with seven
+      lithographed and five collotype double-plates, and many figures in the text. The
+      lithographs, Plates I–VII, carry the construction figures, the nets and the
+      face diagrams. The collotypes, Plates VIII–XII, carry the photographs. Because
+      each is a double plate, they run across ten sheets and show 146 models.
+    </p>
+    <p>
+      Collotype — <i>Lichtdruck</i> — is a continuous-tone photographic process printed
+      from a gelatine plate, with no halftone screen. That is why the plates have their
+      soft, almost sculptural grey, and why they read as photographs rather than as
+      illustrations. The printer's credit under each is <i>Lichtdruck von Römmler
+      &amp; Jonas, Dresden</i>.
+    </p>
+    <p>
+      The text runs to 227 printed pages in six parts, A to F. Part F, <i>Die
+      besonderen Vielflache höherer Art</i> — the special polyhedra of higher kind — is
+      where the star polyhedra, the compounds and the stellations are, and it is the
+      part this page is concerned with.
+    </p>
+    <div class="entry-actions">
+      <button data-page="183">the footnote on the models and the plates (p. 183)</button>
+      <button data-page="206">§153, the complete figure (p. 206)</button>
+      <button data-page="131">the compounds (p. 131)</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="plates-section" data-short="The plates">
+    <h2>2 · The twelve plates</h2>
+    <p>
+      Any plate can be opened in the reader above. The models on the collotype plates
+      are arranged <em>by size</em> rather than by subject — apart from a rough split
+      that keeps the isohedral models off the isogonal ones' plates. Brückner explains in
+      a footnote that distributing them by whatever size each happened to come out at was
+      necessary to avoid wasting plate space, and apologises for the flipping back and
+      forth it forces on the reader. In the preface he separately thanks the printers and
+      the publisher for absorbing the not inconsiderable cost of producing them.
+    </p>
+    <p>
+      There is also a <a href="bruckner-grid.html">clickable edition of the five
+      photographic plates</a>: every one of the 146 models has been identified where
+      the book's text or the modern literature allows it, and the ones the engine can
+      rebuild are live — click a model on the plate and it is rebuilt beneath, with
+      its other names and its history.
+    </p>
+    <div class="plates" id="plates"></div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="figure17" data-short="The complete figure">
+    <h2>3 · §153 — the complete figure of the planes of the icosahedron</h2>
+    <p>
+      This is the section that connects the book to the program. Brückner's own
+      description of the construction, on p. 206:
+    </p>
+    <div class="entry-quote">
+      <i>Bringt man die Ebene einer Fläche des Ikosaeders mit den Ebenen aller übrigen
+      zum Schnitt, so entsteht die schon früher betrachtete Fig. 17 Taf. II. … Die
+      Ebene 20 schneidet die Zeichenebene in der unendlichweiten Geraden. Die auf
+      demselben konzentrischen Kreise um den Mittelpunkt der Fläche 1 liegenden Punkte
+      tragen dieselbe Ziffer als Bezeichnung.</i>
+      <cite>
+        Bring the plane of one face of the icosahedron into intersection with the planes
+        of all the others and Fig. 17 of Plate II results. … Plane 20 meets the drawing
+        plane in the line at infinity. Points lying on the same concentric circle about
+        the centre of face 1 carry the same digit as their label.
+        — <i>Vielecke und Vielflache</i>, §153, p. 206.
+      </cite>
+    </div>
+    <p>
+      Three things in that passage are exactly what the program computes. Plane 20 is
+      the face opposite face 1: it is parallel, so it never meets the drawing plane,
+      which is why twenty planes produce only eighteen lines. The concentric rings of
+      intersection points are the layers — Brückner's digits 1, 2, 3 … are the numbers
+      down the left of the Cells table. And the whole figure is the panel the program
+      calls the stellation diagram.
+    </p>
+    <div class="compare">
+      <figure>
+        <img data-leaf-img="244" alt="Brückner, Plate II, with Fig. 17 at lower right">
+        <figcaption>
+          Plate II, lithographed. <b>Fig. 17</b> is the large star at the lower right —
+          the complete figure of the icosahedron's planes, and the drawing §153 refers to.
+          <b>Fig. 16</b>, which §153 names as the dodecahedron's, is on the facing sheet.
+          Click to enlarge.
+          <button data-leaf="244" data-leaf-label="Tafel II">open in the reader</button>
+        </figcaption>
+      </figure>
+      <figure>
+        <div class="bfig" id="figComplete" data-poly="u27" data-sym="Ih"
+             data-cells="{0}" data-parts="diagram" data-lines="true"></div>
+        <div class="try">
+          <button data-target="figComplete" data-lines="true" data-cells="{0}" class="on">as Brückner drew it</button>
+          <button data-target="figComplete" data-lines="false" data-cells="{0}">shaded by shell</button>
+        </div>
+        <figcaption>
+          The same arrangement, computed. In the first setting the program draws only the
+          plane traces, at full width, with the original face tinted at the centre — the
+          engraved look of the plate. In the second it fills each bounded region and tints
+          it by which shell the cell behind it belongs to, which is the working view. The
+          traces are the same lines either way, and there are <b>eighteen</b> of them, for
+          the reason Brückner gives above.
+          <br>Drag to pan, scroll to zoom, double-click to reset. <kbd>shift</kbd>-click
+          a region to add the cell behind it, <kbd class="kSub">ctrl</kbd>-click to
+          remove it.
+        </figcaption>
+      </figure>
+    </div>
+    <p>
+      Brückner reads solids straight off this figure, and §§153–155 do it three times
+      over: the points labelled 6 and 7 give the boundary faces of two solids on
+      Plate VIII and Plate IX, and the nine points labelled 8 give the face of the solid
+      on Plate XI. Those derivations are the same operation as choosing cells here.
+    </p>
+    <div class="entry-actions">
+      <button data-page="206">read §153 (p. 206)</button>
+      <button data-page="207">p. 207</button>
+      <button data-page="208">§155 (p. 208)</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="compounds" data-short="The compounds">
+    <h2>4 · The compounds, plate by plate</h2>
+    <p>
+      Plate IX is the compound plate, and it is the one that travelled furthest: Escher
+      cited it twice by number in his own handwriting. Each entry below gives Brückner's
+      plate and figure number, what he says about it and where, and the same solid built
+      from the icosahedron's cells.
+    </p>
+
+    <!-- ---------------------------------------------- five octahedra -->
+    <article class="entry">
+      <div class="entry-head">
+        <span class="entry-ref">Taf. IX, 6</span>
+        <h3>Five concentric octahedra</h3>
+        <div class="spacer"></div>
+        <span class="buildable">buildable</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-plate">
+          <img data-leaf-img="258" alt="Brückner Plate IX, models 1–12">
+          <div class="row">
+            <button data-leaf="258" data-leaf-label="Tafel IX, nos. 1–12">see the plate</button>
+            <button data-page="206">read p. 206</button>
+            <a class="gridlink" href="bruckner-grid.html#f-258-6">this model, clickable</a>
+          </div>
+        </div>
+        <div class="entry-text">
+          <div class="entry-quote">
+            <i>… die Grenzfläche eines zugleich gleicheckigen und gleichflächigen, aber
+            diskontinuierlichen Polyeders, nämlich eines Systems von fünf konzentrischen
+            Oktaedern, Fig. 6 Taf. IX.</i>
+            <cite>… the boundary face of a polyhedron at once isogonal and isohedral, but
+            discontinuous — namely a system of five concentric octahedra. §153, p. 206.</cite>
+          </div>
+          <p>
+            "Discontinuous" is Brückner's word for what would now be called a compound:
+            a figure that falls apart into pieces. He obtains it from the complete
+            figure, by joining the points labelled 3.
+          </p>
+          <p>
+            In cells it is everything out to the third shell, <code>{0,1,2}</code>. The
+            trap is that the shell underneath is invisible from outside: taking only
+            <code>{0,2}</code> gives the same silhouette and a hollow interior.
+          </p>
+          <div class="entry-actions">
+            <button data-target="figFiveOcta" data-cells="{0,1,2}" class="on">the compound</button>
+            <button data-target="figFiveOcta" data-cells="{0,2}">the hollow imposter</button>
+            <button data-target="figFiveOcta" data-cells="{0}">back to the icosahedron</button>
+          </div>
+        </div>
+      </div>
+      <div class="entry-fig">
+        <div class="bfig" id="figFiveOcta" data-poly="u27" data-sym="Ih"
+             data-cells="{0,1,2}" data-parts="cells solid"></div>
+      </div>
+    </article>
+
+    <!-- ---------------------------------------------- five tetrahedra -->
+    <article class="entry">
+      <div class="entry-head">
+        <span class="entry-ref">Taf. IX, 11</span>
+        <h3>Five tetrahedra — and its mirror image</h3>
+        <div class="spacer"></div>
+        <span class="buildable">buildable</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-plate">
+          <img data-leaf-img="258" alt="Brückner Plate IX, models 1–12">
+          <div class="row">
+            <button data-leaf="258" data-leaf-label="Tafel IX, nos. 1–12">see the plate</button>
+            <button data-page="206">read p. 206</button>
+            <a class="gridlink" href="bruckner-grid.html#f-258-11">this model, clickable</a>
+          </div>
+        </div>
+        <div class="entry-text">
+          <div class="entry-quote">
+            <i>… eines Systems von fünf Tetraedern. Die äussere Hülle ist ein Dodekaeder.
+            Diese beiden Systeme, von denen das eine in Fig. 11 Taf. IX dargestellt ist,
+            die sich zu einander …</i>
+            <cite>… a system of five tetrahedra. The outer hull is a dodecahedron. These
+            two systems, of which one is shown in Fig. 11 of Plate IX, which stand to one
+            another [as mirror images]. §153, p. 206.</cite>
+          </div>
+          <p>
+            Brückner states the two facts that matter. The outer hull is a dodecahedron:
+            in the model below, the twenty outermost vertices are the vertices of one.
+            And the figure comes in two systems, mirror images that no rotation
+            interchanges — which is why it is the standard example of chirality in this
+            subject.
+          </p>
+          <p>
+            In cells, everything out to shell e plus <em>one half</em> of the single
+            chiral bundle in shell f. Taking both halves gives the compound of ten
+            tetrahedra, which Brückner photographs as Fig. 3 on the same plate.
+          </p>
+          <div class="entry-actions">
+            <button data-target="figFiveTet" data-cells="{0,1,2,3,4,5(1[1])}" class="on">Fig. 11 — five tetrahedra</button>
+            <button data-target="figFiveTet" data-cells="{0,1,2,3,4,5(1[0])}">the other hand</button>
+            <button data-target="figFiveTet" data-cells="{0,1,2,3,4,5(1)}">Fig. 3 — ten tetrahedra</button>
+          </div>
+        </div>
+      </div>
+      <div class="entry-fig">
+        <div class="bfig" id="figFiveTet" data-poly="u27" data-sym="Ih"
+             data-cells="{0,1,2,3,4,5(1[1])}" data-parts="cells solid"></div>
+      </div>
+    </article>
+
+    <!-- ---------------------------------------------- ten tetrahedra note -->
+    <article class="entry">
+      <div class="entry-head">
+        <span class="entry-ref">Taf. IX, 3</span>
+        <h3>Ten tetrahedra</h3>
+        <div class="spacer"></div>
+        <span class="buildable">buildable — above</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-plate">
+          <img data-leaf-img="258" alt="Brückner Plate IX, models 1–12">
+          <div class="row">
+            <button data-leaf="258" data-leaf-label="Tafel IX, nos. 1–12">see the plate</button>
+            <button data-page="131">read p. 131</button>
+            <a class="gridlink" href="bruckner-grid.html#f-258-3">this model, clickable</a>
+          </div>
+        </div>
+        <div class="entry-text">
+          <div class="entry-quote">
+            <i>Die fünf Tetraeder und die zehn Tetraeder ohne das Dodekaeder zeigen
+            Fig. 11 und Fig. 3 Taf. IX.</i>
+            <cite>The five tetrahedra and the ten tetrahedra, without the dodecahedron,
+            are shown by Fig. 11 and Fig. 3 of Plate IX. Footnote, p. 131.</cite>
+          </div>
+          <p>
+            The qualification "without the dodecahedron" is a model-maker's note: the
+            same compounds are often shown inscribed in a dodecahedron, and his models
+            omit it so that the tetrahedra can be seen. The footnote on the same page
+            sends the reader to Fig. 6 for the octahedra.
+          </p>
+          <p>
+            The five-tetrahedron and ten-tetrahedron compounds differ in exactly one
+            place in the cell notation, which is the point of the third button on the
+            previous figure: both take every cell out to shell e, and then one takes
+            half of the chiral bundle in shell f while the other takes all of it.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- ---------------------------------------------- three cubes -->
+    <article class="entry">
+      <div class="entry-head">
+        <span class="entry-ref">Taf. IX, 23</span>
+        <h3>Three concentric cubes — the one Escher wrote down</h3>
+        <div class="spacer"></div>
+        <span class="notbuildable">not a stellation</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-plate">
+          <img data-leaf-img="259" alt="Brückner Plate IX, models 13–24">
+          <div class="row">
+            <button data-leaf="259" data-leaf-label="Tafel IX, nos. 13–24">see the plate</button>
+            <button data-page="188">read p. 188</button>
+            <a class="gridlink" href="bruckner-grid.html#f-259-23">this model, clickable</a>
+          </div>
+        </div>
+        <div class="entry-text">
+          <div class="entry-quote">
+            <i>… so entsteht ein System von drei konzentrischen Hexaedern, Fig. 23 Taf.
+            IX, dessen äussere Hülle eine bestimmte Varietät …</i>
+            <cite>… there arises a system of three concentric hexahedra, Fig. 23 of Plate
+            IX, whose outer hull is a certain variety … p. 188.</cite>
+          </div>
+          <p>
+            Escher made a coloured-pencil drawing of this compound and annotated it, in
+            his own hand, <b>Brückner, Table IX, no. 23</b>. He did the same for the
+            compound of five tetrahedra, citing <b>Table IX, no. 11</b>. Those two
+            annotations are why the dependence of Escher's polyhedra on this book is
+            documented rather than inferred. The compound of three cubes went on to
+            become the left-hand tower of <i>Waterfall</i> (1961).
+          </p>
+          <p>
+            It is not a stellation and the program cannot produce it. A stellation must
+            keep its faces in the planes of the solid it started from, and the cube's
+            six planes bound nothing but the cube — the cube is the one Platonic solid
+            with no stellation at all. Three cubes at angles need twenty-four planes that
+            belong to no single starting solid.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- ---------------------------------------------- Fig 20 -->
+    <article class="entry">
+      <div class="entry-head">
+        <span class="entry-ref">Taf. IX, 20</span>
+        <h3>The one he says was new</h3>
+        <div class="spacer"></div>
+        <span class="notbuildable">not identified here</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-plate">
+          <img data-leaf-img="259" alt="Brückner Plate IX, models 13–24">
+          <div class="row">
+            <button data-leaf="259" data-leaf-label="Tafel IX, nos. 13–24">see the plate</button>
+            <button data-page="207">read p. 207</button>
+            <a class="gridlink" href="bruckner-grid.html#f-259-20">this model, clickable</a>
+          </div>
+        </div>
+        <div class="entry-text">
+          <div class="entry-quote">
+            <i>Es lässt sich aber auch ein bisher noch nicht beschriebenes gleichflächiges
+            Polyeder höherer Art aus dieser vollständigen Ikosaederfigur ableiten.</i>
+            <cite>But an isohedral polyhedron of higher kind not hitherto described can
+            also be derived from this complete icosahedron figure. §153, p. 207.</cite>
+          </div>
+          <p>
+            He then gives the recipe: join each of the three points 7 to the two points 6
+            on the opposite edge of the triangle 7,7,7, and add every segment between
+            points 6 parallel to that triangle's edges. The result is a nine-sided figure
+            of the fourth kind, and twenty of them bound the solid photographed as
+            Fig. 20 — the tall many-spiked model at the centre of the second sheet of
+            Plate IX. Its twelve five-edged vertices are an icosahedron's; its twenty
+            six-edged vertices are the points 6.
+          </p>
+          <p>
+            This is the clearest demonstration in the book of what the complete figure is
+            <em>for</em>. The construction is carried out on the very diagram drawn in
+            §3 above; readers who wish to follow it can zoom into the live figure and
+            count rings outward. The corresponding cell selection is not identified here,
+            because Brückner names the boundary polygon rather than the solid, and a
+            confident identification needs more than a plausible match.
+          </p>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="stellations" data-short="The stellations">
+    <h2>5 · The stellations of the icosahedron</h2>
+    <p>
+      The book shows ten stellations of the icosahedron, several of which Brückner was
+      the first to build. Two of them are on Plate XI and are worth taking one at a
+      time, because they sit at opposite ends of the same table: the outermost cell of
+      all, and the last of the four regular star polyhedra.
+    </p>
+
+    <!-- ---------------------------------------------- final stellation -->
+    <article class="entry">
+      <div class="entry-head">
+        <span class="entry-ref">Taf. XI, 14</span>
+        <h3>The final stellation of the icosahedron</h3>
+        <div class="spacer"></div>
+        <span class="buildable">buildable</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-plate">
+          <img data-leaf-img="265" alt="Brückner Plate XI, models 13–24">
+          <div class="row">
+            <button data-leaf="265" data-leaf-label="Tafel XI, nos. 13–24">see the plate</button>
+            <button data-page="208">read §155 (p. 208)</button>
+            <a class="gridlink" href="bruckner-grid.html#f-265-14">this model, clickable</a>
+          </div>
+        </div>
+        <div class="entry-text">
+          <p>
+            Top centre of the plate, and unmistakable: a body of long spikes in every
+            direction. It is the stellation that takes <em>every</em> cell — the point at
+            which the twenty planes have nothing further to give. Brückner derives its
+            boundary face in §155 from the nine points labelled 8 in the complete figure,
+            counting twenty-seven double points on it.
+          </p>
+          <p>
+            Rebuilt below it comes out at 92 vertices and 180 triangles, which are the
+            figures the modern literature gives. The name "echidnahedron", after the
+            spiny anteater, is a twentieth-century coinage — Andrew Hume, 1995 — and no
+            part of Brückner's vocabulary.
+          </p>
+          <div class="entry-actions">
+            <button data-target="figFinal" data-cells="{0,1,2,3,4,5,6,7}" class="on">every cell</button>
+            <button data-target="figFinal" data-cells="{0,1,2,3,4,5,6}">one shell short</button>
+          </div>
+        </div>
+      </div>
+      <div class="entry-fig">
+        <div class="bfig" id="figFinal" data-poly="u27" data-sym="Ih"
+             data-cells="{0,1,2,3,4,5,6,7}" data-parts="cells solid diagram"></div>
+      </div>
+    </article>
+
+    <!-- ---------------------------------------------- great icosahedron -->
+    <article class="entry">
+      <div class="entry-head">
+        <span class="entry-ref">Taf. XI, 24</span>
+        <h3>The great icosahedron</h3>
+        <div class="spacer"></div>
+        <span class="buildable">buildable</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-plate">
+          <img data-leaf-img="265" alt="Brückner Plate XI, models 13–24">
+          <div class="row">
+            <button data-leaf="265" data-leaf-label="Tafel XI, nos. 13–24">see the plate</button>
+            <button data-page="169">read p. 169</button>
+            <a class="gridlink" href="bruckner-grid.html#f-265-24">this model, clickable</a>
+          </div>
+        </div>
+        <div class="entry-text">
+          <div class="entry-quote">
+            <i>Dieses komplizierteste der vier regulären Polyeder höherer Art zeigt
+            Fig. 24 Taf. VII … und Fig. 24 Taf. XI.</i>
+            <cite>This most complicated of the four regular polyhedra of higher kind is
+            shown by Fig. 24 of Plate VII … and Fig. 24 of Plate XI. p. 169.</cite>
+          </div>
+          <p>
+            Poinsot's solid of 1809, the only one of the four Kepler–Poinsot star
+            polyhedra that is a stellation of the icosahedron rather than the
+            dodecahedron. Brückner gives it twice: a lithographed perspective drawing on
+            Plate VII, with the boundary face lettered <i>abc</i> on the solid itself, and
+            the photographed model on the collotype Plate XI — the two halves of his
+            method, the drawing and the object.
+          </p>
+          <p>
+            It takes seven of the icosahedron's eight shells. Its twelve outermost
+            vertices sit at φ³ ≈ 4.236 times the core's circumradius, which the readout
+            below can be used to check.
+          </p>
+        </div>
+      </div>
+      <div class="entry-fig">
+        <div class="bfig" id="figGreatIco" data-poly="u27" data-sym="Ih"
+             data-cells="{0,1,2,3,4,5,6}" data-parts="cells solid"></div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="rhombic" data-short="Beyond the icosahedron">
+    <h2>6 · Beyond the icosahedron</h2>
+
+    <!-- ---------------------------------------------- Escher's solid -->
+    <article class="entry">
+      <div class="entry-head">
+        <span class="entry-ref">Taf. X, 13</span>
+        <h3>The first stellation of the rhombic dodecahedron</h3>
+        <div class="spacer"></div>
+        <span class="buildable">buildable</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-plate">
+          <img data-leaf-img="260" alt="Brückner Plate X, models 1–21">
+          <div class="row">
+            <button data-leaf="260" data-leaf-label="Tafel X, nos. 1–21">see the plate</button>
+            <button data-page="191">read p. 191</button>
+            <a class="gridlink" href="bruckner-grid.html#f-260-13">this model, clickable</a>
+          </div>
+        </div>
+        <div class="entry-text">
+          <p>
+            Fourth row of the plate, first model. Brückner discusses it on p. 191 as the
+            polar solid of a figure bounded by hexagons of the second kind lying in the
+            planes of an octahedron and by quadrilaterals in the planes of a rhombic
+            dodecahedron. The printed text says <i>vierzehn</i>, fourteen, but the face
+            symbol in the same sentence gives twelve, and a rhombic dodecahedron has
+            twelve planes; the book has a misprint here.
+          </p>
+          <p>
+            It is now usually called <b>Escher's solid</b>, from the right-hand tower of
+            <i>Waterfall</i>. It is also a compound of three flattened octahedra — and
+            that near-coincidence produced a real artistic decision: a surviving
+            preliminary study for <i>Stars</i> (1948) uses this solid, where the finished
+            print uses three <em>regular</em> octahedra, Brückner's Plate VIII no. 12.
+            The two look almost identical. One is a stellation and the other is not, and
+            Escher tried both before choosing.
+          </p>
+          <p>
+            As cells: the rhombic dodecahedron plus its first shell. The result has 26
+            vertices, 48 triangles, and exactly twice the volume of the core.
+          </p>
+          <div class="entry-actions">
+            <button data-target="figEscher" data-cells="{0,1}" class="on">Fig. 13</button>
+            <button data-target="figEscher" data-cells="{0}">the rhombic dodecahedron</button>
+            <button data-target="figEscher" data-cells="{0,1,2}">the next shell out</button>
+            <button data-target="figEscher" data-cells="{0,1,2,3}">everything</button>
+          </div>
+        </div>
+      </div>
+      <div class="entry-fig">
+        <div class="bfig" id="figEscher" data-poly="d12" data-sym="Oh"
+             data-cells="{0,1}" data-parts="cells solid diagram"></div>
+      </div>
+    </article>
+
+    <!-- ---------------------------------------------- triacontahedron -->
+    <article class="entry">
+      <div class="entry-head">
+        <span class="entry-ref">§156</span>
+        <h3>The complete figure of the rhombic triacontahedron</h3>
+        <div class="spacer"></div>
+        <span class="buildable">buildable</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-plate">
+          <img data-leaf-img="244" alt="Brückner Plate II">
+          <div class="row">
+            <button data-page="209">read §156 (p. 209)</button>
+            <button data-page="210">p. 210</button>
+          </div>
+        </div>
+        <div class="entry-text">
+          <p>
+            Having done the icosahedron in §153, Brückner does the same for the rhombic
+            triacontahedron in §156, and derives from it the solids of §§157–158. He
+            states his reason plainly at the head of the run: of all the isohedral solids
+            of the first kind, only two need the treatment — <i>das Ikosaeder und das
+            Rhombentriakontaeder</i> — because everything else either reduces to them or
+            has been dealt with already.
+          </p>
+          <p>
+            It is a much larger arrangement. Thirty planes rather than twenty give
+            thirteen shells and several thousand cells, which is why the figure below
+            takes a moment to appear and why the program caps the depth by default.
+          </p>
+          <div class="entry-actions">
+            <button data-target="figTriaconta" data-cells="{0}" class="on">the core</button>
+            <button data-target="figTriaconta" data-cells="{0,1}">+ shell 1</button>
+            <button data-target="figTriaconta" data-cells="{0,1,2}">+ shell 2</button>
+            <button data-target="figTriaconta" data-cells="{0,1,2,3}">+ shell 3</button>
+          </div>
+        </div>
+      </div>
+      <div class="entry-fig">
+        <div class="bfig" id="figTriaconta" data-poly="d29" data-sym="Ih"
+             data-cells="{0,1}" data-parts="cells solid diagram"></div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="making" data-short="How the plates were made">
+    <h2>7 · How the plates were made</h2>
+    <p>
+      The single most useful footnote in the book is note 2 on p. 183, and it explains
+      why the plates look the way they do.
+    </p>
+    <p>
+      On the <em>isogonal</em> models, faces with the same number of edges were painted
+      the same oil colour, so that the configuration could be taken in at a glance — a
+      convention Brückner says he adopted from models Hess exhibited at the mathematical
+      exhibition in Munich in 1893. Coloured models, however, photographed badly for
+      collotype. So every one of those had to be painted over white, and to stop the
+      white from shining it was applied as a coat of <i>Schlemmkreide</i>, levigated
+      chalk. Once chalked, the surface would no longer take the drawn edge lines.
+    </p>
+    <p>
+      The uniform ghostly matte white of the famous plates is therefore not an
+      aesthetic. It is what a 1900 camera required. The models standing in Brückner's
+      room were colour-coded; the models in the book were whitewashed for the
+      photographer.
+    </p>
+    <p>
+      The same footnote records that some of the polyhedra described in the text are not
+      pictured at all — partly because they were too complicated, and partly because, in
+      his own words, the author had finally run out of the thing he most needed:
+      patience. He adds that he hopes to supply the missing ones later.
+    </p>
+    <div class="entry-actions">
+      <button data-page="183">read the footnote (p. 183)</button>
+    </div>
+    <div class="compare">
+      <figure>
+        <img data-leaf-img="256" alt="Brückner Plate VIII, models 1–20">
+        <figcaption>
+          Plate VIII, first sheet. Twenty whitewashed models on five shelves, each
+          casting its own shadow. No. 3, top row, is the compound of two cubes on a
+          common 3-fold axis; both it and no. 12 appear in Escher's <i>Stars</i>.
+        </figcaption>
+      </figure>
+      <figure>
+        <img data-leaf-img="259" alt="Brückner Plate IX, models 13–24">
+        <figcaption>
+          Plate IX, second sheet. No. 20 is the solid he says had not been described
+          before; no. 23 is the compound of three cubes that Escher copied out by hand.
+        </figcaption>
+      </figure>
+    </div>
+    <p>
+      Brückner gave over two hundred of these models to the Mathematical Institute at
+      Heidelberg in 1930–31, and the university awarded him an honorary doctorate.
+      There is no record of what became of them. They survived the First World War;
+      German scholarship on model collections reports the Heidelberg holdings as lost,
+      and no Brückner model is known to survive anywhere. The photographs are what is
+      left, which is why a page like this one is possible at all.
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="sources" data-short="Sources">
+    <h2>Sources and caveats</h2>
+    <p>
+      Every plate and figure reference on this page was read out of the scan itself, and
+      every German passage quoted was transcribed from the same source and translated
+      here; where the optical character recognition was doubtful the wording was checked
+      against the page image. The page numbers are Brückner's printed ones. The
+      correspondence between printed page and scan image was taken from the Archive's
+      own pagination data, and the plate sheets were identified by eye from their
+      captions.
+    </p>
+    <p>
+      One identification on this page rests on secondary literature rather than on the
+      book's own words: that Escher's two annotated drawings cite Plate IX nos. 11 and 23,
+      which is from George Hart's study of the book. Plate VIII no. 12 needs no secondary
+      source — on p. 188, in the sentence following the three-cubes passage quoted above,
+      Brückner writes <i>Das System der polar zugeordneten drei Oktaeder zeigt Fig. 12
+      Taf. VIII</i>. The reading of Plate XI no. 14 as the final stellation of the
+      icosahedron is Hart's, and is consistent with what Brückner derives in §155 and with
+      the model as photographed.
+    </p>
+    <details class="sources" open>
+      <summary>Sources</summary>
+      <ul>
+        <li>Max Brückner, <i>Vielecke und Vielflache: Theorie und Geschichte</i>,
+          B. G. Teubner, Leipzig, 1900. Scan of the University of Toronto copy at the
+          <a href="https://archive.org/details/vieleckeundvielf00bruoft" target="_blank" rel="noopener">Internet Archive</a>;
+          also at the
+          <a href="https://quod.lib.umich.edu/u/umhistmath/ABN8316.0001.001" target="_blank" rel="noopener">University of Michigan</a>.
+          Not in copyright.</li>
+        <li>The plates as a curated gallery:
+          <a href="https://publicdomainreview.org/collection/max-bruckner-s-collection-of-polyhedral-models-1900/" target="_blank" rel="noopener">The Public Domain Review</a>,
+          and Vladimir Bulatov's scans at
+          <a href="http://bulatov.org/polyhedra/bruckner1900/" target="_blank" rel="noopener">bulatov.org</a>.</li>
+        <li>George W. Hart, "Max Brückner's Wunderkammer of Paper Polyhedra",
+          <i>Bridges</i> 2019 — the modern account of the book, its reception, and its
+          route into Escher's work.</li>
+        <li>Frank Etwein, "Ein Leben für die Polyeder — der Oberlehrer Max Brückner und
+          seine Modelle", <i>Mathematische Semesterberichte</i> 66 (2019), 15–30.</li>
+        <li>Edmund Hess, <i>Über die zugleich gleicheckigen und gleichflächigen
+          Polyeder</i>, Kassel, 1876 — Brückner's "Hess III", the source he credits for
+          the complete-figure method.</li>
+      </ul>
+    </details>
+    <p class="colophon">
+      The live figures run the same JavaScript port of
+      <a href="http://bulatov.org/polyhedra/stellation_applet/" target="_blank" rel="noopener">Vladimir Bulatov's Stellation applet</a>
+      that the rest of this site uses. See the
+      <a href="walkthrough.html">Cells walkthrough</a> for how to read the tables, and
+      the <a href="historical.html">history</a> for where Brückner sits in the longer
+      story.
+    </p>
+  </section>
+
+</main>
+
+<div id="lightbox"><button class="close" aria-label="Close">×</button><img alt=""></div>
+
+<script type="module" src="js/bruckner.js"></script>
+</body>
+</html>

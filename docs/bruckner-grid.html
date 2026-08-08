@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The plates, clickable — Brückner 1900 — Stellation</title>
+<meta name="description" content="Every model on Max Brückner's photographic plates (1900), clickable: choose a polyhedron on the plate and the stellation engine rebuilds it live below.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/walkthrough.css">
+<link rel="stylesheet" href="css/bruckner.css">
+<link rel="stylesheet" href="css/bruckner-grid.css">
+<script>
+  (() => {
+    const saved = localStorage.getItem('theme') || 'auto';
+    const dark = saved === 'dark' || (saved === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = saved;
+  })();
+</script>
+</head>
+<body class="doc">
+
+<header class="doc-head">
+  <a class="brand" href="index.html">✦ Stellation</a>
+  <span class="crumb">Brückner — the plates, clickable</span>
+  <div class="spacer"></div>
+  <a class="ghost optional" href="bruckner.html">Brückner 1900</a>
+  <a class="ghost optional" href="historical.html">History</a>
+  <a class="ghost" href="index.html">Open the app →</a>
+  <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
+</header>
+
+<nav id="rail" aria-label="Contents"></nav>
+
+<main class="doc-body">
+  <div id="loading" class="loading">loading…</div>
+
+  <h1>The photographic plates, clickable</h1>
+  <p class="standfirst">
+    All 146 models Brückner photographed for <i>Vielecke und Vielflache</i> (1900),
+    on the ten collotype sheets of Tafeln VIII–XII. The models that are stellations
+    of a solid this program can stellate carry a gold outline: <b>click one</b> and
+    the engine rebuilds it beneath the plate, set to the exact cell selection, with
+    the solid's other names and its history. The grey ones are polyhedra of other
+    kinds — uniform star polyhedra, compounds in alien planes — and clicking them
+    tells you what they are, where that is known.
+  </p>
+  <p class="grid-legend">
+    <span class="lg lg-build"></span> a stellation — click to rebuild it live
+    <span class="lg lg-known"></span> identified, but not a stellation the engine can make
+    <span class="lg lg-tbd"></span> not yet identified
+  </p>
+
+  <div id="platesRoot"></div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="method" data-short="How this was made">
+    <h2>How this page was made</h2>
+    <p>
+      The plate photographs come straight from the Internet Archive scan of the
+      University of Toronto copy. The clickable regions were found by segmenting
+      each sheet photographically — the models are the parts of the plate that
+      differ from the local background — and every region was then checked by eye
+      against the printed figure number beneath the model. Identifications rest on
+      the book's own text, on the table in Coxeter, Du Val, Flather and Petrie's
+      <i>The Fifty-Nine Icosahedra</i> (1938), and on George Hart's study of the
+      book; each figure's panel names its sources. Cell selections were verified by
+      rebuilding each solid in the engine and checking vertex and face counts and
+      outer radii against the literature.
+    </p>
+  </section>
+
+</main>
+
+<script type="module" src="js/bruckner-grid.js"></script>
+</body>
+</html>
