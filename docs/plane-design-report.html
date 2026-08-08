@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plane Representations and the Reachable Polyhedra — a Design Analysis</title>
+<meta name="description" content="Which engine design choices — plane representation, custom plane sets, symmetry, display modes — unlock which of Brückner's 146 models in the stellation app.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+</head>
+<body>
+<style>
+  :root {
+    --paper: #FAFAF6;
+    --ink: #22242A;
+    --dim: #666A73;
+    --gold: #A87514;
+    --gold-soft: rgba(168, 117, 20, 0.10);
+    --steel: #46708F;
+    --steel-soft: rgba(70, 112, 143, 0.08);
+    --line: #E2E2DA;
+    --card: #FFFFFF;
+    --bad: #A33B2E;
+    --ok: #3E7A4E;
+    --mono-bg: #F1F1EB;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #16181D; --ink: #E6E4DC; --dim: #9DA0A8;
+      --gold: #D9A43E; --gold-soft: rgba(217, 164, 62, 0.12);
+      --steel: #82ABCB; --steel-soft: rgba(130, 171, 203, 0.10);
+      --line: #2D3038; --card: #1D2026; --bad: #D97A6C; --ok: #7FB98E;
+      --mono-bg: #22252C;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #16181D; --ink: #E6E4DC; --dim: #9DA0A8;
+    --gold: #D9A43E; --gold-soft: rgba(217, 164, 62, 0.12);
+    --steel: #82ABCB; --steel-soft: rgba(130, 171, 203, 0.10);
+    --line: #2D3038; --card: #1D2026; --bad: #D97A6C; --ok: #7FB98E;
+    --mono-bg: #22252C;
+  }
+  :root[data-theme="light"] {
+    --paper: #FAFAF6; --ink: #22242A; --dim: #666A73;
+    --gold: #A87514; --gold-soft: rgba(168, 117, 20, 0.10);
+    --steel: #46708F; --steel-soft: rgba(70, 112, 143, 0.08);
+    --line: #E2E2DA; --card: #FFFFFF; --bad: #A33B2E; --ok: #3E7A4E;
+    --mono-bg: #F1F1EB;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    font-size: 16.5px; line-height: 1.62;
+  }
+  .page { max-width: 76ch; margin: 0 auto; padding: 48px 24px 96px; }
+
+  h1, h2, h3, h4, .label {
+    font-family: "Avenir Next", Seravek, "Segoe UI", system-ui, sans-serif;
+  }
+  h1 { font-size: 30px; line-height: 1.2; margin: 8px 0 4px; text-wrap: balance; font-weight: 650; }
+  h2 { font-size: 21px; margin: 52px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); font-weight: 640; }
+  h2 .no { color: var(--gold); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  h3 { font-size: 16.5px; margin: 28px 0 6px; font-weight: 640; }
+  p { margin: 0 0 13px; }
+  a { color: var(--steel); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  .kicker {
+    font-family: "Avenir Next", Seravek, "Segoe UI", system-ui, sans-serif;
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold);
+  }
+  .meta { color: var(--dim); font-size: 14px; margin-bottom: 30px; }
+
+  code, .mono {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.86em; background: var(--mono-bg); border-radius: 4px; padding: 1px 5px;
+  }
+  pre {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; font-size: 13px;
+    background: var(--mono-bg); border-radius: 8px; padding: 12px 14px; overflow-x: auto;
+    line-height: 1.5; margin: 0 0 13px;
+  }
+  pre code { background: none; padding: 0; }
+
+  .finding {
+    border-left: 3px solid var(--gold); background: var(--gold-soft);
+    border-radius: 0 8px 8px 0; padding: 10px 16px; margin: 18px 0;
+  }
+  .finding .label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 3px; }
+  .finding p { margin: 0 0 6px; } .finding p:last-child { margin: 0; }
+
+  .quote {
+    border-left: 3px solid var(--steel); background: var(--steel-soft);
+    border-radius: 0 8px 8px 0; padding: 10px 16px; margin: 18px 0; font-size: 15px;
+  }
+  .quote .ru { font-style: italic; }
+  .quote .who { color: var(--dim); font-size: 13px; margin-top: 4px; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .tablewrap { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--line); border-radius: 8px; }
+  th {
+    font-family: "Avenir Next", Seravek, "Segoe UI", system-ui, sans-serif;
+    font-size: 11.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--dim);
+    text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--card);
+  }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--line); vertical-align: top; background: var(--card); }
+  tr:last-child td { border-bottom: none; }
+  td.n, th.n { text-align: right; }
+
+  .chip {
+    display: inline-block; font-family: "Avenir Next", Seravek, "Segoe UI", system-ui, sans-serif;
+    font-size: 11px; letter-spacing: 0.05em; border-radius: 20px; padding: 1px 9px 2px;
+    border: 1px solid var(--line); color: var(--dim); white-space: nowrap;
+  }
+  .chip.gold { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); }
+  .chip.bad  { color: var(--bad); border-color: var(--bad); }
+  .chip.ok   { color: var(--ok); border-color: var(--ok); }
+
+  details { margin: 10px 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+  summary {
+    cursor: pointer; padding: 9px 14px;
+    font-family: "Avenir Next", Seravek, "Segoe UI", system-ui, sans-serif; font-size: 13.5px; font-weight: 600;
+  }
+  summary:focus-visible { outline: 2px solid var(--steel); border-radius: 8px; }
+  details > div { padding: 2px 14px 12px; }
+  .figlist { font-size: 13.5px; line-height: 1.55; columns: 2; column-gap: 28px; }
+  .figlist div { break-inside: avoid; margin-bottom: 3px; }
+  .figlist b { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 12px; font-weight: 600; color: var(--gold); }
+  @media (max-width: 640px) { .figlist { columns: 1; } }
+
+  .diagram { margin: 20px 0; text-align: center; }
+  .diagram svg { max-width: 100%; height: auto; }
+  .diagram figcaption { font-size: 13px; color: var(--dim); margin-top: 6px; text-align: left; }
+
+  .ladder td:first-child { white-space: nowrap; }
+  .footnote { color: var(--dim); font-size: 13.5px; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 40px 0; }
+</style>
+
+<div class="page">
+  <span class="kicker">Technical report · Stellation engine</span>
+  <h1>Plane representations and the reachable polyhedra</h1>
+  <p class="meta">
+    What is missing before more of Brückner's 146 models become clickable, and which
+    engine design choices govern what the stellation app can show at all.<br>
+    Prepared 6 August 2026 · from V.&nbsp;Bulatov's feedback session, the ported source, and a
+    150-solid build census · repo <span class="mono">stellation-resurrect</span> · <a href="bruckner-grid.html">the plates, clickable</a> · <a href="bruckner.html">Brückner 1900</a> · <a href="index.html">the app</a>
+  </p>
+
+  <!-- ================================================================ 1 -->
+  <h2><span class="no">1</span>Summary</h2>
+  <p>
+    Vladimir described what he called the program's <em>fundamental defect</em>: planes are
+    carried through the pipeline as a single 3-D point — the foot of the perpendicular from
+    the origin — so a plane through the origin cannot be represented at all. That account is
+    accurate for the Java applet, and §3 traces it to the exact line. But in the JavaScript
+    port the story has already half-changed: planes are stored as unit normal + offset
+    <span class="mono">{n,&nbsp;d}</span> — four numbers — and the surviving problem is not the
+    representation but three <em>assumptions</em> layered on it: every plane is flipped to
+    <span class="mono">d&nbsp;&gt;&nbsp;0</span>, planes with <span class="mono">d&nbsp;≈&nbsp;0</span> are
+    silently discarded, and the layer/cell semantics presume a core cell that contains the origin.
+  </p>
+  <p>
+    Measured against the actual goal — how many of Brückner's 146 photographed models can be
+    rebuilt live — the diametral-plane fix turns out to be the <em>smallest</em> of five levers.
+    The census of all 146 figures (§4) gives this ladder:
+  </p>
+  <div class="tablewrap"><table class="ladder">
+    <tr><th>Step</th><th>Design change</th><th class="n">Adds</th><th class="n">Running total</th></tr>
+    <tr><td><b>—</b></td><td>Today: engine-verified cell selections on catalog solids</td><td class="n">—</td><td class="n"><b>16</b> / 146</td></tr>
+    <tr><td><b>D1</b></td><td>No engine change: derive selections that already exist in shipped arrangements (winding-number automation + per-figure research)</td><td class="n">+39</td><td class="n"><b>55</b></td></tr>
+    <tr><td><b>D2</b></td><td>Custom plane sets — restore the applet's <span class="mono">__PLANES</span> source (or ship kernel geometry files) for compounds and Brückner's “combination” solids</td><td class="n">+71</td><td class="n"><b>126</b></td></tr>
+    <tr><td><b>D3</b></td><td>Dihedral families: prism/antiprism/stephanoid geometry for the already-shipped D<i>n</i> symmetry machinery</td><td class="n">+13</td><td class="n"><b>139</b></td></tr>
+    <tr><td><b>D4</b></td><td>Diametral planes (<span class="mono">d&nbsp;=&nbsp;0</span>): unlocks the octahemioctahedron directly and is a prerequisite inside D1/D2 for Brückner's through-the-centre varieties</td><td class="n">+1</td><td class="n"><b>140</b></td></tr>
+    <tr><td><b>D5</b></td><td>Face-set display mode for the five truly one-sided models (cells can never represent them)</td><td class="n">+5 shown</td><td class="n"><b>145</b> shown</td></tr>
+  </table></div>
+  <p class="footnote">
+    The 146th, Taf. VIII Fig. 38, remains unidentified — no passage in the book names it.
+    Counts are reachability upper bounds: each derivation in D1 is mechanical but must be run
+    and eyeballed; each kernel in D2 exists mathematically but Brückner's “varieties” sometimes
+    depend on distance ratios he never states numerically (§4.3).
+  </p>
+  <div class="finding">
+    <span class="label">Also found while measuring</span>
+    <p>Seven duals that <em>are</em> in today's catalog menu — <span class="mono">d23 d26 d44 d55
+    d61 d68 d78</span> — currently build silently wrong arrangements. The cause is not diametral
+    planes but a second, previously undiagnosed bug: their faces are antiparallelograms
+    (bow-ties), whose two lobes have equal areas, so the Newell normal the port computes cancels
+    to ≈0 and the face planes come out as noise (§3.4). This is fixable independently of
+    everything else in this report, and should come first.</p>
+  </div>
+
+  <!-- ================================================================ 2 -->
+  <h2><span class="no">2</span>Where things stand</h2>
+  <p>
+    The clickable-plates page currently rebuilds <b>16 of 146</b> figures, every one verified
+    in the engine (vertex/face/volume/outer-radius). The data layer is far larger than the app
+    reveals: <span class="mono">geometry.json</span> ships <b>150 solids</b> — the 75 Kaleido
+    uniforms <span class="mono">u06–u80</span> (file <span class="mono">uNN</span> = Maeder
+    U(NN−5)) and their 75 duals — of which the catalog menus expose <b>121</b>. The 29 orphans
+    are the nine hemipolyhedra, their nine duals, nine duplicate self-dual twins, and
+    <span class="mono">u80/d80</span> (the great dirhombicosidodecahedron and dual). A build
+    census over all 150 files: <b>every file builds</b> under its best symmetry, in 0.03–7&nbsp;s;
+    the heaviest (<span class="mono">d65 d45 d79</span>…) reach ≈23,000 primitive cells at the
+    default depth cap.
+  </p>
+  <p>
+    Two backdoors matter for what follows. The URL hash loader accepts <em>any</em> geometry key
+    — <span class="mono">#u08</span> loads the octahemioctahedron today, but with a synthesized
+    <span class="mono">Ih</span> symmetry that is wrong for an octahedral solid. And
+    <span class="mono">parseStel</span> already reads the applet's <span class="mono">planes</span>
+    field from .stel files; the preset layer simply discards it. Both are half-built doors into
+    the capabilities this report costs out.
+  </p>
+
+  <!-- ================================================================ 3 -->
+  <h2><span class="no">3</span>The plane representation, from Java to the port</h2>
+  <div class="quote">
+    <p class="ru">Planes are stored as a point in space — the point of the plane closest to the origin — so a plane passing exactly through the origin cannot be expressed at all. That choice, made at the very beginning, is why a significant number of the polyhedra cannot be reproduced, and probably why many of Brückner’s figures cannot be built either.</p>
+    <p>“My planes are specified by a point in space… so I cannot specify a plane through the
+    origin. It was a fundamental mistake at the very start of development… a significant share
+    of polyhedra cannot be reproduced… possibly many of Brückner's too.”</p>
+    <p class="who">— V. Bulatov, feedback session, 6 Aug 2026. His proposed fix: normal (three
+    numbers, not necessarily unit) + distance to the origin — four numbers.</p>
+  </div>
+
+  <h3>3.1 Where the point encoding lives in the Java applet</h3>
+  <p>
+    The Java <span class="mono">Plane</span> class itself already stores normal + signed
+    distance (<span class="mono">v·X − d = 0</span>). The defect is one step downstream:
+    <span class="mono">StellationController.makePolyhedronPlanes</span> re-encodes every plane
+    as <span class="mono">planes[i] = plane.v.mul(plane.d)</span> — the foot of the
+    perpendicular — and <span class="mono">Stellation.makeStellationFaces</span> reconstructs
+    the plane as <span class="mono">v = normalize(point), d = |point|</span>. At
+    <span class="mono">d = 0</span> the point is the zero vector and the normal is gone; and
+    since <span class="mono">d = |point| ≥ 0</span>, every normal is forced to point away from
+    the origin. Exactly as The original author recalled — one lossy round-trip in the middle of an
+    otherwise four-number pipeline.
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 720 240" role="img" aria-label="Three plane encodings compared" font-family="Avenir Next, Seravek, Segoe UI, system-ui, sans-serif" font-size="12">
+      <!-- panel 1: point encoding -->
+      <g transform="translate(10,10)">
+        <rect x="0" y="0" width="220" height="200" rx="10" fill="none" stroke="var(--line)"/>
+        <text x="14" y="24" fill="var(--ink)" font-weight="600">point p = d·n</text>
+        <circle cx="60" cy="150" r="3" fill="var(--ink)"/>
+        <text x="48" y="170" fill="var(--dim)">O</text>
+        <line x1="60" y1="150" x2="150" y2="80" stroke="var(--gold)" stroke-width="2"/>
+        <circle cx="150" cy="80" r="4" fill="var(--gold)"/>
+        <line x1="110" y1="28" x2="196" y2="130" stroke="var(--steel)" stroke-width="2"/>
+        <text x="150" y="66" fill="var(--gold)">p</text>
+        <text x="14" y="190" fill="var(--dim)">plane ⟂ p through p · d = |p|</text>
+      </g>
+      <!-- panel 2: the degenerate case -->
+      <g transform="translate(250,10)">
+        <rect x="0" y="0" width="220" height="200" rx="10" fill="none" stroke="var(--line)"/>
+        <text x="14" y="24" fill="var(--ink)" font-weight="600">diametral: d = 0</text>
+        <circle cx="110" cy="110" r="3" fill="var(--ink)"/>
+        <text x="98" y="130" fill="var(--dim)">O</text>
+        <line x1="50" y1="40" x2="170" y2="180" stroke="var(--steel)" stroke-width="2"/>
+        <text x="14" y="172" fill="var(--bad)">p = 0 — normal lost;</text>
+        <text x="14" y="190" fill="var(--bad)">port: plane silently dropped</text>
+      </g>
+      <!-- panel 3: normal + offset -->
+      <g transform="translate(490,10)">
+        <rect x="0" y="0" width="220" height="200" rx="10" fill="none" stroke="var(--line)"/>
+        <text x="14" y="24" fill="var(--ink)" font-weight="600">signed {n, d}, d ∈ ℝ</text>
+        <circle cx="110" cy="110" r="3" fill="var(--ink)"/>
+        <text x="98" y="130" fill="var(--dim)">O</text>
+        <line x1="50" y1="40" x2="170" y2="180" stroke="var(--steel)" stroke-width="2"/>
+        <line x1="110" y1="110" x2="146" y2="80" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4 3"/>
+        <text x="150" y="76" fill="var(--gold)">n</text>
+        <text x="14" y="172" fill="var(--ok)">d = 0 is just a value;</text>
+        <text x="14" y="190" fill="var(--ok)">orientation is a free choice</text>
+      </g>
+    </svg>
+    <figcaption>
+      The applet's arrangement pipeline funnels each plane through a single point
+      <b>p&nbsp;=&nbsp;d·n</b> (left). A plane through the origin maps to the zero vector and
+      cannot survive the round trip (middle). The port already stores {n, d} (right) — what
+      remains is to stop forcing d&nbsp;&gt;&nbsp;0 and to give d&nbsp;=&nbsp;0 planes semantics.
+    </figcaption>
+  </div>
+
+  <h3>3.2 What the port actually does</h3>
+  <pre><code>// docs/js/core.js — facePlanes()
+if (d &lt; 0) { n = mul(n, -1); d = -d; }   // orient away from the origin
+if (Math.abs(d) &lt; 1e-9) continue;        // plane through the centre: skip</code></pre>
+  <p>
+    The representation is Vladimir's proposed four numbers already; the two lines above are the
+    inherited <em>policy</em>. Note the port converts the Java behaviour from loud to silent:
+    the applet's plane-from-point constructor degenerates visibly, while the port just drops the
+    plane — no console message, no count. The vestigial
+    <span class="mono">planeFromPoint()</span> has no remaining callers and substitutes an
+    arbitrary normal <span class="mono">(0,0,1)</span> at |p| &lt; 1e-12.
+  </p>
+
+  <h3>3.3 What d = 0 actually blocks — measured, not assumed</h3>
+  <p>
+    Recomputing raw face planes for all 150 files, the solids with genuinely diametral planes are
+    the nine hemipolyhedra plus the great dirhombicosidodecahedron:
+  </p>
+  <div class="tablewrap"><table>
+    <tr><th>File</th><th>Solid</th><th class="n">Planes</th><th class="n">Through centre</th><th class="n">Survive the skip</th></tr>
+    <tr><td class="mono">u08</td><td>octahemioctahedron <span class="chip ok">orientable</span></td><td class="n">12</td><td class="n">4</td><td class="n">8</td></tr>
+    <tr><td class="mono">u09</td><td>tetrahemihexahedron</td><td class="n">7</td><td class="n">3</td><td class="n">4</td></tr>
+    <tr><td class="mono">u20</td><td>cubohemioctahedron</td><td class="n">10</td><td class="n">4</td><td class="n">6</td></tr>
+    <tr><td class="mono">u54</td><td>small icosihemidodecahedron</td><td class="n">26</td><td class="n">6</td><td class="n">20</td></tr>
+    <tr><td class="mono">u56</td><td>small dodecahemidodecahedron</td><td class="n">18</td><td class="n">6</td><td class="n">12</td></tr>
+    <tr><td class="mono">u67</td><td>small dodecahemicosahedron</td><td class="n">22</td><td class="n">10</td><td class="n">12</td></tr>
+    <tr><td class="mono">u70</td><td>great dodecahemicosahedron</td><td class="n">22</td><td class="n">10</td><td class="n">12</td></tr>
+    <tr><td class="mono">u75</td><td>great dodecahemidodecahedron</td><td class="n">18</td><td class="n">6</td><td class="n">12</td></tr>
+    <tr><td class="mono">u76</td><td>great icosihemidodecahedron</td><td class="n">26</td><td class="n">6</td><td class="n">20</td></tr>
+    <tr><td class="mono">u80</td><td>great dirhombicosidodecahedron (U75)</td><td class="n">78</td><td class="n">46</td><td class="n">32</td></tr>
+  </table></div>
+  <p>
+    Loading any of these through the hash backdoor today silently produces the arrangement of
+    the surviving planes only — <span class="mono">u09</span> quietly becomes a tetrahedron
+    study. On the Brückner side, the census (§4) shows the fix is a prerequisite for four
+    figures: <b>VIII-1</b> (the octahemioctahedron — and, being the one <em>orientable</em>
+    hemipolyhedron, it is honestly rebuildable as cells once its diametral hexagons exist),
+    <b>XII-1</b> (small dodecahemicosahedron), and Brückner's own degenerate-parameter varieties
+    <b>IX-1</b> and <b>IX-18</b>, where he moves a family of dodecahedron planes until they
+    <em>pass through the centre</em>. Vladimir's hunch that “possibly many of Brückner's” fail
+    for this reason is right in kind — the book deliberately visits the degenerate case — but
+    small in count: four figures of 146.
+  </p>
+  <p>
+    What the real fix requires beyond un-skipping: (a) an explicit orientation convention per
+    diametral plane (both half-spaces touch the centre, so “outward” is a choice, not a fact);
+    (b) generalized layer semantics — today layer 0 is the cell containing the origin, and with
+    a diametral plane no cell contains it (for <span class="mono">u09</span> the centre sits on
+    three planes at once and the “core” is eight octants); (c) UI: the Cells table, the
+    <span class="mono">{0}</span> presets, and the walkthrough all assume a core row.
+    None of this touches the clipping algebra itself — the Java constructions show the
+    arrangement code nowhere needs <span class="mono">d &gt; 0</span>.
+  </p>
+
+  <h3>3.4 The bug the measurement found instead: bow-tie faces</h3>
+  <p>
+    The census flagged five more “diametral” files — and adversarial verification refuted the
+    diagnosis in the most useful way. <span class="mono">d44 d55 d61 d68</span> (small
+    rhombidodecacron, small dodecicosacron, rhombicosacron, great dodecicosacron) have <em>no</em>
+    diametral faces: they are isohedral, every face at one nonzero distance. But their faces are
+    <b>antiparallelograms</b> — crossed quadrilaterals whose two lobes have equal area with
+    opposite winding — so the Newell area-vector the port uses as the face normal cancels to
+    ≈0, and <span class="mono">facePlanes</span> emits garbage normals with scattered distances
+    (spread 80:1 where the true solid has 1:1). One face per file lands at exactly 0 and trips
+    the diametral filter; the other 59 pass through as noise. The same degeneracy exists,
+    undetected by any filter, in <span class="mono">d23 d26 d78</span> — and all seven of these
+    are <em>in the catalog today</em>. (<span class="mono">d70</span>, the ninth flag, is the
+    genuine hemi-dual with Maeder's finite fudge for its ideal vertices.)
+  </p>
+  <div class="finding">
+    <span class="label">Immediate, independent fix</span>
+    <p>When |Newell normal| ≈ 0, fit the plane from the (coplanar) vertices instead — any
+    non-collinear triple. One guarded branch in <span class="mono">facePlanes</span> repairs
+    seven currently-wrong catalog solids and needs no new semantics at all.</p>
+  </div>
+
+  <!-- ================================================================ 4 -->
+  <h2><span class="no">4</span>The unlock ladder: what each design choice buys on the plates</h2>
+  <p>
+    Every one of the 146 figures was classified by <em>what would make it clickable</em>, using
+    the book's own per-figure descriptions (145 of 146 are cited in the text), the shipped data
+    files, and computed face inventories. The full table is in the appendix; here is each rung
+    with its mechanism and its evidence.
+  </p>
+
+  <h3>4.1 D1 — no engine change: 16 → 55</h3>
+  <p>
+    Three groups need only <em>derivation work</em> against arrangements the engine already builds:
+  </p>
+  <p>
+    <b>Self-stars (17 figures).</b> Brückner photographed seventeen orientable uniform star
+    polyhedra that are in the catalog right now; each equals the solid union of cells in its
+    <em>own</em> face-plane arrangement. This is provable mechanically: compute the winding
+    number of the star surface around a representative point of each sub-cell orbit. Run
+    tonight as a demonstration, with orbit-consistency checks:
+  </p>
+  <div class="tablewrap"><table>
+    <tr><th>Figure</th><th>Solid</th><th>File</th><th>Derived selection</th><th>Checks</th></tr>
+    <tr><td class="mono">IX-13</td><td>dodecadodecahedron</td><td class="mono">u41</td><td class="mono">{0,1,2(1)}</td><td>0 inconsistent orbits; union reaches exactly the vertex radius</td></tr>
+    <tr><td class="mono">IX-15</td><td>small ditrigonal icosidodecahedron</td><td class="mono">u35</td><td class="mono">{0,1(1)}</td><td>clean</td></tr>
+    <tr><td class="mono">IX-2</td><td>truncated great dodecahedron</td><td class="mono">u42</td><td class="mono">{0,1,2(1)}</td><td>clean</td></tr>
+    <tr><td class="mono">—</td><td>small dodecicosahedron (probe)</td><td class="mono">u55</td><td class="mono">—</td><td><span class="chip bad">4 inconsistent orbits</span> — orbit granularity coarser than the solid; needs per-primitive verification</td></tr>
+  </table></div>
+  <p class="footnote">
+    The probe failure is the honest caveat: <span class="mono">u55</span> is one of the
+    non-orientable non-hemi uniforms, where winding is ill-defined — the tool must refuse
+    non-orientable inputs and double-check orbit unanimity. The seventeen self-star figures are
+    all orientable.
+  </p>
+  <p>
+    <b>Derivation-only (9 figures).</b> The §157–158 solids — Brückner's 15th-kind and
+    45th-kind isogonal-isohedral solids and their polars, plus XI-11 on the deltoidal
+    icositetrahedron — lie in the planes of catalog solids (<span class="mono">d29</span>,
+    <span class="mono">d15</span>). Same situation the compound of five cubes was in yesterday
+    before it fell to a membership computation (<span class="mono">{0,1,2,3,4}</span> on
+    <span class="mono">d29</span>); these need Brückner's ring-point constructions read out of
+    pp.&nbsp;209–212 and turned into selections.
+  </p>
+  <p>
+    <b>Dual-stars with existing kernels (13 figures).</b> Much of Plate X and XI is the polar
+    (isohedral) mate of a uniform star, and thirteen of those mates are literally files in the
+    catalog — e.g. X-28 <em>is</em> the medial rhombic triacontahedron
+    (<span class="mono">d41</span>), X-30 the small stellapentakisdodecahedron
+    (<span class="mono">d42</span>), XI-17 the great rhombic triacontahedron
+    (<span class="mono">d59</span>). “Rebuild” here means: load the dual file, run the same
+    winding derivation, get the cell string. (Three of the thirteen — those with bow-tie faces —
+    wait on the §3.4 fix first.)
+  </p>
+
+  <h3>4.2 D2 — custom plane sets: 55 → 126</h3>
+  <p>
+    The single largest rung, 71 figures, and the design choice is already half-present. The Java
+    applet has a custom-planes dialog: enter <span class="mono">[(nx,ny,nz)…]</span> or
+    <span class="mono">[(nx,ny,nz,px,py,pz)…]</span>, pick any symmetry group, stellate the
+    arrangement, save as .stel with the <span class="mono">__PLANES</span> source. The port's
+    parser already reads that field; the preset layer throws it away and the app rejects any
+    document whose polyhedron is not a catalog name. Wiring that one path through
+    <span class="mono">buildStellation</span> — which takes an arbitrary
+    <span class="mono">{n,d}</span> list plus matrices today — restores it.
+  </p>
+  <p>
+    What it unlocks splits in two. First, the famous compounds in “alien” planes: two cubes on a
+    3-fold axis (VIII-3), three cubes (IX-23, Escher's), three octahedra (VIII-12, Escher's),
+    two dodecahedra (VIII-31), six sphenoids (VIII-10), six boxes (VIII-22), and the polar of the
+    final stellation (XII-10/16). A verified subtlety on VIII-12: the three-octahedra compound is
+    a stellation of a <em>tetrakis hexahedron variety</em> whose 24 planes are the signed
+    permutations of (0,1,√2)/√3 — <em>not</em> the Catalan solid
+    <span class="mono">d13</span> (signed permutations of (0,1,2)/√5, ≈8.7° away; 0/24 planes
+    match). The compound tier needs its own plane sets; no shipped kernel substitutes.
+    Second, the long tail of Brückner's Part-F “combination” solids — cube+octahedron,
+    two-tetrahedra, dodecahedron+icosahedron families in 8–62 planes — where he explores
+    <em>varieties</em> of the same plane arrangement at different distance ratios. That is
+    precisely a custom-planes workflow: same normals, slide the ratios. (It is also where the
+    caveat lives: for several varieties Brückner states the ratio only qualitatively, so the
+    kernels are one parameter short of automatic.)
+  </p>
+  <div class="finding">
+    <span class="label">Compounds are stellations — in exactly one sense</span>
+    <p>Verified as a theorem, not an analogy: any finite union of closed orientable solids
+    equals a union of cells in the arrangement of its own face planes (each open cell is
+    disjoint from every boundary, hence entirely in or out). That is why five cubes fell to
+    <span class="mono">{0,1,2,3,4}</span> on <span class="mono">d29</span>, and why every
+    compound on the plates is reachable once its plane set can be entered. The converse
+    boundary is just as firm: a one-sided surface bounds nothing, so no cell union will ever
+    be XII-5 (§4.5).</p>
+  </div>
+
+  <h3>4.3 D3 — dihedral families: 126 → 139</h3>
+  <p>
+    Thirteen figures are prisms, antiprisms, crown polyhedra and stephanoids — Brückner's
+    axial chapter (VIII-4, 13, 15–20, 24, 40, 41; X-17's four-tetrahedra compound; X-21). The
+    remarkable fact from the parity audit: the port ships the entire dihedral symmetry apparatus
+    already — <span class="mono">symmetry.json</span> carries C2…C12 and D2…D12 in h/d/v
+    variants — and it is <em>dead data</em>, because no catalog solid has an axial point group
+    and there is no custom-planes path. Kaleido's prism families (#1–5) were never shipped as
+    files, in the applet either. The unlock is parametric: generate {p/q}-prism and antiprism
+    plane sets (or geometry) on demand. One repair rides along: twenty of the 85 symmetry
+    entries (C8–C12, C8h–C12h, C8v–C12v, D8h–D12h) ship with <em>empty matrix arrays</em> in
+    both the applet and the port — selecting them silently yields no group. The stephanoids need
+    exactly these D<i>n</i> entries to be real.
+  </p>
+
+  <h3>4.4 D4 — diametral planes: 139 → 140</h3>
+  <p>
+    Covered in §3.3: one direct figure (VIII-1, the orientable octahemioctahedron), plus
+    prerequisite status inside earlier rungs for IX-1, IX-18, XII-1, and honest arrangements for
+    ten orphan files. Ranked here not because it is deep — the arrangement algebra never uses
+    <span class="mono">d&gt;0</span> — but because its blast radius is semantics and UI
+    (layer 0, presets, the Cells table) rather than one function.
+  </p>
+
+  <h3>4.5 D5 — the one-sided remainder: display, not cells</h3>
+  <p>
+    Five figures can never be cell unions, by the theorem above: VIII-29 (extended triakis
+    octahedron), IX-10, X-16 (Möbius solids from truncated solids), XII-1, XII-5. The book is
+    explicit that these are <em>einseitig</em> — Brückner's §143/§148/§163 one-sided chapter is
+    where his subject leaves Coxeter's future cell-world entirely. Showing them needs a
+    face-set renderer — draw the self-intersecting faces as given in
+    <span class="mono">geometry.json</span>, no arrangement involved — which is a small,
+    self-contained viewer mode, and incidentally the honest way to show <em>any</em> star
+    polyhedron “as Brückner built it”: his paper models are surfaces, not solids.
+  </p>
+
+  <!-- ================================================================ 5 -->
+  <h2><span class="no">5</span>Symmetry as the second design axis</h2>
+  <p>
+    The session's other capability thread was symmetry. Two findings sharpen it. First, the
+    port's subgroup menu is <em>computed</em> (by matrix containment over top-level groups),
+    where the applet used a hand-written pairing table — and the computation loses all ten
+    icosahedral-frame subgroups (<span class="mono">D5d(I) D5(I) S10(I) C5v(I) C5(I) D3d(I)
+    D3(I) S6(I) C3v(I) C3(I)</span>): they exist only as axis-aligned variants inside the
+    applet's table, not as top-level entries. Since 109 of the 121 catalog solids are
+    icosahedral, the practical loss is every 5-fold and 3-fold partial-symmetry stellation —
+    the “pillar” and chiral-axis selections. Second, the granularity story: the engine's
+    two-level design (full group for cell types, one chiral subgroup for hand-splitting) is what
+    made the five-tetrahedra compound selectable; each further subgroup exposed multiplies
+    selectable subsets and multiplies UI rows in equal measure — the transcript's C3 complaint
+    (a group list long enough that it no longer fits without scrolling) is the cost curve of the same choice
+    that Miller's rules were invented to cap (§6).
+  </p>
+
+  <!-- ================================================================ 6 -->
+  <h2><span class="no">6</span>Brückner, Coxeter, and where these choices come from</h2>
+  <p>
+    The design space this report walks was mapped a century before the software. Three
+    traditions correspond to three representation choices:
+  </p>
+  <p>
+    <b>Brückner thinks in faces.</b> His method is the <i>Grenzfläche</i>: read a boundary
+    polygon off the complete figure (the stellation diagram), then build the paper surface. His
+    §153 description of the icosahedron's complete figure handles the twentieth, parallel plane
+    <em>projectively</em> — “Die Ebene 20 schneidet die Zeichenebene in der unendlichweiten
+    Geraden” — the plane at infinity is just another line of the figure. The irony writes
+    itself: the 1900 book is more projectively complete than the affine
+    <span class="mono">d&nbsp;&gt;&nbsp;0</span> shortcut in the 2000s software; and Brückner's
+    one-sided §148 models with faces through the centre are exactly the cases the point
+    encoding excludes. His face-first stance is also why one-sided solids belong in his book at
+    all: a surface needs no interior.
+  </p>
+  <p>
+    <b>Coxeter–Du Val think in cells.</b> <i>The Fifty-Nine Icosahedra</i> (1938) replaced the
+    boundary-polygon reading with the cell-set reading this engine implements — Du Val's
+    <span class="mono">a…h</span> layer notation is literally the app's
+    <span class="mono">{0,…,7}</span>. Miller's rules are then a <em>selection-criteria design
+    choice</em> over the same arrangement: symmetry constraints (his rules fix the rotation
+    group <span class="mono">I</span>, admitting the two chiral hands) plus connectivity
+    filters to cut 2<sup>N</sup> subsets to a publishable 59. Every later fight — Pawley's
+    fully-supported criterion, Inchbald's critique that cells can't distinguish the medial from
+    the great triambic icosahedron — is an argument about that same lever, and the app's
+    shift-click “add with support” is Pawley's criterion as a gesture.
+  </p>
+  <p>
+    <b>The compounds tradition thinks in plane sets.</b> Five cubes as a stellation of the
+    triacontahedron (verified here as shells 0–4 of <span class="mono">d29</span>) goes back
+    through Hess to Cauchy's 1812 memoir; Luke (1957) did the rhombic dodecahedron, Ede (1958)
+    and later Messer the triacontahedron — each of these is a <em>catalog</em> choice: which
+    plane arrangements are worth naming as a “solid to stellate.” The applet's custom-planes
+    dialog was Bulatov's generalization of exactly that decision to the user, and D2 is its
+    restoration.
+  </p>
+
+  <!-- ================================================================ 7 -->
+  <h2><span class="no">7</span>Recommended order</h2>
+  <div class="tablewrap"><table>
+    <tr><th>#</th><th>Change</th><th>Kind</th><th>Payoff</th></tr>
+    <tr><td>1</td><td>Bow-tie normal fix in <span class="mono">facePlanes</span> (fit plane from vertices when |Newell| ≈ 0)</td><td>correctness, ~10 lines</td><td>7 catalog solids stop being silently wrong; unblocks 3 dual-star figures</td></tr>
+    <tr><td>2</td><td>Surface the skip: log/status “N of M planes used” whenever planes are dropped or deduped</td><td>honesty, trivial</td><td>no more silent wrongness anywhere; makes #6 testable</td></tr>
+    <tr><td>3</td><td>Winding-number derivation tool (refusing non-orientable input) + run over the 17 self-stars and 13 dual-stars; add results to the grid page</td><td>tooling, no engine change</td><td>16 → ~55 clickable figures; three selections already derived and verified</td></tr>
+    <tr><td>4</td><td>§157–158 research derivations on <span class="mono">d29</span>/<span class="mono">d15</span></td><td>research</td><td>the last grey “stellation of the triacontahedron” entries go live</td></tr>
+    <tr><td>5</td><td>Custom plane sets: honor the .stel <span class="mono">planes</span> source end-to-end; textarea UI later</td><td>feature, port-side plumbing exists</td><td>+71 figures reachable (compounds incl. both remaining Escher solids; combination varieties); old applet files load</td></tr>
+    <tr><td>6</td><td>Diametral planes: un-skip, define orientation + layer-0 semantics, expose hemis with correct symmetries</td><td>engine semantics + UI</td><td>VIII-1 buildable; IX-1/IX-18/XII-1 varieties honest; 10 orphan files real</td></tr>
+    <tr><td>7</td><td>Dihedral families: parametric prism/antiprism planes; fill the 20 empty symmetry stubs; restore icosahedral-frame subgroups</td><td>feature</td><td>+13 axial figures; partial-symmetry stellations return</td></tr>
+    <tr><td>8</td><td>Face-set display mode</td><td>viewer feature</td><td>the five one-sided models shown; “as built” view for every star polyhedron</td></tr>
+  </table></div>
+  <p class="footnote">
+    Perf guardrails from the census: everything convex is instant; the big star duals run
+    2–7&nbsp;s and ≈5,000–23,000 primitive cells at the default depth caps; 120-plane custom
+    arrangements will need the existing <span class="mono">suggestDepth</span> caps surfaced in
+    the UI (“showing N of M layers”) rather than raised.
+  </p>
+
+  <h3>Errata for the current pages, found along the way</h3>
+  <p class="footnote">
+    (1) Grid page VIII-6 is labeled “truncated great dodecahedron”; by Brückner's face
+    inventories the uniform truncated great dodecahedron is IX-2, and VIII-6 is the non-uniform
+    truncation of the small stellated dodecahedron — one of the two labels is wrong, likely
+    VIII-6's. (2) VIII-12's tooltip implies the Catalan tetrakis hexahedron; it should say “a
+    tetrakis hexahedron <em>variety</em>” (§4.2). (3) <span class="mono">bruckner.js</span>
+    PLATES notes for Tafel VI/VII were already corrected in-session; no further action.
+  </p>
+
+  <hr>
+
+  <!-- ================================================================ appendix -->
+  <h2><span class="no">A</span>Appendix — the 146 figures by unlock tier</h2>
+  <p class="footnote">
+    Tier assignments from the classification pass over the book's own figure descriptions,
+    cross-checked against computed face inventories of the shipped geometry; kernels named as
+    “<i>n</i> planes, group” are described, not yet shipped. Figures are Taf.&nbsp;plate-fig.
+  </p>
+
+  <details open><summary>Done today — 16 (engine-verified cell selections)</summary><div class="figlist">
+    <div><b>VIII-2</b> first stellation of the icosahedron · u27 {0,1}</div>
+    <div><b>VIII-26</b> excavated dodecahedron · u27 {0,1,2,3,4,5(1)6(0)}</div>
+    <div><b>IX-3</b> ten tetrahedra · u27 {0,1,2,3,4,5(1)}</div>
+    <div><b>IX-6</b> five octahedra · u27 {0,1,2}</div>
+    <div><b>IX-7</b> great dodecahedron · u28 {0,1,2}</div>
+    <div><b>IX-11</b> five tetrahedra · u27 {0,1,2,3,4,5(1[1])}</div>
+    <div><b>IX-16</b> great stellated dodecahedron · u28 {0,1,2,3}</div>
+    <div><b>IX-17</b> stellation D · u27 {0,1,2,3}</div>
+    <div><b>IX-20</b> Brückner's new solid, Ef₂ · u27 {0,1,2,3,4,5(0)}</div>
+    <div><b>X-3</b> sixth stellation · u27 {0,1,2,3,4,5,6(0)}</div>
+    <div><b>X-5</b> small stellated dodecahedron · u28 {0,1}</div>
+    <div><b>X-8</b>, <b>X-13</b> Escher's solid (two photographs) · d12 {0,1}</div>
+    <div><b>XI-14</b> final stellation · u27 {0,…,7}</div>
+    <div><b>XI-24</b> great icosahedron · u27 {0,…,6}</div>
+    <div><b>XII-24</b> five cubes · d29 {0,1,2,3,4}</div>
+  </details>
+
+  <details><summary>D1 · Self-stars — 17 (own arrangement, winding-derived)</summary><div class="figlist">
+    <div><b>VIII-5</b> stellated truncated hexahedron · u24</div>
+    <div><b>VIII-36</b> small cubicuboctahedron · u18</div>
+    <div><b>IX-2</b> truncated great dodecahedron · u42 · <span class="mono">{0,1,2(1)}</span> ✓</div>
+    <div><b>IX-8</b> great cubicuboctahedron · u19</div>
+    <div><b>IX-9</b> great truncated icosahedron · u60</div>
+    <div><b>IX-13</b> dodecadodecahedron · u41 · <span class="mono">{0,1,2(1)}</span> ✓</div>
+    <div><b>IX-15</b> small ditrigonal icosidodecahedron · u35 · <span class="mono">{0,1(1)}</span> ✓</div>
+    <div><b>IX-19</b> icositruncated dodecadodecahedron · u50</div>
+    <div><b>IX-21</b> great stellated truncated dodecahedron · u71</div>
+    <div><b>XI-5</b> great truncated icosidodecahedron · u73</div>
+    <div><b>XI-9</b> great icosidodecahedron · u59</div>
+    <div><b>XI-12</b> cubitruncated cuboctahedron · u21</div>
+    <div><b>XII-13</b> small icosicosidodecahedron · u36</div>
+    <div><b>XII-14</b> rhombidodecadodecahedron · u43</div>
+    <div><b>XII-15</b> great ditrigonal dodecicosidodecahedron · u47</div>
+    <div><b>XII-18</b> great dodecicosidodecahedron · u66</div>
+    <div><b>XII-23</b> small stellated truncated dodecahedron · u63</div>
+  </details>
+
+  <details><summary>D1 · Derivation-only — 9 (catalog planes, selection unknown)</summary><div class="figlist">
+    <div><b>XI-4</b>, <b>XII-7</b>, <b>XII-17</b> the 15th-kind solid (§157) · d29</div>
+    <div><b>XII-8</b>, <b>XII-20</b> the 45th-kind solid (§158) · d29</div>
+    <div><b>XII-11</b>, <b>XII-12</b>, <b>XII-21</b> their polars · d29*</div>
+    <div><b>XI-11</b> noble 24-hedron of the 18th kind · d15</div>
+    <div class="footnote">*polars pending verification that their 120 triangles lie 4-per-plane in the 30 planes</div>
+  </details>
+
+  <details><summary>D1 · Dual-stars with existing kernel files — 13</summary><div class="figlist">
+    <div><b>X-1</b> great hexacronic icositetrahedron · d19</div>
+    <div><b>X-4</b> great triakisicosahedron · d71</div>
+    <div><b>X-6</b> great ditrigonal dodecacronic hexecontahedron · d47</div>
+    <div><b>X-9</b> tetradyakishexahedron · d21</div>
+    <div><b>X-10</b> great pentakisdodecahedron · d63</div>
+    <div><b>X-18</b> great triakisoctahedron · d24</div>
+    <div><b>X-24</b> medial deltoidal hexecontahedron · d43</div>
+    <div><b>X-25</b> tridyakisicosahedron · d50</div>
+    <div><b>X-28</b> medial rhombic triacontahedron · d41</div>
+    <div><b>X-30</b> small stellapentakisdodecahedron · d42</div>
+    <div><b>XI-15</b> great stellapentakisdodecahedron · d60</div>
+    <div><b>XI-17</b> great rhombic triacontahedron · d59</div>
+    <div><b>XI-22</b> great disdyakistriacontahedron · d73</div>
+  </details>
+
+  <details><summary>D2 · Dual-stars needing new kernels — 23</summary><div class="figlist">
+    <div><b>X-2</b> polar of no. 15 · 48 planes, Oh</div>
+    <div><b>X-7</b> polar of no. 58 · 60 planes, Ih</div>
+    <div><b>X-11</b> reciprocal of no. 32 · 60 planes, Ih</div>
+    <div><b>X-12</b> polar of no. 22 · 24 planes, Oh</div>
+    <div><b>X-14</b> polar of no. 13 · 48 planes, Oh</div>
+    <div><b>X-15</b> reciprocal of no. 43 · 120 planes, Ih</div>
+    <div><b>X-19</b> reciprocal of no. 66 · 60 planes, Ih</div>
+    <div><b>X-20</b> polar of the cube+octahedron 5th-kind solid · 24 planes, Oh</div>
+    <div><b>X-22</b> reciprocal of no. 68 · 60 planes, Ih</div>
+    <div><b>X-23</b> reciprocal of no. 37 · 120 planes, Ih</div>
+    <div><b>X-26</b> reciprocal of no. 34 · 60 planes, Ih</div>
+    <div><b>X-27</b> reciprocal of no. 53 · 120 planes, Ih</div>
+    <div><b>X-29</b> polar of no. 67 · 60 planes, Ih</div>
+    <div><b>X-31</b> reciprocal of no. 44 · 120 planes, Ih</div>
+    <div><b>X-32</b> polar of no. 14 · 48 planes, Oh</div>
+    <div><b>X-33</b> polar of no. 16 · 48 planes, Oh</div>
+    <div><b>XI-13</b> reciprocal of no. 39 · 120 planes, Ih</div>
+    <div><b>XI-16</b> polar of no. 42 · 120 planes, Ih</div>
+    <div><b>XI-18</b> reciprocal of no. 54 · 120 planes, Ih</div>
+    <div><b>XI-19</b> reciprocal of no. 40 · 120 planes, Ih</div>
+    <div><b>XI-20</b> polar of no. 36 · 120 planes, Ih</div>
+    <div><b>XI-21</b> polar of no. 41 · 120 planes, Ih</div>
+    <div><b>XI-23</b> polar of no. 33 · 60 planes, Ih</div>
+  </details>
+
+  <details><summary>D2 · Compounds and combination varieties — 48</summary><div class="figlist">
+    <div><b>VIII-3</b> two cubes, common 3-fold axis · 12 planes, D3d</div>
+    <div><b>VIII-6</b> truncation of the small stellated dodecahedron · 24 planes, Ih</div>
+    <div><b>VIII-7</b> two tetrahedra + cube · 14 planes, Td</div>
+    <div><b>VIII-8</b>, <b>VIII-21</b>, <b>VIII-23</b> cube+octahedron+rhombic-dodecahedron varieties · 26 planes, Oh</div>
+    <div><b>VIII-9</b>, <b>VIII-11</b>, <b>VIII-28</b>, <b>VIII-30</b>, <b>VIII-33</b>, <b>VIII-35</b> cube/octahedron combination varieties · 14–22 planes, Oh</div>
+    <div><b>VIII-10</b> six tetragonal sphenoids · 24 planes, Oh</div>
+    <div><b>VIII-12</b> three octahedra (Escher) · 24 planes, Oh — tetrakis-hexahedron <em>variety</em> kernel</div>
+    <div><b>VIII-14</b>, <b>VIII-34</b> varieties of nos. 33/34 · 32 planes, Ih</div>
+    <div><b>VIII-22</b> six boxes / three doubly-covered prisms · 18 planes, Oh</div>
+    <div><b>VIII-25</b>, <b>VIII-27</b>, <b>VIII-32</b> nos. 68/58/67 · 44–62 planes, Ih</div>
+    <div><b>VIII-31</b> two dodecahedra · 24 planes, Oh(→Th)</div>
+    <div><b>VIII-37</b>, <b>VIII-39</b> two-tetrahedra varieties · 8 planes, Td</div>
+    <div><b>IX-1</b> no. 60 variety · 44 planes, Ih · <span class="chip bad">needs d=0</span></div>
+    <div><b>IX-4</b> no. 33 second variety · 32 planes, Ih</div>
+    <div><b>IX-5</b> no. 36 · 62 planes, Ih</div>
+    <div><b>IX-12</b> cube+octahedron through-edge variety · 14 planes, Oh</div>
+    <div><b>IX-14</b> no. 62 · 44 planes, Ih</div>
+    <div><b>IX-18</b> no. 48 variety, planes through centre · 44 planes, Ih · <span class="chip bad">needs d=0</span></div>
+    <div><b>IX-22</b> no. 54 · 52 planes, Ih</div>
+    <div><b>IX-23</b> three cubes (Escher) · 18 planes, Oh</div>
+    <div><b>IX-24</b> no. 43 · 54 planes, Ih</div>
+    <div><b>XI-1</b>, <b>XI-6</b> cube+octahedron varieties · 14 planes, Oh</div>
+    <div><b>XI-2</b> no. 64 · 44 planes, Ih</div>
+    <div><b>XI-3</b> variety of no. 40 · 62 planes, Ih</div>
+    <div><b>XI-7</b> no. 30 convex variety · 32 planes, Ih</div>
+    <div><b>XI-8</b> no. 69 · 54 planes, Ih</div>
+    <div><b>XI-10</b> no. 46 · 54 planes, Ih</div>
+    <div><b>XII-2</b> no. 30 non-convex variety · 32 planes, Ih</div>
+    <div><b>XII-3</b>, <b>XII-4</b>, <b>XII-19</b> nos. 42/40/39 · 62 planes, Ih</div>
+    <div><b>XII-6</b>, <b>XII-22</b> nos. 50/52 · 44 planes, Ih</div>
+    <div><b>XII-9</b> no. 45 · 54 planes, Ih</div>
+    <div><b>XII-10</b>, <b>XII-16</b> polar of the final stellation · 60 planes, Ih</div>
+  </details>
+
+  <details><summary>D3 · Axial — 13</summary><div class="figlist">
+    <div><b>VIII-4</b> stephanoid of the 2nd order, n=5</div>
+    <div><b>VIII-13</b> heptagrammic crossed antiprism {7/3}</div>
+    <div><b>VIII-15</b>, <b>VIII-40</b>, <b>VIII-41</b> interrupted-crown solids, p=3</div>
+    <div><b>VIII-16</b> heptagrammic antiprism {7/2}</div>
+    <div><b>VIII-17</b> heptagrammic prism {7/3}</div>
+    <div><b>VIII-18</b> star prism, (5+5)-gon of 4th kind</div>
+    <div><b>VIII-19</b> saw-edged solid, p=5</div>
+    <div><b>VIII-20</b> crown-edged solid, p=5</div>
+    <div><b>VIII-24</b> stephanoid of the 1st order, n=5</div>
+    <div><b>X-17</b> four tetrahedra on a common axis</div>
+    <div><b>X-21</b> reciprocal prismatic solid, p=3</div>
+  </details>
+
+  <details><summary>D4/D5 · Diametral + one-sided — 6, and the last one</summary><div class="figlist">
+    <div><b>VIII-1</b> octahemioctahedron · u08 · orientable → cells after d=0 fix</div>
+    <div><b>VIII-29</b> extended triakis octahedron (d14 planes) · one-sided → face-set mode</div>
+    <div><b>IX-10</b> one-sided isogonal (cube+RD planes) → face-set mode</div>
+    <div><b>X-16</b> one-sided from truncated tetrahedron → face-set mode</div>
+    <div><b>XII-1</b> small dodecahemicosahedron · u67 → face-set mode (+d=0)</div>
+    <div><b>XII-5</b> small rhombidodecahedron · u44 → face-set mode</div>
+    <div><b>VIII-38</b> unidentified — the one figure no passage names</div>
+  </details>
+
+  <h2><span class="no">B</span>Appendix — methods</h2>
+  <p class="footnote">
+    Sources: the ported source
+    (<span class="mono">docs/js/core.js</span>, <span class="mono">app.js</span>,
+    <span class="mono">preset.js</span>) and data files; the reverse-engineering specs
+     with their Java line references; the
+    per-figure citation sweep of Brückner's text (145/146 figures). Computations run for
+    this report: a 150-solid build census (planes, diametral counts, cells, timings); exact
+    plane-fitting to detect the bow-tie degeneracy; plane-set comparison of the three-octahedra
+    compound vs <span class="mono">d13</span> (0/24 matches); winding-number derivations for
+    u41, u35, u42 (clean) and u55 (refused, correctly). Historical framing follows the project's
+    sourced research notes on the 59 icosahedra, Miller's rules, and the post-1938 literature.
+    Load-bearing claims were checked by independent adversarial passes; two of this report's
+    own working hypotheses were refuted that way (the Catalan-d13 kernel for VIII-12, and
+    “diametral planes” as the cause of the d44-family breakage) and are reported in their
+    corrected form.
+  </p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,150 @@
+/* The clickable plates — layout for bruckner-grid.html */
+
+.grid-legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px;
+  font-size: 13px; color: var(--dim); margin: 14px 0 4px;
+}
+.grid-legend .lg {
+  display: inline-block; width: 26px; height: 15px; border-radius: 4px;
+  margin-left: 14px; vertical-align: -2px;
+}
+.grid-legend .lg:first-child { margin-left: 0; }
+.lg-build { border: 2px dashed color-mix(in srgb, var(--accent) 75%, transparent); }
+.lg-known { border: 2px solid color-mix(in srgb, var(--dim) 55%, transparent); }
+.lg-tbd   { border: 2px dotted color-mix(in srgb, var(--dim) 40%, transparent); }
+
+/* ------------------------------------------------------------- the sheets */
+.gsheet { margin: 16px 0 34px; }
+.gsheet-frame {
+  position: relative; border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; background: var(--line);
+  aspect-ratio: 1600 / 1952;   /* every sheet scan has this shape: no reflow on load */
+}
+.gsheet-frame img { display: block; width: 100%; height: auto; }
+
+.gsheet-cap {
+  display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline;
+  font-size: 13px; color: var(--dim); padding: 7px 4px 0;
+}
+.gsheet-cap b { color: var(--text); }
+
+/* hotspots */
+.hs {
+  position: absolute; border: 2px dashed transparent; border-radius: 7px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  appearance: none; background: transparent; padding: 0; margin: 0; font: inherit;
+  transition: border-color .16s ease, background-color .16s ease, box-shadow .16s ease;
+}
+.hs:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+
+.hs-build { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.hs-build:hover, .hs-build.on {
+  border-style: solid;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.hs-build.on { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 38%, transparent); }
+
+.hs-known { cursor: help; }
+.hs-known:hover, .hs-known.on {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--dim) 80%, transparent);
+  background: color-mix(in srgb, var(--dim) 12%, transparent);
+}
+.hs-tbd { cursor: help; }
+.hs-tbd:hover, .hs-tbd.on {
+  border-style: dotted;
+  border-color: color-mix(in srgb, var(--dim) 55%, transparent);
+}
+
+/* one-time attention pulse when a sheet scrolls into view */
+@keyframes hs-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+  70%  { box-shadow: 0 0 0 9px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.hs-build.pulse { animation: hs-pulse 1.1s ease-out 1; }
+
+/* hover label chip */
+.hs-tip {
+  position: absolute; left: 0; bottom: calc(100% + 5px); z-index: 5;
+  max-width: 300px; width: max-content; padding: 4px 9px;
+  font-size: 12px; line-height: 1.4; border-radius: 6px;
+  background: color-mix(in srgb, var(--bg) 88%, #000 12%);
+  border: 1px solid var(--line); color: var(--text);
+  box-shadow: 0 3px 14px rgb(0 0 0 / .3);
+  opacity: 0; pointer-events: none; transform: translateY(3px);
+  transition: opacity .14s ease, transform .14s ease;
+}
+.hs-tip b { color: var(--accent); font-family: var(--mono); font-weight: 600; }
+.hs-known .hs-tip b, .hs-tbd .hs-tip b { color: var(--dim); }
+.hs:hover .hs-tip { opacity: 1; transform: none; }
+.hs.tip-below .hs-tip { bottom: auto; top: calc(100% + 5px); }
+.hs.tip-right .hs-tip { left: auto; right: 0; }
+
+/* ------------------------------------------------------------- the viewer */
+.gviewer {
+  margin-top: 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: color-mix(in srgb, var(--line) 16%, transparent);
+  overflow: hidden;
+}
+.gviewer[hidden] { display: none; }
+.gviewer-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px;
+  padding: 11px 14px; border-bottom: 1px solid var(--line);
+}
+.gviewer-head .gref {
+  font-family: var(--mono); font-size: 12px; letter-spacing: .04em;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 5px; padding: 2px 8px;
+}
+.gviewer-head h3 { margin: 0; font-size: 15.5px; }
+.gviewer-head .spacer { flex: 1; }
+.gviewer-head code {
+  font-size: 12px; color: var(--dim);
+  background: color-mix(in srgb, var(--line) 45%, transparent);
+  padding: 2px 7px; border-radius: 5px;
+}
+.gviewer-head a {
+  font-size: 12.5px; color: var(--accent-2); text-decoration: none; white-space: nowrap;
+}
+.gviewer-head a:hover { text-decoration: underline; }
+.gviewer-head .gclose {
+  border: 1px solid var(--line); background: none; color: var(--dim);
+  font-size: 14px; line-height: 1; border-radius: 6px; padding: 4px 8px; cursor: pointer;
+}
+.gviewer-head .gclose:hover { border-color: var(--accent); color: var(--accent); }
+
+.gviewer .bfig { padding: 12px 14px 6px; }
+
+.gviewer-quote {
+  margin: 12px 14px 2px; padding: 10px 14px;
+  border-left: 3px solid var(--accent-2); border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--accent-2) 8%, transparent);
+  font-size: 13.5px; line-height: 1.55;
+}
+.gviewer-quote i { color: var(--text); }
+.gviewer-quote cite {
+  display: block; margin-top: 6px; font-style: normal; font-size: 12.5px; color: var(--dim);
+}
+
+.gviewer-info { padding: 6px 16px 14px; max-width: 74ch; }
+.gviewer-info h4 {
+  margin: 14px 0 4px; font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+}
+.gviewer-info p { margin: 0 0 9px; font-size: 14px; line-height: 1.6; }
+.gviewer-info .aka { font-size: 13.5px; }
+.gviewer-info .aka span {
+  display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px;
+  border: 1px solid var(--line); border-radius: 20px; color: var(--text); font-size: 12.5px;
+}
+.gviewer-info .ids { font-family: var(--mono); font-size: 12px; color: var(--dim); }
+.gviewer-info .refs { font-size: 12.5px; color: var(--dim); }
+.gviewer-info .refs a { color: var(--accent-2); text-decoration: none; }
+.gviewer-info .refs a:hover { text-decoration: underline; }
+
+@media (max-width: 760px) {
+  .hs-tip { display: none; }
+}

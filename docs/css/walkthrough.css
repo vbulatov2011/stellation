@@ -1,0 +1,371 @@
+/* The walkthrough is a document, not an app: it scrolls, it has a measure, and
+   the live figures sit inside the prose rather than in panels. */
+
+body.doc {
+  display: block;
+  overflow: auto;
+  background: var(--bg);
+  font-size: 16px;
+  line-height: 1.68;
+}
+
+.doc-head {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 20px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(10px);
+  font-size: 13.5px;
+}
+.brand { color: var(--text); font-weight: 650; text-decoration: none; white-space: nowrap; }
+.brand:hover { color: var(--accent); }
+.crumb { color: var(--dim); }
+.doc-head .ghost { text-decoration: none; color: var(--text); padding: 4px 10px; }
+
+/* ------------------------------------------------------------------ rail */
+
+#rail {
+  position: fixed;
+  top: 96px;
+  left: max(12px, calc(50vw - 620px));
+  width: 148px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  z-index: 5;
+}
+#rail a {
+  padding: 3px 9px;
+  border-left: 2px solid var(--line);
+  color: var(--dim);
+  font-size: 11.5px;
+  text-decoration: none;
+  line-height: 1.45;
+}
+#rail a:hover { color: var(--text); }
+#rail a.on { border-left-color: var(--accent); color: var(--accent); }
+@media (max-width: 1180px) { #rail { display: none; } }
+
+/* ------------------------------------------------------------------ body */
+
+/* the app stylesheet makes <main> a three-column grid; here it is an article */
+main.doc-body {
+  display: block;
+  grid-template-columns: none;
+  gap: 0;
+  background: none;
+  flex: none;
+  min-height: 0;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 22px 140px;
+}
+
+.loading { color: var(--dim); font-size: 13px; padding: 8px 0; }
+
+.doc-body h1 {
+  margin: 0 0 12px;
+  font-size: clamp(30px, 5vw, 42px);
+  font-weight: 660;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.standfirst { font-size: 18.5px; line-height: 1.6; color: var(--text); margin: 0 0 14px; }
+.byline { color: var(--dim); font-size: 13.5px; margin: 0 0 8px; }
+
+.doc-body section { padding-top: 46px; scroll-margin-top: 64px; }
+.doc-body h2 {
+  margin: 0 0 14px;
+  font-size: 23px;
+  font-weight: 640;
+  letter-spacing: -0.015em;
+  text-transform: none;
+  color: var(--text);
+}
+.doc-body p { margin: 0 0 15px; }
+.doc-body a { color: var(--accent-2); }
+.doc-body code {
+  font: 0.88em var(--mono);
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--panel-2);
+  color: var(--accent);
+}
+.doc-body em { font-style: italic; }
+.doc-body i { font-style: italic; }
+
+.note-box {
+  margin: 20px 0;
+  padding: 14px 16px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--panel);
+  font-size: 14.5px;
+  line-height: 1.62;
+}
+.note-box b { color: var(--text); }
+
+ul.todo { margin: 0 0 16px; padding-left: 20px; }
+ul.todo li { margin: 7px 0; }
+
+.colophon { margin-top: 26px; font-size: 14px; color: var(--dim); }
+.colophon a { color: var(--accent-2); }
+
+/* ------------------------------------------------------------------ figures */
+
+.fig, .fig-wrap {
+  margin: 20px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.fig-wide, .fig-tall { margin-left: -60px; margin-right: -60px; }
+@media (max-width: 900px) { .fig-wide, .fig-tall { margin-left: 0; margin-right: 0; } }
+
+.fig-grid { display: grid; gap: 10px; }
+.fig-grid.parts-1 { grid-template-columns: 1fr; }
+.fig-grid.parts-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.fig-grid.parts-3 { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 760px) { .fig-grid { grid-template-columns: 1fr !important; } }
+
+.fig-pane { min-width: 0; display: flex; flex-direction: column; }
+.fig-pane h4 {
+  margin: 0 0 6px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.fig-cells { height: 232px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; }
+.fig-cells canvas { display: block; width: 100%; height: 100%; }
+.fig-tall .fig-cells { height: 300px; }
+
+.fig-view {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.fig-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.fig-grid.parts-1 .fig-view { aspect-ratio: 16 / 9; }
+
+.fig-foot {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.fig-foot code { font-size: 12px; }
+.fig-stats { margin-left: auto; color: var(--dim); white-space: nowrap; }
+.fig-stats b { color: var(--text); }
+.fig-info { min-height: 15px; margin-top: 4px; font: 11px var(--mono); color: var(--accent); }
+.fig-caption { margin: -8px 0 18px; font-size: 13px; color: var(--dim); }
+
+/* ------------------------------------------------------------------ try buttons */
+
+.try {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+  font-size: 13px;
+}
+.try > span { color: var(--dim); margin-right: 2px; }
+.try button, .gallery button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.try button { padding: 4px 11px; font-size: 13px; }
+.try button:hover, .gallery button:hover { border-color: var(--accent); }
+.try button.on, .gallery button.on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+.try button code { background: none; padding: 0; }
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 9px;
+  margin: 4px 0 18px;
+}
+.gallery button {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 13px;
+  text-align: left;
+  line-height: 1.5;
+}
+.gallery b { font-size: 14.5px; font-weight: 620; }
+.gallery code { align-self: flex-start; font-size: 11.5px; }
+.gallery span { font-size: 12.5px; color: var(--dim); }
+
+/* ------------------------------------------------------------------ anatomy */
+
+.anatomy {
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.anatomy-row { display: flex; align-items: center; gap: 4px; margin-bottom: 18px; }
+
+/* mock boxes, matching the real table: digit above, colour bar in its own lane */
+.an-layer, .an-cell, .an-sub {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 5px;
+  width: 38px; height: 38px;
+  border: 1px solid var(--boxline, rgba(140,155,185,0.3));
+  border-radius: 9px;
+  font-weight: 620;
+}
+.an-cell::after, .an-sub::after {
+  content: "";
+  position: absolute;
+  left: 6px; right: 6px; bottom: 5px;
+  height: 4px; border-radius: 2px;
+  background: var(--bar, #8b93a7);
+}
+.an-layer { border: none; font-size: 19px; font-weight: 700; justify-content: flex-end; padding: 5px 6px 0 0; }
+.an-layer::before {
+  content: ""; position: absolute; left: 0; top: 6px; bottom: 6px;
+  width: 3px; border-radius: 2px; background: var(--accent);
+}
+.an-cell { font-size: 16px; --bar: #d95a3d; }
+.an-cell.hdr { --bar: #6f5ad6; background: color-mix(in srgb, var(--accent-2) 13%, transparent);
+               border-color: color-mix(in srgb, var(--accent-2) 40%, transparent); }
+.an-sub { font-size: 13px; font-weight: 480; --bar: #2f9e8f; }
+.an-group {
+  display: flex; gap: 4px; padding: 5px;
+  border: 1px solid color-mix(in srgb, var(--accent-2) 30%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-2) 7%, transparent);
+}
+
+.anatomy-key { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.anatomy-key li { display: flex; gap: 10px; margin: 7px 0; line-height: 1.5; }
+.anatomy-key b {
+  flex: none;
+  width: 34px;
+  text-align: center;
+  border-radius: 5px;
+  font-family: var(--mono);
+  background: var(--panel-2);
+  color: var(--text);
+}
+.anatomy-key .k4 { width: 42px; }
+.anatomy-bars { margin: 14px 0 0; font-size: 13.5px; color: var(--dim); }
+
+/* ------------------------------------------------------------------ pentagon */
+
+.penta { display: block; width: 100%; height: 280px; }
+.penta-range { width: 100%; accent-color: var(--accent); margin-top: 6px; }
+
+/* ------------------------------------------------------------------ refs */
+
+ul.refs { padding-left: 18px; margin: 0 0 14px; }
+ul.refs li { margin: 13px 0; font-size: 14.5px; line-height: 1.55; }
+ul.refs .r-note { display: block; margin-top: 3px; color: var(--dim); font-size: 13px; }
+
+/* ------------------------------------------------------------------ shells table */
+
+.doc-body h3 {
+  margin: 26px 0 10px;
+  font-size: 16px;
+  font-weight: 640;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--text);
+}
+
+table.shells {
+  width: 100%;
+  margin: 14px 0 16px;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+table.shells th, table.shells td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+table.shells th {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--dim);
+  border-bottom-color: var(--dim);
+}
+table.shells td:first-child,
+table.shells td:nth-child(2),
+table.shells td:nth-child(3) { font-family: var(--mono); }
+table.shells td:nth-child(2) { color: var(--accent); }
+table.shells tr:last-child td { border-bottom: none; }
+table.shells td:last-child { color: var(--dim); }
+
+/* the bar-colour key, at reading size */
+.legend.big {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 13px;
+  color: var(--text);
+}
+.legend.big .legend-item { display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+.legend.big .legend-item i { width: 20px; height: 4px; border-radius: 2px; display: inline-block; }
+i.swatch {
+  display: inline-block;
+  width: 20px; height: 4px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.anatomy-key .k5 { letter-spacing: -1px; color: var(--dim); }
+.gallery em {
+  align-self: flex-start;
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--accent-2);
+}
+.gallery button { gap: 3px; }
+.gallery b { margin-bottom: 2px; }
+.gallery span { margin-top: 3px; }
+
+/* Narrow screens: the header is a flex row and its children overrun a phone,
+   pushing the theme toggle and the help button off-screen where they cannot be
+   reached. Wrapping the row instead would make it taller and break the
+   scroll-margin the section anchors depend on, so secondary links marked
+   `optional` are hidden below 650px. Same rule already used on historical.html. */
+@media (max-width: 650px) {
+  .doc-head .optional, header .optional { display: none; }
+}

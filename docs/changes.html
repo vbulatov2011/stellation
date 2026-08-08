@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What changed — Stellation</title>
+<meta name="description" content="The round of fixes from the 6 August review, and what is still open.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/walkthrough.css">
+<link rel="stylesheet" href="css/controls.css">
+<script>
+  (() => {
+    const saved = localStorage.getItem('theme') || 'auto';
+    const dark = saved === 'dark' || (saved === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = saved;
+  })();
+</script>
+<style>
+  .done, .open { list-style: none; padding: 0; margin: 18px 0; }
+  .done li, .open li {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 10px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+  .done li::before { content: "✓"; color: #3fbf7f; font-weight: 700; }
+  .open li::before { content: "○"; color: var(--dim); }
+  .done b, .open b { color: var(--text); }
+  .done .src, .open .src {
+    display: block;
+    margin-top: 3px;
+    font-size: 11.5px;
+    color: var(--dim);
+    font-family: var(--mono);
+  }
+  .grp { margin-top: 30px; }
+  .grp h3 { margin-bottom: 2px; font-size: 15px; }
+  .grp p.lead { margin: 0; font-size: 13px; color: var(--dim); }
+</style>
+</head>
+<body class="doc">
+
+<header class="doc-head">
+  <a class="brand" href="index.html">✦ Stellation</a>
+  <span class="crumb">What changed</span>
+  <div class="spacer"></div>
+  <a class="ghost optional" href="controls.html">Controls</a>
+  <a class="ghost optional" href="walkthrough.html">Walkthrough</a>
+  <a class="ghost" href="index.html">Open the app →</a>
+  <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
+</header>
+
+<main class="doc-body narrow">
+
+  <h1>What changed</h1>
+  <p class="standfirst">
+    Changes made to the port after design reviews with the original author of the
+    Java program, most recent first.
+  </p>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
+    <h3>Fourth round</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>The camera never moves within an arrangement.</b> The third-round fix pinned
+      foreshortening to the selection's bounding sphere, but the camera still
+      travelled as that sphere changed — so toggling an outer cell subtly changed the
+      perspective of everything else, on both machines this time. Distance is now set
+      once per build, from the radius of the whole buildable arrangement; selecting
+      and deselecting cells changes it by exactly nothing, and only zoom — a flat
+      projection scale — does the framing.
+    </div></li>
+    <li><div>
+      <b>Each view now works at its own scale.</b> The solid adds or removes
+      <em>one</em> cell: shift the cell sitting on the clicked face, ctrl the one
+      behind it, green and red as before. The diagram <em>toggles</em> the cell on
+      either side of its plane: shift the one beneath, ctrl the one on top — in gold
+      and blue, because those are toggles and green/red would lie. The group
+      operation — a box together with its whole supporting set — lives only in the
+      Cells table, on either modifier, and it too is a toggle. The previous "same
+      gestures everywhere" was this port's invention, not the design.
+    </div></li>
+    <li><div>
+      <b>The Cells table counts again.</b> Every plain box drew the digit 0 — it was
+      showing its sub-cell index, which is always zero for a box with one sub-cell,
+      instead of its cell index. Visible the moment a low symmetry put several cells
+      in one row.
+    </div></li>
+    <li><div>
+      <b>Du Val's letters, where they exist.</b> For the icosahedron under I<sub>h</sub>
+      the boxes now read a, b, c, d, e₁, e₂, f₂, f₁, g₁, g₂, h rather than positions
+      in a sorted list. The identification of which orbit is which letter is the
+      derivation in the research notes, the same one the walkthrough's Ef₁ preset was
+      verified against. Every other solid keeps indices — no other solid has an
+      accepted lettering.
+    </div></li>
+    <li><div>
+      <b>Scrollbars in the Cells table</b>, horizontal and vertical, drawn when the
+      table overflows and draggable. And switching to a smaller table resets the
+      scroll, so it no longer comes back cropped to where a bigger table left it.
+    </div></li>
+    <li><div>
+      <b>Symmetry elements in class colours, with a legend.</b> Inequivalent
+      elements — axes no operation of the group carries onto each other — get
+      different colours; for I<sub>h</sub> the legend reads C₅ ×6, C₃ ×10, C₂ ×15,
+      m ×15, S₁₀ ×6, S₆ ×10, which is the textbook census. Mirror planes are rimmed
+      with <em>thin tori</em> of the same thickness as the axis cylinders, so an
+      edge-on plane reads as a bar instead of vanishing; the faint translucent fill
+      stays, having been looked at and kept. Checkboxes grey out when the group has
+      none of that kind.
+    </div></li>
+    <li><div>
+      <b>The elements are marked on the diagram too.</b> A dot where each rotation
+      axis pierces the drawing plane, a dashed line where each mirror plane crosses
+      it, in the same class colours — what the Java applet's diagram checkboxes drew.
+      One toggle: <em>mark on the diagram</em>.
+    </div></li>
+    <li><div>
+      <b>A real flick keeps the solid spinning.</b> Release while moving fast enough
+      and it spins on at that rate until you catch it — the Java behaviour. A gentle
+      release still just coasts to a stop.
+    </div></li>
+    <li><div>
+      <b>Make planes, ported.</b> The original program's plane editor: one plane per
+      line — <code>nx ny nz d</code> and optionally a symmetry group to multiply that
+      plane by — seeded from the current solid's own planes, built into an
+      arrangement like any catalog solid, saved into the JSON document. One line,
+      <code>0&nbsp;0&nbsp;1&nbsp;1&nbsp;Ih</code>, builds the rhombic
+      triacontahedron's thirty-plane arrangement.
+    </div></li>
+    <li><div>
+      <b>Winding repair moved into the engine.</b> The face-orientation repair the
+      derivation tool needed lives in <code>core.js</code> now (<code>orientFaces</code>),
+      because it is a property of the catalog data, not of one tool: most solids in
+      the file are not consistently wound, and anything that ever culls back faces or
+      integrates a volume will need it.
+    </div></li>
+    <li><div>
+      <b>Crowding relief for the zoomed-out diagram.</b> Far below 1× the facet
+      strokes thin and fade with the zoom, so the bundle of near-parallel traces
+      shimmers less. This is mitigation, not elimination — at that scale there are
+      more lines than pixels and no stroke width is honest.
+    </div></li>
+    <li><div>
+      <b>Documented, not changed:</b> the ten hemi-dual solids whose faces are
+      approximations of faces with vertices at infinity (clamped to ~100 in the
+      data, hence genuinely non-planar) are now documented, along with a short
+      how-to for serving this site from GitHub Pages.
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
+    <h3>Third round</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>Resizing the 3-D pane no longer changes the perspective.</b> The camera
+      distance was derived from the narrower of the two field-of-view angles, so it
+      depended on the shape of the canvas — drag the splitter and you could watch
+      vertical lines bend. Distance now depends only on the solid's radius; a narrow
+      canvas is framed by scaling the projection, which cannot bend a straight line.
+      Measured: the ratio distance ÷ radius is now bit-identical from 1600×600 to
+      300×1200.
+    </div></li>
+    <li><div>
+      <b>Toggling a cell no longer changes the perspective either.</b> Same root
+      cause seen from the other side: the radius was floored at 1, so any selection
+      smaller than the first one sat too far from the camera and flattened. The
+      Windows-only symptom was the Cells panel gaining a scrollbar and resizing the
+      canvas. Perspective is now invariant under every selection.
+    </div></li>
+    <li><div>
+      <b>Symmetry elements are solid geometry, so the solid hides what is behind
+      them.</b> Axes are drawn as cylinders into the same depth buffer as the
+      stellation instead of being painted over the top. Three separate toggles:
+      rotation axes, mirror planes, and rotoreflection (S<sub>n</sub>) axes — the
+      three-dimensional cousin of a glide reflection. Mirror planes are drawn as a
+      solid rim with only the faintest wash inside, because fifteen translucent discs
+      compound into an opaque ball that hides the very thing they explain.
+    </div></li>
+    <li><div>
+      <b>Turning the solid is smoothed, and a flick coasts.</b> Pointer motion is
+      banked and spent a fixed fraction per frame, which evens out the uneven steps a
+      mouse reports; on release the recent speed is added to the buffer so the motion
+      carries on and settles. A first-order filter rather than a spring, so it cannot
+      overshoot and there is no ringing to tune out.
+    </div></li>
+    <li><div>
+      <b>Undo and redo</b>, as buttons beside <em>core / + layer / all / clear</em>
+      and on <kbd>ctrl</kbd>+<kbd>Z</kbd> and <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>Z</kbd>
+      (<kbd>cmd</kbd> works too). Every change to the cell set is undoable, a hundred
+      deep. Carving from a high cell takes its whole supporting set, which can reach
+      the core, and there is no way to reconstruct what was there from what is left.
+    </div></li>
+    <li><div>
+      <b>Green adds, red removes, in all three views.</b> Holding shift outlines the
+      target green, the carve modifier outlines it red, and the same two colours are
+      used in the 3-D view, the diagram and the Cells table. Releasing the modifier
+      clears the outline immediately. When the gesture would do nothing — nothing
+      further out to add, nothing behind the face to remove — the outline is dimmed
+      rather than dropped, so you still see where you are pointing but know the click
+      is spent.
+    </div></li>
+    <li><div>
+      <b>Diagram face is a dropdown of the faces that actually differ.</b> It was a
+      number with no upper limit, so most values did nothing. The list is now the
+      orbits of the face planes under the chosen symmetry, each named by the polygon
+      at the centre of its diagram. The cuboctahedron under O<sub>h</sub> offers
+      exactly two — <em>triangle · 8 planes</em> and <em>square · 6 planes</em> —
+      and lowering the symmetry splits them, as it should.
+    </div></li>
+    <li><div>
+      <b>The collapse arrow points back the way it opened</b> — ▸ to open a group of
+      sub-cells, ◂ to close it, rather than a downward arrow that read as unrelated.
+      The arrow and the count of hidden parts are larger, heavier and in a colour you
+      can find.
+    </div></li>
+    <li><div>
+      <b>The view is kept in the URL and in saved documents.</b> The hash now carries
+      the orientation and zoom, so a reload comes back to the same angle and a link
+      shows the recipient the same picture. Saved JSON carries them too.
+    </div></li>
+    <li><div>
+      <b>A stale build cannot be served silently any more.</b> A good part of the
+      session went on a bug that had been fixed an hour earlier — the browser had an
+      old <code>app.js</code> and neither <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>R</kbd>
+      nor <kbd>ctrl</kbd>+<kbd>F5</kbd> shifted it. The site now sends
+      <code>Cache-Control: no-cache</code> for code and markup, so every visit
+      revalidates, and the help panel prints which build you are looking at.
+    </div></li>
+    <li><div>
+      <b>Crossed faces get the right plane.</b> Newell's method sums a <em>signed</em>
+      area, and a bow-tie face has two lobes that cancel — so its normal came out of
+      rounding error. 413 faces across 15 solids were affected. Where the sum
+      collapses, the plane is now fitted to the vertices instead. Seven solids whose
+      faces are otherwise planar go from wrong to correct to machine precision;
+      the rest are the hemi-duals, whose face data is genuinely non-planar.
+    </div></li>
+    <li><div>
+      <b>Dropped planes are declared.</b> When a solid's faces do not all yield a
+      usable plane, the status line reads <em>⚠ 8 of 12 planes</em> rather than
+      simply <em>8 planes</em>, and the tooltip says why. Building an arrangement out
+      of fewer planes than the solid has is the one failure that looks perfectly
+      healthy: you get a stellation, of a different solid.
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
+    <h3>Second round</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>The hover outline sat off the face it marked.</b> A regression from making
+      the model scale sticky: the highlight still computed its own scale, so the
+      yellow triangle floated over the wrong place.
+    </div></li>
+    <li><div>
+      <b>Fit and home are on the view itself.</b> Fit existed but was inside a
+      collapsed panel section, so it could not be found. Both are now always visible
+      in the corner of the 3-D view. <b>home</b> is the canonical orientation —
+      x right, y up, z toward you.
+    </div></li>
+    <li><div>
+      <b>Zoom scales the projection instead of moving the camera</b>, so magnifying no
+      longer swings the viewpoint round the solid, and the range is wide enough to
+      frame the largest arrangements. Picking was corrected to match the new frustum.
+    </div></li>
+    <li><div>
+      <b>Fit eases into place rather than snapping</b>, over about four tenths of a
+      second, and <b>home</b> turns the solid to the canonical orientation along the
+      shortest arc. Any drag or wheel cancels the movement, so it never fights the
+      pointer.
+    </div></li>
+    <li><div>
+      <b>The camera now retreats as the selection grows.</b> Holding it at a fixed
+      distance was wrong once a stellation reached past radius 6 while the camera sat
+      at 3.3 — the viewpoint ended up inside the solid. It now backs off by the same
+      factor the projection is scaled by, which leaves the on-screen size and the
+      perspective untouched.
+    </div></li>
+    <li><div>
+      <b>ctrl is the exact inverse of shift.</b> Both now walk inward: shift adds a
+      cell with everything supporting it, ctrl removes that same set. Before, shift
+      reached inward and ctrl reached outward, so the pair never cancelled.
+    </div></li>
+    <li><div>
+      <b>Sub-cell groups start collapsed</b>, with an arrow beside each showing how
+      many parts are hidden. Sub-cells are drawn smaller than their parent so the
+      grouping reads at a glance. Under a low symmetry one orbit can hold 120
+      sub-cells, which used to run off the panel.
+    </div></li>
+    <li><div>
+      <b>Symmetry axes can be drawn in the 3-D view</b> — the rotation axes of the
+      current stellation group, through the origin. Checked against group theory:
+      31 for I and I<sub>h</sub>, 13 for O and O<sub>h</sub>, 7 for T, 3 for D₂.
+    </div></li>
+    <li><div>
+      <b>Inward-facing regions in the diagram are less faint.</b> They were pale
+      enough to be missed.
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
+    <h3>Controls</h3>
+    <p class="lead">The largest group, and the one that changes how the app feels.</p>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>Shift always adds; ctrl always removes.</b> Neither toggles any more.
+      Shift-clicking an already-selected cell used to undo the previous shift-click,
+      so the same gesture sometimes added and sometimes removed depending on what you
+      had just done. The two are now plain inverses.
+    </div></li>
+    <li><div>
+      <b>A bare click no longer edits in the 3-D view or the diagram.</b> It turns the
+      solid and pans the diagram respectively; only the Cells table spends a plain
+      click on toggling. Previously a click meant one thing in one pane and something
+      else in another.
+    </div></li>
+    <li><div>
+      <b>Right-click does nothing.</b> It used to carve. On macOS ctrl-click <em>is</em>
+      the system right-click, so the two are told apart by whether the ctrl key was
+      actually held — a real right-click is ignored, a ctrl-click removes.
+    </div></li>
+    <li><div>
+      <b>One vocabulary on both platforms.</b> The remove key is now called
+      <kbd>ctrl</kbd> everywhere, because ctrl-click now works on macOS too. Option-click
+      still works there as an alternative.
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
+    <h3>The Cells table</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>Turned the right way up.</b> The core is now the bottom row and each shell sits
+      on the one below it, so the table grows the way the solid does — from the inside
+      out. Row numbers are unchanged.
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
+    <h3>The diagram</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>Inward-facing surfaces are drawn pale and dashed.</b> The diagram shows the
+      <em>surface</em> of the solid, not its volume, and a filled region invited the
+      reading that there is material behind it — when an inward-facing face means the
+      opposite, that there is a cavity. Solid fill now means outward, pale means
+      inward.
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
+    <h3>Symmetry</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>Only genuine subgroups are offered.</b> The dropdowns listed all 85 groups
+      regardless of the solid; for the icosahedron they now list the 13 that are
+      actually subgroups of I<sub>h</sub>, and the stellation symmetry is restricted to
+      subgroups of whatever the polyhedron symmetry is set to. Membership is decided by
+      testing the matrices, not from a hand-written table.
+    </div></li>
+    <li><div>
+      <b>That also fixes the "everything is broken" case.</b> The all-zeros table came
+      from choosing T (order 12) as the polyhedron symmetry with I (order 60) as the
+      stellation symmetry — not a lowering at all, so every group had exactly one
+      sub-cell. That pairing can no longer be selected. The sub-cell splitting itself
+      was correct: under I<sub>h</sub> → T an icosahedron's layers split 3/5/10, and
+      under I<sub>h</sub> → E into all 120.
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
+    <h3>Layout and view</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>The panes can be dragged.</b> Both dividers resize, and the positions are
+      remembered — a deep arrangement can run a row of the Cells table far wider than
+      the default column.
+    </div></li>
+    <li><div>
+      <b>The solid no longer resizes itself as you build.</b> The scale was recomputed
+      on every change, so adding a shell shrank everything already on screen. It is now
+      fixed when the arrangement is built, with a <b>fit</b> button to rescale on
+      demand.
+    </div></li>
+    <li><div>
+      <b>Edge weight now defaults to 1.</b>
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
+    <h3>Documentation</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>A short <a href="controls.html">Controls &amp; views</a> page</b> — the two
+      gestures, the three views and what each pane is for, on one screen. The Cells
+      panel now links there instead of to the walkthrough, under a shorter label.
+    </div></li>
+    <li><div>
+      <b>This page.</b>
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
+    <h3>Investigated, not changed</h3>
+    <p class="lead">Deliberately left alone, with the findings written down.</p>
+  </div>
+  <ul class="open">
+    <li><div>
+      <b>Planes through the origin.</b> Described in the session as a fundamental
+      defect: a plane stored as a single point cannot represent one that passes through
+      the centre, which is why twenty hemipolyhedra and their duals are commented out
+      of the catalogue — the reason is written in the source, in the author's hand.
+      <br><br>
+      Investigated rather than fixed, on the instruction not to start it yet. The short
+      version: the JavaScript port <em>already</em> stores four numbers, so the
+      representation is not the blocker — one guard line is. Removing it does let all
+      ten hemipolyhedra build, u80 included, in under a third of a second. But the
+      guard turns out to be doing a second, unrelated job, and a prototype that removed
+      it naively destroyed seven working solids. The discriminator that separates the
+      two cases cleanly is face planarity, which differs between them by sixteen orders
+      of magnitude. Written up with both prototypes, the measurements and an acceptance
+      test in the design notes.
+    </div></li>
+    <li><div>
+      <b>Clicking a region that has cells on both sides.</b> On the diagram a plane has
+      a cell above and a cell below, and there was a proposal to reach them separately
+      — shift for one, ctrl for the other. Left as it is for now: shift and ctrl are
+      spent on add and remove, which is the more valuable pair, and the session
+      concluded "counterintuitive but ok, can leave as is".
+    </div></li>
+    <li><div>
+      <b>3-D rotation in the original Java applet.</b> Noted as a separate to-do
+      against the original program, not this port.
+    </div></li>
+  </ul>
+
+  <p class="colophon">
+    Questions still open — what the "polyhedron" symmetry is for, what "compensate
+    completely" should mean, the cube's orientation, and the cells-versus-surface
+    confusion — are written up in the design notes.
+    Source and notes on
+    <a href="https://github.com/yaroslavvb/stellation" target="_blank" rel="noopener">GitHub</a>.
+    See <a href="controls.html">Controls &amp; views</a> for how the app works now.
+  </p>
+
+</main>
+
+<script type="module">
+  import { labelKeys } from './js/platform.js';
+  labelKeys();
+  const btn = document.querySelector('#themeBtn');
+  const apply = (pref) => {
+    const dark = pref === 'dark' || (pref === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = pref;
+    btn.textContent = pref === 'auto' ? '◐' : pref === 'dark' ? '●' : '○';
+  };
+  btn.onclick = () => {
+    const order = ['auto', 'light', 'dark'];
+    const cur = document.documentElement.dataset.themePref || 'auto';
+    const next = order[(order.indexOf(cur) + 1) % order.length];
+    localStorage.setItem('theme', next);
+    apply(next);
+  };
+  apply(localStorage.getItem('theme') || 'auto');
+</script>
+</body>
+</html>
