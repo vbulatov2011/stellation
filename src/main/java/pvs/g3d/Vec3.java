@@ -77,12 +77,20 @@ public class Vec3 {
 
   /**
     normalize this vector
+
+    A zero-length vector is left alone rather than divided by zero. Without the
+    guard it becomes (NaN,NaN,NaN), and NaN spreads: one such vector reaching
+    Matrix3D turns the whole accumulated rotation into NaN, every vertex then
+    projects to NaN, and the model vanishes for good. The sibling class
+    pvs.polyhedra.Vector3D.normalize() has always guarded this; this one did not.
    */
   public double normalize(){
     double l = length();
-    x /= l;
-    y /= l;
-    z /= l;
+    if(l != 0.0){
+      x /= l;
+      y /= l;
+      z /= l;
+    }
     return l;
   }
   

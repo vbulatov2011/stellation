@@ -264,7 +264,20 @@ public class Canvas3D extends Panel implements Runnable{
     long m_mouseDownTime = -1;
     double spinSpeed = 0;      
     Vec3 spinAxis = null;
-    double spinSpeedCutoff = 0.001;
+    /*
+     * How fast the pointer must still be moving at release for the solid to
+     * carry on spinning, in radians per second.
+     *
+     * This was 0.001 — about one turn every hundred minutes, which is no
+     * threshold at all. A careful positioning drag of one pixel per tenth of a
+     * second measures 0.019, twenty times over the line, so *every* drag left
+     * the model turning by itself and it would slowly wander off the view you
+     * had just set up. A flick is meant to spin it; placing it is not.
+     *
+     * 0.3 is a starting point rather than a measured constant — turn it down if
+     * spins are too hard to start, up if they still trigger accidentally.
+     */
+    double spinSpeedCutoff = 0.3;
 
     /**
        canvas mouse listener 
@@ -277,14 +290,23 @@ public class Canvas3D extends Panel implements Runnable{
             m_mouseDownY = e.getY();
             m_mouseDownTime = System.currentTimeMillis();
 
-            if((e.getModifiers() & e.BUTTON1_MASK) != 0 &&
-               (e.getModifiers() & (e.CTRL_MASK|e.SHIFT_MASK|e.ALT_MASK)) == 0){
-                //System.out.println("mouse pressed");
-                spinAxis = null;
-                spinSpeed = 0;
-                eventCallback = null;         
-            }
-            return;      
+            /*
+             * Any press on the canvas stops a running spin — including one with
+             * a modifier held.
+             *
+             * This used to be gated on "plain left button", which left the one
+             * gesture that edits the model unable to stop the model moving: a
+             * cell is toggled by a modifier-click, so shift- or ctrl-pressing
+             * kept the spin stepping the view matrix for as long as the button
+             * was down (measured at half a radian over a tenth of a second),
+             * and the cell you hit was not the cell you aimed at. mouseClicked
+             * below has always cleared these three unconditionally; the press
+             * side was simply inconsistent with it.
+             */
+            spinAxis = null;
+            spinSpeed = 0;
+            eventCallback = null;
+            return;
         } 
     
         public void mouseClicked (MouseEvent e) {
@@ -335,9 +357,11 @@ public class Canvas3D extends Panel implements Runnable{
                 long curTime = System.currentTimeMillis(); // this is rounded to 1/18 sec 
                 if(curTime - m_mouseDownTime > 500)
                     return;
-                eventCallback = this;	
+                eventCallback = this;
                 m_canvas.repaint();
                 m_mouseDownTime = curTime;
+                // start each spin's frame-time average from scratch; see below
+                averageDt = 0;
                 startFPS = m_mouseDownTime;
                 countFPS = 0;
             } 
@@ -355,7 +379,20 @@ public class Canvas3D extends Panel implements Runnable{
       
             long dt = curTime - m_mouseDownTime;
             //System.out.print(" " + dt);
-            averageDt = 0.8*averageDt + 0.2*dt*0.001;
+            /*
+             * How much time this frame covers, smoothed. Seed it from the first
+             * real sample instead of ramping up from whatever the last spin
+             * left behind: this is one object, reused for the life of the
+             * program and across every change of model, and nothing reset it.
+             * Starting from zero the first frames applied 20%, then 36%, then
+             * 49% of the rotation they should have; starting from a heavy
+             * stellation's frame time, a light model's first frame over-rotated
+             * by five times. It is a time integration, not a feel setting.
+             */
+            if(averageDt == 0)
+                averageDt = dt*0.001;
+            else
+                averageDt = 0.8*averageDt + 0.2*dt*0.001;
             Matrix3D rotation = new Matrix3D(spinAxis, spinSpeed * (averageDt));
       
             m_curMatrix.mul(rotation);      
@@ -384,6 +421,33 @@ public class Canvas3D extends Panel implements Runnable{
             
             double dx = (x - m_mouseDownX);
             double dy = (y - m_mouseDownY);
+
+            /*
+             * A drag event that did not actually move is a no-op, and must
+             * change nothing at all.
+             *
+             * macOS delivers these constantly: NSEvent truncates the pointer
+             * location to whole logical points, and on a 2x display every
+             * sub-point movement of the mouse lands on the same integer
+             * coordinate as the last one. Measured here, roughly one drag event
+             * in ten arrives with dx == dy == 0, and on slow careful movement
+             * it was 15 events out of 24.
+             *
+             * Returning early rather than falling through matters twice over.
+             * The axis (dy,-dx,0) would have zero length, which used to poison
+             * the whole view matrix with NaN. And even with that now guarded,
+             * carrying on would overwrite the remembered spin axis with a
+             * degenerate one and feed a zero sample into the speed average, so
+             * a flick would lose the direction it was thrown in.
+             *
+             * Deliberately no `m_mouseDownTime = curTime` here: position and
+             * time have to stay anchored to the same instant, or the next event
+             * measures its distance from here but its elapsed time from now and
+             * the flick speed comes out too high.
+             */
+            if(dx == 0 && dy == 0)
+                return;
+
             double angle = 3*Math.sqrt(dx*dx + dy*dy)/getSize().width;
             spinAxis = new Vec3(dy,-dx, 0);
             spinAxis.normalize();
@@ -853,7 +917,11 @@ public class Canvas3D extends Panel implements Runnable{
         public void mouseReleased(MouseEvent e){
 
             mouseDown = false;
-            eventCallback = null;
+            // only surrender the shared slot if it is still ours: `mouseDown`
+            // is what ends this autorepeat, and clearing the slot blindly
+            // cancelled whatever else had claimed it — reliably killing a
+            // running spin on a single click of the zoom button
+            if(eventCallback == this) eventCallback = null;
             timeout.stop();
 
         }
@@ -862,14 +930,14 @@ public class Canvas3D extends Panel implements Runnable{
 
             if(mouseDown){
 
-                eventCallback = this;       
+                if(eventCallback == null || eventCallback == this) eventCallback = this;
                 zoomOut();
             }
         }
 
         public void processEventCallback(Object who, Object what){
             if(mouseDown){
-                eventCallback = this;       
+                if(eventCallback == null || eventCallback == this) eventCallback = this;
                 zoomOut();
             }
         }
@@ -893,13 +961,14 @@ public class Canvas3D extends Panel implements Runnable{
         public void mouseReleased(MouseEvent e){
 
             mouseDown = false;
-            eventCallback = null;
+            // as in ZoomOutListener: do not cancel someone else's callback
+            if(eventCallback == this) eventCallback = null;
             timeout.stop();
         }
 
         public void processEventCallback(Object who, Object what){
             if(mouseDown){
-                eventCallback = this;       
+                if(eventCallback == null || eventCallback == this) eventCallback = this;
                 zoomIn();
             }
         }
@@ -908,7 +977,7 @@ public class Canvas3D extends Panel implements Runnable{
 
             if(mouseDown){
 
-                eventCallback = this;       
+                if(eventCallback == null || eventCallback == this) eventCallback = this;
                 zoomIn();
             }
         }
