@@ -9,3 +9,5 @@ target/
 webapp/candies/
 
 jsweetOut/
+
+*.bak
