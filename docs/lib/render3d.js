@@ -353,10 +353,32 @@ export class Renderer3D {
     let maxR = 1e-9;
     for (const v of mesh.vertices) maxR = Math.max(maxR, Math.hypot(v.x, v.y, v.z));
     this.lastMaxR = maxR;
-    if (!this.modelScale) {
-      this.modelScale = 1 / maxR;
-      // the camera frames the arrangement, not the selection — see _camera
-      this.frameR = this._frameWorldR ? this._frameWorldR * this.modelScale : 1;
+    if (!this.modelScale) this.modelScale = 1 / maxR;
+
+    /*
+     * Framing, for callers that did not pin one with setFrameRadius().
+     *
+     * The app pins it, so that adding a shell never rescales what is already on
+     * screen. Nobody else does: the walkthrough and the Brückner and historical
+     * figures all leave it unset, and it used to fall back to the constant 1 —
+     * the first mesh's radius, since modelScale normalises it. A figure that
+     * opened on the core therefore stayed framed for the core forever, and
+     * selecting a cell in an outer layer drew it seven times outside the
+     * viewport.
+     *
+     * `distance` is what actually sets apparent size (see _camera: the F in
+     * `dist` cancels against the F in `zoom`, so only distance survives), so it
+     * is the thing that has to follow the content, not frameR alone.
+     *
+     * Safe now in a way it would not have been before: under the parallel
+     * projection reframing is a flat 2-D scale and cannot alter the shape of
+     * anything — which is precisely why the old camera went to such lengths to
+     * hold its distance constant.
+     */
+    if (!this._frameWorldR) {
+      const contentR = maxR * this.modelScale;
+      this.frameR = contentR;      // keeps the depth bracket around the content
+      this.distance = contentR;    // ... and frames it, as fit() would
     }
     const s = this.modelScale;
 
@@ -466,8 +488,9 @@ export class Renderer3D {
     if (!this.count) return;
 
     const cam = this._camera(W, H);
-    const far = cam.dist + Math.max(cam.R, cam.meshR) * 3 + 10;   // never clip anything
-    const proj = perspective(cam.fovy, cam.aspect, Math.max(0.02, cam.dist * 0.01), far, cam.zoom);
+    // A parallel projection has no eye to fall behind, so the near plane may sit
+    // behind the origin: bracket the scene symmetrically and nothing can clip.
+    const proj = orthographic(cam.halfH, cam.aspect, cam.dist - cam.depth, cam.dist + cam.depth);
     const view = mat4mul(translation(0, 0, -cam.dist), quatToMat4(this.rotation));
 
     gl.useProgram(this.prog);
@@ -533,55 +556,54 @@ export class Renderer3D {
   }
 
   /**
-   * The camera.
+   * The camera. Orthographic.
    *
-   * One rule governs this whole function: **the amount of perspective must not
-   * depend on anything except the solid.** Foreshortening is set by the ratio of
-   * the object's radius to the camera's distance, so that ratio is pinned to the
-   * constant `fit` and everything else — zoom, and framing a canvas of any shape
-   * — is done by scaling the projection, which is a flat 2-D magnification and
-   * cannot bend a straight line.
+   * The projection is parallel, so there is no eye point to be swallowed and no
+   * foreshortening to keep constant. That removes a whole class of bug rather
+   * than balancing it: a cell in the outermost layer of a deep arrangement is
+   * far larger than the fitted camera distance, so under perspective the eye
+   * ended up *inside* the selected cell and the view turned inside out — the
+   * walkthrough's first figure, selecting in layer 7.
    *
-   * Two ways this was previously broken, both reported on 6 August:
+   * It also settles the problems logged on 6 August, which were all the same
+   * problem: perspective that depended on something other than the solid.
    *
-   *  - `fit` was computed from `min(fovy, fovx)` so that a *narrow* canvas would
-   *    not clip the solid left and right. But fovx depends on the aspect ratio,
-   *    so dragging the splitter moved the camera, and you could watch vertical
-   *    lines bend as you dragged the splitter. Narrow canvases are now framed
-   *    by shrinking the projection instead, which leaves the camera where it
-   *    was.
-   *  - `R` was floored at 1, so a selection smaller than the initial one left the
-   *    camera too far back and the picture went flat. Toggling the core on and
-   *    off could therefore change the perspective — the Windows report at 13:33,
-   *    where a scrollbar appearing in the Cells panel resized the canvas as well.
+   *  - `fit` from `min(fovy, fovx)` meant fovx, and so the camera, depended on
+   *    the aspect ratio — vertical lines visibly bent while dragging the
+   *    splitter.
+   *  - `R` floored at 1 left the camera too far back for a small selection, so
+   *    toggling the core on and off changed the foreshortening.
+   *  - Any camera move changes the perspective of everything that did *not*
+   *    change, which is why toggling one cell appeared to distort the rest.
    *
-   * The camera does still retreat as the selection grows, in exact proportion to
-   * its radius: a fixed distance would eventually be swallowed, since the core
-   * has radius 1 and a full stellation reaches past 6. Retreating and magnifying
-   * by the same factor holds both the size and the perspective constant.
-   */
-  /*
-   * The stricter rule, from the night review: within one arrangement the camera
-   * NEVER moves. Distance is set once per build, from the radius of the whole
-   * buildable arrangement — not from whatever happens to be selected. The first
-   * fix pinned the ratio distance/boundingRadius, which holds foreshortening
-   * constant for the bounding sphere but still moves the camera as the bound
-   * changes, and a camera that moves changes the perspective of everything that
-   * *didn't* change — «perspective changes when toggling cell». Now toggling a
-   * cell changes distance by exactly nothing; zoom, which is a flat projection
-   * scale and cannot bend a line, does all the framing.
+   * Under a parallel projection none of those can happen: shape does not depend
+   * on distance, so zooming cannot change it, and framing is pure 2-D scale.
+   * `dist` survives only to place the view along -Z and to centre the depth
+   * range; it no longer affects what anything looks like.
+   *
+   * `halfH` is the world half-height the viewport shows, and is the only thing
+   * that sets apparent size. It keeps the framing the previous perspective
+   * camera produced (`dist * tan(fovy/2) / zoom`), so `fit()`, the wheel and
+   * saved view hashes all carry over unchanged.
+   *
+   * `depth` half-brackets the scene for near/far, and is also how far back
+   * `pick()` starts its ray — with no eye point, the ray must simply begin
+   * outside the solid.
    */
   _camera(W, H) {
-    const fovy = Math.PI / 4.5;
+    const fovy = Math.PI / 4.5;                     // retained: sets the framing constant
     const aspect = W / H;
     const fit = 1.13 / Math.sin(fovy / 2);          // constant: no aspect, no zoom
     const F = Math.max(1e-3, this.frameR || (this.lastMaxR || 1) * (this.modelScale || 1));
     const meshR = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1));
     // A canvas narrower than it is tall sees less sideways than fovy allows;
-    // scale the projection down to compensate rather than moving the camera.
+    // scale the projection down to compensate.
     const narrow = Math.min(1, aspect / Math.cos(fovy / 2));
-    return { fovy, aspect, fit, R: F, meshR,
-             dist: fit * F, zoom: (F / this.distance) * narrow };
+    const dist = fit * F;
+    const zoom = (F / this.distance) * narrow;
+    return { fovy, aspect, fit, R: F, meshR, dist, zoom,
+             halfH: dist * Math.tan(fovy / 2) / zoom,
+             depth: Math.max(F, meshR) * 3 + 10 };
   }
 
   /**
@@ -612,14 +634,15 @@ export class Renderer3D {
     const ny = 1 - ((e.clientY - r.top) / r.height) * 2;
 
     const cam = this._camera(this.canvas.width, this.canvas.height);
-    // the projection is scaled by cam.zoom, so the effective half-angle is
-    // tan(fovy/2)/zoom — pick with the same frustum that was drawn, or clicks
-    // land on the wrong face as soon as you zoom
-    const t = Math.tan(cam.fovy / 2) / cam.zoom;
-    const dirView = [nx * cam.aspect * t, ny * t, -1];
+    // Parallel projection: every ray runs down -Z and it is the *origin* that
+    // moves with the pointer, the reverse of a perspective pick. cam.halfH is
+    // the same value the projection was built from, so picking and drawing
+    // cannot disagree at any zoom.
+    const originView = [nx * cam.halfH * cam.aspect, ny * cam.halfH, cam.dist + cam.depth];
+    const dirView = [0, 0, -1];
 
     const R = quatToMat4(this.rotation);
-    const origin = rotT(R, [0, 0, cam.dist]);
+    const origin = rotT(R, originView);
     const dir = rotT(R, dirView);
 
     let best = null;
@@ -979,13 +1002,19 @@ function slerp(a, b, t) {
           a[2] * wa + bb[2] * wb, a[3] * wa + bb[3] * wb];
 }
 
-function perspective(fovy, aspect, near, far, zoom = 1) {
-  const f = (1 / Math.tan(fovy / 2)) * zoom, nf = 1 / (near - far);
+/*
+ * Parallel projection. `halfH` is the world half-height the viewport shows;
+ * `near` and `far` are distances along -Z and, unlike the perspective case, may
+ * be negative — nothing is divided by z, so a near plane behind the origin is
+ * well defined and simply widens the depth range.
+ */
+function orthographic(halfH, aspect, near, far) {
+  const halfW = halfH * aspect, nf = 1 / (near - far);
   return new Float32Array([
-    f / aspect, 0, 0, 0,
-    0, f, 0, 0,
-    0, 0, (far + near) * nf, -1,
-    0, 0, 2 * far * near * nf, 0,
+    1 / halfW, 0, 0, 0,
+    0, 1 / halfH, 0, 0,
+    0, 0, 2 * nf, 0,
+    0, 0, (far + near) * nf, 1,
   ]);
 }
 
