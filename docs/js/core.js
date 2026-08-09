@@ -930,7 +930,8 @@ export function cellsAcrossFacet(facet) {
 export function cellsAcrossFace(mesh, i) {
   const f = mesh.facetRefs[i];
   const below = f.cellBelow?.owner || null, above = f.cellAbove?.owner || null;
-  return { inside: below, outside: above };   // TEMPORARILY BROKEN - mutation test
+  return mesh.facetTop[i] ? { inside: below, outside: above }
+                          : { inside: above, outside: below };
 }
 
 // ---------------------------------------------------------------- connectivity
