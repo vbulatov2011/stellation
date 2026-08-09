@@ -21,6 +21,15 @@
 /*.html
   Cache-Control: no-cache
 
+# The JavaScript now sits in three non-overlapping trees: /app/js the
+# application, /lib the shared modules both it and the pages use, /js the
+# scripts belonging to the tutorial and sample pages.
+/app/*
+  Cache-Control: no-cache
+
+/lib/*
+  Cache-Control: no-cache
+
 /js/*
   Cache-Control: no-cache
 

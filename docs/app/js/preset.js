@@ -16,7 +16,7 @@
  * `readDocument` below takes either and hands back the same shape.
  */
 
-import { parseStel } from './core.js';
+import { parseStel } from '../../lib/modules.js';
 
 export const APP_NAME = 'Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1';
 export const FILE_FORMAT_RELEASE = 1;

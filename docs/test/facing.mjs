@@ -23,7 +23,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { buildStellation, extractMesh, cellsAcrossFace } from '../js/core.js';
+import { buildStellation, extractMesh, cellsAcrossFace } from '../lib/modules.js';
 
 const DATA = join(dirname(fileURLToPath(import.meta.url)), '..', 'data');
 const geometry = JSON.parse(readFileSync(join(DATA, 'geometry.json'), 'utf8'));

@@ -8,7 +8,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { buildStellation, extractMesh } from '../js/core.js';
+import { buildStellation, extractMesh } from '../lib/modules.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DATA = join(here, '..', 'data');

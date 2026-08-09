@@ -285,7 +285,7 @@
   </div>
 
   <h3>3.2 What the port actually does</h3>
-  <pre><code>// docs/js/core.js — facePlanes()
+  <pre><code>// docs/lib/core.js — facePlanes()
 if (d &lt; 0) { n = mul(n, -1); d = -d; }   // orient away from the origin
 if (Math.abs(d) &lt; 1e-9) continue;        // plane through the centre: skip</code></pre>
   <p>
@@ -735,7 +735,7 @@ if (Math.abs(d) &lt; 1e-9) continue;        // plane through the centre: skip</c
   <h2><span class="no">B</span>Appendix — methods</h2>
   <p class="footnote">
     Sources: the ported source
-    (<span class="mono">docs/js/core.js</span>, <span class="mono">app.js</span>,
+    (<span class="mono">docs/lib/core.js</span>, <span class="mono">docs/app/js/app.js</span>,
     <span class="mono">preset.js</span>) and data files; the reverse-engineering specs
      with their Java line references; the
     per-figure citation sweep of Brückner's text (145/146 figures). Computations run for

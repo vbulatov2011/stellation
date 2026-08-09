@@ -11,7 +11,7 @@ import {
   buildStellation, extractMesh, parseCells, formatCells, selectedSubCells,
   createDiagram, selKey, subCellForFacet, cellsAcrossFacet, cellsAcrossFace,
   diagramFaces,
-} from './core.js';
+} from '../../lib/core.js';
 
 let stel = null;
 let meta = null;

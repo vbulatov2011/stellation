@@ -9,7 +9,7 @@
  */
 
 import { makeBuilder, BFigure } from './bfigure.js';
-import { labelKeys } from './platform.js';
+import { labelKeys } from './modules.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];

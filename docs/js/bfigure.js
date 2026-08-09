@@ -11,10 +11,8 @@
 import {
   buildStellation, extractMesh, createDiagram, selectedSubCells,
   parseCells, formatCells, subCellForFacet, facePlanes, suggestDepth,
-} from './core.js';
-import { Renderer3D } from './render3d.js';
-import { DiagramView } from './diagram.js';
-import { CellsPanel } from './cells.js';
+  Renderer3D, DiagramView, CellsPanel,
+} from './modules.js';
 
 const SUBGROUP = { Ih: 'I', Oh: 'O', Td: 'T', Th: 'T' };
 

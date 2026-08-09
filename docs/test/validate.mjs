@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
   buildStellation, extractMesh, facePlanes, len, VertexPool,
-} from '../js/core.js';
+} from '../lib/modules.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DATA = join(here, '..', 'data');

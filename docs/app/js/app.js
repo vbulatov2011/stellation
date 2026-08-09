@@ -3,11 +3,10 @@
  * cells, choose cells, get a stellated solid.
  */
 
-import { Renderer3D } from './render3d.js';
-import { DiagramView } from './diagram.js';
-import { CellsPanel } from './cells.js';
-import { labelKeys } from './platform.js';
-import { toOFF, toOBJ, toSTL, writeStel, facePlanes, suggestDepth } from './core.js';
+import {
+  Renderer3D, DiagramView, CellsPanel, labelKeys,
+  toOFF, toOBJ, toSTL, writeStel, facePlanes, suggestDepth,
+} from '../../lib/modules.js';
 import { writePreset, readDocument, newDocumentName } from './preset.js';
 
 const $ = sel => document.querySelector(sel);

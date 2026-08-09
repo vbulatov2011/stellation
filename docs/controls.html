@@ -215,7 +215,7 @@
 </main>
 
 <script type="module">
-  import { labelKeys, isMac } from './js/platform.js';
+  import { labelKeys, isMac } from './lib/modules.js';
   labelKeys();
   const you = document.querySelector('#youAreOn');
   if (you) you.textContent = isMac

@@ -16,11 +16,8 @@
 import {
   buildStellation, extractMesh, createDiagram, selectedSubCells,
   parseCells, formatCells, subCellForFacet, facePlanes, suggestDepth,
-} from './core.js';
-import { Renderer3D } from './render3d.js';
-import { DiagramView } from './diagram.js';
-import { CellsPanel } from './cells.js';
-import { labelKeys } from './platform.js';
+  Renderer3D, DiagramView, CellsPanel, labelKeys,
+} from './modules.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
