@@ -1,6 +1,8 @@
 
 # Stellation "Applet"
 
+### ▶ **[Try it live](https://vbulatov2011.github.io/stellation/)** — runs in the browser, no install
+
 This project has been ported from Java to Javascript, to run in the web.
 The original Java code ran as an applet, but of course that is now impossible.
 The Javascript version is in `docs/`; the original Java still builds and runs as
@@ -130,6 +132,9 @@ everything in `src/`, so prefer `stellation-app.jar` when working on the source.
 The build deliberately does not overwrite it.
 
 ## The Javascript version
+
+**Live at <https://vbulatov2011.github.io/stellation/>** — this repository's
+GitHub Pages, built from `main`, folder `/docs`.
 
 The web version lives in `docs/` — a hand port of the stellation core to ES
 modules, written against the Java as reference rather than translated from it.
