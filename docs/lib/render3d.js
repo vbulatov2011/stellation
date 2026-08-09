@@ -99,6 +99,21 @@ export const LAYER_COLORS = [
 export const layerColor = i => LAYER_COLORS[i % LAYER_COLORS.length];
 
 /*
+ * When a new selection is allowed to re-fit the frame — see setMesh().
+ *
+ * `fill` is the content radius over the viewport's world half-height, so 1.0 is
+ * a model whose corners exactly touch the frame. The band is deliberately wide:
+ * inside it, toggling a cell moves the camera not at all, which is the point.
+ *
+ * The upper bound sits just under 1 because past it the model is being cut off,
+ * and clipping is worse than a re-fit. The lower bound is looser — a model at a
+ * third of the frame is small but perfectly readable, and only below that is it
+ * worth the motion.
+ */
+const FILL_MAX = 0.98;
+const FILL_MIN = 0.35;
+
+/*
  * One palette for the two gestures, shared by all three views.
  *
  * Adding is green and carving is red — the natural reading — and the same two
@@ -353,7 +368,8 @@ export class Renderer3D {
     let maxR = 1e-9;
     for (const v of mesh.vertices) maxR = Math.max(maxR, Math.hypot(v.x, v.y, v.z));
     this.lastMaxR = maxR;
-    if (!this.modelScale) this.modelScale = 1 / maxR;
+    const firstMesh = !this.modelScale;
+    if (firstMesh) this.modelScale = 1 / maxR;
 
     /*
      * Framing, for callers that did not pin one with setFrameRadius().
@@ -370,15 +386,30 @@ export class Renderer3D {
      * `dist` cancels against the F in `zoom`, so only distance survives), so it
      * is the thing that has to follow the content, not frameR alone.
      *
-     * Safe now in a way it would not have been before: under the parallel
-     * projection reframing is a flat 2-D scale and cannot alter the shape of
-     * anything — which is precisely why the old camera went to such lengths to
+     * But it must not follow it on every toggle. Refitting each time means the
+     * whole model changes size whenever an outer cell goes on or off, and the
+     * jump reads as the model changing rather than the selection. So the frame
+     * is left alone while the content still sits comfortably inside it, and is
+     * only re-fitted — eased, never snapped — when the content has grown enough
+     * to be cut off, or shrunk enough to be a speck. Between those, toggling a
+     * cell moves nothing.
+     *
+     * Reframing is safe here in a way it would not have been before: under the
+     * parallel projection it is a flat 2-D scale and cannot alter the shape of
+     * anything, which is precisely why the old camera went to such lengths to
      * hold its distance constant.
      */
     if (!this._frameWorldR) {
       const contentR = maxR * this.modelScale;
-      this.frameR = contentR;      // keeps the depth bracket around the content
-      this.distance = contentR;    // ... and frames it, as fit() would
+      this.frameR = contentR;                 // depth bracket follows the content
+      if (firstMesh) {
+        this.distance = contentR;             // opening view: nothing on screen to jar
+      } else {
+        const W = this.canvas.width || this.canvas.clientWidth || 1;
+        const H = this.canvas.height || this.canvas.clientHeight || 1;
+        const fill = contentR / this._camera(W, H).halfH;   // 1.0 touches the frame edge
+        if (fill > FILL_MAX || fill < FILL_MIN) this._ease({ distance: contentR }, 300);
+      }
     }
     const s = this.modelScale;
 
