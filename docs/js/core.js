@@ -779,6 +779,7 @@ export function extractMesh(selectedOrbits, pool) {
   const vertices = [];
   const faces = [];
   const facetRefs = [];
+  const facetTop = [];
 
   for (const [f, kind] of state) {
     const ids = kind === TOP ? f.v : f.v.slice().reverse();  // bottom facets face inward
@@ -789,8 +790,16 @@ export function extractMesh(selectedOrbits, pool) {
     });
     faces.push(face);
     facetRefs.push(f);
+    // Which side of this facet the solid is on. cellBelow/cellAbove are fixed
+    // geometric labels (inward / outward), but on the boundary surface the
+    // selected cell is only the one below when the facet caps it. For a bottom
+    // facet — the underside of a cell, the ones whose winding is reversed just
+    // above — the selected cell is the one above and the gap is below. Callers
+    // that turn a click into "add" or "remove" need this to tell solid from
+    // empty; without it every gesture on an underside is a silent no-op.
+    facetTop.push(kind === TOP);
   }
-  return { vertices, faces, facetRefs };
+  return { vertices, faces, facetRefs, facetTop };
 }
 
 // ---------------------------------------------------------------- the pipeline
@@ -907,6 +916,21 @@ export function subCellForFacet(facet) {
 /** the two cells a facet separates: the one it caps, and the one it floors */
 export function cellsAcrossFacet(facet) {
   return { below: facet.cellBelow?.owner || null, above: facet.cellAbove?.owner || null };
+}
+
+/**
+ * For each face of an extractMesh() surface: the solid cell it belongs to, and
+ * the empty neighbour across it. That is what a click means — remove the solid
+ * one, or add the empty one.
+ *
+ * Not the same as cellsAcrossFacet: below/above are fixed geometric labels, and
+ * only a facet that caps its cell has the solid one below. On an underside the
+ * solid is above and the gap below, so the pair swaps.
+ */
+export function cellsAcrossFace(mesh, i) {
+  const f = mesh.facetRefs[i];
+  const below = f.cellBelow?.owner || null, above = f.cellAbove?.owner || null;
+  return { inside: below, outside: above };   // TEMPORARILY BROKEN - mutation test
 }
 
 // ---------------------------------------------------------------- connectivity

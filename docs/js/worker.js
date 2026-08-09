@@ -9,7 +9,8 @@
 
 import {
   buildStellation, extractMesh, parseCells, formatCells, selectedSubCells,
-  createDiagram, selKey, subCellForFacet, cellsAcrossFacet, diagramFaces,
+  createDiagram, selKey, subCellForFacet, cellsAcrossFacet, cellsAcrossFace,
+  diagramFaces,
 } from './core.js';
 
 let stel = null;
@@ -60,8 +61,13 @@ function meshFor(selected) {
     vertices: mesh.vertices,
     faces: mesh.faces,
     faceLayers: mesh.facetRefs.map(f => f.layer),
-    faceInside: mesh.facetRefs.map(f => key(f.cellBelow?.owner) || null),
-    faceOutside: mesh.facetRefs.map(f => key(f.cellAbove?.owner) || null),
+    // "inside" is the solid cell this face belongs to, "outside" the empty
+    // neighbour across it — which is what a click means, and what the two
+    // gestures act on. cellsAcrossFace orients the pair; reading cellBelow /
+    // cellAbove the same way round everywhere instead made shift and ctrl both
+    // silent no-ops on every downward-facing face.
+    faceInside: mesh.faces.map((_, i) => key(cellsAcrossFace(mesh, i).inside) || null),
+    faceOutside: mesh.faces.map((_, i) => key(cellsAcrossFace(mesh, i).outside) || null),
     stats: {
       vertices: mesh.vertices.length,
       faces: mesh.faces.length,
