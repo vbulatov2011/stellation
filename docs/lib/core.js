@@ -819,7 +819,27 @@ export function buildStellation(poly, matrices, opts = {}) {
   const layers = makeLayers(arrangement);
 
   const cellLayers = [];
-  const n = Math.min(layers.length, maxLayer);
+  /*
+   * A facet cap stops the arrangement short, and the shells past it are rubble.
+   *
+   * clipAgainstPlane() drops a facet once it has been clipped maxIntersection
+   * times, so the outer shells are missing most of their facets and the cells
+   * assembled from them are fragments scattered through the shell rather than a
+   * tiling of it. The snub dodecahedron showed this plainly: 92 planes, so
+   * suggestDepth caps it at 12, and from layer 12 outwards only 150 of 1650
+   * cells survived.
+   *
+   * Where the boundary falls is not a guess. Comparing capped against uncapped
+   * builds over u34/u27/u17/u28 at caps 6, 8, 10 and 12, the first cell layer
+   * whose contents differ is *always* the cap itself, and every layer below it
+   * is identical — a facet reaching shell L has been clipped L times. So layers
+   * 0..cap-1 are exactly right and the rest were never real.
+   *
+   * Stop there. Fewer layers, all of them true; raising the depth control (or
+   * "every") builds the arrangement further and returns them.
+   */
+  const supported = maxIntersection >= 0 ? maxIntersection : Infinity;
+  const n = Math.min(layers.length, maxLayer, supported);
   for (let l = 0; l < n; l++) {
     const cells = makeCellsBetween(l === 0 ? [] : layers[l - 1], layers[l], l, pool);
     const orbits = makeSymmetricCells(cells, matrices, l);
@@ -1138,7 +1158,27 @@ export function createDiagram(stel, planeIndex, selectedOrbits, vertexUp = 0) {
   const { pool, arrangement } = stel;
   // an out-of-range index — or an arrangement with no planes at all, which a
   // make-planes sheet of nothing but central planes can produce — draws nothing
-  const facets = arrangement[planeIndex] || [];
+  const all = arrangement[planeIndex] || [];
+  if (!all.length) return null;
+
+  /*
+   * Only the shells that exist as cells. buildStellation stops at the last
+   * shell the arrangement actually supports (see the note there), and the
+   * diagram has to stop at the same one or it draws rubble the 3D view does not.
+   *
+   * Beyond that point the plane is not empty, it is sparse, which is worse:
+   * f.layer counts the planes a facet lies outside of and is incremented in two
+   * places — once when a facet falls entirely outside a plane, once for the
+   * outer piece when a facet is split — and only the second is capped. So the
+   * facets that got deep without ever being split survive alone, scattered
+   * across a shell whose other facets were dropped. On the snub dodecahedron
+   * capped at 12, shell 20 keeps 1 facet of 92.
+   *
+   * The extent is measured from the same list, so those strays cannot stretch
+   * the frame either.
+   */
+  const depth = stel.cellLayers ? stel.cellLayers.length : Infinity;
+  const facets = all.length && depth < Infinity ? all.filter(f => f.layer < depth) : all;
   if (!facets.length) return null;
 
   // the facet nearest the origin defines the frame
