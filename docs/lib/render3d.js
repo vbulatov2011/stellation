@@ -9,7 +9,7 @@
  * stellation layer, so you can read the structure of a stellation by eye.
  */
 
-const VERT = `#version 300 es
+const VERT = /*glsl*/`#version 300 es
 precision highp float;
 in vec3 aPos;
 in vec3 aNormal;
@@ -27,7 +27,7 @@ void main() {
   gl_Position = uProj * p;
 }`;
 
-const FRAG = `#version 300 es
+const FRAG = /*glsl*/`#version 300 es
 precision highp float;
 in vec3 vNormal;
 in vec3 vColor;
@@ -60,7 +60,7 @@ void main() {
  * each edge into a quad in clip space, offsetting the corners along the screen
  * normal of the segment, which gives real, controllable thickness everywhere.
  */
-const LINE_VERT = `#version 300 es
+const LINE_VERT = /*glsl*/`#version 300 es
 precision highp float;
 in vec3 aA;          // segment start, model space
 in vec3 aB;          // segment end
@@ -83,7 +83,7 @@ void main() {
   gl_Position = c;
 }`;
 
-const LINE_FRAG = `#version 300 es
+const LINE_FRAG = /*glsl*/`#version 300 es
 precision highp float;
 uniform vec4 uColor;
 out vec4 fragColor;
