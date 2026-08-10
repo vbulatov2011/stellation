@@ -45,7 +45,7 @@ export function newDocumentName(date = new Date()) {
 export function writePreset({
   name, polyhedron, file, polySymmetry, stellSymmetry,
   planeDepth, cells, diagramFace,
-  showEdges = true, showAllFacets = true, spin = false,
+  showEdges = true, showAllFacets = true, spin = false, colorMode = 'layer',
   view = null, planesText = null,
   exportLengthUnit = 0.01,
 }) {
@@ -62,7 +62,7 @@ export function writePreset({
        * Saved so that reopening a document, or sending someone a link, shows the
        * solid from the angle it was chosen at rather than from the default one.
        */
-      display: { diagramFace, showEdges, showAllFacets, spin },
+      display: { diagramFace, showEdges, showAllFacets, spin, colorMode },
       camera: view ? { view } : undefined,
       // the make-planes sheet, verbatim: the source of a custom arrangement is
       // the text the user wrote, so that is what round-trips
@@ -129,6 +129,9 @@ export function readPreset(doc) {
     showEdges: p.display?.showEdges ?? true,
     showAllFacets: p.display?.showAllFacets ?? true,
     spin: p.display?.spin ?? false,
+    // documents written before face-class colouring existed have no setting;
+    // they were all drawn by shell, so that is what they should reopen as
+    colorMode: p.display?.colorMode === 'class' ? 'class' : 'layer',
     view: Array.isArray(p.camera?.view) ? p.camera.view : null,
     planesText: typeof p.planes?.text === 'string' ? p.planes.text : null,
     exportLengthUnit: p.export?.lengthUnit ?? 0.01,

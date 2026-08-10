@@ -32,6 +32,7 @@ export {
   cellCenter, cellVolume, countVertices, orientFaces,
   // the 2D diagram
   createDiagram, diagramFaces, diagramExtent, facetCenter, facetArea,
+  planeClasses,
   // reading and writing
   parseCells, formatCells, parseStel, writeStel, toOFF, toOBJ, toSTL,
   // vectors and matrices
@@ -42,7 +43,7 @@ export {
 } from './core.js';
 
 // ---- render3d.js — the WebGL2 view -----------------------------------------
-export { Renderer3D, layerColor, LAYER_COLORS, ACTION } from './render3d.js';
+export { Renderer3D, layerColor, LAYER_COLORS, classColor, CLASS_COLORS, ACTION } from './render3d.js';
 
 // ---- diagram.js — the 2D stellation diagram --------------------------------
 export { DiagramView } from './diagram.js';

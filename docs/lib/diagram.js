@@ -5,7 +5,7 @@
  * region is a cell, and clicking one adds or removes it.
  */
 
-import { layerColor, ACTION } from './render3d.js';
+import { layerColor, classColor, ACTION } from './render3d.js';
 
 export class DiagramView {
   constructor(canvas, { onToggle, onHover } = {}) {
@@ -21,6 +21,8 @@ export class DiagramView {
     // draw the arrangement the way Brückner and Hess drew it: full plane traces,
     // no fills, no shell tinting. See _lines().
     this.lineOnly = false;
+    // 'layer' | 'class' — matches the 3D view; see _color()
+    this.colorMode = 'layer';
 
     // Drag pans, a click without meaningful movement selects. Without the
     // distinction you cannot pan at all without toggling whatever is underneath.
@@ -149,6 +151,32 @@ export class DiagramView {
     if (changedPlane) this.resetView(); else this.draw();
   }
 
+  /** switch between colouring by shell and by face class, as the 3D view does */
+  setColorMode(mode) {
+    if (mode === this.colorMode) return;
+    this.colorMode = mode;
+    this.draw();
+  }
+
+  /**
+   * The fill colour for a facet, as [r,g,b] in 0..1.
+   *
+   * By shell: the layer palette, so the concentric rings of the arrangement
+   * read as depth — which is what a stellation diagram is usually for.
+   *
+   * By face class: a diagram is drawn on ONE plane, and every facet in it lies
+   * in that same face of the solid. So the whole picture takes one hue, and the
+   * only variation left is which way a facet looks. That is deliberately flat:
+   * it is the honest answer to "which face of the original solid is this?", and
+   * it makes the diagram and the solid agree at a glance — the plane you are
+   * drawing on is the colour you see on the model.
+   */
+  _color(facet, outward = true) {
+    return this.colorMode === 'class'
+      ? classColor(this.data?.faceClass || 0, outward)
+      : layerColor(facet.layer);
+  }
+
   /** symmetry-element marks: [{kind:'point'|'line', p:[x,y], q?, color}] or null */
   setOverlay(overlay) {
     this.overlay = overlay;
@@ -271,7 +299,7 @@ export class DiagramView {
     // 1. every facet, filled faintly by layer, so the arrangement reads as depth
     if (this.showAll) {
       for (const facet of facets) {
-        const c = layerColor(facet.layer);
+        const c = this._color(facet);
         ctx.fillStyle = `rgba(${c.map(v => Math.round(v * 255)).join(',')},${dark ? 0.17 : 0.13})`;
         this._path(ctx, facet.poly, f);
         ctx.fill();
@@ -285,17 +313,23 @@ export class DiagramView {
      * can be on that surface in two ways: looking outward, or lining a cavity
      * and looking inward. Drawing both the same invites the reading that a
      * filled region means solid material there — which is backwards, since an
-     * inward-facing face means there is a hole behind it. Outward faces are
-     * drawn solid; inward ones are left very pale, so they read as "surface,
-     * but not the outside".
+     * inward-facing face means there is a hole behind it.
+     *
+     * The two modes say it differently, each matching what the 3D view is doing
+     * beside them. By shell, hue is already spent on depth, so the difference
+     * has to be carried by alpha: outward solid, inward very pale — "surface,
+     * but not the outside". By face class, hue is free, so the two get the two
+     * colours the solid uses — the class colour and the same colour darkened —
+     * both fully opaque. That is the whole point of the class palette: two
+     * colours for one kind of face, one seen from above and one from below.
      */
     for (const facet of facets) {
       if (!facet.selected) continue;
-      const c = layerColor(facet.layer).map(v => Math.round(v * 255));
       const inward = facet.facing === 0;
+      const c = this._color(facet, !inward).map(v => Math.round(v * 255));
       // inward faces were pale enough to be missed entirely at the old alpha.
       // Still clearly lighter than an outward face, but readable.
-      ctx.fillStyle = inward
+      ctx.fillStyle = (inward && this.colorMode !== 'class')
         ? `rgba(${c.join(',')},${dark ? 0.42 : 0.34})`
         : `rgb(${c.join(',')})`;
       this._path(ctx, facet.poly, f);
@@ -423,7 +457,7 @@ export class DiagramView {
       `<rect width="${S}" height="${S}" fill="white"/>`];
     for (const f of this.data.facets) {
       if (!f.selected) continue;
-      const c = layerColor(f.layer).map(v => Math.round(v * 255));
+      const c = this._color(f, f.facing !== 0).map(v => Math.round(v * 255));
       out.push(`<path d="${path(f.poly)}" fill="rgb(${c})" stroke="none"/>`);
     }
     for (const f of this.data.facets) {

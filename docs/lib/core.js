@@ -894,8 +894,8 @@ export function buildStellation(poly, matrices, opts = {}) {
  * a convex solid is the solid's own face there — so "4 sides" really does mean
  * the square face of the cuboctahedron.
  */
-export function diagramFaces(stel, matrices) {
-  const { planes, arrangement } = stel;
+export function planeClasses(stel, matrices) {
+  const { planes } = stel;
   const pool = new VertexPool(1e-6);
   const idOf = new Map();
   planes.forEach((p, i) => {
@@ -904,16 +904,26 @@ export function diagramFaces(stel, matrices) {
   });
 
   const group = new Int32Array(planes.length).fill(-1);
-  const out = [];
+  const reps = [];
   for (let i = 0; i < planes.length; i++) {
     if (group[i] >= 0) continue;
-    const g = out.length;
+    const g = reps.length;
     group[i] = g;
+    reps.push(i);
     const p0 = mul(planes[i].n, planes[i].d);
     for (const m of (matrices || [])) {
       const j = idOf.get(pool.intern(matMul(m, p0)));
       if (j != null && group[j] < 0) group[j] = g;
     }
+  }
+  return { group, reps };
+}
+
+export function diagramFaces(stel, matrices) {
+  const { arrangement } = stel;
+  const { group, reps } = planeClasses(stel, matrices);
+
+  const out = reps.map(i => {
     // the facet of this plane nearest the origin — the original polygon face
     let core = null, rmin = Infinity;
     for (const f of (arrangement[i] || [])) {
@@ -922,8 +932,8 @@ export function diagramFaces(stel, matrices) {
       const r = dot(c, c);
       if (r < rmin) { rmin = r; core = f; }
     }
-    out.push({ index: i, sides: core ? core.v.length : 0, count: 0 });
-  }
+    return { index: i, sides: core ? core.v.length : 0, count: 0 };
+  });
   for (const g of group) if (g >= 0) out[g].count++;
   return out;
 }

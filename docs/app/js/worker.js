@@ -10,11 +10,12 @@
 import {
   buildStellation, extractMesh, parseCells, formatCells, selectedSubCells,
   createDiagram, selKey, subCellForFacet, cellsAcrossFacet, cellsAcrossFace,
-  diagramFaces,
+  diagramFaces, planeClasses,
 } from '../../lib/core.js';
 
 let stel = null;
 let meta = null;
+let faceClass = null;   // plane index -> symmetry class of the original face
 
 function toPoly(g) {
   const vertices = [];
@@ -61,6 +62,14 @@ function meshFor(selected) {
     vertices: mesh.vertices,
     faces: mesh.faces,
     faceLayers: mesh.facetRefs.map(f => f.layer),
+    /*
+     * The other colouring: which class of original face this facet lies in, and
+     * whether it is an outward cap or an underside. Sent alongside the layer
+     * rather than instead of it, so switching the menu is a re-upload of the
+     * colour attribute and never another round trip to this worker.
+     */
+    faceClasses: mesh.facetRefs.map(f => (faceClass ? faceClass[f.plane] : 0)),
+    faceTop: mesh.facetTop,
     // "inside" is the solid cell this face belongs to, "outside" the empty
     // neighbour across it — which is what a click means, and what the two
     // gestures act on. cellsAcrossFace orients the pair; reading cellBelow /
@@ -83,6 +92,12 @@ function diagramFor(planeIndex, selected) {
   if (!d) return null;
   return {
     planeIndex: d.planeIndex,
+    /*
+     * Which class of original face this diagram is drawn on. A diagram is one
+     * plane, so a single number does for the whole picture — every facet in it
+     * lies in the same face of the solid, by construction.
+     */
+    faceClass: faceClass ? faceClass[d.planeIndex] : 0,
     extent: d.extent,
     frame: d.frame,                // projection basis, for the element overlay
     facets: d.facets.map(f => {
@@ -128,6 +143,15 @@ self.onmessage = (e) => {
             self.postMessage({ id, progress: { done, total } }),
         });
         meta = { ms: performance.now() - t0 };
+        /*
+         * Face classes come from the POLYHEDRON's group, not the stellation
+         * group chosen below it. "The same kind of face" is a property of the
+         * solid you started from — an icosahedron has one kind however you
+         * choose to stellate it — and using the stellation group instead would
+         * split the twenty faces into several colours the moment you picked a
+         * subgroup, which is not what the colouring is claiming to show.
+         */
+        faceClass = stel.planes.length ? planeClasses(stel, matrices).group : null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +

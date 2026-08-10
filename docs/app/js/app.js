@@ -85,6 +85,11 @@ async function boot() {
       $('#edgeWidth').value = savedEdge;
       $('#edgeWidthLabel').textContent = savedEdge.toFixed(1);
     }
+    const savedColor = localStorage.getItem('colorMode');
+    if (savedColor === 'class' || savedColor === 'layer') {
+      renderer.colorMode = savedColor;         // set before the first setMesh
+      $('#colorMode').value = savedColor;
+    }
     renderer.start();
     renderer.onPick = onPick3D;
     renderer.onPickHover = onHover3D;
@@ -104,6 +109,7 @@ async function boot() {
         : '';
     },
   });
+  diagram.colorMode = $('#colorMode').value;   // restored from storage above
 
   cells = new CellsPanel($('#cells'), {
     onBeforeChange: () => mark(),
@@ -848,7 +854,7 @@ async function refresh() {
   const { mesh, diagram: dia } = await call('both', { selected, planeIndex: state.planeIndex });
 
   state.mesh = mesh;
-  renderer?.setMesh(mesh, mesh.faceLayers);
+  renderer?.setMesh(mesh, mesh.faceLayers, { classes: mesh.faceClasses, top: mesh.faceTop });
   diagram.setData(dia);
   state.diagramFrame = dia?.frame || null;
   refreshDiagramOverlay();
@@ -1004,6 +1010,11 @@ function wireControls() {
 
   $('#autoRotate').onchange = (e) => { if (renderer) renderer.autoRotate = e.target.checked; };
   $('#showEdges').onchange = (e) => { if (renderer) { renderer.showEdges = e.target.checked; renderer.draw(); } };
+  $('#colorMode').onchange = (e) => {
+    localStorage.setItem('colorMode', e.target.value);
+    renderer?.setColorMode(e.target.value);
+    diagram?.setColorMode(e.target.value);
+  };
   $('#fitView').onclick = () => { renderer?.fit(); setStatus('rescaled to fit', false); };
   $('#homeView').onclick = () => { renderer?.home(); setStatus('canonical orientation', false); };
 
@@ -1067,6 +1078,7 @@ function wireControls() {
       showEdges: $('#showEdges').checked,
       showAllFacets: $('#showAllFacets').checked,
       spin: $('#autoRotate').checked,
+      colorMode: $('#colorMode').value,
       view: renderer?.getView() || null,
       planesText: state.customPlanes ? state.planesText : null,
     }), 'application/json');
@@ -1260,6 +1272,29 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
 
 const name = () => `${state.current.file}-${state.polySym}-${state.stellSym}`;
 
+/**
+ * Put the document's display settings back on the controls.
+ *
+ * Driving the inputs and firing `change` rather than setting the underlying
+ * objects directly means the document restores through exactly the same path a
+ * click takes, so there is only one place where each setting is applied — and
+ * the control on screen cannot disagree with what is drawn.
+ *
+ * Only our own JSON carries these; a .stel file has no display section, and
+ * forcing defaults on one would throw away whatever the user has set up.
+ */
+function applyDisplaySettings(doc) {
+  if (doc.source !== 'json') return;
+  for (const [id, val] of [['#showEdges', doc.showEdges],
+                           ['#showAllFacets', doc.showAllFacets],
+                           ['#autoRotate', doc.spin]]) {
+    $(id).checked = !!val;
+    $(id).dispatchEvent(new Event('change'));
+  }
+  $('#colorMode').value = doc.colorMode || 'layer';
+  $('#colorMode').dispatchEvent(new Event('change'));
+}
+
 /** open either our JSON preset or an original .stel file */
 async function openDocument(text, filename = '') {
   let doc;
@@ -1278,12 +1313,7 @@ async function openDocument(text, filename = '') {
     // the display settings save the same way for custom documents as for
     // catalog ones, so they restore the same way too
     state.planeIndex = doc.diagramFace || 0;
-    if (doc.source === 'json') {
-      for (const [id, val] of [['#showEdges', doc.showEdges], ['#showAllFacets', doc.showAllFacets], ['#autoRotate', doc.spin]]) {
-        $(id).checked = !!val;
-        $(id).dispatchEvent(new Event('change'));
-      }
-    }
+    applyDisplaySettings(doc);
     const ok = await buildCustomPlanes(doc.planesText);
     if (ok && doc.cells) {
       const { selected } = await call('parseCells', { cells: doc.cells });
@@ -1310,12 +1340,7 @@ async function openDocument(text, filename = '') {
   state.planeIndex = doc.diagramFace || 0;
   $('#planeIndex').value = state.planeIndex;
 
-  if (doc.source === 'json') {
-    for (const [id, val] of [['#showEdges', doc.showEdges], ['#showAllFacets', doc.showAllFacets], ['#autoRotate', doc.spin]]) {
-      $(id).checked = !!val;
-      $(id).dispatchEvent(new Event('change'));
-    }
-  }
+  applyDisplaySettings(doc);
 
   await select(item, { polySym: doc.polySymmetry, stellSym: doc.stellSymmetry, cells: doc.cells,
                        depth: doc.planeDepth ?? undefined, view: doc.view });

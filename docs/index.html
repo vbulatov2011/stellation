@@ -134,6 +134,13 @@
 
     <details class="group">
       <summary><h2>View</h2></summary>
+      <label class="field" title="How the facets are coloured. By shell: one colour per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one colour per kind of face of the original polyhedron, so every facet lying in the same kind of face matches however far apart they are — undersides in the same colour, darkened. An icosahedron has one kind of face and so takes two colours; a cuboctahedron has two and takes four.">
+        <span>face colours</span>
+        <select id="colorMode">
+          <option value="layer">by shell</option>
+          <option value="class">by face class</option>
+        </select>
+      </label>
       <label class="check"><input id="autoRotate" type="checkbox"> spin the solid</label>
       <label class="check"><input id="showEdges" type="checkbox" checked> draw edges</label>
       <fieldset class="sym-elems">
