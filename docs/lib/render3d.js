@@ -9,6 +9,8 @@
  * stellation layer, so you can read the structure of a stellation by eye.
  */
 
+import { AnimatedPointer } from './AnimatedPointer.js';
+
 const VERT = /*glsl*/`#version 300 es
 precision highp float;
 in vec3 aPos;
@@ -151,6 +153,40 @@ export const classColor = (i, top = true) => {
  */
 const FILL_MAX = 0.98;
 const FILL_MIN = 0.35;
+
+/*
+ * The trackball, in one place — see _pointerStep.
+ *
+ * DRAG_RATE converts a pixel of virtual-pointer travel into radians of turn,
+ * and so is also the conversion between the simulation's units (pixels per
+ * second) and the spin rate on screen.
+ *
+ * SPIN_CUTOFF is the release speed below which a drag counts as placing the
+ * solid rather than throwing it, in radians per second. 0.3 is the value
+ * notes/java-drag-fix.md arrived at for the Java app, where a careful
+ * positioning drag was measured at 0.019 rad/s and a flick well above this.
+ *
+ * The physics is critically damped while dragging (factor 2), which settles as
+ * fast as possible without ringing — overshoot on a trackball reads as the
+ * model wobbling loose rather than as smoothing. Free friction is zero, so a
+ * throw spins until caught.
+ *
+ * springForce is the one number worth understanding. Under a steady drag the
+ * mass settles at a constant distance behind the pointer, and that lag has time
+ * constant `dragFrictionFactor / sqrt(springForce)` — which is all the spring
+ * contributes to the feel. SymmHub's default of 200 gives 141 ms, and a brisk
+ * 600 px/s drag then trails the cursor by 85 pixels: not smoothing but visible
+ * rubber-banding. 2500 gives 40 ms and 24 px, a shade crisper than the 55 ms
+ * first-order filter this replaced, which is the right end to err on for a
+ * trackball you are trying to aim.
+ */
+const DRAG_RATE = 0.008;
+const SPIN_CUTOFF = 0.3;
+const POINTER_PHYSICS = {
+  springForce: 2500,
+  dragFrictionFactor: 2.0,
+  freeFrictionFactor: 0,
+};
 
 /*
  * One palette for the two gestures, shared by all three views.
@@ -324,8 +360,7 @@ export class Renderer3D {
    */
   _ease(target, ms = 420) {
     if (this._anim) cancelAnimationFrame(this._anim);
-    if (this._pending) { this._pending.x = 0; this._pending.y = 0; }   // don't fight a glide
-    this._spin = null;                                                 // or a flick's spin
+    this._pointerReset();          // an easing view must not be fought by a spin
     const d0 = this.distance;
     const q0 = this.rotation.slice();
     const q1 = target.rotation;
@@ -373,7 +408,7 @@ export class Renderer3D {
     if (!(n > 1e-6)) return false;
     this.rotation = [v[0] / n, v[1] / n, v[2] / n, v[3] / n];
     this.distance = Math.min(40, Math.max(0.05, v[4]));
-    if (this._pending) { this._pending.x = 0; this._pending.y = 0; }
+    this._pointerReset();
     this.draw();
     return true;
   }
@@ -790,35 +825,54 @@ export class Renderer3D {
   }
 
   /*
-   * Pointer smoothing and momentum.
+   * Pointer smoothing and momentum: AnimatedPointer drives the trackball.
    *
    * A mouse reports in uneven jumps — three pixels, then five — and applying
-   * each jump directly makes the solid stutter. The classic remedy models the
-   * pointer as the far end of a spring dragging a damped mass, tuned to the
-   * ratio that settles fastest without ringing.
+   * each jump directly makes the solid stutter. So the solid does not follow
+   * the real pointer at all. It follows a virtual one, a unit mass on a spring
+   * whose far end is the real pointer, damped by fluid friction. What we turn
+   * the model by each frame is how far that mass moved.
    *
-   * This is that idea with a first-order filter rather than a second-order one:
-   * the motion you have asked for accumulates in `_pending`, and each frame a
-   * fixed fraction of what is left gets applied. It smooths exactly the same way
-   * and, unlike a spring, it *cannot* overshoot — the remainder only ever shrinks
-   * — so there is no ringing to tune away. Nothing is lost either: the whole of
-   * `_pending` is eventually spent, so a drag turns the solid by exactly as much
-   * as the pointer asked for.
+   * This replaced a first-order filter that banked the motion and spent a fixed
+   * fraction of it per frame. That could not overshoot, which was its virtue,
+   * but momentum had to be bolted on separately at release — and it arrived as
+   * two different behaviours either side of a speed threshold: a hard flick got
+   * a constant-rate spin at a capped speed, a soft one got a fixed 0.11 s of
+   * glide. A throw twice as hard produced exactly the same spin as one just
+   * over the line.
    *
-   * Momentum comes from the release: the recent pointer speed is pushed into the
-   * same buffer, so a flick coasts on in the direction it was thrown and
-   * settles by itself.
+   * The spring has no such seam. Releasing the button only switches the spring
+   * off; the mass keeps whatever speed it had, so the spin is as fast as the
+   * throw was, with no cap and no second code path. It also costs no extra
+   * state: drag smoothing and free spin are the same two lines of physics with
+   * one term present or absent.
+   *
+   * `freeFrictionFactor: 0` is the deliberate choice. Undamped free motion is
+   * how the Java applet behaved and what notes/java-drag-fix.md settled on —
+   * "a real flick keeps the solid spinning until you catch it". Raise it if you
+   * want a spin that dies out on its own.
    */
-  _spinStep(dt) {
-    const p = this._pending;
-    if (!p || (Math.abs(p.x) < 1e-6 && Math.abs(p.y) < 1e-6)) return false;
-    const k = 1 - Math.exp(-dt / 0.055);       // ~55 ms to settle most of the way
-    const dx = p.x * k, dy = p.y * k;
-    p.x -= dx; p.y -= dy;
+  _pointerStep(nowMs) {
+    const ap = this._ap;
+    if (!ap || !ap.isPlaced()) return false;
+    ap.calculate(nowMs);
+    const [x, y] = ap.getPnt();
+    const last = this._apLast;
+    if (!last) { this._apLast = { x, y }; return false; }
+    const dx = (x - last.x) * DRAG_RATE, dy = (y - last.y) * DRAG_RATE;
+    last.x = x; last.y = y;
+    if (dx === 0 && dy === 0) return false;
     this.rotation = quatMul(
       quatMul(quatFromAxis([0, 1, 0], dx), quatFromAxis([1, 0, 0], dy)),
       this.rotation);
     return true;
+  }
+
+  /** drop any momentum and re-anchor, so an animation is not fought by a spin */
+  _pointerReset() {
+    this._ap?.stop();
+    this._ap?.synchronize();
+    this._apLast = null;
   }
 
   start() {
@@ -829,13 +883,7 @@ export class Renderer3D {
       if (this.autoRotate && !this.dragging) {
         this.rotation = quatMul(quatFromAxis([0, 1, 0], dt * 0.35), this.rotation);
       }
-      if (this._spin && !this.dragging) {      // a flick's spin, until caught
-        this.rotation = quatMul(
-          quatMul(quatFromAxis([0, 1, 0], this._spin.x * dt),
-                  quatFromAxis([1, 0, 0], this._spin.y * dt)),
-          this.rotation);
-      }
-      this._spinStep(dt);
+      this._pointerStep(t);
       this.draw();
       this._raf = requestAnimationFrame(tick);
     };
@@ -846,7 +894,6 @@ export class Renderer3D {
 
   _installControls() {
     const c = this.canvas;
-    let px = 0, py = 0;
 
     // A modifier means "I am pointing at a cell", not "turn the model" — that is
     // what keeps picking and orbiting out of each other's way. The same two
@@ -861,18 +908,22 @@ export class Renderer3D {
       return { shift, ctrl: !shift && (e.ctrlKey || e.metaKey || e.altKey), alt: e.altKey };
     };
 
-    let lastT = 0;
-    this._pending = { x: 0, y: 0 };
-    this._vel = { x: 0, y: 0 };
+    this._ap = AnimatedPointer(POINTER_PHYSICS);
+    this._apLast = null;
 
     const down = (e) => {
       if (picking(e) || e.button === 2) return;
       this.cancelEase();
-      this._spin = null;                       // catching the solid stops it
       this.dragging = true;
-      this._vel = { x: 0, y: 0 };
-      const p = point(e, c); px = p.x; py = p.y;
-      lastT = performance.now();
+      const p = point(e, c);
+      // Catching the solid stops it: put the mass on the pointer with no
+      // momentum, so the grab is where you grabbed and not where a spin had
+      // carried the lag to.
+      this._ap.setMouse(p.x, p.y);
+      this._ap.synchronize();
+      this._ap.stop();
+      this._apLast = { x: p.x, y: p.y };
+      this._ap.setDragState(true);
       c.setPointerCapture?.(e.pointerId);
     };
     const move = (e) => {
@@ -886,38 +937,29 @@ export class Renderer3D {
         else this.setHighlight(hit ? hit.face : -1);
         return;
       }
+      // Trackball: the drag direction turns the solid about the perpendicular
+      // axis. Only the far end of the spring is set here — the rotation itself
+      // happens in _pointerStep, off the simulated mass.
       const p = point(e, c);
-      const dx = (p.x - px) * 0.008, dy = (p.y - py) * 0.008;
-      px = p.x; py = p.y;
-      // trackball: drag direction maps to rotation about the perpendicular axis.
-      // The motion is banked rather than applied — see _spinStep.
-      this._pending.x += dx; this._pending.y += dy;
-      const now = performance.now();
-      const dt = Math.max(1 / 240, Math.min(0.1, (now - lastT) / 1000));
-      lastT = now;
-      const a = 0.35;                          // EMA of the pointer's rate, rad/s
-      this._vel.x += (dx / dt - this._vel.x) * a;
-      this._vel.y += (dy / dt - this._vel.y) * a;
-      if (!this._raf) { this._spinStep(1 / 60); this.draw(); }
+      this._ap.setMouse(p.x, p.y);
+      if (!this._raf) { this._pointerStep(performance.now()); this.draw(); }
     };
     const up = (e) => {
       if (this.dragging) {
-        const speed = Math.hypot(this._vel.x, this._vel.y);
-        if (speed > 1.4) {
-          /*
-           * A real flick keeps the solid spinning — «add momentum where I can
-           * drag the thing and if I release early enough, it starts spinning»,
-           * which is how the Java applet behaved. The spin holds the release
-           * direction at a capped rate and runs until the next touch; a gentle
-           * release below the threshold just coasts to a stop instead.
-           */
-          const k = Math.min(2.2, speed) / speed;
-          this._spin = { x: this._vel.x * k, y: this._vel.y * k };
-        } else {
-          const GLIDE = 0.11;                  // seconds of travel to carry on with
-          this._pending.x += this._vel.x * GLIDE;
-          this._pending.y += this._vel.y * GLIDE;
-        }
+        /*
+         * Let go of the spring and the mass carries on by itself. All that is
+         * left to decide is whether this was a throw or a placement.
+         *
+         * Without a floor, it is always a throw: a careful one-pixel
+         * positioning drag leaves a few pixels per second on the mass and the
+         * solid creeps away from the view you just set up. That is exactly the
+         * fault notes/java-drag-fix.md diagnosed in the Java app, where the
+         * cutoff was so low that every drag left it turning. The threshold here
+         * is that note's tuned value, converted from radians back to pixels.
+         */
+        const [vx, vy] = this._ap.getSpeed();
+        if (Math.hypot(vx, vy) * DRAG_RATE < SPIN_CUTOFF) this._ap.stop();
+        this._ap.setDragState(false);
       }
       this.dragging = false;
       c.releasePointerCapture?.(e.pointerId);

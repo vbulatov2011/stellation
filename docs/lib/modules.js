@@ -45,6 +45,9 @@ export {
 // ---- render3d.js — the WebGL2 view -----------------------------------------
 export { Renderer3D, layerColor, LAYER_COLORS, classColor, CLASS_COLORS, ACTION } from './render3d.js';
 
+// ---- AnimatedPointer.js — the spring-and-mass virtual pointer ---------------
+export { AnimatedPointer } from './AnimatedPointer.js';
+
 // ---- diagram.js — the 2D stellation diagram --------------------------------
 export { DiagramView } from './diagram.js';
 
