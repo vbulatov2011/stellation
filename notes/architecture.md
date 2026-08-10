@@ -25,8 +25,8 @@ build.xml                    Ant; compiles the 111 files of main+ui into cls/
 ant-build.bat …              wrappers that find a JDK and an Ant for you
 
 docs/                        the published site (GitHub Pages, .nojekyll)
-  lib/          3,700 loc    engine and views, framework-free
-  app/js/       1,700 loc    the application
+  lib/          4,000 loc    engine and views, framework-free
+  app/js/       1,800 loc    the application
   js/           1,600 loc    scripts for the essay pages
   data/           710 KB     catalog, geometry, symmetry, Brückner plates
   test/           350 loc    four Node harnesses
@@ -100,7 +100,7 @@ strings, which is also the exchange format with the UI.
 
 ## Three linked views
 
-- **3D** — `lib/render3d.js`, 1,193 lines of hand-written WebGL2. GLSL 300 es in
+- **3D** — `lib/render3d.js`, 1,310 lines of hand-written WebGL2. GLSL 300 es in
   four tagged template literals, flat-shaded, deliberately two-sided because
   stellation cells are open shells. Ray-picked triangles give click-to-toggle.
   Parallel projection since `eac477c`.
@@ -110,10 +110,40 @@ strings, which is also the exchange format with the UI.
 All three share one gesture palette (`ACTION` in `render3d.js`) and toggle the
 same selection, so green means add and red means remove everywhere.
 
-Two colourings, chosen in the View panel and saved in the document under
-`params.display.colorMode`: **by shell**, a hue per layer outward from the core;
-and **by face class**, a hue per symmetry class of original face, undersides
-darkened. An icosahedron has one class and so takes two colours.
+### Two colourings
+
+Chosen in the View panel, saved under `params.display.colorMode`: **by shell**, a
+hue per layer outward from the core; and **by face class**, a hue per symmetry
+class of original face, undersides darkened. An icosahedron has one class and so
+takes two colours. The diagram follows the same choice — it is drawn on one
+plane, so by class it takes that plane's colour and the only variation left is
+the above/below split.
+
+### Two kinds of edge
+
+Also drawn from two buffers, each with its own toggle, colour and width, saved
+under `params.display.edges`. Where two facets of DIFFERENT planes meet there is
+a real crease, an edge of the solid: a **face edge**. Where two facets of the
+SAME plane meet, the surface runs flat across the join and the line only records
+how the arrangement was cut up: a **facet edge**. `setMesh` tells them apart from
+the `facePlanes` the worker sends; callers that supply none — the figure pages —
+put everything in the face bucket.
+
+Worth knowing before you conclude the classifier is broken: whole consecutive
+shells produce **no facet edges at all**, their per-plane surface regions being
+disjoint. Real stellations are full of them — `sample_02` is 240 face and 240
+facet edges, `sample_04` 690 and 480. The icosahedron core is 30 face edges and
+no facet edges, which is the count an icosahedron should have.
+
+### The trackball
+
+The solid does not follow the pointer; it follows `lib/AnimatedPointer.js`, a
+unit mass on a spring whose far end is the real pointer, ported from SymmHub.
+Dragging smooths through the spring, and releasing switches the spring off so
+the mass keeps its speed — one mechanism for both, and a throw spins as fast as
+it was thrown. `POINTER_PHYSICS` at the top of `render3d.js` holds the three
+numbers; `springForce` is the one that matters, since the lag time constant is
+`dragFrictionFactor / sqrt(springForce)`.
 
 ---
 
@@ -122,14 +152,16 @@ darkened. An icosahedron has one class and so takes two colours.
 ```
 lib/core.js ─────────────────► app/js/worker.js
 lib/{render3d,diagram,cells} ► app/js/app.js ──► index.html
-                                    └─────────► app/js/preset.js
+      │                             └─────────► app/js/preset.js
+      └── render3d ──► lib/AnimatedPointer.js
 lib/modules.js ──► js/modules.js ──► bruckner, bruckner-grid, historical,
                                      walkthrough, bfigure
 ```
 
-`core.js`, `render3d.js`, `cells.js` and `platform.js` import nothing at all.
-`diagram.js` reaches into `render3d.js` only for the shared palette. The two
-barrel files exist so the essay pages never name an internal path.
+`core.js`, `cells.js`, `platform.js` and `AnimatedPointer.js` import nothing at
+all. `render3d.js` takes only `AnimatedPointer`, and `diagram.js` reaches into
+`render3d.js` only for the shared palettes. The two barrel files exist so the
+essay pages never name an internal path.
 
 ---
 
@@ -184,10 +216,17 @@ prose. Treat it as the design record, because it is.
 
 ## Loose ends
 
-- **The two implementations are diverging.** The JavaScript has gained
-  face-class colouring, a parallel projection and a capped-arrangement guard
-  that the Java knows nothing about. Nothing checks they still agree beyond the
-  frozen numbers in `validate.mjs`.
+- **The two implementations are diverging, and the gap is widening.** The
+  JavaScript has gained face-class colouring, the face/facet edge split, the
+  AnimatedPointer trackball, a parallel projection and a capped-arrangement
+  guard that the Java knows nothing about. Nothing checks they still agree
+  beyond the frozen numbers in `validate.mjs` — and those cover the engine only,
+  so none of the above is tested against anything.
+- **The new view features have no test.** Colouring, edge classification and the
+  trackball were each verified once by measurement — face-class counts per
+  solid, edge counts per sample, drag and throw behaviour — but none of it is in
+  `docs/test/`. Edge classification in particular is a pure function of the mesh
+  and would sit naturally beside `facing.mjs`.
 - **`src/test/java` has no runner.** Ant does not compile it, and the JSweet-era
   `pom.xml` that carried the JUnit dependency was removed when that route was
   abandoned. `AppTest` and `DragProbe` are inert; `DragProbe` in particular is
