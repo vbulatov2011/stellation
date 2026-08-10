@@ -251,9 +251,24 @@ export class Renderer3D {
     this.colBuf = gl.createBuffer();
     this.count = 0;
 
-    this.lineVao = gl.createVertexArray();
-    this.lineBufs = { a: gl.createBuffer(), b: gl.createBuffer(), side: gl.createBuffer(), end: gl.createBuffer() };
-    this.lineCount = 0;
+    /*
+     * Edges come in two kinds, drawn from two buffers — see setMesh.
+     *
+     * Every facet of the surface lies in one of the original face planes. Where
+     * two facets of DIFFERENT planes meet there is a real crease, an edge of the
+     * solid: a "face edge". Where two facets of the SAME plane meet the surface
+     * is flat across the join and the line is pure subdivision, an artefact of
+     * how the plane arrangement was cut up: a "facet edge". Drawing both in one
+     * colour, as this used to, buries the shape of the solid in the arrangement
+     * that produced it.
+     */
+    const segBufs = () => ({ a: gl.createBuffer(), b: gl.createBuffer(), side: gl.createBuffer(), end: gl.createBuffer() });
+    this.faceLineVao = gl.createVertexArray();
+    this.faceLineBufs = segBufs();
+    this.faceLineCount = 0;
+    this.facetLineVao = gl.createVertexArray();
+    this.facetLineBufs = segBufs();
+    this.facetLineCount = 0;
     this.edgeWidth = 1.0;   // CSS pixels of total line width, scaled by dpr at draw
 
     this.modelScale = 0;   // sticky; see setMesh() and fit()
@@ -268,6 +283,20 @@ export class Renderer3D {
     this.discCount = 0;
     this.background = [0.055, 0.06, 0.078];
     this.edgeColor = [0.0, 0.0, 0.0, 1.0];
+
+    /*
+     * Per-kind overrides. `color: null` and `width: null` mean "follow
+     * edgeColor / edgeWidth", which is what keeps the figure pages working
+     * unchanged — they set edgeWidth and know nothing about the two kinds.
+     *
+     * Facet edges default to a grey rather than black: they are the subdivision
+     * of the arrangement, and reading them as quieter than the solid's own
+     * edges is the point of separating them at all. Blending is only enabled
+     * around the mirror discs, so these stay opaque and the distinction is
+     * carried by colour and width, not alpha.
+     */
+    this.faceEdges = { show: true, color: null, width: null };
+    this.facetEdges = { show: true, color: [0.42, 0.44, 0.50, 1.0], width: null };
 
     this._installControls();
     this._raf = null;
@@ -434,13 +463,20 @@ export class Renderer3D {
    */
   setMesh(mesh, faceLayers, faceClass = null) {
     const gl = this.gl;
-    const pos = [], norm = [], col = [], lines = [];
+    const pos = [], norm = [], col = [];
     this.pickTris = [];      // {a,b,c, face} in model space, for ray picking
     this.mesh = mesh;
     this.lastFaceLayers = faceLayers;
     this.lastFaceClass = faceClass;
     const byClass = this.colorMode === 'class' && faceClass;
-    const seenEdges = new Set();
+    /*
+     * key -> {a, b, plane, uses, crease}. A Set of seen keys was enough when
+     * every edge was drawn the same; telling the two kinds apart needs to know
+     * which planes met there, so the first sighting records the plane and later
+     * ones compare against it.
+     */
+    const edges = new Map();
+    const planes = faceClass?.planes || null;
 
     /*
      * The model scale is sticky.
@@ -532,12 +568,43 @@ export class Renderer3D {
       for (let i = 0; i < p.length; i++) {
         const ia = face[i], ib = face[(i + 1) % face.length];
         const key = ia < ib ? `${ia}_${ib}` : `${ib}_${ia}`;
-        if (seenEdges.has(key)) continue;      // interior edges are shared by two faces
-        seenEdges.add(key);
-        const a = p[i], b = p[(i + 1) % p.length];
-        lines.push([a.x * s, a.y * s, a.z * s], [b.x * s, b.y * s, b.z * s]);
+        const seen = edges.get(key);
+        if (seen === undefined) {
+          const a = p[i], b = p[(i + 1) % p.length];
+          edges.set(key, {
+            a: [a.x * s, a.y * s, a.z * s],
+            b: [b.x * s, b.y * s, b.z * s],
+            plane: planes ? planes[fi] : -1,
+            uses: 1,
+            crease: false,
+          });
+        } else {
+          seen.uses++;
+          if (!planes || seen.plane !== planes[fi]) seen.crease = true;
+        }
       }
     });
+
+    /*
+     * Split the edges into the two buckets.
+     *
+     * An edge is a face edge when the facets meeting along it lie in different
+     * planes — a genuine crease — and a facet edge when they share a plane and
+     * the surface runs flat across it.
+     *
+     * An edge used by only ONE facet is a face edge too. The boundary surface
+     * is normally closed, so this is rare, but where it happens the line is the
+     * open rim of the surface and unmistakably part of the solid's outline, not
+     * an internal subdivision.
+     *
+     * With no plane data — the figure pages do not send it — everything lands
+     * in the face bucket, which draws exactly what this used to.
+     */
+    const faceLines = [], facetLines = [];
+    for (const e of edges.values()) {
+      const bucket = (!planes || e.crease || e.uses === 1) ? faceLines : facetLines;
+      bucket.push(e.a, e.b);
+    }
 
     const upload = (vao, buf, loc, data, size, prog) => {
       gl.bindVertexArray(vao);
@@ -552,7 +619,8 @@ export class Renderer3D {
     upload(this.vao, this.colBuf, 'aColor', col, 3, this.prog);
     this.count = pos.length / 3;
 
-    this.lineCount = this._uploadSegments(this.lineVao, this.lineBufs, lines);
+    this.faceLineCount = this._uploadSegments(this.faceLineVao, this.faceLineBufs, faceLines);
+    this.facetLineCount = this._uploadSegments(this.facetLineVao, this.facetLineBufs, facetLines);
 
     gl.bindVertexArray(null);
     // the elements are sized to the arrangement, so they follow it as it grows
@@ -651,9 +719,16 @@ export class Renderer3D {
       gl.drawArrays(gl.TRIANGLES, 0, count);
     };
 
-    if (this.showEdges && this.lineCount) {
-      drawLines(this.lineVao, this.lineCount, this.edgeColor, this.edgeWidth);
-    }
+    /*
+     * Facet edges first, face edges over them: where the two would contend for
+     * the same pixels the solid's own edges should win.
+     */
+    const drawEdges = (spec, vao, count) => {
+      if (!this.showEdges || !spec.show || !count) return;
+      drawLines(vao, count, spec.color || this.edgeColor, spec.width ?? this.edgeWidth);
+    };
+    drawEdges(this.facetEdges, this.facetLineVao, this.facetLineCount);
+    drawEdges(this.faceEdges, this.faceLineVao, this.faceLineCount);
     /*
      * Symmetry elements are real geometry, drawn into the same depth buffer as
      * the solid, so an axis that runs behind a cell is hidden by it. Drawn as

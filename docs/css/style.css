@@ -559,6 +559,29 @@ main { grid-template-columns: minmax(0, 1fr) 6px var(--panel-w, 322px); }
 }
 .sym-elems legend { font-size: 10.5px; color: var(--dim); padding: 0 4px; }
 .sym-elems .check { margin: 2px 0; }
+
+/* the two kinds of edge: a checkbox, then its colour and weight on one row */
+.edge-kinds {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 8px 6px;
+  margin: 6px 0 4px;
+}
+.edge-kinds legend { font-size: 10.5px; color: var(--dim); padding: 0 4px; }
+.edge-kinds .check { margin: 2px 0; }
+.edge-style {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px 18px;      /* indented under the checkbox it belongs to */
+}
+.edge-style input[type="color"] {
+  width: 26px; height: 18px; padding: 0;
+  border: 1px solid var(--line); border-radius: 4px;
+  background: none; cursor: pointer; flex: none;
+}
+.edge-style input[type="range"] { flex: 1; min-width: 0; }
+.edge-style b { font-variant-numeric: tabular-nums; color: var(--dim); font-weight: 500; min-width: 20px; }
 .sw {
   display: inline-block; width: 9px; height: 9px; border-radius: 2px;
   vertical-align: baseline; margin-right: 1px;

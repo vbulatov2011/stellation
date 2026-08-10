@@ -46,6 +46,7 @@ export function writePreset({
   name, polyhedron, file, polySymmetry, stellSymmetry,
   planeDepth, cells, diagramFace,
   showEdges = true, showAllFacets = true, spin = false, colorMode = 'layer',
+  edges = null,
   view = null, planesText = null,
   exportLengthUnit = 0.01,
 }) {
@@ -62,7 +63,12 @@ export function writePreset({
        * Saved so that reopening a document, or sending someone a link, shows the
        * solid from the angle it was chosen at rather than from the default one.
        */
-      display: { diagramFace, showEdges, showAllFacets, spin, colorMode },
+      /*
+       * `edges` carries the two kinds separately. `showEdges` is still written
+       * beside it, as the master "any edges at all", so a document saved now
+       * still opens sensibly in a build that predates the split.
+       */
+      display: { diagramFace, showEdges, showAllFacets, spin, colorMode, edges },
       camera: view ? { view } : undefined,
       // the make-planes sheet, verbatim: the source of a custom arrangement is
       // the text the user wrote, so that is what round-trips
@@ -132,6 +138,13 @@ export function readPreset(doc) {
     // documents written before face-class colouring existed have no setting;
     // they were all drawn by shell, so that is what they should reopen as
     colorMode: p.display?.colorMode === 'class' ? 'class' : 'layer',
+    /*
+     * Documents written before the face/facet split have no `edges`, only the
+     * one `showEdges` flag — and that flag drew every edge alike. So fall back
+     * to both kinds following it, which reproduces what those documents looked
+     * like rather than silently turning half their edges off.
+     */
+    edges: p.display?.edges ?? null,
     view: Array.isArray(p.camera?.view) ? p.camera.view : null,
     planesText: typeof p.planes?.text === 'string' ? p.planes.text : null,
     exportLengthUnit: p.export?.lengthUnit ?? 0.01,

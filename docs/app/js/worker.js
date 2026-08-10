@@ -70,6 +70,9 @@ function meshFor(selected) {
      */
     faceClasses: mesh.facetRefs.map(f => (faceClass ? faceClass[f.plane] : 0)),
     faceTop: mesh.facetTop,
+    // which face plane each facet lies in — what separates a crease between two
+    // planes (a face edge) from a join within one plane (a facet edge)
+    facePlanes: mesh.facetRefs.map(f => f.plane),
     // "inside" is the solid cell this face belongs to, "outside" the empty
     // neighbour across it — which is what a click means, and what the two
     // gestures act on. cellsAcrossFace orients the pair; reading cellBelow /

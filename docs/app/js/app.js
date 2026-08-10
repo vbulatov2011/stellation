@@ -79,12 +79,9 @@ async function boot() {
   try {
     renderer = new Renderer3D($('#view3d'));
     renderer.autoRotate = false;             // still by default; spin is opt-in
-    const savedEdge = Number(localStorage.getItem('edgeWidth'));
-    if (savedEdge > 0) {
-      renderer.edgeWidth = savedEdge;
-      $('#edgeWidth').value = savedEdge;
-      $('#edgeWidthLabel').textContent = savedEdge.toFixed(1);
-    }
+    // always push, saved or not, so the renderer and the controls start out
+    // agreeing rather than relying on two sets of defaults matching
+    applyEdgeStyle(readJSON(localStorage.getItem('edgeStyle')) || currentEdgeStyle());
     const savedColor = localStorage.getItem('colorMode');
     if (savedColor === 'class' || savedColor === 'layer') {
       renderer.colorMode = savedColor;         // set before the first setMesh
@@ -854,7 +851,8 @@ async function refresh() {
   const { mesh, diagram: dia } = await call('both', { selected, planeIndex: state.planeIndex });
 
   state.mesh = mesh;
-  renderer?.setMesh(mesh, mesh.faceLayers, { classes: mesh.faceClasses, top: mesh.faceTop });
+  renderer?.setMesh(mesh, mesh.faceLayers,
+    { classes: mesh.faceClasses, top: mesh.faceTop, planes: mesh.facePlanes });
   diagram.setData(dia);
   state.diagramFrame = dia?.frame || null;
   refreshDiagramOverlay();
@@ -1009,7 +1007,13 @@ function wireControls() {
   });
 
   $('#autoRotate').onchange = (e) => { if (renderer) renderer.autoRotate = e.target.checked; };
-  $('#showEdges').onchange = (e) => { if (renderer) { renderer.showEdges = e.target.checked; renderer.draw(); } };
+  for (const id of ['#showFaceEdges', '#faceEdgeColor', '#faceEdgeWidth',
+                    '#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth']) {
+    // `input` rather than `change` so dragging a slider or scrubbing the colour
+    // picker updates the solid as you go, which is the only way to tune a
+    // weight or a shade against what you are actually looking at
+    $(id).oninput = pushEdgeStyle;
+  }
   $('#colorMode').onchange = (e) => {
     localStorage.setItem('colorMode', e.target.value);
     renderer?.setColorMode(e.target.value);
@@ -1047,12 +1051,6 @@ function wireControls() {
 
   installSplitters();
 
-  $('#edgeWidth').oninput = (e) => {
-    const w = Number(e.target.value);
-    $('#edgeWidthLabel').textContent = w.toFixed(1);
-    localStorage.setItem('edgeWidth', w);
-    if (renderer) { renderer.edgeWidth = w; renderer.draw(); }
-  };
   $('#showAllFacets').onchange = (e) => { diagram.showAll = e.target.checked; diagram.draw(); };
 
   $('#cellsString').onchange = async (e) => {
@@ -1075,7 +1073,9 @@ function wireControls() {
       polySymmetry: state.polySym, stellSymmetry: state.stellSym,
       planeDepth: state.depth, cells: state.cellsString,
       diagramFace: state.planeIndex,
-      showEdges: $('#showEdges').checked,
+      edges: currentEdgeStyle(),
+      // the master flag, for readers that predate the face/facet split
+      showEdges: $('#showFaceEdges').checked || $('#showFacetEdges').checked,
       showAllFacets: $('#showAllFacets').checked,
       spin: $('#autoRotate').checked,
       colorMode: $('#colorMode').value,
@@ -1272,6 +1272,65 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
 
 const name = () => `${state.current.file}-${state.polySym}-${state.stellSym}`;
 
+// ------------------------------------------------------------ edge styling
+
+const readJSON = (s) => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
+
+/** "#rrggbb" -> [r,g,b,1] in 0..1, as the renderer wants it */
+const hexToRgba = (hex) => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255, 1];
+};
+
+/**
+ * The edge controls as a plain object — what gets saved, in the form it is
+ * saved in. Hex strings rather than the renderer's float triples, because that
+ * is what an <input type="color"> speaks and what survives a JSON round trip
+ * legibly.
+ */
+function currentEdgeStyle() {
+  return {
+    face: {
+      show: $('#showFaceEdges').checked,
+      color: $('#faceEdgeColor').value,
+      width: Number($('#faceEdgeWidth').value),
+    },
+    facet: {
+      show: $('#showFacetEdges').checked,
+      color: $('#facetEdgeColor').value,
+      width: Number($('#facetEdgeWidth').value),
+    },
+  };
+}
+
+/** put a saved style on the controls, then hand it to the renderer */
+function applyEdgeStyle(style) {
+  if (!style) return;
+  for (const [kind, ids] of [['face', ['#showFaceEdges', '#faceEdgeColor', '#faceEdgeWidth']],
+                             ['facet', ['#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth']]]) {
+    const s = style[kind];
+    if (!s) continue;
+    if (typeof s.show === 'boolean') $(ids[0]).checked = s.show;
+    if (hexToRgba(s.color)) $(ids[1]).value = s.color;
+    if (s.width > 0) $(ids[2]).value = s.width;
+  }
+  pushEdgeStyle();
+}
+
+/** controls -> renderer, and remember it for next time */
+function pushEdgeStyle() {
+  const style = currentEdgeStyle();
+  $('#faceEdgeWidthLabel').textContent = style.face.width.toFixed(1);
+  $('#facetEdgeWidthLabel').textContent = style.facet.width.toFixed(1);
+  localStorage.setItem('edgeStyle', JSON.stringify(style));
+  if (!renderer) return;
+  renderer.faceEdges = { show: style.face.show, color: hexToRgba(style.face.color), width: style.face.width };
+  renderer.facetEdges = { show: style.facet.show, color: hexToRgba(style.facet.color), width: style.facet.width };
+  renderer.draw();
+}
+
 /**
  * Put the document's display settings back on the controls.
  *
@@ -1285,14 +1344,18 @@ const name = () => `${state.current.file}-${state.polySym}-${state.stellSym}`;
  */
 function applyDisplaySettings(doc) {
   if (doc.source !== 'json') return;
-  for (const [id, val] of [['#showEdges', doc.showEdges],
-                           ['#showAllFacets', doc.showAllFacets],
+  for (const [id, val] of [['#showAllFacets', doc.showAllFacets],
                            ['#autoRotate', doc.spin]]) {
     $(id).checked = !!val;
     $(id).dispatchEvent(new Event('change'));
   }
   $('#colorMode').value = doc.colorMode || 'layer';
   $('#colorMode').dispatchEvent(new Event('change'));
+  // a pre-split document has only `showEdges`, which drew both kinds alike
+  applyEdgeStyle(doc.edges || {
+    face: { ...currentEdgeStyle().face, show: !!doc.showEdges },
+    facet: { ...currentEdgeStyle().facet, show: !!doc.showEdges },
+  });
 }
 
 /** open either our JSON preset or an original .stel file */

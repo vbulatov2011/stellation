@@ -142,7 +142,21 @@
         </select>
       </label>
       <label class="check"><input id="autoRotate" type="checkbox"> spin the solid</label>
-      <label class="check"><input id="showEdges" type="checkbox" checked> draw edges</label>
+      <fieldset class="edge-kinds">
+        <legend title="Every facet lies in one of the original face planes. Where two facets of DIFFERENT planes meet there is a real crease — an edge of the solid. Where two facets of the SAME plane meet the surface runs flat across the join and the line is just how the plane arrangement was cut up. Drawing the two the same buries the shape of the solid in the arrangement that produced it.">edges</legend>
+        <label class="check" title="The creases: where facets lying in different face planes meet"><input id="showFaceEdges" type="checkbox" checked> face edges</label>
+        <div class="row edge-style">
+          <input id="faceEdgeColor" type="color" value="#000000" title="Colour of the face edges">
+          <input id="faceEdgeWidth" type="range" min="0.5" max="8" step="0.5" value="1" title="Thickness in pixels">
+          <b id="faceEdgeWidthLabel">1.0</b>
+        </div>
+        <label class="check" title="The subdivision: where facets lying in the same face plane meet, with no crease between them"><input id="showFacetEdges" type="checkbox" checked> facet edges</label>
+        <div class="row edge-style">
+          <input id="facetEdgeColor" type="color" value="#6b7080" title="Colour of the facet edges">
+          <input id="facetEdgeWidth" type="range" min="0.5" max="8" step="0.5" value="1" title="Thickness in pixels">
+          <b id="facetEdgeWidthLabel">1.0</b>
+        </div>
+      </fieldset>
       <fieldset class="sym-elems">
         <legend title="The symmetry elements of the stellation group, drawn through the origin as real geometry so the solid hides the parts behind it. Inequivalent elements get different colours — the legend below names them.">symmetry elements</legend>
         <label class="check"><input id="showAxes" type="checkbox"> rotation axes</label>
@@ -151,10 +165,6 @@
         <label class="check" title="Mark the same elements on the stellation diagram: a dot where an axis pierces the drawing plane, a dashed line where a mirror plane crosses it"><input id="showDiagElems" type="checkbox"> mark on the diagram</label>
         <div id="elemLegend" class="legend elem-legend"></div>
       </fieldset>
-      <label class="field" title="Thickness of the edge lines, in pixels">
-        <span>edge weight <b id="edgeWidthLabel">1.0</b></span>
-        <input id="edgeWidth" type="range" min="0.5" max="8" step="0.5" value="1">
-      </label>
       <label class="check" title="Tint the cells you have not chosen, so you can see what else is available on this plane">
         <input id="showAllFacets" type="checkbox" checked> shade unchosen cells
       </label>
