@@ -65,6 +65,94 @@
 
   <!-- ══════════════════════════════════════════════ -->
   <div class="grp">
+    <h3>Fifth round</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>Facets can be coloured by which face of the original solid they lie in.</b>
+      The 3D view had one colouring, a hue per shell outward from the core. A second
+      is now offered in the View panel: a hue per symmetry class of original face, so
+      every facet lying in the same kind of face matches however far apart they are,
+      with undersides in the same hue darkened. An icosahedron has one kind of face
+      and so takes two colours; an icosidodecahedron has two and takes four. The
+      classes are orbits of the face planes under the <em>polyhedron's</em> group, not
+      the stellation group chosen below it — the kind of face is a property of the
+      solid you started from. The diagram follows the same choice: it is drawn on one
+      plane, so it takes that plane's colour and the only variation left is the
+      above/below split it already draws.
+    </div></li>
+    <li><div>
+      <b>Face edges and facet edges are drawn separately.</b> Every edge of every
+      facet used to be drawn in one colour and one weight, which buries the shape of
+      the solid in the arrangement that produced it. Where two facets of
+      <em>different</em> planes meet there is a real crease, an edge of the solid;
+      where two facets of the <em>same</em> plane meet, the surface runs flat across
+      the join and the line only records how the arrangement was cut up. Each kind now
+      has its own toggle, colour and width. How much this matters depends on the
+      selection: whole consecutive shells have no facet edges at all, their per-plane
+      regions being disjoint, while the shipped samples are close to half and half —
+      240 of each for <span class="mono">sample_02</span>.
+    </div></li>
+    <li><div>
+      <b>The solid follows a virtual pointer on a spring.</b> A mouse reports in
+      uneven jumps and applying each one directly makes the model stutter, so the
+      trackball now drives a unit mass pulled by a spring whose far end is the real
+      pointer, damped by fluid friction — the AnimatedPointer from the author's
+      SymmHub, with its physics unchanged. Releasing the button switches the spring
+      off and the mass keeps its speed, so a throw spins as fast as it was thrown,
+      with no cap. This replaced three separate mechanisms whose release behaviour
+      split at a threshold: a throw twice as hard used to produce exactly the same
+      spin as one just over the line. A drag that decelerates before release still
+      stops dead, which is the fault the Java drag fix diagnosed.
+    </div></li>
+    <li><div>
+      <b>A parallel projection, so shape no longer depends on distance.</b> Selecting
+      a cell in the outermost layer turned the view inside out: the fitted camera sat
+      <em>inside</em> the selected cell and 20 of its 152 vertices fell at or behind
+      the eye point. A parallel projection has no eye to fall behind, so the failure
+      cannot recur at any depth — and it settles the three framing problems logged on
+      6 August, which were one problem, since a camera that moves changes the
+      perspective of everything that did not change.
+    </div></li>
+    <li><div>
+      <b>The tutorial figures re-fit only when the frame no longer suits.</b>
+      Following the content on every change meant that switching one outer cell
+      resized the whole model, and a jump that large reads as the model changing
+      rather than the selection. The frame is now left alone while the content sits
+      comfortably inside it, and eases to a new fit only when the model would be cut
+      off or has shrunk to a speck.
+    </div></li>
+    <li><div>
+      <b>A capped arrangement no longer builds shells it cannot support.</b> The snub
+      dodecahedron came apart past layer 11 — cells scattered through the outer shells
+      instead of tiling them. Not precision: the facet cap was dropping facets whose
+      split would carry them past it, so at layer 12 only 150 cells of 1650 survived.
+      Comparing capped against uncapped builds showed the first differing layer is
+      always the cap itself and everything below identical, so the build now stops
+      there: fewer layers, all of them true. Raising the depth control returns the
+      rest.
+    </div></li>
+    <li><div>
+      <b>The site has a front door.</b> Arriving at the project put a three-pane
+      workspace in front of you, with the documentation reachable only from a header
+      link inside it. The app is now <span class="mono">stellation_app.html</span> and
+      the address you land on is a short description with a card for each page. Links
+      shared before the move still work — the app keeps its whole state in the URL
+      hash, and the landing page forwards a hash that looks like app state.
+    </div></li>
+    <li><div>
+      <b>The JavaScript is in three trees rather than one.</b>
+      <span class="mono">docs/app/js</span> is the application,
+      <span class="mono">docs/lib</span> the layer it shares with the tutorial and
+      sample pages, <span class="mono">docs/js</span> those pages' own scripts.
+      Imports go through barrels that list every name explicitly, so a future move is
+      one file to edit rather than every consumer, and a collision between two shared
+      modules is an error at load instead of a binding that quietly becomes undefined.
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
     <h3>Fourth round</h3>
   </div>
   <ul class="done">

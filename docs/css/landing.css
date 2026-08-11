@@ -19,6 +19,20 @@
   padding: 26px 22px 72px;
 }
 
+/* no nav bar here, so the theme toggle needs a home of its own */
+.theme-corner {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 40;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text);
+}
+.theme-corner:hover { border-color: var(--accent); }
+
 /* ------------------------------------------------------------------ hero */
 
 .landing-hero h1 {
@@ -54,9 +68,13 @@
   transition: border-color 0.15s, transform 0.15s;
 }
 .landing-main .hero-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+/* 16:10, the aspect the thumbnails are rendered at — a square box would
+   letterbox them and the render's background is not quite the card's */
 .landing-main .hero-card img {
-  width: 140px; height: 140px; flex: none;
-  object-fit: contain;
+  width: 208px; height: 130px; flex: none;
+  object-fit: cover;
+  border-radius: 9px;
+  border: 1px solid var(--line);
 }
 .landing-main .hero-card h2 { margin: 0 0 8px; font-size: 21px; }
 .landing-main .hero-card p { margin: 0; color: var(--dim); font-size: 15px; line-height: 1.5; }
@@ -121,5 +139,5 @@
 
 @media (max-width: 560px) {
   .landing-main .hero-card { flex-direction: column; align-items: flex-start; }
-  .landing-main .hero-card img { width: 100%; height: 160px; }
+  .landing-main .hero-card img { width: 100%; height: 170px; }
 }
