@@ -138,9 +138,15 @@ GitHub Pages, built from `main`, folder `/docs`.
 
 The web version lives in `docs/` — a hand port of the stellation core to ES
 modules, written against the Java as reference rather than translated from it.
-`docs/js/core.js` is the port proper (`pvs.polyhedra.Stellation`, `SCell`,
-`SSCell`, `SFace`); `app.js` drives the page, `worker.js` runs the expensive
-plane arrangement off the main thread.
+`docs/lib/core.js` is the port proper (`pvs.polyhedra.Stellation`, `SCell`,
+`SSCell`, `SFace`); `app/js/app.js` drives the page, `app/js/worker.js` runs the
+expensive plane arrangement off the main thread.
+
+`docs/index.html` is the landing page — a short description and a card for each
+of the other pages.  The app itself is `docs/stellation_app.html`, and it keeps
+its whole state in the URL hash, so any view can be linked to.  Links made
+before the app moved still work: the landing page forwards a hash that looks
+like app state and leaves every other visit alone.
 
 There is no build step — the files served are the files you edit.  It does need
 a real web server, though, not `file://`: the page uses ES modules, a module

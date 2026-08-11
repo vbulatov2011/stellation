@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stellation — polyhedra and their stars</title>
+<meta name="description" content="Interactive stellations of the uniform polyhedra. A JavaScript port of Vladimir Bulatov's Stellation applet.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<script>
+  // set the theme before first paint so there is no flash
+  (() => {
+    const saved = localStorage.getItem('theme') || 'auto';
+    const dark = saved === 'dark' ||
+      (saved === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = saved;
+  })();
+</script>
+</head>
+<body>
+
+<header>
+  <h1><a href="index.html" title="Everything else in the project">Stellation</a></h1>
+
+  <button id="pickPoly" class="picker" title="Choose a polyhedron">
+    <img id="pickThumb" src="img/poly/u27_tmb.gif" alt="" width="26" height="26">
+    <span id="pickName">icosahedron</span>
+    <b>▾</b>
+  </button>
+
+  <span id="stats" class="dim"></span>
+
+  <div class="spacer"></div>
+
+  <a class="ghost optional" href="walkthrough.html" title="How the Cells table works">Walkthrough</a>
+  <a class="ghost optional" href="historical.html" title="A chronological tour">History</a>
+  <a class="ghost optional" href="bruckner.html" title="Brückner's 1900 plates, interactive">Brückner 1900</a>
+  <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
+  <button id="help" class="ghost">?</button>
+</header>
+
+<main>
+
+  <!-- ------------------------------------------------ the two views -->
+  <section class="stage">
+    <div class="views">
+      <div class="view">
+        <canvas id="view3d"></canvas>
+        <div class="view-tools">
+          <button id="fitView" title="Rescale so the whole selection fits the frame">fit</button>
+          <button id="homeView" title="Canonical orientation: x right, y up, z toward you">home</button>
+        </div>
+        <div class="view-label">
+          <span>drag to turn · <kbd>shift</kbd>-click <b class="add">adds a cell</b> · <kbd class="kSub">ctrl</kbd>-click <b class="rem">removes one</b></span>
+          <span id="hover3d" class="hover"></span>
+        </div>
+      </div>
+      <div class="splitter" id="splitViews" title="Drag to resize"></div>
+      <div class="view">
+        <canvas id="diagram"></canvas>
+        <div class="view-label">
+          <span>stellation diagram · drag to pan · <kbd>shift</kbd>-click toggles the cell <b class="below">beneath</b> · <kbd class="kSub">ctrl</kbd>-click the one <b class="above">on top</b> · double-click resets</span>
+          <span id="hover2d" class="hover"></span>
+        </div>
+      </div>
+    </div>
+    <div class="statusbar">
+      <div id="progress"></div>
+      <span id="status">loading…</span>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------ controls -->
+  <div class="splitter vertical" id="splitPanel" title="Drag to resize"></div>
+
+  <aside class="panel right">
+
+    <div class="group cells-group">
+      <div class="group-head">
+        <h2>Cells</h2>
+        <div class="row buttons tight">
+          <button id="selectCore" title="Just the original polyhedron">core</button>
+          <button id="growLayer" title="Add the next shell outward">+ layer</button>
+          <button id="selectAll">all</button>
+          <button id="selectNone">clear</button>
+          <button id="undoBtn" class="icon" title="Undo the last change to the cells (ctrl+Z)" disabled>↶</button>
+          <button id="redoBtn" class="icon" title="Redo (ctrl+shift+Z)" disabled>↷</button>
+        </div>
+      </div>
+      <div class="cells-wrap"><canvas id="cells"></canvas></div>
+      <div id="cellsLegend" class="legend" title="Each bar colour marks one particular number of congruent pieces"></div>
+      <div id="cellInfo" class="info mono"></div>
+      <p class="note">
+        Rows are shells, the core at the bottom; each box is one symmetry-related set
+        of cells. <a href="controls.html">Controls &amp; views →</a>
+      </p>
+      <ul class="note keys">
+        <li><kbd>click</kbd> toggle a cell</li>
+        <li><kbd class="kSub">ctrl</kbd>-click toggle it <b>with everything under it</b> — this table only</li>
+        <li><kbd>row №</kbd> whole layer</li>
+        <li><kbd>ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>Z</kbd> redo</li>
+      </ul>
+      <input id="cellsString" class="mono" spellcheck="false"
+             title="cell-selection string, same syntax as the original .stel files">
+    </div>
+
+    <details class="group" id="symGroup">
+      <summary><h2>Symmetry &amp; depth</h2></summary>
+      <label class="field">
+        <span>polyhedron</span>
+        <select id="polySym"></select>
+      </label>
+      <label class="field">
+        <span>stellation</span>
+        <select id="stellSym"></select>
+      </label>
+      <label class="field" title="How many shells of cells to build outward from the core. Chosen automatically per solid — most build every shell there is; the few with planes passing near the centre are capped to stay quick. Move it to override.">
+        <span>build out to <b id="depthLabel">20</b> shells</span>
+        <input id="depth" type="range" min="2" max="60" value="20">
+      </label>
+      <label class="field" title="Which face of the polyhedron the stellation diagram is drawn on. Only faces the chosen symmetry cannot carry onto one another are listed — the rest would give the same picture.">
+        <span>diagram face</span>
+        <select id="planeIndex"></select>
+      </label>
+      <p class="note">
+        Cells are grouped into orbits of the first group, then split by the second —
+        that split is what lets a chiral cell offer just one of its two hands.
+      </p>
+      <div class="row buttons">
+        <button id="makePlanes" title="Stellate an arbitrary set of planes instead of a catalog solid — the original program's plane editor">Make planes…</button>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary><h2>View</h2></summary>
+      <label class="field" title="How the facets are coloured. By shell: one colour per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one colour per kind of face of the original polyhedron, so every facet lying in the same kind of face matches however far apart they are — undersides in the same colour, darkened. An icosahedron has one kind of face and so takes two colours; a cuboctahedron has two and takes four.">
+        <span>face colours</span>
+        <select id="colorMode">
+          <option value="layer">by shell</option>
+          <option value="class">by face class</option>
+        </select>
+      </label>
+      <label class="check"><input id="autoRotate" type="checkbox"> spin the solid</label>
+      <fieldset class="edge-kinds">
+        <legend title="Every facet lies in one of the original face planes. Where two facets of DIFFERENT planes meet there is a real crease — an edge of the solid. Where two facets of the SAME plane meet the surface runs flat across the join and the line is just how the plane arrangement was cut up. Drawing the two the same buries the shape of the solid in the arrangement that produced it.">edges</legend>
+        <label class="check" title="The creases: where facets lying in different face planes meet"><input id="showFaceEdges" type="checkbox" checked> face edges</label>
+        <div class="row edge-style">
+          <input id="faceEdgeColor" type="color" value="#000000" title="Colour of the face edges">
+          <input id="faceEdgeWidth" type="range" min="0.5" max="8" step="0.5" value="1" title="Thickness in pixels">
+          <b id="faceEdgeWidthLabel">1.0</b>
+        </div>
+        <label class="check" title="The subdivision: where facets lying in the same face plane meet, with no crease between them"><input id="showFacetEdges" type="checkbox" checked> facet edges</label>
+        <div class="row edge-style">
+          <input id="facetEdgeColor" type="color" value="#6b7080" title="Colour of the facet edges">
+          <input id="facetEdgeWidth" type="range" min="0.5" max="8" step="0.5" value="1" title="Thickness in pixels">
+          <b id="facetEdgeWidthLabel">1.0</b>
+        </div>
+      </fieldset>
+      <fieldset class="sym-elems">
+        <legend title="The symmetry elements of the stellation group, drawn through the origin as real geometry so the solid hides the parts behind it. Inequivalent elements get different colours — the legend below names them.">symmetry elements</legend>
+        <label class="check"><input id="showAxes" type="checkbox"> rotation axes</label>
+        <label class="check" title="Each mirror plane as a rim the thickness of the axes, with a faint translucent fill"><input id="showMirrors" type="checkbox"> mirror planes</label>
+        <label class="check" title="Rotoreflection (Sₙ) axes — turn, then reflect. The three-dimensional cousin of a glide reflection."><input id="showImproper" type="checkbox"> rotoreflection axes</label>
+        <label class="check" title="Mark the same elements on the stellation diagram: a dot where an axis pierces the drawing plane, a dashed line where a mirror plane crosses it"><input id="showDiagElems" type="checkbox"> mark on the diagram</label>
+        <div id="elemLegend" class="legend elem-legend"></div>
+      </fieldset>
+      <label class="check" title="Tint the cells you have not chosen, so you can see what else is available on this plane">
+        <input id="showAllFacets" type="checkbox" checked> shade unchosen cells
+      </label>
+    </details>
+
+    <details class="group">
+      <summary><h2>Save &amp; export</h2></summary>
+      <div class="row buttons">
+        <button id="saveJson" class="primary" title="Save everything on screen as a JSON document">Save JSON</button>
+        <label class="filebtn inline" title="Opens our .json documents and the original program's .stel files">
+          Open…
+          <input id="loadDoc" type="file" accept=".json,.stel,.txt">
+        </label>
+      </div>
+      <p class="note">
+        Saves in the SymmHub preset shape. <code>.stel</code> files from the
+        original Java program still open.
+      </p>
+      <div class="row buttons">
+        <button id="exportStl" title="Mesh for 3D printing">STL</button>
+        <button id="exportObj">OBJ</button>
+        <button id="exportOff">OFF</button>
+      </div>
+      <div class="row buttons">
+        <button id="exportSvg" title="The diagram as vector art, for printing or cutting">diagram SVG</button>
+        <button id="exportPng">view PNG</button>
+        <button id="exportStel" title="For the original Java program">.stel</button>
+      </div>
+      <div class="row buttons">
+        <button class="sample" data-file="sample_01.stel">sample 1</button>
+        <button class="sample" data-file="sample_02.stel">2</button>
+        <button class="sample" data-file="sample_03.stel">3</button>
+        <button class="sample" data-file="sample_04.stel">4</button>
+      </div>
+    </details>
+
+  </aside>
+</main>
+
+<!-- ------------------------------------------------ catalog drawer -->
+<dialog id="catalogDialog">
+  <div class="cat-head">
+    <input id="search" type="search" placeholder="Search 121 solids by name, file or symmetry…" autocomplete="off">
+    <button id="catalogClose" class="ghost">Close</button>
+  </div>
+  <nav id="catChips" class="cat-chips"></nav>
+  <div id="catalog" class="scroll"></div>
+  <footer class="cat-foot">
+    <img id="footThumb" alt="" width="34" height="34">
+    <div class="cat-foot-text">
+      <b id="footName">—</b>
+      <span id="footMeta" class="dim"></span>
+    </div>
+    <span id="footCount" class="dim"></span>
+  </footer>
+</dialog>
+
+<dialog id="planesDialog">
+  <h2>Make planes</h2>
+  <p class="note">
+    One plane per line — <code>nx ny nz d</code>, then optionally a symmetry group
+    to multiply that plane by (<code>Ih</code>, <code>O</code>, <code>T</code>…).
+    Lines starting with <code>#</code> are comments. The arrangement is built from
+    the union; the symmetry dropdowns then group its cells as usual.
+  </p>
+  <textarea id="planesText" class="mono" rows="14" spellcheck="false"></textarea>
+  <p id="planesInfo" class="note"></p>
+  <div class="row buttons">
+    <button id="planesBuild" class="primary">Build</button>
+    <button id="planesSeed" title="Fill the sheet from the current solid's own face planes">Seed from current solid</button>
+    <button id="planesCancel">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="helpDialog">
+  <h2>Stellation, in one minute</h2>
+  <p>
+    Take a pentagon and extend its five sides. They cross again, and the crossings
+    outline a five-pointed star. That is a stellation: <em>the same lines, followed
+    further</em>.
+  </p>
+  <p>
+    In three dimensions you extend a polyhedron's face <em>planes</em> instead. The
+    planes slice space into small bounded regions — <b>cells</b> — arranged in
+    shells, or <b>layers</b>, around the core. Any choice of cells that respects the
+    solid's symmetry is a stellation of it. The icosahedron famously has 59.
+  </p>
+  <h3>How to use this</h3>
+  <ul>
+    <li>Choose a solid from the picker at the top.</li>
+    <li>The <b>Cells</b> table on the right has one row per layer, the core at the
+      bottom and each shell built on the one below it. Each box is a symmetric set
+      of cells; a shaded box with smaller boxes beside it is a cell that splits into
+      <b>sub-cells</b>, such as a chiral pair. Bar colours group cells by how many
+      congruent pieces they contain.</li>
+    <li>Each view works at its own scale.
+      In the <b>solid</b>, <kbd>shift</kbd>-click <b class="add">adds</b> the one
+      cell sitting on the clicked face and <kbd class="kSub">ctrl</kbd>-click
+      <b class="rem">removes</b> the one behind it.
+      In the <b>diagram</b>, every region lies between two cells:
+      <kbd>shift</kbd>-click toggles the one <b class="below">beneath</b> the plane,
+      <kbd class="kSub">ctrl</kbd>-click the one <b class="above">on top</b>.
+      In the <b>Cells table</b>, a click toggles a box, and
+      <kbd class="kSub">ctrl</kbd>-click toggles it together with everything
+      supporting it — the group operation lives here and only here.
+      (On macOS, ctrl-click is the system's secondary click; it is handled, and
+      option-click does the same job.)</li>
+    <li>A plain click without a modifier <b>turns</b> the solid and <b>pans</b> the
+      diagram — it only toggles a cell in the Cells table. A right-click does
+      nothing anywhere.</li>
+    <li>See <a href="controls.html">Controls &amp; views</a> for the whole table.</li>
+    <li><em>core</em> and <em>+ layer</em> walk out one shell at a time: layer 0
+      alone is the original polyhedron, 0+1 is its first stellation.</li>
+  </ul>
+  <h3>Where this comes from</h3>
+  <p>
+    A JavaScript port of the Stellation applet written by
+    <a href="http://bulatov.org/polyhedra/stellation_applet/" target="_blank" rel="noopener">Vladimir Bulatov</a>
+    in 1998–2001. The geometry is a direct port of his algorithm, checked against the
+    original Java: the same facet counts, the same cell structure, the same volumes to
+    six decimal places.
+  </p>
+  <p class="note">Build <span id="buildStamp" class="mono"></span> · <a href="changes.html">what changed →</a></p>
+  <button id="helpClose">close</button>
+</dialog>
+
+<script type="module" src="app/js/app.js"></script>
+</body>
+</html>

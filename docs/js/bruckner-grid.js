@@ -83,7 +83,7 @@ function openViewer(sheetEl, sheet, fig, hs) {
   if (fig.status === 'build') {
     head.appendChild(el('code', null, esc(fig.cells)));
     const app = el('a', null, 'open in the app ↗');
-    app.href = `index.html#${fig.poly}/${fig.sym}/${SUB[fig.sym] || fig.sym}/${fig.cells}`;
+    app.href = `stellation_app.html#${fig.poly}/${fig.sym}/${SUB[fig.sym] || fig.sym}/${fig.cells}`;
     head.appendChild(app);
   }
   const p0 = fig.page || fig.pages?.[0];

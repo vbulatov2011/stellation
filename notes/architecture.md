@@ -30,7 +30,9 @@ docs/                        the published site (GitHub Pages, .nojekyll)
   js/           1,600 loc    scripts for the essay pages
   data/           710 KB     catalog, geometry, symmetry, Brückner plates
   test/           350 loc    four Node harnesses
-  *.html        5,300 loc    the app plus eight documentation pages
+  index.html                 the landing page: a card per page, nothing else
+  stellation_app.html        the app
+  *.html        5,300 loc    eight documentation pages and essays
 
 resources/       307 files   .off polyhedra and thumbnails, read by the Java app
 stellation.jar               the 2001 build, package PVS — historical, still runs
