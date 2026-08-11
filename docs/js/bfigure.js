@@ -120,7 +120,7 @@ export class BFigure {
       box.appendChild(wrap);
       try {
         this.renderer = new Renderer3D(cv);
-        this.renderer.autoRotate = this.el.dataset.spin !== 'false';
+        this.renderer.autoRotate = this.el.dataset.spin === 'true';   // opt-in
         this.renderer.edgeWidth = 1;
         this.renderer.start();
       } catch { wrap.textContent = 'WebGL2 unavailable'; }

@@ -274,7 +274,14 @@ export class Renderer3D {
     this.modelScale = 0;   // sticky; see setMesh() and fit()
     this.rotation = quatFromEuler(-0.42, 0.6, 0);
     this.distance = 1.0;   // relative zoom; the fit distance is computed per frame
-    this.autoRotate = true;
+    /*
+     * Spin is opt-in. A model turning by itself is motion the reader did not
+     * ask for: it moves while you are trying to read it, it never settles on
+     * the view you want, and on a page of figures several of them turn at once.
+     * The app has always set this false; the figure pages each defaulted it on
+     * and had to be told otherwise, which is the wrong way round.
+     */
+    this.autoRotate = false;
     this.showEdges = true;
     this.colorMode = 'layer';  // 'layer' | 'class' — see setColorMode
     this.lastFaceClass = null;
