@@ -62,9 +62,24 @@
               <path d="M2.4 7.1 8 2.4l5.6 4.7M4.3 8.4v5.2h7.4V8.4"/>
             </svg>
           </button>
+          <button id="help3d" class="glyph" aria-label="Gestures"
+                  title="What the mouse and fingers do in this view">?</button>
+        </div>
+        <!--
+          The gesture list lives here rather than along the bottom edge. As one
+          line under the picture it was a permanent band of small print that
+          most readers had already learnt and nobody could dismiss; asked for,
+          it can take the room to be read in.
+        -->
+        <div id="help3dPanel" class="view-help" hidden>
+          <div><b>drag</b> — turn the solid</div>
+          <div><b>right-drag</b>, or <b>two fingers</b> — pan</div>
+          <div><b>scroll</b>, or <b>spread two fingers</b> — zoom</div>
+          <div><kbd>shift</kbd>-click a face — <b class="add">add</b> the cell outside it</div>
+          <div><kbd class="kSub">ctrl</kbd>-click a face — <b class="rem">remove</b> the cell inside it</div>
+          <div class="dismiss">click to dismiss</div>
         </div>
         <div class="view-label">
-          <span>drag to turn · right-drag or two fingers to pan · <kbd>shift</kbd>-click <b class="add">adds a cell</b> · <kbd class="kSub">ctrl</kbd>-click <b class="rem">removes one</b></span>
           <span id="hover3d" class="hover"></span>
         </div>
       </div>
@@ -78,9 +93,18 @@
               <path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"/>
             </svg>
           </button>
+          <button id="help2d" class="glyph" aria-label="Gestures"
+                  title="What the mouse and fingers do in this view">?</button>
+        </div>
+        <div id="help2dPanel" class="view-help" hidden>
+          <div class="what">the stellation diagram: one face plane, cut by all the others</div>
+          <div><b>drag</b> — pan</div>
+          <div><b>scroll</b> — zoom about the pointer</div>
+          <div><kbd>shift</kbd>-click a region — toggle the cell <b class="below">beneath</b> it</div>
+          <div><kbd class="kSub">ctrl</kbd>-click — toggle the one <b class="above">on top</b></div>
+          <div class="dismiss">click to dismiss</div>
         </div>
         <div class="view-label">
-          <span>stellation diagram · drag to pan · <kbd>shift</kbd>-click toggles the cell <b class="below">beneath</b> · <kbd class="kSub">ctrl</kbd>-click the one <b class="above">on top</b></span>
           <span id="hover2d" class="hover"></span>
         </div>
       </div>

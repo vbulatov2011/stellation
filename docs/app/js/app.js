@@ -1019,6 +1019,30 @@ function wireControls() {
     renderer?.setColorMode(e.target.value);
     diagram?.setColorMode(e.target.value);
   };
+  /*
+   * The per-view gesture panels. Each ? toggles its own, and clicking the panel
+   * dismisses it — the whole panel is the target, being easier to hit than a
+   * close button and the first thing anyone tries.
+   *
+   * Opening one closes the other: they overlay their own view, and two of them
+   * up at once is two-thirds of the workspace covered in instructions.
+   */
+  for (const [btn, panel, other] of [['#help3d', '#help3dPanel', '#help2dPanel'],
+                                     ['#help2d', '#help2dPanel', '#help3dPanel']]) {
+    const p = $(panel);
+    $(btn).setAttribute('aria-expanded', 'false');
+    $(btn).onclick = () => {
+      const show = p.hidden;
+      $(other).hidden = true;
+      p.hidden = !show;
+      $(btn).setAttribute('aria-expanded', String(show));
+      for (const b of ['#help3d', '#help2d']) {
+        if (b !== btn) $(b).setAttribute('aria-expanded', 'false');
+      }
+    };
+    p.onclick = () => { p.hidden = true; $(btn).setAttribute('aria-expanded', 'false'); };
+  }
+
   // the diagram's fit, replacing the double-click that used to reset the view
   // and kept firing on two quick cell toggles
   $('#fitDiagram').onclick = () => { diagram?.resetView(); setStatus('diagram centred', false); };

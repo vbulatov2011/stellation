@@ -133,16 +133,28 @@ main {
   display: block;
   touch-action: none;
 }
+/*
+ * The strip along the bottom of a view. It used to carry the gesture list and
+ * needed a gradient to stay legible over the model; now that the gestures live
+ * behind the ? button, all that is left is the hover readout, which is empty
+ * most of the time. So the strip itself is transparent and the backdrop moved
+ * onto the readout, which wears it only when it has something to say.
+ */
 .view-label {
   position: absolute; left: 0; right: 0; bottom: 0;
   display: flex; gap: 10px;
   padding: 6px 10px;
   font-size: 11px;
   color: var(--dim);
-  background: linear-gradient(transparent, color-mix(in srgb, var(--bg) 90%, transparent));
   pointer-events: none;
 }
 .hover { margin-left: auto; color: var(--accent); font-family: var(--mono); }
+.hover:not(:empty) {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  backdrop-filter: blur(4px);
+}
 .nogl { display: grid; place-items: center; height: 100%; padding: 20px; color: var(--dim); text-align: center; }
 
 .statusbar {
@@ -559,7 +571,45 @@ main { grid-template-columns: minmax(0, 1fr) 6px var(--panel-w, 322px); }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* the ? is a character, not a path, so it needs the font the icons do not */
+.view-tools button.glyph { font: inherit; font-size: 12.5px; font-weight: 600; line-height: 1; }
 .view-tools button:hover { border-color: var(--accent); color: var(--accent); }
+.view-tools button[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+
+/*
+ * The gesture list, shown on request rather than printed under every view.
+ *
+ * Anchored under the tool row it belongs to, capped in width so the lines break
+ * where they read best, and dismissed by clicking anywhere on it — the whole
+ * panel is the target, which is easier to hit than any close button and is what
+ * you would try first.
+ */
+.view-help {
+  position: absolute;
+  top: 38px;
+  left: 8px;
+  z-index: 6;
+  max-width: min(330px, calc(100% - 16px));
+  padding: 9px 12px 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.13);
+  font-size: 12px;
+  line-height: 1.65;
+  cursor: pointer;
+}
+.view-help[hidden] { display: none; }
+.view-help > div { white-space: normal; }
+.view-help .what { color: var(--dim); margin-bottom: 4px; }
+.view-help .dismiss {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 11px;
+}
 
 /* -------------------------------------------------- add / remove, one palette
 
