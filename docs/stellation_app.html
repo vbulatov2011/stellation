@@ -48,8 +48,20 @@
       <div class="view">
         <canvas id="view3d"></canvas>
         <div class="view-tools">
-          <button id="fitView" title="Rescale so the whole selection fits the frame">fit</button>
-          <button id="homeView" title="Canonical orientation: x right, y up, z toward you">home</button>
+          <!-- fit: four corner brackets, the frame the model is being sized to -->
+          <button id="fitView" aria-label="Fit"
+                  title="Fit — rescale so the whole selection fits the frame">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"/>
+            </svg>
+          </button>
+          <!-- home: a house, the usual mark for "the view you started from" -->
+          <button id="homeView" aria-label="Home"
+                  title="Home — canonical orientation: x right, y up, z toward you">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M2.4 7.1 8 2.4l5.6 4.7M4.3 8.4v5.2h7.4V8.4"/>
+            </svg>
+          </button>
         </div>
         <div class="view-label">
           <span>drag to turn · <kbd>shift</kbd>-click <b class="add">adds a cell</b> · <kbd class="kSub">ctrl</kbd>-click <b class="rem">removes one</b></span>
@@ -60,7 +72,12 @@
       <div class="view">
         <canvas id="diagram"></canvas>
         <div class="view-tools">
-          <button id="fitDiagram" title="Centre the diagram and reset the zoom">fit</button>
+          <button id="fitDiagram" aria-label="Fit"
+                  title="Fit — centre the diagram and reset the zoom">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"/>
+            </svg>
+          </button>
         </div>
         <div class="view-label">
           <span>stellation diagram · drag to pan · <kbd>shift</kbd>-click toggles the cell <b class="below">beneath</b> · <kbd class="kSub">ctrl</kbd>-click the one <b class="above">on top</b></span>

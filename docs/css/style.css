@@ -528,16 +528,36 @@ main { grid-template-columns: minmax(0, 1fr) 6px var(--panel-w, 322px); }
   gap: 5px;
   z-index: 5;
 }
+/*
+ * Icons rather than the words "fit" and "home".
+ *
+ * These sit on top of the picture, and two words of text over a solid is
+ * clutter in the one place the eye is meant to be. The icons say the same thing
+ * in less ink, and the title carries the full sentence for anyone who wants it —
+ * which is why the titles now name the action too, the visible word being gone.
+ */
 .view-tools button {
-  padding: 3px 10px;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: color-mix(in srgb, var(--panel) 88%, transparent);
   color: var(--dim);
-  font: inherit;
-  font-size: 11.5px;
   cursor: pointer;
   backdrop-filter: blur(4px);
+}
+.view-tools button svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .view-tools button:hover { border-color: var(--accent); color: var(--accent); }
 
