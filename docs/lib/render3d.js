@@ -275,6 +275,20 @@ export class Renderer3D {
     this.rotation = quatFromEuler(-0.42, 0.6, 0);
     this.distance = 1.0;   // relative zoom; the fit distance is computed per frame
     /*
+     * Sideways shift of the view, in world units on the camera's own axes.
+     *
+     * Zooming in to look at one spike puts the rest of the solid outside the
+     * frame, and orbiting to reach it turns the thing you were looking at. Pan
+     * is the missing degree of freedom: it slides the picture without changing
+     * the shape or the orientation of anything.
+     *
+     * Held here rather than folded into `rotation` because it is not a rotation
+     * — under the parallel projection it is a flat translation of the image, so
+     * it can never alter what the solid looks like, only which part is on
+     * screen.
+     */
+    this.pan = { x: 0, y: 0 };
+    /*
      * Spin is opt-in. A model turning by itself is motion the reader did not
      * ask for: it moves while you are trying to read it, it never settles on
      * the view you want, and on a page of figures several of them turn at once.
@@ -383,7 +397,7 @@ export class Renderer3D {
    * point where the group says they do.
    */
   home() {
-    this._ease({ rotation: [0, 0, 0, 1], distance: 1.0 });
+    this._ease({ rotation: [0, 0, 0, 1], distance: 1.0, pan: { x: 0, y: 0 } });
   }
 
   /*
@@ -401,11 +415,14 @@ export class Renderer3D {
     const q0 = this.rotation.slice();
     const q1 = target.rotation;
     const d1 = target.distance ?? d0;
+    const p0 = { ...this.pan };
+    const p1 = target.pan ?? p0;
     const t0 = performance.now();
     const step = (now) => {
       const u = Math.min(1, (now - t0) / ms);
       const k = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;   // easeInOutCubic
       this.distance = d0 + (d1 - d0) * k;
+      this.pan = { x: p0.x + (p1.x - p0.x) * k, y: p0.y + (p1.y - p0.y) * k };
       if (q1) this.rotation = slerp(q0, q1, k);
       this.draw();
       if (u < 1) this._anim = requestAnimationFrame(step);
@@ -422,7 +439,9 @@ export class Renderer3D {
     if (!this.mesh) return;
     // screen size goes as R / (distance * fit), so distance = R frames it
     const R = Math.max(1e-6, (this.lastMaxR || 1) * (this.modelScale || 1));
-    this._ease({ distance: Math.min(40, Math.max(0.05, R)) });
+    // fit means "show me all of it", so it undoes the pan as well as the zoom —
+    // a fit that left the model shoved off to one side would not be a fit
+    this._ease({ distance: Math.min(40, Math.max(0.05, R)), pan: { x: 0, y: 0 } });
   }
 
   /** forget the scale so the next mesh sets it — used when the solid changes */
@@ -435,7 +454,11 @@ export class Renderer3D {
    * short.
    */
   getView() {
-    return [...this.rotation, this.distance].map(v => Math.round(v * 1e4) / 1e4);
+    const v = [...this.rotation, this.distance];
+    // the pan is only written when there is one, so an unpanned view still
+    // produces the five numbers every link shared so far contains
+    if (this.pan.x || this.pan.y) v.push(this.pan.x, this.pan.y);
+    return v.map(x => Math.round(x * 1e4) / 1e4);
   }
 
   setView(v) {
@@ -444,6 +467,8 @@ export class Renderer3D {
     if (!(n > 1e-6)) return false;
     this.rotation = [v[0] / n, v[1] / n, v[2] / n, v[3] / n];
     this.distance = Math.min(40, Math.max(0.05, v[4]));
+    // five numbers is a view from before panning existed, and means no pan
+    this.pan = { x: v[5] || 0, y: v[6] || 0 };
     this._pointerReset();
     this.draw();
     return true;
@@ -702,7 +727,9 @@ export class Renderer3D {
     // A parallel projection has no eye to fall behind, so the near plane may sit
     // behind the origin: bracket the scene symmetrically and nothing can clip.
     const proj = orthographic(cam.halfH, cam.aspect, cam.dist - cam.depth, cam.dist + cam.depth);
-    const view = mat4mul(translation(0, 0, -cam.dist), quatToMat4(this.rotation));
+    // the pan rides in the view translation, so it shifts the image on the
+    // camera's own axes whatever the model's orientation
+    const view = mat4mul(translation(-this.pan.x, -this.pan.y, -cam.dist), quatToMat4(this.rotation));
 
     gl.useProgram(this.prog);
     gl.uniformMatrix4fv(gl.getUniformLocation(this.prog, 'uProj'), false, proj);
@@ -856,7 +883,12 @@ export class Renderer3D {
     // moves with the pointer, the reverse of a perspective pick. cam.halfH is
     // the same value the projection was built from, so picking and drawing
     // cannot disagree at any zoom.
-    const originView = [nx * cam.halfH * cam.aspect, ny * cam.halfH, cam.dist + cam.depth];
+    // + pan, because the view translation shifted the world by -pan: picking and
+    // drawing have to agree about where the model is, or a panned view picks the
+    // face that would have been under the pointer before the pan
+    const originView = [nx * cam.halfH * cam.aspect + this.pan.x,
+                        ny * cam.halfH + this.pan.y,
+                        cam.dist + cam.depth];
     const dirView = [0, 0, -1];
 
     const R = quatToMat4(this.rotation);
@@ -993,7 +1025,107 @@ export class Renderer3D {
     this._ap = AnimatedPointer(POINTER_PHYSICS);
     this._apLast = null;
 
+    /*
+     * Panning: sliding the picture without turning it.
+     *
+     * Zoomed in on one spike, the rest of the solid is off-frame, and orbiting
+     * to reach it turns the very thing you were looking at. So there are three
+     * ways in, one per input device, and none of them collides with a gesture
+     * that already means something:
+     *
+     *   mouse    right-button drag — the button that otherwise does nothing
+     *            here, since the context menu is already suppressed
+     *   touch    two fingers — drag to pan, spread to zoom. One finger stays
+     *            the trackball, which is what a phone user reaches for first
+     *   trackpad two-finger drag arrives as a wheel event with deltaX, so a
+     *            Mac gets panning with no button at all; see the wheel handler
+     *
+     * A right-drag carrying ctrl is left alone: on macOS that IS the secondary
+     * click, and the contextmenu handler below already reads it as "carve this
+     * cell". Panning it too would make one gesture do two things.
+     */
+    const pointers = new Map();          // active pointers, id -> {x, y}
+    let gesture = null;                  // pan / pinch in progress
+
+    /*
+     * Pointer capture throws NotFoundError for a pointer the browser is not
+     * tracking, and it is only an optimisation — it keeps a drag alive when it
+     * leaves the canvas, and nothing depends on it. So it is guarded, and it is
+     * done last: called before the state was set up, a throw skipped the setup
+     * and the gesture silently never began. diagram.js has had this guard from
+     * the start; this view was using a bare `?.`, which only covers the method
+     * being absent, not the call failing.
+     */
+    const capture = (e, on) => {
+      try { on ? c.setPointerCapture?.(e.pointerId) : c.releasePointerCapture?.(e.pointerId); }
+      catch { /* nothing to capture */ }
+    };
+
+    /** world units per CSS pixel — isotropic, since the projection is parallel */
+    const worldPerPixel = () => {
+      const r = c.getBoundingClientRect();
+      const cam = this._camera(this.canvas.width || 1, this.canvas.height || 1);
+      return r.height ? (2 * cam.halfH) / r.height : 0;
+    };
+
+    const twoFingerState = () => {
+      const [a, b] = [...pointers.values()];
+      return { cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, spread: Math.hypot(a.x - b.x, a.y - b.y) };
+    };
+
+    /** begin a pan; `pinch` also tracks the finger spread for zoom */
+    const startGesture = (kind) => {
+      this.cancelEase();
+      this._ap.setDragState(false);
+      this._ap.stop();
+      this.dragging = true;
+      const s = kind === 'pinch' ? twoFingerState() : [...pointers.values()][0];
+      gesture = {
+        kind,
+        x: kind === 'pinch' ? s.cx : s.x,
+        y: kind === 'pinch' ? s.cy : s.y,
+        spread: kind === 'pinch' ? s.spread : 0,
+        pan: { ...this.pan },
+        distance: this.distance,
+        k: worldPerPixel(),
+      };
+    };
+
+    const stepGesture = () => {
+      if (!gesture) return;
+      const s = gesture.kind === 'pinch' ? twoFingerState() : [...pointers.values()][0];
+      if (!s) return;
+      const x = gesture.kind === 'pinch' ? s.cx : s.x;
+      const y = gesture.kind === 'pinch' ? s.cy : s.y;
+      // drag right and the model goes right: the view translation is -pan, so
+      // pan runs against the pointer on x and with it on y (screen y points down)
+      this.pan = {
+        x: gesture.pan.x - (x - gesture.x) * gesture.k,
+        y: gesture.pan.y + (y - gesture.y) * gesture.k,
+      };
+      if (gesture.kind === 'pinch' && gesture.spread > 8 && s.spread > 8) {
+        // spread apart to enlarge, which means a smaller distance
+        this.distance = Math.min(40, Math.max(0.05, gesture.distance * (gesture.spread / s.spread)));
+      }
+      this.draw();
+    };
+
+    const endGesture = () => { gesture = null; this.dragging = false; };
+
     const down = (e) => {
+      pointers.set(e.pointerId, point(e, c));
+      if (pointers.size === 2) {           // a second finger takes over from the trackball
+        this._ap.setDragState(false);
+        this._ap.stop();
+        startGesture('pinch');
+        capture(e, true);
+        return;
+      }
+      if (e.button === 2 && !e.ctrlKey) {  // right-drag pans; ctrl-right is macOS carve
+        startGesture('pan');
+        capture(e, true);
+        return;
+      }
       if (picking(e) || e.button === 2) return;
       this.cancelEase();
       this.dragging = true;
@@ -1006,9 +1138,11 @@ export class Renderer3D {
       this._ap.stop();
       this._apLast = { x: p.x, y: p.y };
       this._ap.setDragState(true);
-      c.setPointerCapture?.(e.pointerId);
+      capture(e, true);
     };
     const move = (e) => {
+      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, point(e, c));
+      if (gesture) { stepGesture(); return; }
       if (!this.dragging) {
         this._lastMove = e;
         const hit = picking(e) ? this.pick(e) : null;
@@ -1027,6 +1161,14 @@ export class Renderer3D {
       if (!this._raf) { this._pointerStep(performance.now()); this.draw(); }
     };
     const up = (e) => {
+      pointers.delete(e.pointerId);
+      if (gesture) {
+        // lifting one of two fingers ends the gesture rather than silently
+        // handing the model back to the trackball mid-motion
+        endGesture();
+        capture(e, false);
+        return;
+      }
       if (this.dragging) {
         /*
          * Let go of the spring and the mass carries on by itself. All that is
@@ -1044,7 +1186,7 @@ export class Renderer3D {
         this._ap.setDragState(false);
       }
       this.dragging = false;
-      c.releasePointerCapture?.(e.pointerId);
+      capture(e, false);
     };
 
     c.addEventListener('pointerdown', down);
@@ -1097,8 +1239,23 @@ export class Renderer3D {
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
       this.cancelEase();
-      // wide range: a deep arrangement can be a hundred times the core's radius
-      this.distance = Math.min(40, Math.max(0.05, this.distance * Math.exp(e.deltaY * 0.0012)));
+      /*
+       * A trackpad's two-finger swipe arrives here, not as pointer events, so
+       * this is where a Mac gets panning without a right button: shift-scroll
+       * for the deliberate case, and a plain sideways swipe, which carries
+       * deltaX and which a mouse wheel never produces.
+       *
+       * ctrlKey means a pinch — the browser synthesises a wheel event with it —
+       * so that stays zoom, which is what a pinch should do.
+       */
+      const sideways = !e.ctrlKey && (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY));
+      if (sideways) {
+        const k = worldPerPixel();
+        this.pan = { x: this.pan.x - e.deltaX * k, y: this.pan.y + e.deltaY * k };
+      } else {
+        // wide range: a deep arrangement can be a hundred times the core's radius
+        this.distance = Math.min(40, Math.max(0.05, this.distance * Math.exp(e.deltaY * 0.0012)));
+      }
       this.draw();
     }, { passive: false });
   }
