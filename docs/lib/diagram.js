@@ -111,7 +111,17 @@ export class DiagramView {
       if (this.hover !== -1) { this.hover = -1; this.draw(); this.onHover?.(null); }
     });
 
-    canvas.addEventListener('dblclick', () => this.resetView());
+    /*
+     * No double-click handler.
+     *
+     * There was one, and it reset the pan and zoom. But the gestures here are
+     * clicks — shift-click and ctrl-click each toggle a cell — so toggling two
+     * cells in quick succession, or the same one twice, lands inside the
+     * double-click interval and threw the view back to its default in the
+     * middle of the work. A reset nobody asked for costs more than the
+     * shortcut saved: resetView() is still called when the diagram plane
+     * changes, which is when a stale pan really would be wrong.
+     */
 
     // A real right-click does nothing. macOS ctrl-click reaches the page only
     // as this event, and is told apart by the modifier it carries.

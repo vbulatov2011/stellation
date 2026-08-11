@@ -1019,6 +1019,9 @@ function wireControls() {
     renderer?.setColorMode(e.target.value);
     diagram?.setColorMode(e.target.value);
   };
+  // the diagram's fit, replacing the double-click that used to reset the view
+  // and kept firing on two quick cell toggles
+  $('#fitDiagram').onclick = () => { diagram?.resetView(); setStatus('diagram centred', false); };
   $('#fitView').onclick = () => { renderer?.fit(); setStatus('rescaled to fit', false); };
   $('#homeView').onclick = () => { renderer?.home(); setStatus('canonical orientation', false); };
 
