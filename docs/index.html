@@ -7,6 +7,7 @@
 <meta name="description" content="Interactive stellations of the uniform polyhedra: an app that builds them live, a walkthrough, Brückner's 1900 plates, and six hundred years of history. A JavaScript port of Vladimir Bulatov's Stellation applet.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/walkthrough.css">
 <link rel="stylesheet" href="css/landing.css">
 <script>
   // set the theme before first paint so there is no flash
@@ -32,7 +33,7 @@
   })();
 </script>
 </head>
-<body class="landing doc">
+<body class="doc">
 
 <header class="doc-head">
   <a class="brand" href="index.html">✦ Stellation</a>
@@ -43,7 +44,7 @@
   <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
 </header>
 
-<main class="landing-main">
+<main class="doc-body landing-main">
 
   <section class="landing-hero">
     <h1>Stellation</h1>
@@ -124,7 +125,9 @@
     </a>
 
     <a class="card" href="bruckner.html">
-      <img class="thumb" src="img/hist/bruckner-plate9.jpg" alt="">
+      <!-- a figure, not a plate photo: the card below is the plates, and at
+           thumbnail size two plate photographs are indistinguishable -->
+      <img class="thumb" src="img/hist/bruckner-fig17.jpg" alt="">
       <div class="body">
         <h3>Brückner 1900, interactive</h3>
         <p>The plates of <i>Vielecke und Vielflache</i>, the pages that describe
