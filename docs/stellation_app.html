@@ -150,43 +150,38 @@
       <div class="group-head">
         <h2>Cells</h2>
         <!--
-          One motif for the four selection buttons: three stacked bars, the same
-          shells the table below shows, with the filled ones standing for what
-          is chosen. Read together they are a sequence — bottom only, one more,
-          all, none — which is what these four actually do.
+          One motif for the four selection buttons: a square standing for the
+          whole arrangement, with the part of it that is selected filled. Bottom
+          third for the core, middle third for the shell you are adding, the
+          whole square for all, an empty one for clear. Read across, the four
+          are a sequence.
         -->
         <div class="row buttons tight icons">
           <button id="selectCore" class="icon" aria-label="Core"
                   title="Core — just the original polyhedron">
-            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
-              <rect x="2.5" y="2.5" width="11" height="3" rx="1"/>
-              <rect x="2.5" y="6.5" width="11" height="3" rx="1"/>
-              <rect class="on" x="2.5" y="10.5" width="11" height="3" rx="1"/>
+            <svg class="ic sq" viewBox="0 0 16 16" aria-hidden="true">
+              <rect class="fill" x="2.5" y="9.83" width="11" height="3.67"/>
+              <rect class="edge" x="2.5" y="2.5" width="11" height="11"/>
             </svg>
           </button>
           <button id="growLayer" class="icon" aria-label="Add a layer"
                   title="Add the next shell outward">
-            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
-              <rect x="2.5" y="2.5" width="11" height="3" rx="1"/>
-              <rect class="on" x="2.5" y="6.5" width="11" height="3" rx="1"/>
-              <rect class="on" x="2.5" y="10.5" width="11" height="3" rx="1"/>
-              <path d="M11.6 1.2v3M10.1 2.7h3" stroke-width="1.5"/>
+            <svg class="ic sq" viewBox="0 0 16 16" aria-hidden="true">
+              <rect class="fill" x="2.5" y="6.17" width="11" height="3.67"/>
+              <rect class="edge" x="2.5" y="2.5" width="11" height="11"/>
             </svg>
           </button>
           <button id="selectAll" class="icon" aria-label="All"
                   title="All — every cell in every shell">
-            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
-              <rect class="on" x="2.5" y="2.5" width="11" height="3" rx="1"/>
-              <rect class="on" x="2.5" y="6.5" width="11" height="3" rx="1"/>
-              <rect class="on" x="2.5" y="10.5" width="11" height="3" rx="1"/>
+            <svg class="ic sq" viewBox="0 0 16 16" aria-hidden="true">
+              <rect class="fill" x="2.5" y="2.5" width="11" height="11"/>
+              <rect class="edge" x="2.5" y="2.5" width="11" height="11"/>
             </svg>
           </button>
           <button id="selectNone" class="icon" aria-label="Clear"
                   title="Clear — select nothing">
-            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
-              <rect x="2.5" y="2.5" width="11" height="3" rx="1"/>
-              <rect x="2.5" y="6.5" width="11" height="3" rx="1"/>
-              <rect x="2.5" y="10.5" width="11" height="3" rx="1"/>
+            <svg class="ic sq" viewBox="0 0 16 16" aria-hidden="true">
+              <rect class="edge" x="2.5" y="2.5" width="11" height="11"/>
             </svg>
           </button>
           <button class="icon undo-btn" aria-label="Undo"

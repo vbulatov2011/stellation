@@ -9,6 +9,10 @@
   --accent: #f5b942;
   --accent-2: #6fa8ff;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  /* the square shell icons: a light fill inside a darker outline, flipped
+     for this theme so the pair keeps the same contrast against the panel */
+  --ic-line: #9aa3b5;
+  --ic-fill: #4d5566;
 }
 
 :root[data-theme="light"] {
@@ -21,6 +25,8 @@
   --accent: #c8860a;
   --accent-2: #2563c9;
   --shadow: 0 18px 50px rgba(20, 30, 60, 0.18);
+  --ic-line: #596172;
+  --ic-fill: #c6ccd8;
 }
 
 :root {
@@ -580,6 +586,15 @@ svg.ic {
   stroke-linejoin: round;
 }
 svg.ic .on { fill: currentColor; stroke: currentColor; }
+
+/*
+ * The four shell icons are the exception to currentColor: one square, with the
+ * third of it that is selected filled. They are read against each other rather
+ * than against the button, so the pair of greys is fixed — a light fill inside
+ * a darker outline — and only flips with the theme.
+ */
+svg.sq .edge { fill: none; stroke: var(--ic-line); stroke-width: 1.4; }
+svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 /* the ? is a character, not a path, so it needs the font the icons do not */
 .view-tools button.glyph { font: inherit; font-size: 12.5px; font-weight: 600; line-height: 1; }
 .view-tools button:hover { border-color: var(--accent); color: var(--accent); }
@@ -676,13 +691,26 @@ svg.ic .on { fill: currentColor; stroke: currentColor; }
    nothing to undo — the disabled state is the only affordance saying whether a
    change has been made yet */
 .buttons button.icon { width: 26px; padding: 4px 0; text-align: center; }
-/* the cells row is all icons now: centre them and let the row breathe */
-.buttons.icons { gap: 6px; }
-/* `.buttons button` grows to fill the row, so these share the width evenly
-   rather than sitting at a fixed size — min-width is the floor, not the size */
-.buttons.icons button.icon {
-  min-width: 28px; height: 24px; padding: 0;
-  display: grid; place-items: center;
+/*
+ * The cells row is all icons now, and matches the tool buttons over the views:
+ * same 26x24 square, same muted colour, same translucent panel.
+ *
+ * It did neither before. `.buttons button` stretches to fill its row, so these
+ * came out wider than square; and it paints `color: var(--text)`, the full
+ * strength text colour, so icons drawn in currentColor came out near black
+ * beside the same icons in a view, which use `--dim`. Two rows of buttons doing
+ * comparable jobs should not look like they come from different programs.
+ */
+.buttons.icons { gap: 5px; }
+.buttons.icons button {
+  flex: none;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  color: var(--dim);
 }
 .buttons.icons button.glyph { font-size: 12.5px; font-weight: 600; line-height: 1; }
 /* the cells help hangs under its own group, the way each view's hangs under its tools */
