@@ -597,7 +597,8 @@ svg.ic .on { fill: currentColor; stroke: currentColor; }
  * than against the button, so the pair of greys is fixed — a light fill inside
  * a darker outline — and only flips with the theme.
  */
-svg.sq .edge { fill: none; stroke: var(--ic-line); stroke-width: 1.4; }
+/* 1.6 is what every other icon strokes at, and the square sits beside them */
+svg.sq .edge { fill: none; stroke: var(--ic-line); stroke-width: 1.6; }
 svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 /* the ? is a character, not a path, so it needs the weight the icons do not */
 .view-tools button.glyph,
