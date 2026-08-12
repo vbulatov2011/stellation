@@ -211,10 +211,15 @@ function clearHistory() {
   syncUndo();
 }
 
+/*
+ * Undo and redo appear in all three views, so the buttons are found by class
+ * rather than by id — one pair per view, every pair driven from the one stack.
+ * Anything else means a button that is greyed out in one corner of the screen
+ * and live in another.
+ */
 function syncUndo() {
-  const u = $('#undoBtn'), r = $('#redoBtn');
-  if (u) u.disabled = !undoStack.past.length;
-  if (r) r.disabled = !undoStack.future.length;
+  for (const b of $$('.undo-btn')) b.disabled = !undoStack.past.length;
+  for (const b of $$('.redo-btn')) b.disabled = !undoStack.future.length;
 }
 
 function undo() {
@@ -989,8 +994,8 @@ function wireControls() {
     const { keys } = await call('layerKeys', { n: Math.min(n + 1, state.outline.length) });
     mark(); state.selected = new Set(keys); refresh();
   };
-  $('#undoBtn').onclick = undo;
-  $('#redoBtn').onclick = redo;
+  for (const b of $$('.undo-btn')) b.onclick = undo;
+  for (const b of $$('.redo-btn')) b.onclick = redo;
 
   /*
    * ctrl+Z everywhere, cmd+Z as well on macOS — both, rather than one per
@@ -1027,18 +1032,23 @@ function wireControls() {
    * Opening one closes the other: they overlay their own view, and two of them
    * up at once is two-thirds of the workspace covered in instructions.
    */
-  for (const [btn, panel, other] of [['#help3d', '#help3dPanel', '#help2dPanel'],
-                                     ['#help2d', '#help2dPanel', '#help3dPanel']]) {
+  const helps = [['#help3d', '#help3dPanel'], ['#help2d', '#help2dPanel'],
+                 ['#helpCells', '#helpCellsPanel']];
+  const closeHelps = (except) => {
+    for (const [b, p] of helps) {
+      if (b === except) continue;
+      $(p).hidden = true;
+      $(b).setAttribute('aria-expanded', 'false');
+    }
+  };
+  for (const [btn, panel] of helps) {
     const p = $(panel);
     $(btn).setAttribute('aria-expanded', 'false');
     $(btn).onclick = () => {
       const show = p.hidden;
-      $(other).hidden = true;
+      closeHelps(btn);
       p.hidden = !show;
       $(btn).setAttribute('aria-expanded', String(show));
-      for (const b of ['#help3d', '#help2d']) {
-        if (b !== btn) $(b).setAttribute('aria-expanded', 'false');
-      }
     };
     p.onclick = () => { p.hidden = true; $(btn).setAttribute('aria-expanded', 'false'); };
   }

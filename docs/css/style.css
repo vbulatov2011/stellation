@@ -561,7 +561,15 @@ main { grid-template-columns: minmax(0, 1fr) 6px var(--panel-w, 322px); }
   cursor: pointer;
   backdrop-filter: blur(4px);
 }
-.view-tools button svg {
+/*
+ * One rule for every icon in the app, wherever the button lives.
+ *
+ * `stroke: currentColor` is the whole trick: an icon then follows its button's
+ * colour through hover, disabled and both themes without a second rule
+ * anywhere. Shapes that need to read as *filled* — a selected shell in the
+ * cells icons — carry class="on" and swap the two.
+ */
+svg.ic {
   width: 15px;
   height: 15px;
   display: block;
@@ -571,6 +579,7 @@ main { grid-template-columns: minmax(0, 1fr) 6px var(--panel-w, 322px); }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+svg.ic .on { fill: currentColor; stroke: currentColor; }
 /* the ? is a character, not a path, so it needs the font the icons do not */
 .view-tools button.glyph { font: inherit; font-size: 12.5px; font-weight: 600; line-height: 1; }
 .view-tools button:hover { border-color: var(--accent); color: var(--accent); }
@@ -667,6 +676,18 @@ main { grid-template-columns: minmax(0, 1fr) 6px var(--panel-w, 322px); }
    nothing to undo — the disabled state is the only affordance saying whether a
    change has been made yet */
 .buttons button.icon { width: 26px; padding: 4px 0; text-align: center; }
+/* the cells row is all icons now: centre them and let the row breathe */
+.buttons.icons { gap: 6px; }
+/* `.buttons button` grows to fill the row, so these share the width evenly
+   rather than sitting at a fixed size — min-width is the floor, not the size */
+.buttons.icons button.icon {
+  min-width: 28px; height: 24px; padding: 0;
+  display: grid; place-items: center;
+}
+.buttons.icons button.glyph { font-size: 12.5px; font-weight: 600; line-height: 1; }
+/* the cells help hangs under its own group, the way each view's hangs under its tools */
+.cells-group { position: relative; }
+.cells-group .view-help { top: 34px; left: 0; right: 0; max-width: none; }
 .buttons button:disabled { opacity: 0.35; cursor: default; }
 .buttons button:disabled:hover { border-color: var(--line); color: inherit; }
 

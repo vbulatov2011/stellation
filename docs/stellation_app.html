@@ -51,15 +51,29 @@
           <!-- fit: four corner brackets, the frame the model is being sized to -->
           <button id="fitView" aria-label="Fit"
                   title="Fit — rescale so the whole selection fits the frame">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
               <path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"/>
             </svg>
           </button>
           <!-- home: a house, the usual mark for "the view you started from" -->
           <button id="homeView" aria-label="Home"
                   title="Home — canonical orientation: x right, y up, z toward you">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
               <path d="M2.4 7.1 8 2.4l5.6 4.7M4.3 8.4v5.2h7.4V8.4"/>
+            </svg>
+          </button>
+          <!-- undo/redo sit in every view, so a mis-click is undone where it
+               happened rather than by looking away to the cells table -->
+          <button class="undo-btn" aria-label="Undo"
+                  title="Undo the last change to the cells (ctrl+Z)" disabled>
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 8.5h6.2a3.4 3.4 0 1 1 0 6.8H6.4M3 8.5l3-3M3 8.5l3 3"/>
+            </svg>
+          </button>
+          <button class="redo-btn" aria-label="Redo"
+                  title="Redo (ctrl+shift+Z)" disabled>
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M13 8.5H6.8a3.4 3.4 0 1 0 0 6.8h2.8M13 8.5l-3-3M13 8.5l-3 3"/>
             </svg>
           </button>
           <button id="help3d" class="glyph" aria-label="Gestures"
@@ -89,8 +103,20 @@
         <div class="view-tools">
           <button id="fitDiagram" aria-label="Fit"
                   title="Fit — centre the diagram and reset the zoom">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
               <path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"/>
+            </svg>
+          </button>
+          <button class="undo-btn" aria-label="Undo"
+                  title="Undo the last change to the cells (ctrl+Z)" disabled>
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 8.5h6.2a3.4 3.4 0 1 1 0 6.8H6.4M3 8.5l3-3M3 8.5l3 3"/>
+            </svg>
+          </button>
+          <button class="redo-btn" aria-label="Redo"
+                  title="Redo (ctrl+shift+Z)" disabled>
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M13 8.5H6.8a3.4 3.4 0 1 0 0 6.8h2.8M13 8.5l-3-3M13 8.5l-3 3"/>
             </svg>
           </button>
           <button id="help2d" class="glyph" aria-label="Gestures"
@@ -123,28 +149,77 @@
     <div class="group cells-group">
       <div class="group-head">
         <h2>Cells</h2>
-        <div class="row buttons tight">
-          <button id="selectCore" title="Just the original polyhedron">core</button>
-          <button id="growLayer" title="Add the next shell outward">+ layer</button>
-          <button id="selectAll">all</button>
-          <button id="selectNone">clear</button>
-          <button id="undoBtn" class="icon" title="Undo the last change to the cells (ctrl+Z)" disabled>↶</button>
-          <button id="redoBtn" class="icon" title="Redo (ctrl+shift+Z)" disabled>↷</button>
+        <!--
+          One motif for the four selection buttons: three stacked bars, the same
+          shells the table below shows, with the filled ones standing for what
+          is chosen. Read together they are a sequence — bottom only, one more,
+          all, none — which is what these four actually do.
+        -->
+        <div class="row buttons tight icons">
+          <button id="selectCore" class="icon" aria-label="Core"
+                  title="Core — just the original polyhedron">
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="2.5" y="2.5" width="11" height="3" rx="1"/>
+              <rect x="2.5" y="6.5" width="11" height="3" rx="1"/>
+              <rect class="on" x="2.5" y="10.5" width="11" height="3" rx="1"/>
+            </svg>
+          </button>
+          <button id="growLayer" class="icon" aria-label="Add a layer"
+                  title="Add the next shell outward">
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="2.5" y="2.5" width="11" height="3" rx="1"/>
+              <rect class="on" x="2.5" y="6.5" width="11" height="3" rx="1"/>
+              <rect class="on" x="2.5" y="10.5" width="11" height="3" rx="1"/>
+              <path d="M11.6 1.2v3M10.1 2.7h3" stroke-width="1.5"/>
+            </svg>
+          </button>
+          <button id="selectAll" class="icon" aria-label="All"
+                  title="All — every cell in every shell">
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
+              <rect class="on" x="2.5" y="2.5" width="11" height="3" rx="1"/>
+              <rect class="on" x="2.5" y="6.5" width="11" height="3" rx="1"/>
+              <rect class="on" x="2.5" y="10.5" width="11" height="3" rx="1"/>
+            </svg>
+          </button>
+          <button id="selectNone" class="icon" aria-label="Clear"
+                  title="Clear — select nothing">
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="2.5" y="2.5" width="11" height="3" rx="1"/>
+              <rect x="2.5" y="6.5" width="11" height="3" rx="1"/>
+              <rect x="2.5" y="10.5" width="11" height="3" rx="1"/>
+            </svg>
+          </button>
+          <button class="icon undo-btn" aria-label="Undo"
+                  title="Undo the last change to the cells (ctrl+Z)" disabled>
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 8.5h6.2a3.4 3.4 0 1 1 0 6.8H6.4M3 8.5l3-3M3 8.5l3 3"/>
+            </svg>
+          </button>
+          <button class="icon redo-btn" aria-label="Redo"
+                  title="Redo (ctrl+shift+Z)" disabled>
+            <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M13 8.5H6.8a3.4 3.4 0 1 0 0 6.8h2.8M13 8.5l-3-3M13 8.5l-3 3"/>
+            </svg>
+          </button>
+          <button id="helpCells" class="icon glyph" aria-label="Gestures"
+                  title="What a click does in this table">?</button>
         </div>
       </div>
       <div class="cells-wrap"><canvas id="cells"></canvas></div>
       <div id="cellsLegend" class="legend" title="Each bar colour marks one particular number of congruent pieces"></div>
       <div id="cellInfo" class="info mono"></div>
-      <p class="note">
-        Rows are shells, the core at the bottom; each box is one symmetry-related set
-        of cells. <a href="controls.html">Controls &amp; views →</a>
-      </p>
-      <ul class="note keys">
-        <li><kbd>click</kbd> toggle a cell</li>
-        <li><kbd class="kSub">ctrl</kbd>-click toggle it <b>with everything under it</b> — this table only</li>
-        <li><kbd>row №</kbd> whole layer</li>
-        <li><kbd>ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>Z</kbd> redo</li>
-      </ul>
+      <div id="helpCellsPanel" class="view-help" hidden>
+        <div class="what">
+          rows are shells, the core at the bottom; each box is one
+          symmetry-related set of cells
+        </div>
+        <div><kbd>click</kbd> a box — toggle that cell</div>
+        <div><kbd class="kSub">ctrl</kbd>-click — toggle it <b>with everything under it</b>, this table only</div>
+        <div><kbd>row №</kbd> — the whole layer</div>
+        <div><kbd>ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>Z</kbd> redo</div>
+        <div><a href="controls.html">Controls &amp; views →</a></div>
+        <div class="dismiss">click to dismiss</div>
+      </div>
       <input id="cellsString" class="mono" spellcheck="false"
              title="cell-selection string, same syntax as the original .stel files">
     </div>
