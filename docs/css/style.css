@@ -554,7 +554,8 @@ main { grid-template-columns: minmax(0, 1fr) 6px var(--panel-w, 322px); }
  * in less ink, and the title carries the full sentence for anyone who wants it —
  * which is why the titles now name the action too, the visible word being gone.
  */
-.view-tools button {
+.view-tools button,
+.buttons.icons button {
   width: 26px;
   height: 24px;
   padding: 0;
@@ -564,8 +565,11 @@ main { grid-template-columns: minmax(0, 1fr) 6px var(--panel-w, 322px); }
   border-radius: 7px;
   background: color-mix(in srgb, var(--panel) 88%, transparent);
   color: var(--dim);
+  font: inherit;
+  font-size: 12.5px;
   cursor: pointer;
   backdrop-filter: blur(4px);
+  flex: none;
 }
 /*
  * One rule for every icon in the app, wherever the button lives.
@@ -595,10 +599,22 @@ svg.ic .on { fill: currentColor; stroke: currentColor; }
  */
 svg.sq .edge { fill: none; stroke: var(--ic-line); stroke-width: 1.4; }
 svg.sq .fill { fill: var(--ic-fill); stroke: none; }
-/* the ? is a character, not a path, so it needs the font the icons do not */
-.view-tools button.glyph { font: inherit; font-size: 12.5px; font-weight: 600; line-height: 1; }
-.view-tools button:hover { border-color: var(--accent); color: var(--accent); }
-.view-tools button[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+/* the ? is a character, not a path, so it needs the weight the icons do not */
+.view-tools button.glyph,
+.buttons.icons button.glyph { font-weight: 600; line-height: 1; }
+.view-tools button:hover,
+.buttons.icons button:hover { border-color: var(--accent); color: var(--accent); }
+.view-tools button[aria-expanded="true"],
+.buttons.icons button[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+/*
+ * Disabled applied only to `.buttons` before, so undo and redo were dimmed in
+ * the cells row and looked perfectly live in the two views, where they had just
+ * been added.
+ */
+.view-tools button:disabled,
+.buttons.icons button:disabled { opacity: 0.35; cursor: default; }
+.view-tools button:disabled:hover,
+.buttons.icons button:disabled:hover { border-color: var(--line); color: var(--dim); }
 
 /*
  * The gesture list, shown on request rather than printed under every view.
@@ -702,17 +718,6 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
  * comparable jobs should not look like they come from different programs.
  */
 .buttons.icons { gap: 5px; }
-.buttons.icons button {
-  flex: none;
-  width: 26px;
-  height: 24px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  background: color-mix(in srgb, var(--panel) 88%, transparent);
-  color: var(--dim);
-}
-.buttons.icons button.glyph { font-size: 12.5px; font-weight: 600; line-height: 1; }
 /* the cells help hangs under its own group, the way each view's hangs under its tools */
 .cells-group { position: relative; }
 .cells-group .view-help { top: 34px; left: 0; right: 0; max-width: none; }
