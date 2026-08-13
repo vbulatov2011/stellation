@@ -20,6 +20,14 @@ import { createImageSelector } from '../../lib/uilib/modules.js';
 
 export function initPresets({ openDocument, setStatus }) {
   let selector = null;
+  /*
+   * A one-shot borrower. The plane editor imports planes out of a preset
+   * rather than opening it, and rather than building a second thumbnail
+   * window for the same nine documents it takes this one for a single
+   * selection: `pick` swaps the title and the destination for exactly one
+   * click, then everything is a preset browser again.
+   */
+  let pending = null;
 
   async function load(sel) {
     let manifest;
@@ -44,13 +52,29 @@ export function initPresets({ openDocument, setStatus }) {
     try {
       const r = await fetch(data.jsonUrl);
       if (!r.ok) throw new Error(r.statusText);
-      await openDocument(await r.text(), data.jsonUrl.split('/').pop());
+      const text = await r.text();
+      const name = data.jsonUrl.split('/').pop();
+      if (pending) {
+        const take = pending;
+        endPick();
+        take(text, name);
+        return;
+      }
+      await openDocument(text, name);
     } catch (err) {
       setStatus?.('could not open the preset: ' + err.message, false);
+      endPick();
     }
   }
 
-  function show() {
+  function endPick() {
+    if (!pending) return;
+    pending = null;
+    selector?.setTitle('Presets');
+    selector?.setVisible(false);
+  }
+
+  function show(title) {
     if (!selector) {
       selector = createImageSelector({
         title: 'Presets',
@@ -63,11 +87,17 @@ export function initPresets({ openDocument, setStatus }) {
       });
       load(selector);
     }
+    selector.setTitle(title || 'Presets');
     selector.setVisible(true);
   }
 
   return {
-    show,
+    show: () => { pending = null; show(); },
+    /** borrow the browser for one selection: handler(text, fileName) */
+    pick: (handler, title = 'Presets — pick one to import') => {
+      pending = handler;
+      show(title);
+    },
     /*
      * The windows menu drives this like any other window. Nothing exists
      * until the first open, so "not open yet" and "closed" are the same

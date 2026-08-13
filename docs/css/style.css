@@ -342,9 +342,18 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); 
 }
 #catalogDialog[open] { display: flex; flex-direction: column; }
 
+/* the New dialog's source bar: the catalog is this dialog's own content,
+   the other three hand off to where they already live */
+.cat-sources {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  padding: 12px 14px 0;
+  flex: none;
+  font-size: 13px;
+}
+.cat-sources button.on { color: var(--accent); border-color: var(--accent); opacity: 1; }
 .cat-head {
   display: flex; gap: 8px; align-items: center;
-  padding: 12px 14px 10px;
+  padding: 10px 14px;
   flex: none;
 }
 #search {
@@ -727,10 +736,10 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
   background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
   touch-action: none;
 }
-/* chip · numbers · group · orbit · delete — the head names the middle three */
+/* chip · numbers · factor · group · orbit · delete */
 .planes-head, .plane-row {
   display: grid;
-  grid-template-columns: 12px 1fr 96px 44px 24px;
+  grid-template-columns: 12px 1fr 58px 92px 40px 24px;
   gap: 6px; align-items: center;
 }
 .planes-head {
@@ -746,7 +755,13 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
   border: 1px solid var(--line); border-radius: 6px;
   padding: 4px 7px; font-size: 11.5px;
 }
-.plane-row.bad .plane-nums { border-color: #c0504d; }
+.plane-row .plane-factor {
+  width: 100%; box-sizing: border-box; min-width: 0; text-align: right;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 6px; font-size: 11.5px;
+}
+.plane-row.bad .plane-nums, .plane-row.bad .plane-factor { border-color: #c0504d; }
 .plane-row .plane-group { width: 100%; font-size: 11.5px; }
 .plane-row .plane-orbit { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--dim); }
 .plane-row .plane-del {

@@ -1122,6 +1122,16 @@ function wireControls() {
   };
   $('#catalogClose').onclick = () => $('#catalogDialog').close();
 
+  /*
+   * The New dialog is the one front door. Its own content is the catalog;
+   * the other three sources already have their homes — the preset browser,
+   * the file input, the plane editor — so it closes and hands over rather
+   * than growing copies of them.
+   */
+  $('#newFromPreset').onclick = () => { $('#catalogDialog').close(); presets.show(); };
+  $('#newFromFile').onclick = () => { $('#catalogDialog').close(); $('#loadDoc').click(); };
+  $('#newFromPlanes').onclick = () => { $('#catalogDialog').close(); $('#makePlanes').click(); };
+
   $('#polySym').onchange = (e) => {
     state.polySym = e.target.value;
     const allowed = subgroupsOf(state.polySym);
@@ -1246,13 +1256,6 @@ function wireControls() {
     if (el) el.onchange = refreshElements;
   }
 
-  /*
-   * The plane-set editor wires its own controls: rows, per-row symmetry,
-   * orbit counts, the preview, the catalog import. It opens seeded from the
-   * current sheet in custom mode, or from the current solid reduced to one
-   * row per symmetry class; Build funnels into the same buildCustomPlanes.
-   */
-  initPlanesDialog({ state, toPoly, buildCustomPlanes });
 
   installSplitters();
 
@@ -1324,6 +1327,16 @@ function wireControls() {
   presets = initPresets({ openDocument, setStatus });
   $('#showPresets').onclick = () => presets.show();
 
+  /*
+   * The plane-set editor wires its own controls: rows, per-row factor and
+   * symmetry, orbit counts, the preview, and the three imports. After the
+   * preset browser, because it borrows that browser to import from a preset.
+   * It opens seeded from the current sheet in custom mode, or from the
+   * current solid reduced to one row per symmetry class; Build funnels into
+   * the same buildCustomPlanes every other path uses.
+   */
+  initPlanesDialog({ state, toPoly, buildCustomPlanes, presets, setStatus });
+
   $('#help').onclick = () => {
     const b = $('#buildStamp');
     if (b) b.textContent = BUILD;
@@ -1374,9 +1387,11 @@ function wireControls() {
  * catalog solid. The engine has been plane-based from the start and could
  * always read such files; this is the front door the port did not have.
  *
- * Line format:  nx ny nz d [GROUP]
- * The seed button fills the sheet from the current solid's own face planes,
- * which is exactly what the Java dialog used as its starting values.
+ * Line format:  nx ny nz d [GROUP [FACTOR]]
+ * The factor scales the distance, sliding the plane along its own normal;
+ * it is written only when it is not 1, so a plain sheet reads and writes
+ * exactly as it always did. The editor fills the sheet from the current
+ * solid's own face planes, which is what the Java dialog started from.
  */
 function parsePlaneRows(text) {
   const rows = [];
@@ -1387,15 +1402,20 @@ function parsePlaneRows(text) {
     const parts = s.split(/[\s,]+/);
     const nums = parts.slice(0, 4).map(Number);
     const group = parts[4] || 'E';
+    const factor = parts[5] === undefined ? 1 : Number(parts[5]);
     if (parts.length < 4 || nums.some(v => !Number.isFinite(v))) {
-      errors.push(`line ${li + 1}: expected "nx ny nz d [group]", got "${s}"`);
+      errors.push(`line ${li + 1}: expected "nx ny nz d [group [factor]]", got "${s}"`);
       return;
     }
     if (parts[4] && !(state.symmetry[group]?.order > 0)) {
       errors.push(`line ${li + 1}: no symmetry group named "${group}"`);
       return;
     }
-    rows.push({ n: [nums[0], nums[1], nums[2]], d: nums[3], group });
+    if (!Number.isFinite(factor)) {
+      errors.push(`line ${li + 1}: "${parts[5]}" is not a number to scale by`);
+      return;
+    }
+    rows.push({ n: [nums[0], nums[1], nums[2]], d: nums[3] * factor, group });
   });
   return { rows, errors };
 }

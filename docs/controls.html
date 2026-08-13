@@ -220,14 +220,17 @@
       <dd>Stellate an arbitrary set of planes instead of a catalog solid — the
         original program's plane editor. Each row is one plane, written as four
         numbers (normal, then distance from the origin, full double precision)
-        so it copies and pastes as plain text, with its own symmetry group
-        beside it: the plane is added together with its whole orbit, and the
-        computed orbit size shows next to the group. Rows with different groups
-        combine freely — the planes of an icosahedron alongside the planes of a
-        cube. A 3D preview draws each plane as a spoke from the origin with a
-        disc lying in it, coloured by row; the import menu appends any catalog
-        solid's planes reduced to one row per symmetry class. The sheet saves
-        into the JSON document as before.</dd>
+        so it copies and pastes as plain text; then a <b>factor</b> that scales
+        the distance, sliding the plane along its own normal without retyping
+        it; then its own <b>symmetry group</b> — the plane is added together
+        with its whole orbit, whose size is shown beside it. Rows with
+        different groups combine freely: the planes of an icosahedron alongside
+        the planes of a cube, or one solid's planes twice at two depths. A 3D
+        preview draws each plane as a spoke from the origin with a disc lying
+        in it, coloured by row. Planes can be imported from <b>a solid</b>,
+        <b>a preset</b> or <b>a file</b> — the same three sources the New
+        dialog offers — each reduced to one row per symmetry class. The sheet
+        saves into the JSON document as before.</dd>
     </dl>
   </section>
 

@@ -24,7 +24,7 @@
 <header>
   <h1><a href="index.html" title="Everything else in the project">Stellation</a></h1>
 
-  <button id="pickPoly" class="picker" title="Choose a polyhedron">
+  <button id="pickPoly" class="picker" title="New — start from a polyhedron, a preset, a file, or your own plane set">
     <img id="pickThumb" src="img/poly/u27_tmb.gif" alt="" width="26" height="26">
     <span id="pickName">icosahedron</span>
     <b>▾</b>
@@ -345,9 +345,20 @@
 
 <!-- ------------------------------------------------ catalog drawer -->
 <dialog id="catalogDialog">
+  <!-- the four ways to start something: the catalog below, and the three
+       that live elsewhere and are reached from here -->
+  <div class="cat-sources">
+    <b>New</b>
+    <span class="dim">from a</span>
+    <button class="on" disabled>polyhedron</button>
+    <button id="newFromPreset" title="Ready-made stellations from this site, with previews">preset…</button>
+    <button id="newFromFile" title="Open a document from this computer (.json or .stel)">file…</button>
+    <button id="newFromPlanes" title="Build an arbitrary set of planes instead of starting from a solid">plane set…</button>
+    <div class="spacer"></div>
+    <button id="catalogClose" class="ghost">Close</button>
+  </div>
   <div class="cat-head">
     <input id="search" type="search" placeholder="Search 121 solids by name, file or symmetry…" autocomplete="off">
-    <button id="catalogClose" class="ghost">Close</button>
   </div>
   <nav id="catChips" class="cat-chips"></nav>
   <div id="catalog" class="scroll"></div>
@@ -374,14 +385,18 @@
   <div class="planes-layout">
     <div class="planes-left">
       <div class="planes-head">
-        <span></span><span>plane: nx ny nz d</span><span>symmetry</span><span title="How many distinct planes the row contributes">orbit</span><span></span>
+        <span></span><span>plane: nx ny nz d</span><span title="Scales the distance — the plane slides along its own normal">factor</span><span>symmetry</span><span title="How many distinct planes the row contributes">orbit</span><span></span>
       </div>
       <div id="planesRows"></div>
       <div class="row planes-tools">
         <button id="planesAdd" title="Add one plane row">+ plane</button>
+        <span class="dim">import:</span>
         <select id="planesImport" title="Append a catalog solid's face planes, reduced to one row per symmetry class">
-          <option value="">import a solid…</option>
+          <option value="">a solid…</option>
         </select>
+        <button id="planesFromPreset" title="Append the planes of a preset — its own plane sheet, or its solid's planes">a preset…</button>
+        <button id="planesFromFile" title="Append the planes of a document on this computer (.json or .stel)">a file…</button>
+        <input id="planesFile" type="file" accept=".json,.stel,.txt" hidden>
         <button id="planesClear" title="Remove every row">clear</button>
       </div>
       <p id="planesTotal" class="note"></p>

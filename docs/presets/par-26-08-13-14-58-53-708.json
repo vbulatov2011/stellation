@@ -1,0 +1,63 @@
+{
+    "name": "par-26-08-13-14-58-53-708",
+    "appInfo": {
+        "appName": "Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1",
+        "fileFormatRelease": 1
+    },
+    "params": {
+        "polyhedron": {
+            "name": "custom planes (1 rows → 10)",
+            "file": "custom"
+        },
+        "symmetry": {
+            "polyhedron": "D5",
+            "stellation": "D5"
+        },
+        "arrangement": {
+            "planeDepth": 60
+        },
+        "cells": {
+            "selection": "{0,1,2,3(2)4(0)}"
+        },
+        "display": {
+            "diagramFace": 0,
+            "showEdges": true,
+            "showAllFacets": true,
+            "spin": false,
+            "colorMode": "class",
+            "faceOpacity": 0.85,
+            "edges": {
+                "face": {
+                    "show": true,
+                    "color": "#000000",
+                    "width": 1,
+                    "tubes": true
+                },
+                "facet": {
+                    "show": true,
+                    "color": "#6b7080",
+                    "width": 1,
+                    "tubes": false
+                }
+            }
+        },
+        "camera": {
+            "view": [
+                -0.52368,
+                -0.851059,
+                0.009541,
+                -0.036979,
+                2.394696,
+                0.132922,
+                -0.168894,
+                0.3698
+            ]
+        },
+        "planes": {
+            "text": "# one plane per line: nx ny nz d [group to multiply it by]\n1 0.1 0.4 1 D5"
+        },
+        "export": {
+            "lengthUnit": 0.01
+        }
+    }
+}

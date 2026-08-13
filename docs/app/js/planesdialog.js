@@ -20,28 +20,39 @@
  */
 
 import { Renderer3D, LAYER_COLORS, facePlanes, matMul } from '../../lib/modules.js';
+import { readDocument } from './preset.js';
 
 const $ = (q) => document.querySelector(q);
 
 export function initPlanesDialog(deps) {
-  // deps: { state, toPoly, buildCustomPlanes, subgroupNames }
+  // deps: { state, toPoly, buildCustomPlanes, presets, setStatus }
   const { state } = deps;
-  let rows = [];               // [{ text, group }]
+  let rows = [];               // [{ text, group, factor }]
   let preview = null;
   let previewTimer = 0;
 
   // ---- plane arithmetic ---------------------------------------------------
 
-  /** four finite numbers out of a row's text, or null */
-  function parsePlane(text) {
+  /**
+   * The plane a row describes: four finite numbers, then the factor. The
+   * factor scales the distance — the plane slides along its own normal,
+   * keeping its direction — so one row can be re-used at another depth
+   * without retyping the normal, and the typed numbers stay exactly as
+   * pasted. Returns null if the row does not read.
+   */
+  function parsePlane(text, factor = 1) {
     const parts = text.trim().split(/[\s,]+/).filter(Boolean);
     if (parts.length !== 4) return null;
     const nums = parts.map(Number);
     if (nums.some(v => !Number.isFinite(v))) return null;
+    const f = Number(factor);
+    if (!Number.isFinite(f)) return null;
     const L = Math.hypot(nums[0], nums[1], nums[2]);
     if (L < 1e-12) return null;
-    return { n: [nums[0] / L, nums[1] / L, nums[2] / L], d: nums[3] };
+    return { n: [nums[0] / L, nums[1] / L, nums[2] / L], d: nums[3] * f };
   }
+
+  const rowPlane = (row) => parsePlane(row.text, row.factor);
 
   /**
    * The distinct images of one plane under one group — the row's orbit.
@@ -96,18 +107,45 @@ export function initPlanesDialog(deps) {
             }
           }
         }
-        out.push({ text: items[i].n.map(num).join(' ') + ' ' + num(items[i].d), group: groupName });
+        out.push({ text: items[i].n.map(num).join(' ') + ' ' + num(items[i].d), group: groupName, factor: 1 });
       }
       if (covered === items.length) return out;
     }
-    return items.map(it => ({ text: it.n.map(num).join(' ') + ' ' + num(it.d), group: 'E' }));
+    return items.map(it => ({ text: it.n.map(num).join(' ') + ' ' + num(it.d), group: 'E', factor: 1 }));
+  }
+
+  const itemFor = (file) => {
+    for (const cat of state.catalog) for (const it of cat.items) if (it.file === file) return it;
+    return null;
+  };
+
+  /**
+   * The rows a saved document contributes. A document built from a plane
+   * sheet hands over its sheet verbatim — groups, factors and all — and one
+   * built from a catalog solid hands over that solid's planes, reduced.
+   * Either way what arrives is rows, so a preset and a local file import
+   * exactly like the catalog does.
+   */
+  function rowsFromDocument(text) {
+    const doc = readDocument(text);
+    if (doc.planesText) return fromText(doc.planesText);
+    if (doc.file && state.geometry[doc.file]) {
+      // the SOLID's own symmetry, not the document's chosen subgroup: the
+      // planes belong to the polyhedron, and the fullest group reduces them
+      // to the fewest rows
+      return reduceSolid(doc.file, itemFor(doc.file)?.symmetry || doc.polySymmetry || 'E');
+    }
+    return null;
   }
 
   // ---- serialization (the document's planesText, unchanged format) --------
 
+  /* the factor is written only when it is doing something, so a sheet of
+     plain rows serializes exactly as it always did */
   function toText() {
-    return '# one plane per line: nx ny nz d [group to multiply it by]\n' +
-           rows.map(r => `${r.text.trim()} ${r.group}`).join('\n');
+    return '# one plane per line: nx ny nz d [group [factor]]\n' +
+           rows.map(r => `${r.text.trim()} ${r.group}` +
+                         (Number(r.factor) !== 1 ? ` ${num(Number(r.factor))}` : '')).join('\n');
   }
 
   function fromText(text) {
@@ -117,7 +155,9 @@ export function initPlanesDialog(deps) {
       if (!s) continue;
       const parts = s.split(/[\s,]+/);
       const group = parts.length > 4 && state.symmetry[parts[4]] ? parts[4] : 'E';
-      out.push({ text: parts.slice(0, 4).join(' '), group });
+      const f = parts.length > 5 ? Number(parts[5]) : 1;
+      out.push({ text: parts.slice(0, 4).join(' '), group,
+                 factor: Number.isFinite(f) ? f : 1 });
     }
     return out;
   }
@@ -145,11 +185,16 @@ export function initPlanesDialog(deps) {
         `<input class="plane-nums mono" spellcheck="false" ` +
           `title="The plane as four numbers: normal x y z, then the distance from the origin — copy and paste it as text" ` +
           `value="${row.text.replace(/"/g, '&quot;')}">` +
+        `<input class="plane-factor mono" spellcheck="false" ` +
+          `title="Scale the distance by this factor — the plane slides along its own normal, keeping its direction. 1 leaves it where it was typed." ` +
+          `value="${String(row.factor ?? 1).replace(/"/g, '&quot;')}">` +
         `<select class="plane-group" title="The group that multiplies this plane — the plane is added together with its whole orbit">${groupOptions(row.group)}</select>` +
         `<span class="plane-orbit" title="How many distinct planes this row contributes"></span>` +
         `<button class="plane-del" title="Remove this row">✕</button>`;
       const input = el.querySelector('.plane-nums');
       input.oninput = () => { row.text = input.value; update(false); };
+      const fac = el.querySelector('.plane-factor');
+      fac.oninput = () => { row.factor = fac.value; update(false); };
       /* a multi-line paste becomes multiple rows — the copy half of
          copy-and-paste already works row-wise, this is the paste half */
       input.addEventListener('paste', (e) => {
@@ -160,6 +205,7 @@ export function initPlanesDialog(deps) {
         if (!pasted.length) return;
         row.text = pasted[0].text;
         if (state.symmetry[pasted[0].group]) row.group = pasted[0].group;
+        row.factor = pasted[0].factor;
         rows.splice(i + 1, 0, ...pasted.slice(1));
         render(); update(true);
       });
@@ -175,7 +221,7 @@ export function initPlanesDialog(deps) {
     let total = 0, bad = 0;
     document.querySelectorAll('#planesRows .plane-row').forEach((el, i) => {
       const row = rows[i];
-      const plane = parsePlane(row.text);
+      const plane = rowPlane(row);
       const orbitEl = el.querySelector('.plane-orbit');
       el.classList.toggle('bad', !plane);
       if (!plane) { orbitEl.textContent = '—'; bad++; return; }
@@ -185,7 +231,7 @@ export function initPlanesDialog(deps) {
     });
     $('#planesTotal').textContent =
       rows.length === 0 ? 'no planes yet'
-        : bad ? `${bad} row${bad > 1 ? 's' : ''} not readable — four numbers: nx ny nz d`
+        : bad ? `${bad} row${bad > 1 ? 's' : ''} not readable — four numbers, then a factor`
         : `${rows.length} row${rows.length > 1 ? 's' : ''} → ${total} planes`;
     $('#planesBuild').disabled = bad > 0 || rows.length === 0;
     clearTimeout(previewTimer);
@@ -242,7 +288,7 @@ export function initPlanesDialog(deps) {
     let maxD = 0;
     const all = [];
     rows.forEach((row, ri) => {
-      const plane = parsePlane(row.text);
+      const plane = rowPlane(row);
       if (!plane) return;
       for (const p of orbitOf(plane, row.group)) { all.push({ ri, p }); maxD = Math.max(maxD, p.d); }
     });
@@ -286,16 +332,51 @@ export function initPlanesDialog(deps) {
     }
   }
 
+  /* every import lands here: append rows, redraw, say what arrived */
+  function importRows(imported, what) {
+    if (!imported || !imported.length) {
+      $('#planesInfo').textContent = `nothing to import from ${what}`;
+      return;
+    }
+    rows.push(...imported);
+    render(); update(true);
+    $('#planesInfo').textContent =
+      `imported ${imported.length} row${imported.length > 1 ? 's' : ''} from ${what}`;
+  }
+
   $('#planesImport').onchange = (e) => {
     const opt = e.target.selectedOptions[0];
     if (!opt?.value) return;
-    const imported = reduceSolid(opt.value, opt.dataset.symmetry || 'E');
-    if (imported) { rows.push(...imported); render(); update(true); }
+    importRows(reduceSolid(opt.value, opt.dataset.symmetry || 'E'), opt.textContent.trim());
     e.target.selectedIndex = 0;                 // a verb, not a state
   };
 
+  /*
+   * The same three sources the New dialog offers, minus the plane editor
+   * itself: a shipped preset, or a document from disk. Both arrive as
+   * document text and go through rowsFromDocument, so a document holding a
+   * plane sheet contributes its sheet and one holding a solid contributes
+   * that solid's planes.
+   */
+  $('#planesFromPreset').onclick = () => {
+    if (!deps.presets) return;
+    deps.presets.pick((text, name) => {
+      try { importRows(rowsFromDocument(text), name); }
+      catch (err) { $('#planesInfo').textContent = 'could not read that preset: ' + err.message; }
+    }, 'Presets — pick one to import its planes');
+  };
+
+  $('#planesFromFile').onclick = () => $('#planesFile').click();
+  $('#planesFile').onchange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try { importRows(rowsFromDocument(await file.text()), file.name); }
+    catch (err) { $('#planesInfo').textContent = `could not read ${file.name}: ${err.message}`; }
+  };
+
   $('#planesAdd').onclick = () => {
-    rows.push({ text: '0 0 1 1', group: 'E' });
+    rows.push({ text: '0 0 1 1', group: 'E', factor: 1 });
     render(); update(true);
     const inputs = document.querySelectorAll('#planesRows .plane-nums');
     inputs[inputs.length - 1]?.select();
