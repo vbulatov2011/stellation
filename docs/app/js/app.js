@@ -12,6 +12,7 @@ import { initWorkspace } from './workspace.js';
 import { getSquareThumbnailCanvas } from '../../lib/uilib/files.js';
 import { initPresets } from './presets.js';
 import { initDocManager } from './docmanager.js';
+import { initPlanesDialog } from './planesdialog.js';
 
 const $ = sel => document.querySelector(sel);
 const $$ = sel => [...document.querySelectorAll(sel)];
@@ -1245,27 +1246,13 @@ function wireControls() {
     if (el) el.onchange = refreshElements;
   }
 
-  $('#makePlanes').onclick = () => {
-    $('#planesText').value = seedPlanesText();
-    $('#planesInfo').textContent = '';
-    $('#planesDialog').showModal();
-  };
-  $('#planesSeed').onclick = () => {
-    // re-seed from the current catalog solid. In custom mode there is no solid
-    // to seed from — wiping the sheet (and with it the saved document's source)
-    // would be the only possible outcome, so refuse with a reason instead.
-    if (!state.geometry[state.current?.file]) {
-      $('#planesInfo').textContent = 'nothing to seed from — pick a catalog solid first';
-      return;
-    }
-    state.planesText = null;
-    $('#planesText').value = seedPlanesText();
-    $('#planesInfo').textContent = '';
-  };
-  $('#planesCancel').onclick = () => $('#planesDialog').close();
-  $('#planesBuild').onclick = async () => {
-    if (await buildCustomPlanes($('#planesText').value)) $('#planesDialog').close();
-  };
+  /*
+   * The plane-set editor wires its own controls: rows, per-row symmetry,
+   * orbit counts, the preview, the catalog import. It opens seeded from the
+   * current sheet in custom mode, or from the current solid reduced to one
+   * row per symmetry class; Build funnels into the same buildCustomPlanes.
+   */
+  initPlanesDialog({ state, toPoly, buildCustomPlanes });
 
   installSplitters();
 
@@ -1430,17 +1417,6 @@ function expandPlaneRows(rows) {
     }
   }
   return out;
-}
-
-function seedPlanesText() {
-  if (state.customPlanes && state.planesText) return state.planesText;
-  const g = state.geometry[state.current?.file];
-  if (!g) return '';
-  const planes = facePlanes(toPoly(g));
-  const f = v => (Math.abs(v) < 1e-12 ? 0 : v).toFixed(6);
-  return `# one plane per line: nx ny nz d [group to multiply it by]\n` +
-         `# seeded from ${state.current.name} — ${planes.length} planes\n` +
-         planes.map(p => `${f(p.n.x)} ${f(p.n.y)} ${f(p.n.z)} ${f(p.d)} E`).join('\n');
 }
 
 async function buildCustomPlanes(text) {

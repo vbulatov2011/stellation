@@ -361,19 +361,38 @@
   </footer>
 </dialog>
 
-<dialog id="planesDialog">
+<dialog id="planesDialog" class="planes-dialog">
   <h2>Make planes</h2>
   <p class="note">
-    One plane per line — <code>nx ny nz d</code>, then optionally a symmetry group
-    to multiply that plane by (<code>Ih</code>, <code>O</code>, <code>T</code>…).
-    Lines starting with <code>#</code> are comments. The arrangement is built from
-    the union; the symmetry dropdowns then group its cells as usual.
+    Each row is one plane — <code>nx&nbsp;ny&nbsp;nz&nbsp;d</code>, four numbers,
+    normal then distance — and the symmetry group that multiplies it: the plane
+    is added together with its whole orbit. Rows with different groups combine
+    freely, so the planes of an icosahedron can sit alongside the planes of a
+    cube. A row copies and pastes as plain text; pasting several lines makes
+    several rows.
   </p>
-  <textarea id="planesText" class="mono" rows="14" spellcheck="false"></textarea>
-  <p id="planesInfo" class="note"></p>
+  <div class="planes-layout">
+    <div class="planes-left">
+      <div class="planes-head">
+        <span></span><span>plane: nx ny nz d</span><span>symmetry</span><span title="How many distinct planes the row contributes">orbit</span><span></span>
+      </div>
+      <div id="planesRows"></div>
+      <div class="row planes-tools">
+        <button id="planesAdd" title="Add one plane row">+ plane</button>
+        <select id="planesImport" title="Append a catalog solid's face planes, reduced to one row per symmetry class">
+          <option value="">import a solid…</option>
+        </select>
+        <button id="planesClear" title="Remove every row">clear</button>
+      </div>
+      <p id="planesTotal" class="note"></p>
+      <p id="planesInfo" class="note"></p>
+    </div>
+    <div class="planes-right">
+      <canvas id="planesPreview" title="The plane set: a spoke from the origin to each plane, a disc lying in it — drag to turn, wheel to zoom"></canvas>
+    </div>
+  </div>
   <div class="row buttons">
     <button id="planesBuild" class="primary">Build</button>
-    <button id="planesSeed" title="Fill the sheet from the current solid's own face planes">Seed from current solid</button>
     <button id="planesCancel">Cancel</button>
   </div>
 </dialog>

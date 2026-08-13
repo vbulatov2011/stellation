@@ -718,13 +718,47 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .elem-legend { margin-top: 4px; }
 .elem-legend:empty { display: none; }
 
-/* the make-planes sheet */
-#planesDialog { width: min(560px, 92vw); }
-#planesDialog textarea {
-  width: 100%; box-sizing: border-box; resize: vertical;
+/* the make-planes editor: rows on the left, the preview on the right */
+#planesDialog { width: min(880px, 94vw); }
+.planes-layout { display: grid; grid-template-columns: 1fr 280px; gap: 14px; }
+.planes-right { min-width: 0; }
+#planesPreview {
+  width: 100%; height: 300px; display: block;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  touch-action: none;
+}
+/* chip · numbers · group · orbit · delete — the head names the middle three */
+.planes-head, .plane-row {
+  display: grid;
+  grid-template-columns: 12px 1fr 96px 44px 24px;
+  gap: 6px; align-items: center;
+}
+.planes-head {
+  font-size: 10.5px; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 4px; padding: 0 2px;
+}
+#planesRows { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+.plane-row .plane-chip { width: 10px; height: 10px; border-radius: 3px; }
+.plane-row .plane-nums {
+  width: 100%; box-sizing: border-box; min-width: 0;
   background: var(--panel); color: var(--text);
-  border: 1px solid var(--line); border-radius: 8px; padding: 8px;
-  font-size: 12px; line-height: 1.5;
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 7px; font-size: 11.5px;
+}
+.plane-row.bad .plane-nums { border-color: #c0504d; }
+.plane-row .plane-group { width: 100%; font-size: 11.5px; }
+.plane-row .plane-orbit { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--dim); }
+.plane-row .plane-del {
+  border: none; background: none; color: var(--dim); cursor: pointer;
+  font-size: 12px; padding: 2px;
+}
+.plane-row .plane-del:hover { color: #c0504d; }
+.planes-tools { margin-top: 8px; align-items: center; }
+.planes-tools select { max-width: 190px; }
+@media (max-width: 720px) {
+  .planes-layout { grid-template-columns: 1fr; }
+  #planesPreview { height: 200px; }
 }
 
 /* Narrow screens: the header is a flex row and its children overrun a phone,

@@ -98,6 +98,18 @@
       it reads best.
     </div></li>
     <li><div>
+      <b>Make planes, made friendly.</b> The plane editor is rows instead of a
+      raw sheet: each row holds one plane as four copy-and-pasteable numbers
+      (normal and distance, full double precision), a symmetry group of its
+      own, and the computed orbit size. Groups mix freely — icosahedron planes
+      beside cube planes in one arrangement. A live 3D preview shows every
+      plane as a spoke from the origin with a disc lying in it, coloured by
+      row, and an import menu appends any catalog solid's planes reduced to
+      one row per symmetry class — the icosahedron imports as a single Ih row
+      of orbit twenty. Documents are unchanged: the rows are the same plane
+      sheet they always saved.
+    </div></li>
+    <li><div>
       <b>The stellation symmetry no longer clears your cells.</b> Changing it
       used to reset the selection to the core and wipe the undo history. Now
       the selection, the history and the camera all stay put, and the symmetry

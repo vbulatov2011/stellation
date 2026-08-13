@@ -218,9 +218,16 @@
 
       <dt>Make planes…</dt>
       <dd>Stellate an arbitrary set of planes instead of a catalog solid — the
-        original program's plane editor. One plane per line, each optionally
-        multiplied by a symmetry group; the sheet can be seeded from the current
-        solid's own face planes, and saves into the JSON document.</dd>
+        original program's plane editor. Each row is one plane, written as four
+        numbers (normal, then distance from the origin, full double precision)
+        so it copies and pastes as plain text, with its own symmetry group
+        beside it: the plane is added together with its whole orbit, and the
+        computed orbit size shows next to the group. Rows with different groups
+        combine freely — the planes of an icosahedron alongside the planes of a
+        cube. A 3D preview draws each plane as a spoke from the origin with a
+        disc lying in it, coloured by row; the import menu appends any catalog
+        solid's planes reduced to one row per symmetry class. The sheet saves
+        into the JSON document as before.</dd>
     </dl>
   </section>
 
