@@ -960,9 +960,14 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
 /*
  * The stellation-symmetry switch. The selection is untouched — that is the
  * feature — along with the undo history and the camera; only the grouping
- * changes, which build(preserve) re-derives. A switch during a build cannot
- * be honoured (the worker is busy making some other arrangement), so the
- * control snaps back to what is actually built rather than lying about it.
+ * changes. The worker regroups the sub-cells in place (no arrangement
+ * rebuild, the Java applet's createSubcells), and everything grouping-shaped
+ * in the UI follows: the outline and its maps, the panel, the diagram-plane
+ * menu, the symmetry elements, the legend. If the worker cannot regroup —
+ * restarted after a failure, nothing built — the preserve-mode rebuild is
+ * the slow road to the same place. A switch during a build cannot be
+ * honoured at all (the worker is busy making some other arrangement), so
+ * the control snaps back to what is actually built rather than lying.
  */
 async function changeStellSym() {
   if (state.building) {
@@ -971,7 +976,27 @@ async function changeStellSym() {
     setStatus('still building — change the symmetry when it finishes', false);
     return;
   }
-  await build(null, null, true);
+  const subM = state.symmetry[state.stellSym]?.matrices || null;
+  const polyM = state.symmetry[state.polySym]?.matrices || state.symmetry.E.matrices;
+  state.building = true;
+  setStatus('regrouping cells…', true);
+  try {
+    const info = await call('regroup', { subMatrices: subM, matrices: polyM });
+    state.outline = info.outline;
+    indexOutline(info.outline);
+    cells.setOutline(info.outline);
+    cells.setLabels(duValLabels());
+    fillFaceSelect(info.faces);
+    refreshElements();
+    renderLegend();
+    state.building = false;
+    await refresh();
+    state.builtStellSym = state.stellSym;
+    setStatus(`editing symmetry ${state.stellSym} — selection kept`, false);
+  } catch {
+    state.building = false;
+    await build(null, null, true);     // the slow road to the same place
+  }
 }
 
 async function refresh() {

@@ -10,7 +10,7 @@
 import {
   buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
   atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
-  formatCellsUnder,
+  formatCellsUnder, regroupSubCells,
 } from '../../lib/core.js';
 
 let stel = null;
@@ -237,6 +237,22 @@ self.onmessage = (e) => {
       case 'formatUnder':
         reply({ cells: formatCellsUnder(stel, new Set(payload.selected), payload.subMatrices) });
         break;
+
+      /*
+       * A stellation-symmetry change without the rebuild: the arrangement and
+       * the orbits stay, only the sub-cell grouping is redone — the Java
+       * applet's createSubcells. The reply carries everything grouping-shaped
+       * that the UI holds: the outline and the diagram-plane classes.
+       */
+      case 'regroup': {
+        if (!stel) { fail('nothing built yet'); break; }
+        regroupSubCells(stel, payload.subMatrices || null);
+        reply({
+          outline: outline(),
+          faces: diagramFaces(stel, payload.subMatrices || payload.matrices || null),
+        });
+        break;
+      }
 
       /** every atom key in layers [0, n) — the "first n layers" shortcut */
       case 'layerKeys': {
