@@ -128,12 +128,22 @@ the above/below split.
 ### Facet opacity
 
 `params.display.faceOpacity`, 1 down to 0, is a blend setting and nothing more —
-no rebuild, only a redraw. Below 1 the fill pass turns on blending and turns
-**depth writes off**, which is what makes the solid see-through: the depth
-buffer stays empty, so every facet blends and the edges drawn afterwards all
-come through. That x-ray is the point — the interior cells are what you cannot
-otherwise look at — and it is why anything under 100% shows the hidden edges
-too. At 0 the fill is skipped and the edges alone remain, a wireframe.
+no rebuild, only a redraw. Below 1 the fill pass turns on blending with depth
+writes off; the compositing order carries all the occlusion there is. At 0 the
+fill is skipped and the edges alone remain, a wireframe.
+
+The **edges ride in the same sorted stream** as the facets, drawn by one
+unified program (facet corners and screen-space edge quads told apart by an
+`aKind` attribute), so one element-indexed draw call composites everything
+back-to-front. An interior edge is therefore dimmed by exactly the glass in
+front of it — one layer once, three layers three times — which is what makes
+the solid read as a translucent object instead of an x-ray. An edge does not
+sort by its own midpoint: its ink sits ON the two facets meeting at it, so
+each frame it borrows the side-table row of its *front* adjacent facet (the
+one on the viewer's side of the edge's other plane). No plane then separates
+the edge from the facet it sits on — initial order puts facets first, so the
+ink stays crisp on its own surface — while anything genuinely nearer still
+separates through that facet's own plane and dims it.
 
 Blending is order-dependent, and the order is exact: the facets draw
 back-to-front in the order produced by the original applet's **card shuffle**
