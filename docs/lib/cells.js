@@ -185,7 +185,14 @@ export class CellsPanel {
 
   /**
    * outline: [{layer, cells:[{index, primitives, facets, vertices, volume,
-   *                           subCells:[{index, primitives, volume, bottom:[key]}]}]}]
+   *                           subCells:[{index, primitives, volume, atoms?:[m],
+   *                                      bottom:[key], top:[key]}]}]}]
+   *
+   * Two selection dialects, told apart by `atoms`. The app sends it: the
+   * selection is then ATOM keys ("layer.orbit.member") and a box can be
+   * partially selected — the editing-symmetry model. The figure pages do
+   * not, and everything behaves as it always has: the selection is sub-cell
+   * keys, boxes are simply on or off.
    */
   setOutline(outline) {
     this.outline = outline;
@@ -195,12 +202,38 @@ export class CellsPanel {
     this.scrollX = 0;
     this.palette = buildPalette(outline);
     this.byKey = new Map();
+    this.atomic = false;
+    this.atomKeysOf = new Map();
     for (const layer of outline)
       for (const cell of layer.cells)
-        for (const sub of cell.subCells)
-          this.byKey.set(`${layer.layer}.${cell.index}.${sub.index}`, { layer, cell, sub });
+        for (const sub of cell.subCells) {
+          const key = `${layer.layer}.${cell.index}.${sub.index}`;
+          this.byKey.set(key, { layer, cell, sub });
+          if (Array.isArray(sub.atoms)) {
+            this.atomic = true;
+            this.atomKeysOf.set(key, sub.atoms.map(m => `${layer.layer}.${cell.index}.${m}`));
+          }
+        }
     this.draw();
     this.fit();
+  }
+
+  /** a sub-cell box's selection state: 2 full · 1 partial · 0 empty */
+  _subState(subKey) {
+    const sel = this.selected;
+    if (!this.atomic) return sel.has(subKey) ? 2 : 0;
+    const atoms = this.atomKeysOf.get(subKey) || [];
+    let on = 0;
+    for (const k of atoms) if (sel.has(k)) on++;
+    return on === 0 ? 0 : on === atoms.length ? 2 : 1;
+  }
+
+  /** what a hit's sub-cell keys mean in the selection's own dialect */
+  _expand(keys) {
+    if (!this.atomic) return keys;
+    const out = [];
+    for (const k of keys) out.push(...(this.atomKeysOf.get(k) || []));
+    return out;
   }
 
   _clampScroll() {
@@ -271,15 +304,18 @@ export class CellsPanel {
        * TOGGLE of the whole supporting set — a lit cell goes out together with
        * everything holding it up, an unlit one comes on the same way, and
        * pressing again reverses it. shift and ctrl both mean it, so there is
-       * nothing to mis-remember.
+       * nothing to mis-remember. The support graph lives at the sub-cell
+       * level; the expansion to what the selection actually stores comes last.
        */
-      const on = keys.every(k => sel.has(k));
+      const on = this._expand(keys).every(k => sel.has(k));
       const all = new Set();
       for (const k of keys) for (const s of this.supportKeys(k)) all.add(s);
-      for (const k of all) on ? sel.delete(k) : sel.add(k);
+      for (const k of this._expand([...all])) on ? sel.delete(k) : sel.add(k);
     } else {
-      const anyOff = keys.some(k => !sel.has(k));
-      for (const k of keys) anyOff ? sel.add(k) : sel.delete(k);
+      // a partially selected box fills first, then a second click clears it
+      const expanded = this._expand(keys);
+      const anyOff = expanded.some(k => !sel.has(k));
+      for (const k of expanded) anyOff ? sel.add(k) : sel.delete(k);
     }
     this.onChange?.(sel);
   }
@@ -385,7 +421,6 @@ export class CellsPanel {
     ctx.fillRect(0, 0, w / dpr, h / dpr);
     if (!this.outline) return;
 
-    const sel = this.selected;
     const hoverKey = this.hover?.key;
 
     this._walk((b) => {
@@ -396,8 +431,10 @@ export class CellsPanel {
         // an empty layer (the depth limit cut it off) must not read as "all on":
         // `every` over nothing is true, which would light the whole row up
         const any = b.layer.cells.length > 0;
-        const on = any && b.layer.cells.every(c => c.subCells.every(s => sel.has(`${L}.${c.index}.${s.index}`)));
-        const some = any && b.layer.cells.some(c => c.subCells.some(s => sel.has(`${L}.${c.index}.${s.index}`)));
+        const on = any && b.layer.cells.every(c => c.subCells.every(
+          s => this._subState(`${L}.${c.index}.${s.index}`) === 2));
+        const some = any && b.layer.cells.some(c => c.subCells.some(
+          s => this._subState(`${L}.${c.index}.${s.index}`) > 0));
 
         if (hoverKey === `L${L}`) {
           roundRect(ctx, b.x, b.y, b.w, b.h, 7);
@@ -462,11 +499,18 @@ export class CellsPanel {
       const isHeader = b.kind === 'header';
       const key = isHeader ? null : `${L}.${b.cell.index}.${b.sub.index}`;
       const hovered = hoverKey === (isHeader ? `${L}.${b.cell.index}` : key);
-      // a header reads as "on" when all of its sub-cells are
-      const on = isHeader
-        ? b.cell.subCells.every(s => sel.has(`${L}.${b.cell.index}.${s.index}`))
-        : sel.has(key);
-      const part = isHeader && !on && b.cell.subCells.some(s => sel.has(`${L}.${b.cell.index}.${s.index}`));
+      /*
+       * Tri-state everywhere: a header reads as "on" when all of its
+       * sub-cells are, and under the atomic model a single box can itself be
+       * partially selected — cells picked under a finer editing symmetry
+       * than the current grouping. The faint fill says "some of this".
+       */
+      const st = isHeader
+        ? (b.cell.subCells.every(s => this._subState(`${L}.${b.cell.index}.${s.index}`) === 2) ? 2
+           : b.cell.subCells.some(s => this._subState(`${L}.${b.cell.index}.${s.index}`) > 0) ? 1 : 0)
+        : this._subState(key);
+      const on = st === 2;
+      const part = st === 1;
 
       // box. Everything here is a toggle, so the hover stays in the accent —
       // green and red belong to the 3-D view, where they mean add and remove.

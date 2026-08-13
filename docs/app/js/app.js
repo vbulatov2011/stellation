@@ -303,11 +303,47 @@ function redo() {
  *               with its whole supporting set.
  */
 
-/** toggle a single sub-cell — the console/API entry point */
+/*
+ * The atomic selection model.
+ *
+ * state.selected holds ATOM keys — "layer.orbit.member", one per primitive
+ * cell — which name the same piece of space under every stellation symmetry.
+ * The symmetry's whole role is editorial: a click toggles the clicked atom's
+ * entire orbit under the CURRENT group. These maps, rebuilt from every
+ * outline, are how a click's atom finds its orbit.
+ */
+function indexOutline(outline) {
+  state.subOf = new Map();     // atom key -> owning sub-cell key
+  state.atomsOf = new Map();   // sub-cell key -> its atom keys
+  for (const layer of outline) {
+    for (const cell of layer.cells) {
+      for (const sub of cell.subCells) {
+        const subKey = `${layer.layer}.${cell.index}.${sub.index}`;
+        const atoms = (sub.atoms || []).map(m => `${layer.layer}.${cell.index}.${m}`);
+        state.atomsOf.set(subKey, atoms);
+        for (const a of atoms) state.subOf.set(a, subKey);
+      }
+    }
+  }
+}
+
+/** the atom keys of the editing orbit containing `key` — the click's reach */
+function orbitAtoms(key) {
+  const subKey = state.subOf?.get(key);
+  return (subKey && state.atomsOf.get(subKey)) || [key];
+}
+
+/**
+ * Toggle the editing orbit of one atom — the console/API entry point and what
+ * every diagram click funnels into. Partially selected orbits fill first,
+ * full ones clear: the same convention as the panel's boxes.
+ */
 function applyToCell(key) {
   if (!key) return;
+  const atoms = orbitAtoms(key);
   mark();
-  state.selected.has(key) ? state.selected.delete(key) : state.selected.add(key);
+  const allOn = atoms.every(k => state.selected.has(k));
+  for (const k of atoms) allOn ? state.selected.delete(k) : state.selected.add(k);
   refresh();
 }
 
@@ -338,16 +374,17 @@ function onPick3D(hit, mod) {
   const inside = mesh.faceInside[hit.face];
   const outside = mesh.faceOutside[hit.face];
 
-  // One cell at a time here: the solid adds or removes exactly what you
-  // pointed at. The group walk belongs to the Cells table alone.
+  // The solid adds or removes the ORBIT of what you pointed at — under the
+  // current editing symmetry, which is that group's entire job. Under E the
+  // orbit is the one cell; the supporting-set walk stays the Cells table's.
   if (mod.shift) {
     if (!outside) { setStatus('nothing further out on that face — raise the build depth', false); return; }
     mark();
-    applyChange([outside], true);
+    applyChange(orbitAtoms(outside), true);
   } else if (mod.ctrl) {
     if (!inside) { setStatus('no cell inside that face', false); return; }
     mark();
-    applyChange([inside], false);
+    applyChange(orbitAtoms(inside), false);
   } else {
     return;
   }
@@ -374,8 +411,11 @@ function onHover3D(hit, mod) {
   const key = mod?.shift ? mesh.faceOutside[hit.face] : mesh.faceInside[hit.face];
   const live = !!key && !!action;
   renderer?.setHighlight(hit.face, action, live || !action);
+  // name the box the panel shows, not the raw atom — that is what the click's
+  // orbit expansion will actually toggle
+  const shown = key && (state.subOf?.get(key) || key);
   $('#hover3d').textContent = !action ? ''
-    : key ? `${mod.shift ? 'add' : 'remove'} cell ${key}`
+    : key ? `${mod.shift ? 'add' : 'remove'} cell ${shown}`
     : (mod.shift ? 'nothing further out on this face' : 'nothing behind this face');
 }
 
@@ -863,6 +903,7 @@ async function build(cellsString) {
     }, ({ done, total }) => setStatus(`intersecting plane ${done} of ${total}…`, true, done / total));
 
     state.outline = info.outline;
+    indexOutline(info.outline);
     state.diagramFrame = null;       // the old arrangement's frame is meaningless now
     cells.setOutline(info.outline);
     cells.setLabels(duValLabels());
@@ -918,8 +959,11 @@ async function refresh() {
     `<b>${mesh.stats.vertices}</b> v · <b>${mesh.stats.faces}</b> f · ` +
     `<b>${mesh.stats.cells}</b> cells · vol <b>${mesh.stats.volume.toFixed(4)}</b>`;
 
-  const { cells: str } = await call('formatCells', { selected });
+  const { cells: str, aligned } = await call('formatCells', { selected });
   state.cellsString = str;
+  // aligned = the selection is whole orbits of the current editing symmetry,
+  // so it serializes in the legacy notation old builds still read
+  state.cellsAligned = aligned !== false;
   $('#cellsString').value = str;
   syncHash();
 }
@@ -1040,7 +1084,8 @@ function wireControls() {
   $('#growLayer').onclick = async () => {
     let n = 0;
     state.outline.forEach((layer, l) => {
-      if (layer.cells.some(c => c.subCells.some(s => state.selected.has(`${l}.${c.index}.${s.index}`)))) n = l + 1;
+      if (layer.cells.some(c => c.subCells.some(
+        s => (s.atoms || []).some(m => state.selected.has(`${l}.${c.index}.${m}`))))) n = l + 1;
     });
     const { keys } = await call('layerKeys', { n: Math.min(n + 1, state.outline.length) });
     mark(); state.selected = new Set(keys); refresh();

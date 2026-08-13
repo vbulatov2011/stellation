@@ -8,9 +8,8 @@
  */
 
 import {
-  buildStellation, extractMesh, parseCells, formatCells, selectedSubCells,
-  createDiagram, selKey, subCellForFacet, cellsAcrossFacet, cellsAcrossFace,
-  diagramFaces, planeClasses,
+  buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
+  atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
 } from '../../lib/core.js';
 
 let stel = null;
@@ -42,6 +41,9 @@ function outline() {
         index: s.index,
         primitives: s.cells.length,
         volume: s.volume,
+        // which atoms of the orbit this sub-cell holds — the panel's tri-state
+        // and the app's click expansion are both computed from these
+        atoms: s.cells.map(c2 => c2.memberIndex),
         bottom: [...(s.bottom || [])].map(key),
         top: [...(s.top || [])].map(key),
       })),
@@ -55,9 +57,20 @@ function outline() {
  * click on the solid into "grow here" or "carve this away".
  */
 function meshFor(selected) {
-  const subs = selectedSubCells(stel, selected);
-  const mesh = extractMesh(subs, stel.pool);
-  const key = s => s && `${s.layer}.${s.cellIndex}.${s.index}`;
+  const picked = selectedCells(stel, selected);
+  const mesh = extractMesh([{ cells: picked }], stel.pool);
+  /*
+   * The neighbours across a face are reported as ATOMS — the primitive cell
+   * itself, not its owning sub-cell. A click means "toggle the orbit of THIS
+   * cell under the current editing symmetry", and the app does the orbit
+   * expansion, so the reference must survive a regrouping unchanged.
+   */
+  const akey = c => c && atomKeyOf(c);
+  const across = (i) => {
+    const f = mesh.facetRefs[i];
+    return mesh.facetTop[i] ? { inside: f.cellBelow, outside: f.cellAbove }
+                            : { inside: f.cellAbove, outside: f.cellBelow };
+  };
   return {
     vertices: mesh.vertices,
     faces: mesh.faces,
@@ -75,23 +88,26 @@ function meshFor(selected) {
     facePlanes: mesh.facetRefs.map(f => f.plane),
     // "inside" is the solid cell this face belongs to, "outside" the empty
     // neighbour across it — which is what a click means, and what the two
-    // gestures act on. cellsAcrossFace orients the pair; reading cellBelow /
-    // cellAbove the same way round everywhere instead made shift and ctrl both
-    // silent no-ops on every downward-facing face.
-    faceInside: mesh.faces.map((_, i) => key(cellsAcrossFace(mesh, i).inside) || null),
-    faceOutside: mesh.faces.map((_, i) => key(cellsAcrossFace(mesh, i).outside) || null),
+    // gestures act on. The top/bottom orientation mirrors cellsAcrossFace;
+    // reading cellBelow / cellAbove the same way round everywhere instead made
+    // shift and ctrl both silent no-ops on every downward-facing face.
+    faceInside: mesh.faces.map((_, i) => akey(across(i).inside) || null),
+    faceOutside: mesh.faces.map((_, i) => akey(across(i).outside) || null),
     stats: {
       vertices: mesh.vertices.length,
       faces: mesh.faces.length,
-      cells: subs.length,
-      volume: subs.reduce((s, x) => s + x.volume, 0),
+      // boxes of the current grouping with anything in them — same number the
+      // statusbar has always shown when the selection is whole orbits
+      cells: new Set(picked.map(c => c.owner)).size,
+      pieces: picked.length,
+      volume: picked.reduce((s, x) => s + x.volume, 0),
     },
   };
 }
 
 function diagramFor(planeIndex, selected) {
-  const subs = selectedSubCells(stel, selected);
-  const d = createDiagram(stel, planeIndex, subs, 0);
+  const picked = selectedCells(stel, selected);
+  const d = createDiagram(stel, planeIndex, [{ cells: picked }], 0);
   if (!d) return null;
   return {
     planeIndex: d.planeIndex,
@@ -104,24 +120,24 @@ function diagramFor(planeIndex, selected) {
     extent: d.extent,
     frame: d.frame,                // projection basis, for the element overlay
     facets: d.facets.map(f => {
-      const sc = subCellForFacet(f.facet);
       /*
        * Every region of the diagram sits between two three-dimensional cells:
        * the one it caps (below the plane, toward the centre) and the one that
        * rests on it (above). The two references let a click mean "toggle the
        * cell under this region" or "toggle the one on top of it" — which is how
-       * the Java original works, and what the 6 August night session asked for.
+       * the Java original works. Like the mesh, they refer to ATOMS, so a
+       * regrouping cannot stale them; the app expands to the editing orbit.
        */
-      const across = cellsAcrossFacet(f.facet);
-      const key = s => s ? [s.layer, s.cellIndex, s.index] : null;
+      const key = c => c ? [c.orbit.layer, c.orbit.index, c.memberIndex] : null;
+      const below = f.facet.cellBelow || null, above = f.facet.cellAbove || null;
       return {
         poly: f.poly,
         layer: f.layer,
         selected: f.selected,
         facing: f.facing,          // 1 outward, 0 inward (lines a cavity)
-        ref: sc ? key(sc) : null,
-        refBelow: key(across.below),
-        refAbove: key(across.above),
+        ref: key(below || above),
+        refBelow: key(below),
+        refAbove: key(above),
       };
     }),
   };
@@ -204,20 +220,22 @@ self.onmessage = (e) => {
         break;
 
       case 'parseCells': {
-        const set = parseCells(stel, payload.cells);
+        const set = parseCellsAny(stel, payload.cells, payload.indexing || null);
         reply({ selected: [...set] });
         break;
       }
 
-      case 'formatCells':
-        reply({ cells: formatCells(stel, new Set(payload.selected)) });
+      case 'formatCells': {
+        const { text, aligned } = formatCellsAtoms(stel, new Set(payload.selected));
+        reply({ cells: text, aligned });
         break;
+      }
 
-      /** every sub-cell key in layers [0, n) — the "first n layers" shortcut */
+      /** every atom key in layers [0, n) — the "first n layers" shortcut */
       case 'layerKeys': {
         const keys = [];
         stel.cellLayers.slice(0, payload.n).forEach((layer, l) => {
-          layer.forEach((o, c) => o.subCells.forEach(s => keys.push(selKey(l, c, s.index))));
+          layer.forEach((o, c) => o.cells.forEach((_, m) => keys.push(atomKey(l, c, m))));
         });
         reply({ keys });
         break;
