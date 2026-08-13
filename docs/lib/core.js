@@ -665,6 +665,13 @@ export function makeSymmetricCells(cells, matrices, layer) {
 
   orbits.sort(compareCells);
   orbits.forEach((o, i) => { o.index = i; });
+  /*
+   * Atom backlinks. A primitive cell's (layer, orbit, member) triple is its
+   * identity in the atomic selection model — see the "atomic selection"
+   * section below. Member order is simply enumeration order, which is
+   * deterministic, and nothing downstream ever reorders orbit.cells.
+   */
+  for (const o of orbits) o.cells.forEach((c, m) => { c.orbit = o; c.memberIndex = m; });
   return orbits;
 }
 
@@ -1121,6 +1128,235 @@ export function selectedSubCells(stel, selected) {
     });
   });
   return out;
+}
+
+// ---------------------------------------------------------------- atomic selection
+
+/*
+ * The editing-symmetry model.
+ *
+ * A selection is ultimately a set of PRIMITIVE cells — "atoms" — keyed
+ * "layer.orbit.member". The (layer, orbit) indexing and each orbit's member
+ * order depend only on the polyhedron, the depth and the polyhedron symmetry,
+ * never on the stellation symmetry: makeArrangement and makeSymmetricCells run
+ * before subMatrices is ever consulted, and makeSubCells reads orbit.cells
+ * without reordering it. So an atom key names the same piece of space under
+ * every stellation symmetry — which is what lets a selection survive a
+ * symmetry switch. The group's only role is deciding how big a bite an
+ * editing operation takes: a click toggles the clicked atom's whole sub-cell.
+ *
+ * The sub-key world above stays untouched — the figure pages drive it
+ * directly — and the two worlds meet only where a sub-cell is expanded to its
+ * atoms or a set of atoms is tested against the current grouping.
+ */
+
+export const atomKey = (l, c, m) => `${l}.${c}.${m}`;
+export const atomKeyOf = (cell) => atomKey(cell.orbit.layer, cell.orbit.index, cell.memberIndex);
+
+/**
+ * Re-split every orbit's sub-cells under a different stellation symmetry,
+ * in place, without rebuilding the arrangement — the Java applet's
+ * StellationController.createSubcells. Everything derived from the grouping
+ * is redone: the sub-cells themselves, the owner backlinks picks rely on,
+ * and the support graph. The orbits, their member lists and the arrangement
+ * are untouched, which is the whole point.
+ */
+export function regroupSubCells(stel, subMatrices) {
+  for (const layer of stel.cellLayers) {
+    for (const o of layer) {
+      o.subCells = subMatrices ? makeSubCells(o, subMatrices)
+                               : [{ cells: o.cells, volume: o.volume, parent: o,
+                                    index: 0, layer: o.layer, cellIndex: o.index }];
+      for (const s of o.subCells) for (const c of s.cells) c.owner = s;
+    }
+  }
+  makeConnectivityGraph(stel.cellLayers);
+  return stel;
+}
+
+/**
+ * The primitive cells an atom-key set refers to, in fixed layer/orbit/member
+ * order. That fixed order is load-bearing: extractMesh's facet-cancellation
+ * maps iterate in insertion order, so the same atom set yields an identical
+ * mesh whatever the current grouping — the invariant the symmetry switch is
+ * tested against. Wrap the result as [{ cells }] for extractMesh/createDiagram.
+ */
+export function selectedCells(stel, atomSet) {
+  const out = [];
+  stel.cellLayers.forEach((layer, l) => {
+    layer.forEach((orbit, c) => {
+      orbit.cells.forEach((cell, m) => {
+        if (atomSet.has(atomKey(l, c, m))) out.push(cell);
+      });
+    });
+  });
+  return out;
+}
+
+/** every atom key of the sub-cells named by a sub-key set */
+export function subKeysToAtoms(stel, subKeys) {
+  const atoms = new Set();
+  stel.cellLayers.forEach((layer, l) => {
+    layer.forEach((orbit, c) => {
+      for (const s of orbit.subCells) {
+        if (!subKeys.has(selKey(l, c, s.index))) continue;
+        for (const cell of s.cells) atoms.add(atomKeyOf(cell));
+      }
+    });
+  });
+  return atoms;
+}
+
+/**
+ * If the atom set is a union of current sub-cells — every sub all-or-nothing
+ * — return the equivalent sub-key Set; otherwise null. This is the alignment
+ * test: aligned selections serialize in the legacy notation, byte for byte.
+ */
+export function atomsAsSubKeys(stel, atomSet) {
+  const subKeys = new Set();
+  for (const layer of stel.cellLayers) {
+    for (const orbit of layer) {
+      for (const s of orbit.subCells) {
+        let on = 0;
+        for (const cell of s.cells) if (atomSet.has(atomKeyOf(cell))) on++;
+        if (on === 0) continue;
+        if (on !== s.cells.length) return null;
+        subKeys.add(selKey(orbit.layer, orbit.index, s.index));
+      }
+    }
+  }
+  return subKeys;
+}
+
+/**
+ * Serialize an atomic selection.
+ *
+ * Aligned under the current grouping, it DELEGATES to formatCells, so the
+ * output is byte-identical to what this build has always written and any old
+ * reader still understands it. Unaligned, it writes the same grammar against
+ * member indices with a `c` prefix — c{0,1(2[0,3])} — which no grouping is
+ * needed to read back, since member order is a property of the orbit alone.
+ */
+export function formatCellsAtoms(stel, atomSet) {
+  const subKeys = atomsAsSubKeys(stel, atomSet);
+  if (subKeys) return { text: formatCells(stel, subKeys), aligned: true };
+
+  const parts = [];
+  let needComma = false;
+  stel.cellLayers.forEach((layer, l) => {
+    const cellStrs = [];
+    let layerFull = layer.length > 0;
+    layer.forEach((orbit, c) => {
+      const on = [];
+      orbit.cells.forEach((cell, m) => { if (atomSet.has(atomKey(l, c, m))) on.push(m); });
+      if (on.length === 0) { layerFull = false; return; }
+      if (on.length === orbit.cells.length) cellStrs.push({ s: String(c), full: true });
+      else {
+        layerFull = false;
+        cellStrs.push({ s: `${c}[${on.join(',')}]`, full: false });
+      }
+    });
+    if (cellStrs.length === 0) return;
+    if (needComma) parts.push(',');
+    if (layerFull) { parts.push(String(l)); needComma = true; }
+    else {
+      let inner = '', comma = false;
+      for (const cs of cellStrs) {
+        if (comma) inner += ',';
+        inner += cs.s;
+        comma = cs.full;
+      }
+      parts.push(`${l}(${inner})`);
+      needComma = false;
+    }
+  });
+  return { text: 'c{' + parts.join('') + '}', aligned: false };
+}
+
+/**
+ * Parse either form into atom keys. `indexing === 'cells'` (or the c-prefix)
+ * reads member indices; anything else is the legacy sub-index notation,
+ * parsed by the untouched parseCells against the CURRENT grouping and then
+ * expanded to atoms.
+ */
+export function parseCellsAny(stel, str, indexing = null) {
+  if (!str) return new Set();
+  const memberForm = indexing === 'cells' || /^\s*c\{/.test(str);
+  if (!memberForm) return subKeysToAtoms(stel, parseCells(stel, str));
+
+  const selected = new Set();
+  const toks = str.replace(/^\s*c/, '').match(/\d+|[{}()\[\],]/g) || [];
+  let i = 0;
+  const peek = () => toks[i];
+  const next = () => toks[i++];
+
+  const allMembers = (l, c) => {
+    const orbit = stel.cellLayers[l]?.[c];
+    if (orbit) orbit.cells.forEach((_, m) => selected.add(atomKey(l, c, m)));
+  };
+  const allCells = (l) => { (stel.cellLayers[l] || []).forEach((_, c) => allMembers(l, c)); };
+
+  if (peek() === '{') next();
+  while (i < toks.length) {
+    const t = next();
+    if (t === '}') break;
+    if (t === ',') continue;
+    if (!/^\d+$/.test(t)) continue;
+    const layer = Number(t);
+    if (peek() !== '(') { allCells(layer); continue; }
+    next();                                   // consume '('
+    while (i < toks.length && peek() !== ')') {
+      const ct = next();
+      if (ct === ',') continue;
+      if (!/^\d+$/.test(ct)) continue;
+      const cell = Number(ct);
+      if (peek() !== '[') { allMembers(layer, cell); continue; }
+      next();                                 // consume '['
+      while (i < toks.length && peek() !== ']') {
+        const st = next();
+        if (!/^\d+$/.test(st)) continue;
+        const m = Number(st);
+        if (m < (stel.cellLayers[layer]?.[cell]?.cells.length || 0)) {
+          selected.add(atomKey(layer, cell, m));
+        }
+      }
+      next();                                 // consume ']'
+    }
+    next();                                   // consume ')'
+  }
+  return selected;
+}
+
+/**
+ * Serialize an atomic selection under a grouping OTHER than the current one,
+ * without disturbing it — a transient split, formatted by the untouched
+ * formatCells against a shallow view. Used for the .stel export of an
+ * unaligned selection, which legacy readers can only follow when it is
+ * written under a group that makes it whole sub-cells — E always does, one
+ * cell per sub. Returns null if the selection is not aligned even under the
+ * given group (impossible under E).
+ */
+export function formatCellsUnder(stel, atomSet, subMatrices) {
+  const view = {
+    cellLayers: stel.cellLayers.map(layer => layer.map(o => {
+      const copy = { ...o };
+      copy.subCells = makeSubCells(copy, subMatrices);
+      return copy;
+    })),
+  };
+  const subKeys = new Set();
+  for (const layer of view.cellLayers) {
+    for (const orbit of layer) {
+      for (const s of orbit.subCells) {
+        let on = 0;
+        for (const cell of s.cells) if (atomSet.has(atomKeyOf(cell))) on++;
+        if (on === 0) continue;
+        if (on !== s.cells.length) return null;
+        subKeys.add(selKey(orbit.layer, orbit.index, s.index));
+      }
+    }
+  }
+  return formatCells(view, subKeys);
 }
 
 /** parse a .stel file: polyhedron / planes / symmetry / cells */

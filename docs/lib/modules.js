@@ -30,6 +30,9 @@ export {
   extractMesh, selectedSubCells, subCellForFacet, cellsAcrossFacet,
   cellsAcrossFace, supportSet, dependentSet, adjacent, compareCells, selKey,
   cellCenter, cellVolume, countVertices, orientFaces,
+  // the atomic selection model (editing symmetry)
+  atomKey, atomKeyOf, regroupSubCells, selectedCells, subKeysToAtoms,
+  atomsAsSubKeys, formatCellsAtoms, parseCellsAny, formatCellsUnder,
   // the 2D diagram
   createDiagram, diagramFaces, diagramExtent, facetCenter, facetArea,
   planeClasses,

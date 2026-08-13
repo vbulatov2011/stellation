@@ -1,0 +1,60 @@
+{
+    "name": "par-26-08-13-11-53-40-655",
+    "appInfo": {
+        "appName": "Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1",
+        "fileFormatRelease": 1
+    },
+    "params": {
+        "polyhedron": {
+            "name": "truncated dodecahedron",
+            "file": "u31"
+        },
+        "symmetry": {
+            "polyhedron": "Ih",
+            "stellation": "Th"
+        },
+        "arrangement": {
+            "planeDepth": 60
+        },
+        "cells": {
+            "selection": "{1(0)2(0)3(0[0,2])4(1[0]2[1])5(0[0]2[0])6(2[0])}"
+        },
+        "display": {
+            "diagramFace": 0,
+            "showEdges": true,
+            "showAllFacets": true,
+            "spin": false,
+            "colorMode": "class",
+            "faceOpacity": 0.89,
+            "edges": {
+                "face": {
+                    "show": true,
+                    "color": "#795356",
+                    "width": 3.3,
+                    "tubes": true
+                },
+                "facet": {
+                    "show": true,
+                    "color": "#6b7080",
+                    "width": 1,
+                    "tubes": false
+                }
+            }
+        },
+        "camera": {
+            "view": [
+                0,
+                0,
+                0,
+                1,
+                1.654731,
+                0,
+                0,
+                1
+            ]
+        },
+        "export": {
+            "lengthUnit": 0.01
+        }
+    }
+}
