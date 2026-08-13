@@ -160,6 +160,31 @@ then open http://localhost:8000.  Any static server will do.
 `docs/_headers` is the cache policy for Cloudflare Pages, where the site is
 deployed; it has no effect locally.
 
+### Windows, presets and local files
+
+The app can run its panels docked (the default) or as floating internal windows
+— a header toggle switches between them, and a phone is always docked.  The
+window system is `docs/lib/uilib/`, an adapted port of the same library in the
+sibling SymmHub project.
+
+Ready-made documents live in `docs/presets/`: each is a `<name>.json` with a
+`<name>.json.png` thumbnail beside it, listed in `docs/presets/index.json`.  To
+add one, save a document, render its thumbnail (the app's `Save As…` does both
+at once, or use `stellation.downloadThumb(name)` from the console), drop the
+pair into `docs/presets/`, and add a line to the manifest.
+
+Local-file support depends on the browser:
+
+| | Chrome / Edge | Firefox / Safari / mobile |
+|---|---|---|
+| Open a `.json` / `.stel` | file picker | file picker |
+| Save | over the file, or download | download |
+| Browse a folder, previews, Save As, Save-in-place | yes | — (buttons hidden) |
+
+The folder features use the File System Access API, which only Chromium has;
+everywhere else they are absent and Save is a plain download.  Server presets
+work in every browser.
+
 An earlier attempt machine-translated the Java with the
 [JSweet transpiler](https://www.jsweet.org/).  That route was abandoned in
 favour of the hand port and its files have been removed; it is in the history if

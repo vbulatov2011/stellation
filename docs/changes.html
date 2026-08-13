@@ -65,6 +65,53 @@
 
   <!-- ══════════════════════════════════════════════ -->
   <div class="grp">
+    <h3>Sixth round</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>The panels can float as windows.</b> A toggle in the header switches the
+      app between the docked three-pane layout and a desktop of movable, resizable
+      windows — the solid, the diagram, the cells table and the settings each in
+      one. Docked stays the default; a phone is always docked, floating panels
+      there being a worse kind of scrolling. The trick underneath is that the
+      windows <em>adopt</em> the existing panels rather than rebuild them: the live
+      DOM is moved into the windows and back, so every control, every wired
+      handler and the live WebGL context come along untouched. Window positions
+      and which windows are open persist between visits.
+    </div></li>
+    <li><div>
+      <b>Presets with pictures, instead of four buttons.</b> The <em>Presets…</em>
+      button opens a window of thumbnails for ready-made stellations the site
+      ships; picking one loads it. The four numbered sample buttons are gone,
+      converted into the first four presets. They are ordinary <code>.json</code>
+      files with a <code>.json.png</code> thumbnail beside each, served as plain
+      images, so the browser does all the work and this runs everywhere, phones
+      included.
+    </div></li>
+    <li><div>
+      <b>Documents can live in a folder, not just downloads.</b> In browsers that
+      allow it (Chrome, Edge — the File System Access API), <em>Browse…</em> opens
+      a thumbnail view of a folder you choose, <em>Save</em> overwrites the file a
+      document came from and refreshes its preview, and <em>Save As…</em> writes a
+      json + thumbnail pair into a folder you pick. The folder is remembered, so
+      later visits need only a one-click permission, not the picker again.
+      Elsewhere — Firefox, Safari, mobile — those buttons simply do not appear,
+      and Save stays the <code>.json</code> download it always was. Nothing breaks
+      on any browser.
+    </div></li>
+    <li><div>
+      <b>The narrow-screen layout works now.</b> The responsive rules had been
+      dead for a while — a stylesheet ordering bug meant the two views never
+      stacked on a small screen. They do again: below a certain width the views
+      stack, then the side panel drops below them, then on a phone the whole thing
+      is one scrolling column. The window chrome is built on pointer events, so it
+      drags with a finger; the file and preset windows become near-fullscreen
+      sheets where a floating window would be pointless.
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
     <h3>Fifth round</h3>
   </div>
   <ul class="done">

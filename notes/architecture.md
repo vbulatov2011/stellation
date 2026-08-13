@@ -26,9 +26,12 @@ ant-build.bat …              wrappers that find a JDK and an Ant for you
 
 docs/                        the published site (GitHub Pages, .nojekyll)
   lib/          4,000 loc    engine and views, framework-free
-  app/js/       1,800 loc    the application
+  lib/uilib/    1,300 loc    windows + file handling, ported from SymmHub
+  app/js/       2,300 loc    the application (app, worker, preset, workspace,
+                             presets, docmanager)
   js/           1,600 loc    scripts for the essay pages
   data/           710 KB     catalog, geometry, symmetry, Brückner plates
+  presets/                   shipped documents: <name>.json + .json.png + index.json
   test/           350 loc    four Node harnesses
   index.html                 the landing page: a card per page, nothing else
   stellation_app.html        the app
@@ -167,6 +170,46 @@ essay pages never name an internal path.
 
 ---
 
+## Windows, presets and files
+
+`docs/lib/uilib/` is an adapted port of the window+file library from the sibling
+SymmHub project (`250125_symhub/.../lib/uilib`). Its own barrel, separate from
+`lib/modules.js`, so the tutorial pages never fetch a byte of it. What changed
+in the port is in each file's header; the load-bearing changes: dragging is
+Pointer Events with capture (SymmHub's is mouse-only), the chrome is themed from
+the app's CSS variables, and one shared IndexedDB store (`stellation.files`)
+replaces SymmHub's three parallel databases.
+
+- `internalWindow.js` — floating windows: a module-global manager for z-order
+  and Escape, geometry/visibility persisted under `<storageId>_params` /
+  `_visible`, clamped to a container element rather than the viewport.
+- `imageSelector.js` — a window of clickable thumbnails; items are
+  `{url|tmb|file, data}`, `url` being a plain `<img src>` (server presets need
+  no fetch code).
+- `FileSelectionDialog.js` / `FolderPickerDialog.js` / `SaveAsDialog.js` /
+  `files.js` — the local-folder machinery, all behind `hasFSAccess()`.
+
+**Windowed mode** (`app/js/workspace.js`) is the one idea worth understanding:
+entering it MOVES the live panel subtrees (the two `.view`s, the cells group,
+the settings `details`) into window interiors with `appendChild`, and leaving
+moves them back to comment markers recording their docked slots. Nothing is
+cloned or recreated, so every id, every handler wired once in `wireControls`,
+and every canvas context survives — which is why `initWorkspace()` runs *after*
+`wireControls()`, on DOM that was all found in its docked place first.
+
+**Documents** (`app/js/docmanager.js`) turn on the *origin*: a document opened
+from a local folder remembers its folder handle and file name, so Save
+overwrites it; a preset, a `.stel` or a file-input open clears the origin, so
+Save falls through to Save As. A saved document is the `<name>.json` +
+`<name>.json.png` pair, the same convention `docs/presets/` uses.
+
+Storage inventory: `localStorage` keys `stell.ui.mode` (docked/windows),
+`stell.win.*_params` / `_visible` (per-window geometry and visibility);
+IndexedDB `stellation.files` store `handles` (root and last-subfolder directory
+handles, keyed per dialog).
+
+---
+
 ## Data
 
 Precomputed, so the app needs no server: **121 solids** across five catalog
@@ -229,6 +272,12 @@ prose. Treat it as the design record, because it is.
   solid, edge counts per sample, drag and throw behaviour — but none of it is in
   `docs/test/`. Edge classification in particular is a pure function of the mesh
   and would sit naturally beside `facing.mjs`.
+- **The UI has no automated test at all.** Windowed mode, the preset browser and
+  the whole file layer were verified by driving the running app in a browser
+  (including the local-file flows against the Origin Private File System standing
+  in for a picked folder), but nothing re-runs those. The Node harnesses can only
+  reach the engine; the DOM and File System Access paths would need a headless
+  browser the repo does not set up.
 - **`src/test/java` has no runner.** Ant does not compile it, and the JSweet-era
   `pom.xml` that carried the JUnit dependency was removed when that route was
   abandoned. `AppTest` and `DragProbe` are inert; `DragProbe` in particular is
