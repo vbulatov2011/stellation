@@ -10,6 +10,7 @@
 import {
   buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
   atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
+  formatCellsUnder,
 } from '../../lib/core.js';
 
 let stel = null;
@@ -230,6 +231,12 @@ self.onmessage = (e) => {
         reply({ cells: text, aligned });
         break;
       }
+
+      /** the selection under a grouping other than the current one — legacy
+          notation via a transient split; null if not whole orbits under it */
+      case 'formatUnder':
+        reply({ cells: formatCellsUnder(stel, new Set(payload.selected), payload.subMatrices) });
+        break;
 
       /** every atom key in layers [0, n) — the "first n layers" shortcut */
       case 'layerKeys': {

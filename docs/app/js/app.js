@@ -173,8 +173,10 @@ async function boot() {
    * written before it existed still open.
    */
   const hash = decodeURIComponent(location.hash.slice(1));
+  // the cells segment allows the c{…} member-indexed form — an unaligned
+  // selection, which parseCellsAny recognises by the prefix
   const m = hash.match(
-    /^([\w]+)(?:\/([\w()]+))?(?:\/([\w()]+))?(?:\/d(\d+))?(?:\/v([-\d.,eE]+))?(?:\/(\{.*\}))?$/);
+    /^([\w]+)(?:\/([\w()]+))?(?:\/([\w()]+))?(?:\/d(\d+))?(?:\/v([-\d.,eE]+))?(?:\/(c?\{.*\}))?$/);
   if (m && geometry[m[1]]) {
     await select(findItem(m[1]) || { file: m[1], name: m[1], symmetry: m[2] || 'Ih' },
                  { polySym: m[2], stellSym: m[3], cells: m[6],
@@ -525,7 +527,7 @@ async function select(item, opts = {}) {
    * angle comes back but the size does not.
    */
   state.pendingScale = Renderer3D.viewModelScale(opts.view);
-  await build(opts.cells);
+  await build(opts.cells, opts.cellsIndexing || null);
   // after the build, so the mesh (and therefore the model scale) already exists
   if (opts.view && renderer?.setView(opts.view)) lastView = renderer.getView().join(',');
 }
@@ -881,7 +883,7 @@ function refreshDiagramOverlay() {
 
 // ------------------------------------------------------------------ build
 
-async function build(cellsString) {
+async function build(cellsString, cellsIndexing = null) {
   if (state.building) return;
   state.building = true;
   setStatus('building the plane arrangement…', true);
@@ -914,7 +916,7 @@ async function build(cellsString) {
     renderLegend();
 
     if (cellsString) {
-      const { selected } = await call('parseCells', { cells: cellsString });
+      const { selected } = await call('parseCells', { cells: cellsString, indexing: cellsIndexing });
       state.selected = new Set(selected);
     } else {
       const { keys } = await call('layerKeys', { n: 1 });
@@ -1232,10 +1234,26 @@ function wireControls() {
     $('#saveAsBtn').hidden = false;
     $('#browseBtn').hidden = false;
   }
-  $('#exportStel').onclick = () => download(`${name()}.stel`, writeStel({
-    polyhedron: state.current.name, polySymmetry: state.polySym,
-    stellSymmetry: state.stellSym, cells: state.cellsString,
-  }));
+  /*
+   * .stel is the original program's format and cannot say "member indices".
+   * An unaligned selection exports under the trivial group instead: written
+   * as E sub-cells it IS whole orbits, and a legacy reader running with
+   * stellation symmetry E reproduces it exactly.
+   */
+  $('#exportStel').onclick = async () => {
+    let cellsText = state.cellsString, stellSym = state.stellSym;
+    if (state.cellsAligned === false) {
+      const { cells: eText } = await call('formatUnder', {
+        selected: [...state.selected], subMatrices: state.symmetry.E.matrices,
+      });
+      if (!eText) { setStatus('could not express this selection for .stel', false); return; }
+      cellsText = eText; stellSym = 'E';
+    }
+    download(`${name()}.stel`, writeStel({
+      polyhedron: state.current.name, polySymmetry: state.polySym,
+      stellSymmetry: stellSym, cells: cellsText,
+    }));
+  };
   $('#exportSvg').onclick = () => download(`${name()}-diagram.svg`, diagram.toSVG(), 'image/svg+xml');
   $('#exportPng').onclick = () => {
     const a = document.createElement('a');
@@ -1433,6 +1451,9 @@ function currentPresetText(docName) {
     polyhedron: state.current.name, file: state.current.file,
     polySymmetry: state.polySym, stellSymmetry: state.stellSym,
     planeDepth: state.depth, cells: state.cellsString,
+    // a selection that is not whole orbits of the stellation symmetry writes
+    // member-indexed brackets, marked so readers know which they are holding
+    cellsIndexing: state.cellsAligned === false ? 'cells' : null,
     diagramFace: state.planeIndex,
     edges: currentEdgeStyle(),
     // the master flag, for readers that predate the face/facet split
@@ -1590,7 +1611,7 @@ async function openDocument(text, filename = '') {
     applyDisplaySettings(doc);
     const ok = await buildCustomPlanes(doc.planesText);
     if (ok && doc.cells) {
-      const { selected } = await call('parseCells', { cells: doc.cells });
+      const { selected } = await call('parseCells', { cells: doc.cells, indexing: doc.cellsIndexing || null });
       state.selected = new Set(selected);
       await refresh();
     }
@@ -1617,6 +1638,7 @@ async function openDocument(text, filename = '') {
   applyDisplaySettings(doc);
 
   await select(item, { polySym: doc.polySymmetry, stellSym: doc.stellSymmetry, cells: doc.cells,
+                       cellsIndexing: doc.cellsIndexing || null,
                        depth: doc.planeDepth ?? undefined, view: doc.view });
   setStatus(`opened ${doc.name || filename} (${doc.source === 'json' ? 'JSON' : '.stel'})`, false);
 }

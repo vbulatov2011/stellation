@@ -19,7 +19,16 @@
 import { parseStel } from '../../lib/modules.js';
 
 export const APP_NAME = 'Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1';
-export const FILE_FORMAT_RELEASE = 1;
+/*
+ * Release 1: the selection string's [brackets] hold sub-cell indices under
+ * the document's stellation symmetry — every document ever written.
+ * Release 2: cells.indexing === "cells" marks a selection that is NOT whole
+ * orbits of its stellation symmetry; the brackets then hold primitive-cell
+ * (member) indices. Written ONLY for such documents, so anything an old
+ * build could read correctly still says release 1, and what it would
+ * misread it refuses instead ("this file is format release 2…").
+ */
+export const FILE_FORMAT_RELEASE = 2;
 const PARAM_PREFIX = 'par';
 
 /** `-YY-MM-DD-HH-MM-SS-mmm`, the SymmHub date2s() format */
@@ -44,7 +53,7 @@ export function newDocumentName(date = new Date()) {
  */
 export function writePreset({
   name, polyhedron, file, polySymmetry, stellSymmetry,
-  planeDepth, cells, diagramFace,
+  planeDepth, cells, cellsIndexing = null, diagramFace,
   showEdges = true, showAllFacets = true, spin = false, colorMode = 'layer',
   faceOpacity = 1, edges = null,
   view = null, planesText = null,
@@ -52,12 +61,16 @@ export function writePreset({
 }) {
   return JSON.stringify({
     name: name || newDocumentName(),
-    appInfo: { appName: APP_NAME, fileFormatRelease: FILE_FORMAT_RELEASE },
+    // release 2 exists only for member-indexed selections — see the constant
+    appInfo: { appName: APP_NAME,
+               fileFormatRelease: cellsIndexing === 'cells' ? 2 : 1 },
     params: {
       polyhedron: { name: polyhedron, file },
       symmetry: { polyhedron: polySymmetry, stellation: stellSymmetry },
       arrangement: { planeDepth },
-      cells: { selection: cells },
+      cells: cellsIndexing === 'cells'
+        ? { selection: cells, indexing: 'cells' }
+        : { selection: cells },
       /*
        * `camera` is the orientation quaternion followed by the zoom distance.
        * Saved so that reopening a document, or sending someone a link, shows the
@@ -130,6 +143,9 @@ export function readPreset(doc) {
     polySymmetry: p.symmetry?.polyhedron ?? null,
     stellSymmetry: p.symmetry?.stellation ?? null,
     cells: p.cells?.selection ?? null,
+    // "cells" = member-indexed brackets (an unaligned selection); anything
+    // else is the classic sub-index notation under the stellation symmetry
+    cellsIndexing: p.cells?.indexing === 'cells' ? 'cells' : null,
     planeDepth: p.arrangement?.planeDepth ?? null,
     diagramFace: p.display?.diagramFace ?? 0,
     showEdges: p.display?.showEdges ?? true,
