@@ -1050,7 +1050,7 @@ function wireControls() {
 
   $('#autoRotate').onchange = (e) => { if (renderer) renderer.autoRotate = e.target.checked; };
   for (const id of ['#showFaceEdges', '#faceEdgeColor', '#faceEdgeWidth',
-                    '#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth']) {
+                    '#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth', '#edgeTubes']) {
     // `input` rather than `change` so dragging a slider or scrubbing the colour
     // picker updates the solid as you go, which is the only way to tune a
     // weight or a shade against what you are actually looking at
@@ -1425,6 +1425,8 @@ function currentEdgeStyle() {
       color: $('#facetEdgeColor').value,
       width: Number($('#facetEdgeWidth').value),
     },
+    // both kinds drawn as thin lit cylinders instead of flat lines
+    tubes: $('#edgeTubes').checked,
   };
 }
 
@@ -1439,6 +1441,7 @@ function applyEdgeStyle(style) {
     if (hexToRgba(s.color)) $(ids[1]).value = s.color;
     if (s.width > 0) $(ids[2]).value = s.width;
   }
+  if (typeof style.tubes === 'boolean') $('#edgeTubes').checked = style.tubes;
   pushEdgeStyle();
 }
 
@@ -1451,6 +1454,7 @@ function pushEdgeStyle() {
   if (!renderer) return;
   renderer.faceEdges = { show: style.face.show, color: hexToRgba(style.face.color), width: style.face.width };
   renderer.facetEdges = { show: style.facet.show, color: hexToRgba(style.facet.color), width: style.facet.width };
+  renderer.edgeTubes = !!style.tubes;
   renderer.draw();
 }
 

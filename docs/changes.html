@@ -89,11 +89,22 @@
       order, using the sorting algorithm from the original Java applet: a
       stellation is cut from a fixed set of planes, and those planes order the
       facets exactly, where a general depth sort would get these meshes wrong.
-      The edges composite in that same order, each at its own depth — an edge
-      deep inside is dimmed by every layer of glass in front of it, while the
-      edges of the front surface stay crisp — so the solid reads as a
-      translucent object rather than an x-ray. The setting is saved with the
-      document, so a figure can be kept the way it reads best.
+      Everything opaque — the edges, the symmetry axes, the mirror rims — draws
+      <em>first</em> and writes real depth, and the glass then composites over
+      it: an edge or axis deep inside is dimmed by every layer of glass in
+      front of it, anything it hides stays hidden, and the front surface stays
+      crisp. So the solid reads as a translucent object rather than an x-ray.
+      The setting is saved with the document, so a figure can be kept the way
+      it reads best.
+    </div></li>
+    <li><div>
+      <b>Edges can be thin cylinders.</b> A checkbox in the edges panel draws
+      both kinds of edge as slender capped cylinders instead of flat lines —
+      real geometry with thickness in the model, shaded by the same lights as
+      the solid, so an edge catches a highlight and shades round. The width
+      sliders set how thick; being real geometry, they grow as you zoom in
+      where the flat lines keep a constant screen width. Saved with the
+      document like the rest of the edge styling.
     </div></li>
     <li><div>
       <b>One menu for every window.</b> The <em>windows menu</em> in the header

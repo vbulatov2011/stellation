@@ -91,88 +91,6 @@ uniform vec4 uColor;
 out vec4 fragColor;
 void main() { fragColor = uColor; }`;
 
-/*
- * The translucent path draws facets AND edges in one element-indexed call, in
- * the depth order the card shuffle produces (_buildSortData). That needs one
- * program able to render both primitives, because interleaving two programs
- * along a sorted stream would mean a draw call per run. So this shader is the
- * solid shader and the line shader joined with a branch: aKind picks which
- * body runs. Facet corners carry position in aA and normal in aB; edge quad
- * corners carry the segment endpoints in aA/aB and extrude in screen space
- * exactly as LINE_VERT does, with per-kind widths since face and facet edges
- * are tuned separately.
- */
-const UNI_VERT = /*glsl*/`#version 300 es
-precision highp float;
-in vec3 aA;          // facet: position          edge: segment start
-in vec3 aB;          // facet: normal            edge: segment end
-in float aSide;      // edge quad corner, -1 / +1
-in float aEnd;       // edge quad corner, 0 at A / 1 at B
-in float aKind;      // 0 facet · 1 face edge · 2 facet edge
-in vec3 aColor;      // facet colour; edge colour is a per-kind uniform
-uniform mat4 uProj;
-uniform mat4 uView;
-uniform vec2 uViewport;
-uniform float uWidthFace;    // half-widths, device pixels
-uniform float uWidthFacet;
-out vec3 vNormal;
-out vec3 vColor;
-out vec3 vEye;
-flat out float vKind;
-void main() {
-  vKind = aKind;
-  if (aKind < 0.5) {
-    vec4 p = uView * vec4(aA, 1.0);
-    vEye = p.xyz;
-    vNormal = mat3(uView) * aB;
-    vColor = aColor;
-    gl_Position = uProj * p;
-  } else {
-    vec4 ca = uProj * uView * vec4(aA, 1.0);
-    vec4 cb = uProj * uView * vec4(aB, 1.0);
-    vec2 sa = ca.xy / max(ca.w, 1e-6) * uViewport;
-    vec2 sb = cb.xy / max(cb.w, 1e-6) * uViewport;
-    vec2 dir = sb - sa;
-    dir = length(dir) < 1e-6 ? vec2(1.0, 0.0) : normalize(dir);
-    float w = aKind < 1.5 ? uWidthFace : uWidthFacet;
-    vec2 nrm = vec2(-dir.y, dir.x) * aSide * w / uViewport;
-    vec4 c = mix(ca, cb, aEnd);
-    c.xy += nrm * c.w;
-    vEye = vec3(0.0);
-    vNormal = vec3(0.0, 0.0, 1.0);
-    vColor = vec3(0.0);
-    gl_Position = c;
-  }
-}`;
-
-const UNI_FRAG = /*glsl*/`#version 300 es
-precision highp float;
-in vec3 vNormal;
-in vec3 vColor;
-in vec3 vEye;
-flat in float vKind;
-uniform float uAlpha;        // facet translucency; edge ink keeps its own alpha
-uniform vec4 uColorFace;
-uniform vec4 uColorFacet;
-out vec4 fragColor;
-void main() {
-  if (vKind > 0.5) {
-    fragColor = vKind < 1.5 ? uColorFace : uColorFacet;
-    return;
-  }
-  vec3 n = normalize(vNormal);
-  if (!gl_FrontFacing) n = -n;
-  vec3 L1 = normalize(vec3(-0.35, 0.55, 0.9));
-  vec3 L2 = normalize(vec3(0.6, -0.3, 0.4));
-  float d = max(dot(n, L1), 0.0) * 0.85 + max(dot(n, L2), 0.0) * 0.25;
-  vec3 V = normalize(-vEye);
-  vec3 H = normalize(L1 + V);
-  float spec = pow(max(dot(n, H), 0.0), 48.0) * 0.35;
-  vec3 c = vColor * (0.34 + d) + spec;
-  float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0) * 0.12;
-  fragColor = vec4(c + rim, uAlpha);
-}`;
-
 // layer palette — warm at the core, cool further out
 export const LAYER_COLORS = [
   [0.98, 0.76, 0.32], [0.95, 0.55, 0.30], [0.88, 0.38, 0.38],
@@ -381,6 +299,7 @@ export class Renderer3D {
     this.showEdges = true;
     this.colorMode = 'layer';  // 'layer' | 'class' — see setColorMode
     this.faceOpacity = 1;      // 1 solid … 0 wireframe — see draw()
+    this.edgeTubes = false;    // edges as lit cylinders — see _ensureTubes
     this.lastFaceClass = null;
     this.elements = null;      // symmetry axes / mirrors / Sn axes, see setElements
     this.elemCount = 0;
@@ -472,6 +391,61 @@ export class Renderer3D {
     put('elem', tubes, 'elemCount');
     put('disc', discs, 'discCount');
     gl.bindVertexArray(null);
+  }
+
+  /*
+   * Edges as thin cylinders — real geometry with a world-space radius, lit
+   * by the same lights as the solid, instead of screen-space quads of
+   * constant pixel width. The width sliders set the radius, scaled to the
+   * mesh so the same number reads the same on any model; zooming in makes
+   * them thicker on screen, which is what real geometry does.
+   */
+  _tubeStyle() {
+    const R = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1));
+    const wF = this.faceEdges.width ?? this.edgeWidth;
+    const wT = this.facetEdges.width ?? this.edgeWidth;
+    const cF = this.faceEdges.color || this.edgeColor;
+    const cT = this.facetEdges.color || this.edgeColor;
+    return { radF: wF * R / 600, radT: wT * R / 600, cF, cT,
+             key: R.toFixed(5) + '|' + wF + '|' + wT + '|' + cF.join() + '|' + cT.join() };
+  }
+
+  /**
+   * Build (or reuse) the cylinder geometry for both edge kinds. Cached
+   * against a key of everything baked into the vertices — widths, colours,
+   * the mesh scale — so dragging a style slider rebuilds and everything
+   * else redraws what is already on the GPU.
+   */
+  _ensureTubes() {
+    const st = this._tubeStyle();
+    if (this._tubeArrays?.key === st.key) return;
+    const gl = this.gl;
+    const build = (segs, rad, col) => {
+      const o = { pos: [], norm: [], col: [] };
+      for (let i = 0; i < segs.length; i += 2) segTube(o, segs[i], segs[i + 1], rad, col);
+      return o;
+    };
+    const face = build(this._faceSegs || [], st.radF, st.cF);
+    const facet = build(this._facetSegs || [], st.radT, st.cT);
+    const put = (which, data, count) => {
+      if (!this[which + 'Vao']) {
+        this[which + 'Vao'] = gl.createVertexArray();
+        this[which + 'Bufs'] = { p: gl.createBuffer(), n: gl.createBuffer(), c: gl.createBuffer() };
+      }
+      const b = this[which + 'Bufs'];
+      gl.bindVertexArray(this[which + 'Vao']);
+      for (const [buf, arr, name] of [[b.p, data.pos, 'aPos'], [b.n, data.norm, 'aNormal'], [b.c, data.col, 'aColor']]) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW);
+        const l = gl.getAttribLocation(this.prog, name);
+        if (l >= 0) { gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 3, gl.FLOAT, false, 0, 0); }
+      }
+      this[count] = data.pos.length / 3;
+    };
+    put('faceTube', face, 'faceTubeCount');
+    put('facetTube', facet, 'facetTubeCount');
+    gl.bindVertexArray(null);
+    this._tubeArrays = { key: st.key };
   }
 
   /**
@@ -724,13 +698,11 @@ export class Renderer3D {
             a: [a.x * s, a.y * s, a.z * s],
             b: [b.x * s, b.y * s, b.z * s],
             plane: planes ? planes[fi] : -1,
-            f1: fi, f2: -1,        // the two facets meeting here — the
-            uses: 1,               // translucent path sorts edges by them
+            uses: 1,
             crease: false,
           });
         } else {
           seen.uses++;
-          if (seen.f2 < 0) seen.f2 = fi;
           if (!planes || seen.plane !== planes[fi]) seen.crease = true;
         }
       }
@@ -752,11 +724,9 @@ export class Renderer3D {
      * in the face bucket, which draws exactly what this used to.
      */
     const faceLines = [], facetLines = [];
-    const faceAdj = [], facetAdj = [];       // [f1, f2] per segment, aligned
     for (const e of edges.values()) {
-      const isFace = (!planes || e.crease || e.uses === 1);
-      (isFace ? faceLines : facetLines).push(e.a, e.b);
-      (isFace ? faceAdj : facetAdj).push(e.f1, e.f2);
+      const bucket = (!planes || e.crease || e.uses === 1) ? faceLines : facetLines;
+      bucket.push(e.a, e.b);
     }
 
     const upload = (vao, buf, loc, data, size, prog) => {
@@ -771,12 +741,10 @@ export class Renderer3D {
     upload(this.vao, this.normBuf, 'aNormal', norm, 3, this.prog);
     upload(this.vao, this.colBuf, 'aColor', col, 3, this.prog);
     this.count = pos.length / 3;
-    // kept for the translucent path, which builds its combined buffers lazily
-    // (_buildSortData) so a page that never leaves 100% never pays for them
-    this._fillPos = pos; this._fillNorm = norm; this._fillCol = col;
-    this._faceSegs = faceLines; this._facetSegs = facetLines;
-    this._faceSegAdj = faceAdj; this._facetSegAdj = facetAdj;
     this._sortData = null;         // new geometry: the translucency order tables are stale
+    // kept for the cylinder edges, built lazily so line mode never pays for them
+    this._faceSegs = faceLines; this._facetSegs = facetLines;
+    this._tubeArrays = null;
 
     this.faceLineCount = this._uploadSegments(this.faceLineVao, this.faceLineBufs, faceLines);
     this.facetLineCount = this._uploadSegments(this.facetLineVao, this.facetLineBufs, facetLines);
@@ -850,35 +818,6 @@ export class Renderer3D {
     const tris = this.pickTris;
     const T = tris ? tris.length : 0;
     if (!T) return null;
-    const gl = this.gl;
-    /*
-     * The edges join the sorted stream as items of their own, because an
-     * edge composited at its proper depth is dimmed by exactly the glass in
-     * front of it — drawn after everything, as the opaque path does, every
-     * edge shone through at full strength and the solid read as an x-ray.
-     * Edges introduce no planes: every edge of the mesh lies where planes of
-     * the arrangement meet.
-     *
-     * An edge does not sort by its own midpoint, though. Edge ink sits ON
-     * the two facets that meet at it, and its quad is extruded a pixel or
-     * two across both — so it must draw after BOTH of them, or whichever
-     * one slopes toward the viewer paints glass over its half of the line
-     * and the edges thin out the moment opacity leaves 100%. Classified by
-     * its midpoint the edge is ON its planes, and the sloping facet is
-     * strictly on the near side of one of them, which draws it later. So
-     * per frame each edge borrows the side-table row of its FRONT adjacent
-     * facet — the one on the viewer's side of the edge's other plane (qP
-     * below). Borrowing that row means no plane ever separates the edge
-     * from that facet, so their initial order decides — and the base order
-     * is facets first, then edges: crisp ink over its own surface. Anything
-     * genuinely in front still separates from the borrowed facet through
-     * that facet's own plane, and the edge draws before it: dimmed.
-     */
-    const faceSegs = this._faceSegs || [];
-    const facetSegs = this._facetSegs || [];
-    const Ef = faceSegs.length / 2, Et = facetSegs.length / 2;
-    const E = Ef + Et;
-    const N = T + E;
     /*
      * The facet -> plane map comes from the worker when the app is driving
      * (faceClass.planes); the figure pages do not send it, so they recover
@@ -891,7 +830,7 @@ export class Renderer3D {
     const ids = new Map();
     const eqs = [];                    // [nx, ny, nz, d] per plane, d >= 0
     const triPlane = new Int32Array(T);
-    const cx = new Float64Array(N), cy = new Float64Array(N), cz = new Float64Array(N);
+    const cx = new Float64Array(T), cy = new Float64Array(T), cz = new Float64Array(T);
     for (let t = 0; t < T; t++) {
       const { a, b, c } = tris[t];
       cx[t] = (a[0] + b[0] + c[0]) / 3;
@@ -913,188 +852,66 @@ export class Renderer3D {
       if (p === undefined) { p = eqs.length; ids.set(key, p); eqs.push([nx, ny, nz, d]); }
       triPlane[t] = p;
     }
-    const segAt = (e) => (e < Ef
-      ? [faceSegs[e * 2], faceSegs[e * 2 + 1]]
-      : [facetSegs[(e - Ef) * 2], facetSegs[(e - Ef) * 2 + 1]]);
-    for (let e = 0; e < E; e++) {
-      const [a, b] = segAt(e);
-      const i = T + e;
-      cx[i] = (a[0] + b[0]) / 2;
-      cy[i] = (a[1] + b[1]) / 2;
-      cz[i] = (a[2] + b[2]) / 2;
-    }
     const P = eqs.length;
-    // -1 behind / 0 on / +1 in front, for every (plane, item) pair
-    const side = new Int8Array(P * N);
+    // -1 behind / 0 on / +1 in front, for every (plane, facet) pair
+    const side = new Int8Array(P * T);
     for (let p = 0; p < P; p++) {
       const [nx, ny, nz, d] = eqs[p];
       const eps = 1e-7 * (1 + d);
-      const row = p * N;
-      for (let i = 0; i < N; i++) {
-        if (i < T && triPlane[i] === p) continue;        // its own plane: on it
-        const s = nx * cx[i] + ny * cy[i] + nz * cz[i] - d;
-        side[row + i] = s > eps ? 1 : (s < -eps ? -1 : 0);
+      const row = p * T;
+      for (let t = 0; t < T; t++) {
+        if (triPlane[t] === p) continue;                 // its own plane: on it
+        const s = nx * cx[t] + ny * cy[t] + nz * cz[t] - d;
+        side[row + t] = s > eps ? 1 : (s < -eps ? -1 : 0);
       }
     }
-
-    /*
-     * Edge adjacency, for the borrowed rows: the two facet items meeting at
-     * each edge, and the edge's OTHER plane — for a crease that is the
-     * second facet's plane; for a facet edge (both facets in one plane) it
-     * is the plane that made the cut, found by testing which other plane
-     * holds both endpoints. All of a facet's triangles classify alike, so
-     * its first triangle stands for it.
-     */
-    const faceTri = new Map();
-    for (let t = 0; t < T; t++) {
-      if (!faceTri.has(tris[t].face)) faceTri.set(tris[t].face, t);
-    }
-    const adjAt = (e) => (e < Ef
-      ? [this._faceSegAdj[e * 2], this._faceSegAdj[e * 2 + 1]]
-      : [this._facetSegAdj[(e - Ef) * 2], this._facetSegAdj[(e - Ef) * 2 + 1]]);
-    const adjA = new Int32Array(E), adjB = new Int32Array(E), qP = new Int32Array(E);
-    for (let e = 0; e < E; e++) {
-      const [f1, f2] = adjAt(e);
-      const a = adjA[e] = faceTri.get(f1) ?? -1;
-      const b = adjB[e] = f2 >= 0 ? (faceTri.get(f2) ?? -1) : -1;
-      let q = -1;
-      if (a >= 0 && b >= 0 && triPlane[b] !== triPlane[a]) {
-        q = triPlane[b];                       // a crease: the other facet's plane
-      } else if (a >= 0) {
-        const [sa, sb] = segAt(e);             // a cut: find the cutting plane
-        for (let p = 0; p < P; p++) {
-          if (p === triPlane[a]) continue;
-          const [nx, ny, nz, d] = eqs[p];
-          const eps = 1e-7 * (1 + d);
-          if (Math.abs(nx * sa[0] + ny * sa[1] + nz * sa[2] - d) < eps &&
-              Math.abs(nx * sb[0] + ny * sb[1] + nz * sb[2] - d) < eps) { q = p; break; }
-        }
-      }
-      qP[e] = q;
-    }
-
-    const map = new Uint32Array(N);            // item -> whose side row to use
-    for (let i = 0; i < N; i++) map[i] = i;    // facets: their own; edges: per frame
-
-    /*
-     * The combined vertex buffers the unified program draws from: the facet
-     * corners verbatim, then every edge quad expanded exactly as
-     * _uploadSegments expands it. Item i < T owns vertices 3i..3i+2; edge
-     * item e owns 3T+6e..3T+6e+5 — what the element builder relies on.
-     */
-    const V = T * 3 + E * 6;
-    const A = new Float32Array(V * 3), B = new Float32Array(V * 3);
-    const S = new Float32Array(V), EN = new Float32Array(V);
-    const K = new Float32Array(V), C = new Float32Array(V * 3);
-    A.set(this._fillPos, 0);
-    B.set(this._fillNorm, 0);
-    C.set(this._fillCol, 0);
-    const SIDE = [-1, 1, -1, -1, 1, 1];
-    const END = [0, 0, 1, 1, 0, 1];
-    for (let e = 0; e < E; e++) {
-      const [a, b] = segAt(e);
-      const kind = e < Ef ? 1 : 2;
-      for (let k = 0; k < 6; k++) {
-        const vtx = T * 3 + e * 6 + k, o = vtx * 3;
-        A[o] = a[0]; A[o + 1] = a[1]; A[o + 2] = a[2];
-        B[o] = b[0]; B[o + 1] = b[1]; B[o + 2] = b[2];
-        S[vtx] = SIDE[k]; EN[vtx] = END[k]; K[vtx] = kind;
-      }
-    }
-    this.uniProg ||= program(gl, UNI_VERT, UNI_FRAG);
-    if (!this.uniVao) {
-      this.uniVao = gl.createVertexArray();
-      this.uniBufs = { a: gl.createBuffer(), b: gl.createBuffer(), side: gl.createBuffer(),
-                       end: gl.createBuffer(), kind: gl.createBuffer(), col: gl.createBuffer() };
-      this.uniEbo = gl.createBuffer();
-    }
-    gl.bindVertexArray(this.uniVao);
-    const bind = (buf, data, name, size) => {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-      gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-      const l = gl.getAttribLocation(this.uniProg, name);
-      if (l >= 0) { gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, size, gl.FLOAT, false, 0, 0); }
-    };
-    bind(this.uniBufs.a, A, 'aA', 3);
-    bind(this.uniBufs.b, B, 'aB', 3);
-    bind(this.uniBufs.side, S, 'aSide', 1);
-    bind(this.uniBufs.end, EN, 'aEnd', 1);
-    bind(this.uniBufs.kind, K, 'aKind', 1);
-    bind(this.uniBufs.col, C, 'aColor', 3);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.uniEbo);   // rides in the VAO
-    gl.bindVertexArray(null);
-
     return {
-      N, T, Ef, eqs, side, triPlane, adjA, adjB, qP, map,
-      zsign: new Int8Array(P),
-      order: Uint32Array.from({ length: N }, (_, i) => i),
-      far: new Uint32Array(N), near: new Uint32Array(N),
-      elements: new Uint32Array(V),
+      T, eqs, side,
+      order: Uint32Array.from({ length: T }, (_, i) => i),
+      far: new Uint32Array(T), near: new Uint32Array(T),
+      elements: new Uint32Array(T * 3),
     };
   }
 
   /**
    * The card shuffle itself: partition the running order once per plane,
-   * write the visible items into the element buffer, and return the index
-   * count. `order` persists between frames — any starting order is correct
-   * (every pair is settled by its own plane's pass), so last frame's order
-   * is as good a start as any and most passes barely move anything. Edge
-   * visibility is applied here, not in the tables, so toggling a kind of
-   * edge costs nothing but the next frame.
+   * write the result into the element buffer, and return the index count.
+   * `order` persists between frames — any starting order is correct (every
+   * pair is settled by its own plane's pass), so last frame's order is as
+   * good a start as any and most passes barely move anything.
    */
-  _sortedStream() {
+  _sortedTriangles() {
     const sd = this._sortData ||= this._buildSortData();
     if (!sd) return 0;
-    const { N, T, Ef, eqs, side, adjA, adjB, qP, map, zsign, order, far, near, elements } = sd;
+    const { T, eqs, side, order, far, near, elements } = sd;
     const R = quatToMat4(this.rotation);        // column-major; row 2 is eye z
     for (let p = 0; p < eqs.length; p++) {
       const [nx, ny, nz] = eqs[p];
       const zc = R[2] * nx + R[6] * ny + R[10] * nz;
-      // ~0 is edge-on: its half-spaces project to disjoint half-planes, no occlusion
-      zsign[p] = zc > 1e-6 ? 1 : (zc < -1e-6 ? -1 : 0);
-    }
-    // each edge borrows the row of its front adjacent facet — see _buildSortData
-    for (let e = 0; e < N - T; e++) {
-      const a = adjA[e];
-      if (a < 0) { map[T + e] = T + e; continue; }      // no adjacency: own midpoint
-      const b = adjB[e] >= 0 ? adjB[e] : a;
-      const q = qP[e];
-      const sgn = q >= 0 ? zsign[q] : 0;
-      map[T + e] = sgn === 0 ? a : (side[q * N + a] * sgn > 0 ? a : b);
-    }
-    for (let p = 0; p < eqs.length; p++) {
-      const sign = zsign[p];
-      if (sign === 0) continue;
-      const row = p * N;
+      // edge-on: its half-spaces project to disjoint half-planes, no occlusion
+      if (zc > -1e-6 && zc < 1e-6) continue;
+      const sign = zc > 0 ? 1 : -1;
+      const row = p * T;
       let nf = 0, nn = 0;
-      for (let i = 0; i < N; i++) {
+      for (let i = 0; i < T; i++) {
         const t = order[i];
-        if (side[row + map[t]] * sign > 0) near[nn++] = t;
-        else far[nf++] = t;                     // the far side, and everything on the plane
+        if (side[row + t] * sign > 0) near[nn++] = t;
+        else far[nf++] = t;                     // the far side and the plane's own facets
       }
       order.set(far.subarray(0, nf), 0);
       order.set(near.subarray(0, nn), nf);
     }
-    const showFace = this.showEdges && this.faceEdges.show;
-    const showFacet = this.showEdges && this.facetEdges.show;
-    let k = 0;
-    for (let i = 0; i < N; i++) {
-      const t = order[i];
-      if (t < T) {
-        const b = t * 3;
-        elements[k++] = b; elements[k++] = b + 1; elements[k++] = b + 2;
-      } else {
-        const e = t - T;
-        if (e < Ef ? !showFace : !showFacet) continue;
-        const b = T * 3 + e * 6;
-        for (let j = 0; j < 6; j++) elements[k++] = b + j;
-      }
+    for (let i = 0; i < T; i++) {
+      const b = order[i] * 3, e = i * 3;
+      elements[e] = b; elements[e + 1] = b + 1; elements[e + 2] = b + 2;
     }
     const gl = this.gl;
-    gl.bindVertexArray(this.uniVao);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.uniEbo);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elements.subarray(0, k), gl.DYNAMIC_DRAW);
-    return k;
+    gl.bindVertexArray(this.vao);
+    if (!this.sortEbo) this.sortEbo = gl.createBuffer();
+    // the element binding is VAO state, so this rides along with this.vao
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.sortEbo);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elements, gl.DYNAMIC_DRAW);
+    return T * 3;
   }
 
   /** expand [[x,y,z],[x,y,z], …] segment pairs into two triangles each */
@@ -1155,61 +972,7 @@ export class Renderer3D {
     gl.uniformMatrix4fv(gl.getUniformLocation(this.prog, 'uProj'), false, proj);
     gl.uniformMatrix4fv(gl.getUniformLocation(this.prog, 'uView'), false, view);
     gl.bindVertexArray(this.vao);
-    gl.enable(gl.POLYGON_OFFSET_FILL);
-    gl.polygonOffset(1.2, 1.2);      // sink the faces so edges sit cleanly on top
-    /*
-     * Translucent facets, if asked for.
-     *
-     * Below 1 the fill blends back-to-front in the order the card shuffle
-     * produces (_sortedStream) — the original applet's plane-partition sort,
-     * exact for a stellation; see _buildSortData. The EDGES ride in the same
-     * sorted stream, drawn by the same unified program at their own depth,
-     * so an interior edge is dimmed by exactly the glass in front of it —
-     * one layer of glass dims it once, three layers three times — instead of
-     * shining through at full strength. That is what makes the solid read as
-     * a translucent object rather than an x-ray. Depth writes stay off: the
-     * compositing order carries all the occlusion there is.
-     *
-     * At 0 the fill is skipped outright and, with no glass to dim anything,
-     * the edges draw the ordinary way: a plain wireframe.
-     */
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const alpha = Math.max(0, Math.min(1, this.faceOpacity ?? 1));
-    let edgesInStream = false;
-    if (alpha >= 1) {
-      gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
-      gl.drawArrays(gl.TRIANGLES, 0, this.count);
-    } else if (alpha > 0) {
-      const n = this._sortedStream();
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      gl.depthMask(false);
-      if (n) {
-        const u = (name) => gl.getUniformLocation(this.uniProg, name);
-        gl.useProgram(this.uniProg);
-        gl.uniformMatrix4fv(u('uProj'), false, proj);
-        gl.uniformMatrix4fv(u('uView'), false, view);
-        gl.uniform2f(u('uViewport'), W, H);
-        gl.uniform1f(u('uAlpha'), alpha);
-        gl.uniform4f(u('uColorFace'), ...(this.faceEdges.color || this.edgeColor));
-        gl.uniform4f(u('uColorFacet'), ...(this.facetEdges.color || this.edgeColor));
-        gl.uniform1f(u('uWidthFace'), (this.faceEdges.width ?? this.edgeWidth) * dpr);
-        gl.uniform1f(u('uWidthFacet'), (this.facetEdges.width ?? this.edgeWidth) * dpr);
-        gl.bindVertexArray(this.uniVao);
-        gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_INT, 0);
-        edgesInStream = true;
-        gl.useProgram(this.prog);          // the element and disc passes expect it
-        gl.bindVertexArray(this.vao);
-      } else {
-        // no sort tables (empty mesh): unsorted fill, edges the ordinary way
-        gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), alpha);
-        gl.drawArrays(gl.TRIANGLES, 0, this.count);
-        gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
-      }
-      gl.depthMask(true);
-      gl.disable(gl.BLEND);
-    }
-    gl.disable(gl.POLYGON_OFFSET_FILL);
     const drawLines = (vao, count, rgba, cssWidth) => {
       gl.useProgram(this.lineProg);
       gl.uniformMatrix4fv(gl.getUniformLocation(this.lineProg, 'uProj'), false, proj);
@@ -1220,33 +983,92 @@ export class Renderer3D {
       gl.bindVertexArray(vao);
       gl.drawArrays(gl.TRIANGLES, 0, count);
     };
-
-    /*
-     * Facet edges first, face edges over them: where the two would contend for
-     * the same pixels the solid's own edges should win. When the translucent
-     * stream ran, the edges are already composited at depth inside it, and
-     * drawing them again here would put the x-ray back on top.
-     */
     const drawEdges = (spec, vao, count) => {
       if (!this.showEdges || !spec.show || !count) return;
       drawLines(vao, count, spec.color || this.edgeColor, spec.width ?? this.edgeWidth);
     };
-    if (!edgesInStream) {
-      drawEdges(this.facetEdges, this.facetLineVao, this.facetLineCount);
-      drawEdges(this.faceEdges, this.faceLineVao, this.faceLineCount);
-    }
+
     /*
-     * Symmetry elements are real geometry, drawn into the same depth buffer as
-     * the solid, so an axis that runs behind a cell is hidden by it. Drawn as
-     * overlaid lines they were close to useless, because nothing occluded them:
-     * you could not tell which side of the solid an axis came out of. Building
-     * them as convex segments means the existing viewer handles them.
+     * All the opaque ink in one place: the edges — screen-space lines, or
+     * thin lit cylinders when edgeTubes is on — and the symmetry elements.
+     * Depth writes stay on throughout, so the ink occludes itself correctly
+     * from whichever pipeline calls it.
+     *
+     * Facet edges first, face edges over them: where the two contend for the
+     * same pixels the solid's own edges should win. The elements are real
+     * geometry in the same depth buffer, so an axis running behind a cell is
+     * hidden by it — drawn as overlaid lines they were close to useless,
+     * because nothing occluded them.
      */
-    if (this.elemCount) {
-      gl.useProgram(this.prog);
+    const drawInk = () => {
+      if (this.showEdges && this.edgeTubes && (this.faceEdges.show || this.facetEdges.show)) {
+        this._ensureTubes();
+        gl.useProgram(this.prog);
+        gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
+        const tubes = (show, vao, count) => {
+          if (!show || !count) return;
+          gl.bindVertexArray(vao);
+          gl.drawArrays(gl.TRIANGLES, 0, count);
+        };
+        tubes(this.facetEdges.show, this.facetTubeVao, this.facetTubeCount);
+        tubes(this.faceEdges.show, this.faceTubeVao, this.faceTubeCount);
+      } else {
+        drawEdges(this.facetEdges, this.facetLineVao, this.facetLineCount);
+        drawEdges(this.faceEdges, this.faceLineVao, this.faceLineCount);
+      }
+      if (this.elemCount) {
+        gl.useProgram(this.prog);
+        gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
+        gl.bindVertexArray(this.elemVao);
+        gl.drawArrays(gl.TRIANGLES, 0, this.elemCount);
+      }
+    };
+
+    /*
+     * Two pipelines, chosen by opacity.
+     *
+     * SOLID is the classic order: fill with depth, sunk by polygon offset,
+     * then the ink on top.
+     *
+     * TRANSLUCENT draws the OPAQUE INK FIRST — the pipeline suggested by the
+     * original author. Edges, cylinders and elements write real depth; the
+     * glass then composites back-to-front (the card shuffle,
+     * _sortedTriangles) with depth TEST on and depth writes off. Per pixel
+     * that is exact: glass in front of a cylinder dims it once per layer,
+     * glass behind it is culled at precisely the pixels it covers, and the
+     * polygon offset sinks each facet just behind its own coplanar ink so
+     * edges stay crisp on the surface they mark. (The first attempt drew the
+     * ink last onto an empty depth buffer, which put every edge and axis at
+     * full strength on top of the glass — an x-ray, not a translucent
+     * solid.) At 0 the glass is skipped and the ink alone is a wireframe.
+     */
+    const alpha = Math.max(0, Math.min(1, this.faceOpacity ?? 1));
+    if (alpha >= 1) {
+      gl.enable(gl.POLYGON_OFFSET_FILL);
+      gl.polygonOffset(1.2, 1.2);    // sink the faces so the ink sits cleanly on top
       gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
-      gl.bindVertexArray(this.elemVao);
-      gl.drawArrays(gl.TRIANGLES, 0, this.elemCount);
+      gl.drawArrays(gl.TRIANGLES, 0, this.count);
+      gl.disable(gl.POLYGON_OFFSET_FILL);
+      drawInk();
+    } else {
+      drawInk();
+      if (alpha > 0) {
+        const n = this._sortedTriangles();     // binds this.vao and its elements
+        gl.useProgram(this.prog);
+        if (!n) gl.bindVertexArray(this.vao);
+        gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), alpha);
+        gl.enable(gl.POLYGON_OFFSET_FILL);
+        gl.polygonOffset(1.2, 1.2);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.depthMask(false);
+        if (n) gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_INT, 0);
+        else gl.drawArrays(gl.TRIANGLES, 0, this.count);   // no mesh tables: unsorted
+        gl.depthMask(true);
+        gl.disable(gl.BLEND);
+        gl.disable(gl.POLYGON_OFFSET_FILL);
+        gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
+      }
     }
     // mirror planes last: translucent, so they must read over what is behind
     // them without writing depth, or the discs would hide each other
@@ -1790,6 +1612,37 @@ function tube(o, dir, ext, rad, col, sides = 10) {
       push(o, hub, nrm, col);
       push(o, at(k > 0 ? a : b, k), nrm, col);
       push(o, at(k > 0 ? b : a, k), nrm, col);
+    }
+  }
+}
+
+/** a capped prism between two points — an edge drawn as a thin lit cylinder */
+function segTube(o, a, b, rad, col, sides = 6) {
+  const dir = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  if (Math.hypot(...dir) < 1e-12) return;
+  const { w, u, v } = basis(dir);
+  const ring = [];
+  for (let i = 0; i < sides; i++) {
+    const t = (i / sides) * Math.PI * 2;
+    const c = Math.cos(t), s = Math.sin(t);
+    ring.push([u[0] * c + v[0] * s, u[1] * c + v[1] * s, u[2] * c + v[2] * s]);
+  }
+  const at = (n, e) => [e[0] + n[0] * rad, e[1] + n[1] * rad, e[2] + n[2] * rad];
+  // sides, with radial normals so the cylinder shades round
+  for (let i = 0; i < sides; i++) {
+    const p = ring[i], q = ring[(i + 1) % sides];
+    const A = at(p, a), B = at(q, a), C = at(q, b), D = at(p, b);
+    push(o, A, p, col); push(o, B, q, col); push(o, C, q, col);
+    push(o, A, p, col); push(o, C, q, col); push(o, D, p, col);
+  }
+  // flat caps, so an edge seen end-on is a disc rather than a hole
+  for (const [e, k] of [[a, -1], [b, 1]]) {
+    const nrm = [w[0] * k, w[1] * k, w[2] * k];
+    for (let i = 0; i < sides; i++) {
+      const p = ring[i], q = ring[(i + 1) % sides];
+      push(o, e, nrm, col);
+      push(o, at(k > 0 ? p : q, e), nrm, col);
+      push(o, at(k > 0 ? q : p, e), nrm, col);
     }
   }
 }

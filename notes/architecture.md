@@ -128,22 +128,31 @@ the above/below split.
 ### Facet opacity
 
 `params.display.faceOpacity`, 1 down to 0, is a blend setting and nothing more —
-no rebuild, only a redraw. Below 1 the fill pass turns on blending with depth
-writes off; the compositing order carries all the occlusion there is. At 0 the
-fill is skipped and the edges alone remain, a wireframe.
+no rebuild, only a redraw. Below 1 the pipeline inverts, **opaque ink first** —
+the architecture suggested by the original author:
 
-The **edges ride in the same sorted stream** as the facets, drawn by one
-unified program (facet corners and screen-space edge quads told apart by an
-`aKind` attribute), so one element-indexed draw call composites everything
-back-to-front. An interior edge is therefore dimmed by exactly the glass in
-front of it — one layer once, three layers three times — which is what makes
-the solid read as a translucent object instead of an x-ray. An edge does not
-sort by its own midpoint: its ink sits ON the two facets meeting at it, so
-each frame it borrows the side-table row of its *front* adjacent facet (the
-one on the viewer's side of the edge's other plane). No plane then separates
-the edge from the facet it sits on — initial order puts facets first, so the
-ink stays crisp on its own surface — while anything genuinely nearer still
-separates through that facet's own plane and dims it.
+1. The opaque ink — the edges (lines or cylinders), the symmetry axes and
+   mirror rims — draws first, depth test and depth writes on, exactly as
+   geometry among itself.
+2. The glass then composites back-to-front in card-shuffle order, blending,
+   depth TEST on but writes off, polygon-offset sunk just behind the ink.
+
+Per pixel that is exact: glass in front of an edge or axis dims it once per
+layer, glass behind it is culled at precisely the pixels it covers, and the
+offset keeps each facet from fighting its own coplanar ink, so front-surface
+edges stay crisp. (Two rejected designs: drawing the ink last onto the empty
+depth buffer put everything at full strength over the glass — an x-ray — and
+threading the edges through the sorted stream itself needed per-frame
+adjacency juggling and still only approximated what the depth buffer gives
+for free.) At 0 the glass is skipped and the ink alone remains, a wireframe.
+
+**Edges as cylinders** (`params.display.edges.tubes`): both edge kinds can be
+drawn as thin capped prisms — real geometry with a world-space radius, lit by
+the same lights as the solid — instead of screen-space quads of constant
+pixel width. The width sliders set the radius, scaled to the mesh radius so
+the same number reads alike on any model; being geometry, they thicken as you
+zoom. Built lazily and cached against a key of everything baked into the
+vertices (widths, colours, mesh scale), so line mode never pays for them.
 
 Blending is order-dependent, and the order is exact: the facets draw
 back-to-front in the order produced by the original applet's **card shuffle**
