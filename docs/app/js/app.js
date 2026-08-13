@@ -883,17 +883,27 @@ function refreshDiagramOverlay() {
 
 // ------------------------------------------------------------------ build
 
-async function build(cellsString, cellsIndexing = null) {
+async function build(cellsString, cellsIndexing = null, preserve = false) {
   if (state.building) return;
   state.building = true;
   setStatus('building the plane arrangement…', true);
 
   const g = state.customPlanes ? null : state.geometry[state.current.file];
-  renderer?.resetScale();      // a new arrangement re-frames; edits within one do not
-  // a document being reopened frames itself; see select()
-  if (renderer && state.pendingScale) { renderer.modelScale = state.pendingScale; }
-  state.pendingScale = 0;
-  clearHistory();              // a different arrangement: nothing earlier applies
+  /*
+   * `preserve` is the stellation-symmetry switch — and ONLY that switch. The
+   * arrangement it rebuilds is geometrically the one on screen (the group
+   * only regroups sub-cells), so the selection's atom keys stay valid, the
+   * undo history stays honest, and the camera must not jump. Every other
+   * road here — new solid, new depth, new polyhedron symmetry — is a truly
+   * different arrangement, where keeping any of those would corrupt them.
+   */
+  if (!preserve) {
+    renderer?.resetScale();    // a new arrangement re-frames; edits within one do not
+    // a document being reopened frames itself; see select()
+    if (renderer && state.pendingScale) { renderer.modelScale = state.pendingScale; }
+    state.pendingScale = 0;
+    clearHistory();            // a different arrangement: nothing earlier applies
+  }
   const polyM = state.symmetry[state.polySym]?.matrices || state.symmetry.E.matrices;
   const subM = state.symmetry[state.stellSym]?.matrices || null;
 
@@ -915,7 +925,9 @@ async function build(cellsString, cellsIndexing = null) {
     refreshElements();
     renderLegend();
 
-    if (cellsString) {
+    if (preserve) {
+      /* the selection IS the point: atom keys survive a grouping change */
+    } else if (cellsString) {
       const { selected } = await call('parseCells', { cells: cellsString, indexing: cellsIndexing });
       state.selected = new Set(selected);
     } else {
@@ -924,6 +936,7 @@ async function build(cellsString, cellsIndexing = null) {
     }
 
     await refresh();
+    state.builtStellSym = state.stellSym;   // what the grouping on screen actually is
     const slow = info.ms > 5000 && !state.depthAuto;
     setStatus(`${planeReport(info)} · ${info.facets.toLocaleString()} facets · ` +
               `${info.layers} layers · ${(info.ms / 1000).toFixed(info.ms > 5000 ? 1 : 3)} s` +
@@ -942,6 +955,23 @@ async function build(cellsString, cellsIndexing = null) {
     state.building = false;
   }
   return true;
+}
+
+/*
+ * The stellation-symmetry switch. The selection is untouched — that is the
+ * feature — along with the undo history and the camera; only the grouping
+ * changes, which build(preserve) re-derives. A switch during a build cannot
+ * be honoured (the worker is busy making some other arrangement), so the
+ * control snaps back to what is actually built rather than lying about it.
+ */
+async function changeStellSym() {
+  if (state.building) {
+    state.stellSym = state.builtStellSym || state.stellSym;
+    $('#stellSym').value = state.stellSym;
+    setStatus('still building — change the symmetry when it finishes', false);
+    return;
+  }
+  await build(null, null, true);
 }
 
 async function refresh() {
@@ -1069,7 +1099,13 @@ function wireControls() {
     syncSymmetrySelects();
     build();
   };
-  $('#stellSym').onchange = (e) => { state.stellSym = e.target.value; build(); };
+  /*
+   * Changing the stellation symmetry no longer touches the selection — it is
+   * an EDITING symmetry: it decides how big a bite the next click takes, not
+   * what is already built. Build symmetric under the full group, drop to a
+   * subgroup (E takes single cells) for the asymmetric touches, come back.
+   */
+  $('#stellSym').onchange = (e) => { state.stellSym = e.target.value; changeStellSym(); };
   $('#depth').oninput = (e) => setDepth(Number(e.target.value), false);
   $('#depth').onchange = () => build();
   $('#planeIndex').onchange = (e) => { state.planeIndex = Number(e.target.value) || 0; refresh(); };
