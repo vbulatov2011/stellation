@@ -298,6 +298,7 @@ export class Renderer3D {
     this.autoRotate = false;
     this.showEdges = true;
     this.colorMode = 'layer';  // 'layer' | 'class' — see setColorMode
+    this.faceOpacity = 1;      // 1 solid … 0 wireframe — see draw()
     this.lastFaceClass = null;
     this.elements = null;      // symmetry axes / mirrors / Sn axes, see setElements
     this.elemCount = 0;
@@ -711,6 +712,17 @@ export class Renderer3D {
     if (this.mesh) this.setMesh(this.mesh, this.lastFaceLayers, this.lastFaceClass);
   }
 
+  /**
+   * How solid the facets are, 1 down to 0. Costs nothing but a redraw — the
+   * geometry and its colours are untouched, only how they are blended.
+   */
+  setFaceOpacity(v) {
+    const a = Math.max(0, Math.min(1, Number(v)));
+    if (!Number.isFinite(a) || a === this.faceOpacity) return;
+    this.faceOpacity = a;
+    this.draw();
+  }
+
   /** expand [[x,y,z],[x,y,z], …] segment pairs into two triangles each */
   _uploadSegments(vao, bufs, segs) {
     const gl = this.gl;
@@ -768,11 +780,45 @@ export class Renderer3D {
     gl.useProgram(this.prog);
     gl.uniformMatrix4fv(gl.getUniformLocation(this.prog, 'uProj'), false, proj);
     gl.uniformMatrix4fv(gl.getUniformLocation(this.prog, 'uView'), false, view);
-    gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
     gl.bindVertexArray(this.vao);
     gl.enable(gl.POLYGON_OFFSET_FILL);
     gl.polygonOffset(1.2, 1.2);      // sink the faces so edges sit cleanly on top
-    gl.drawArrays(gl.TRIANGLES, 0, this.count);
+    /*
+     * Translucent facets, if asked for.
+     *
+     * Depth writes are OFF below 1, which is what makes the solid see-through:
+     * with nothing in the depth buffer, every facet blends and the edges drawn
+     * afterwards all come through, so what you get is an x-ray of the whole
+     * arrangement rather than a ghostly outer shell. That is the useful picture
+     * — the interior cells are the thing you cannot otherwise look at — and it
+     * is why anything below 100% shows the hidden edges too. At 0 the fill is
+     * skipped outright and the edges alone remain: a wireframe.
+     *
+     * The far side is drawn before the near side (cull front, then back).
+     * Blending is order-dependent and there is no sorting here — sorting every
+     * triangle each frame would cost more than the effect is worth — but this
+     * one extra draw call gets each shell blending in roughly the right order,
+     * which is most of the way to looking right for a nested solid.
+     */
+    const alpha = Math.max(0, Math.min(1, this.faceOpacity ?? 1));
+    if (alpha >= 1) {
+      gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
+      gl.drawArrays(gl.TRIANGLES, 0, this.count);
+    } else if (alpha > 0) {
+      gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), alpha);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(false);
+      gl.enable(gl.CULL_FACE);
+      for (const side of [gl.FRONT, gl.BACK]) {
+        gl.cullFace(side);
+        gl.drawArrays(gl.TRIANGLES, 0, this.count);
+      }
+      gl.disable(gl.CULL_FACE);
+      gl.depthMask(true);
+      gl.disable(gl.BLEND);
+      gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
+    }
     gl.disable(gl.POLYGON_OFFSET_FILL);
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);

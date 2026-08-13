@@ -91,6 +91,12 @@ async function boot() {
       renderer.colorMode = savedColor;         // set before the first setMesh
       $('#colorMode').value = savedColor;
     }
+    const savedOpacity = Number(localStorage.getItem('faceOpacity'));
+    if (Number.isFinite(savedOpacity) && savedOpacity >= 0 && savedOpacity < 100) {
+      renderer.faceOpacity = savedOpacity / 100;
+      $('#faceOpacity').value = String(savedOpacity);
+      $('#faceOpacityLabel').textContent = savedOpacity;
+    }
     renderer.start();
     renderer.onPick = onPick3D;
     renderer.onPickHover = onHover3D;
@@ -1056,6 +1062,17 @@ function wireControls() {
     diagram?.setColorMode(e.target.value);
   };
   /*
+   * `input`, not `change`: opacity is judged against what you are looking at,
+   * so the solid has to fade under the thumb. It is only a redraw — no rebuild
+   * — so dragging the slider is as cheap as turning the model.
+   */
+  $('#faceOpacity').oninput = (e) => {
+    const pct = Number(e.target.value);
+    $('#faceOpacityLabel').textContent = pct;
+    localStorage.setItem('faceOpacity', String(pct));
+    renderer?.setFaceOpacity(pct / 100);
+  };
+  /*
    * The per-view gesture panels. Each ? toggles its own, and clicking the panel
    * dismisses it — the whole panel is the target, being easier to hit than a
    * close button and the first thing anyone tries.
@@ -1357,6 +1374,7 @@ function currentPresetText(docName) {
     showAllFacets: $('#showAllFacets').checked,
     spin: $('#autoRotate').checked,
     colorMode: $('#colorMode').value,
+    faceOpacity: Number($('#faceOpacity').value) / 100,
     view: renderer?.getView() || null,
     planesText: state.customPlanes ? state.planesText : null,
   });
@@ -1456,6 +1474,8 @@ function applyDisplaySettings(doc) {
   }
   $('#colorMode').value = doc.colorMode || 'layer';
   $('#colorMode').dispatchEvent(new Event('change'));
+  $('#faceOpacity').value = String(Math.round((doc.faceOpacity ?? 1) * 100));
+  $('#faceOpacity').dispatchEvent(new Event('input'));
   // a pre-split document has only `showEdges`, which drew both kinds alike
   applyEdgeStyle(doc.edges || {
     face: { ...currentEdgeStyle().face, show: !!doc.showEdges },

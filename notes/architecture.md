@@ -125,6 +125,21 @@ takes two colours. The diagram follows the same choice — it is drawn on one
 plane, so by class it takes that plane's colour and the only variation left is
 the above/below split.
 
+### Facet opacity
+
+`params.display.faceOpacity`, 1 down to 0, is a blend setting and nothing more —
+no rebuild, only a redraw. Below 1 the fill pass turns on blending and turns
+**depth writes off**, which is what makes the solid see-through: the depth
+buffer stays empty, so every facet blends and the edges drawn afterwards all
+come through. That x-ray is the point — the interior cells are what you cannot
+otherwise look at — and it is why anything under 100% shows the hidden edges
+too. At 0 the fill is skipped and the edges alone remain, a wireframe.
+
+The far side is drawn before the near side (cull front, then back). Blending is
+order-dependent and nothing is sorted — sorting every triangle per frame would
+cost more than the effect is worth — but that one extra draw call gets each
+shell blending in roughly the right order.
+
 ### Two kinds of edge
 
 Also drawn from two buffers, each with its own toggle, colour and width, saved

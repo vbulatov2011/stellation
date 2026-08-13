@@ -46,7 +46,7 @@ export function writePreset({
   name, polyhedron, file, polySymmetry, stellSymmetry,
   planeDepth, cells, diagramFace,
   showEdges = true, showAllFacets = true, spin = false, colorMode = 'layer',
-  edges = null,
+  faceOpacity = 1, edges = null,
   view = null, planesText = null,
   exportLengthUnit = 0.01,
 }) {
@@ -68,7 +68,7 @@ export function writePreset({
        * beside it, as the master "any edges at all", so a document saved now
        * still opens sensibly in a build that predates the split.
        */
-      display: { diagramFace, showEdges, showAllFacets, spin, colorMode, edges },
+      display: { diagramFace, showEdges, showAllFacets, spin, colorMode, faceOpacity, edges },
       camera: view ? { view } : undefined,
       // the make-planes sheet, verbatim: the source of a custom arrangement is
       // the text the user wrote, so that is what round-trips
@@ -138,6 +138,8 @@ export function readPreset(doc) {
     // documents written before face-class colouring existed have no setting;
     // they were all drawn by shell, so that is what they should reopen as
     colorMode: p.display?.colorMode === 'class' ? 'class' : 'layer',
+    // written since translucency existed; anything older was drawn solid
+    faceOpacity: clamp01(p.display?.faceOpacity, 1),
     /*
      * Documents written before the face/facet split have no `edges`, only the
      * one `showEdges` flag — and that flag drew every edge alike. So fall back
@@ -149,4 +151,10 @@ export function readPreset(doc) {
     planesText: typeof p.planes?.text === 'string' ? p.planes.text : null,
     exportLengthUnit: p.export?.lengthUnit ?? 0.01,
   };
+}
+
+/** a 0..1 setting from a file, which may hold anything at all */
+function clamp01(v, fallback) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fallback;
 }

@@ -267,6 +267,10 @@
           <option value="class">by face class</option>
         </select>
       </label>
+      <label class="field" title="How solid the facets are. Below 100% the solid turns to glass and its hidden edges come through, so you can look at the cells inside it — the interior of a stellation is otherwise the one thing you cannot see. At 0% only the edges are left, which is a wireframe of the whole arrangement.">
+        <span>facet opacity <b id="faceOpacityLabel">100</b>%</span>
+        <input id="faceOpacity" type="range" min="0" max="100" step="5" value="100">
+      </label>
       <label class="check"><input id="autoRotate" type="checkbox"> spin the solid</label>
       <fieldset class="edge-kinds">
         <legend title="Every facet lies in one of the original face planes. Where two facets of DIFFERENT planes meet there is a real crease — an edge of the solid. Where two facets of the SAME plane meet the surface runs flat across the join and the line is just how the plane arrangement was cut up. Drawing the two the same buries the shape of the solid in the arrangement that produced it.">edges</legend>
