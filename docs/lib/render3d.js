@@ -395,9 +395,15 @@ export class Renderer3D {
    * Canonical orientation: x to the right, y up, z toward the viewer — the
    * frame the symmetry groups' matrices are written in, so a subgroup's axes
    * point where the group says they do.
+   *
+   * Orientation and pan only. Home used to send `distance` to 1 as well, but
+   * distance is a world radius, so 1 frames a model of scaled radius 1 — the
+   * original polyhedron, whatever is actually selected. On anything stellated
+   * that is a hidden zoom-in, and the solid overflowed the frame. Sizing is
+   * `fit()`'s job; home just puts you back the right way up.
    */
   home() {
-    this._ease({ rotation: [0, 0, 0, 1], distance: 1.0, pan: { x: 0, y: 0 } });
+    this._ease({ rotation: [0, 0, 0, 1], pan: { x: 0, y: 0 } });
   }
 
   /*
