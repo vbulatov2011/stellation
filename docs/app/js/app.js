@@ -8,6 +8,7 @@ import {
   toOFF, toOBJ, toSTL, writeStel, facePlanes, suggestDepth,
 } from '../../lib/modules.js';
 import { writePreset, readDocument, newDocumentName } from './preset.js';
+import { initWorkspace } from './workspace.js';
 
 const $ = sel => document.querySelector(sel);
 const $$ = sel => [...document.querySelectorAll(sel)];
@@ -118,6 +119,12 @@ async function boot() {
 
   wireControls();
   startWorker();
+  /*
+   * The workspace comes AFTER wireControls: windowed mode reparents the very
+   * nodes the wiring grabbed by id, and adoption of live DOM only works if
+   * everything was found in its docked place first.
+   */
+  initWorkspace({ redraw: () => { renderer?.resize(); diagram?.draw(); cells?.draw(); } });
   applyTheme(localStorage.getItem('theme') || 'auto');   // now that the views exist
 
   // handy from the console, and what the browser tests drive

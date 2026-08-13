@@ -113,6 +113,8 @@ main {
   grid-template-columns: minmax(0, 1fr) 322px;
   gap: 1px;
   background: var(--line);
+  /* the positioning context for floating internal windows (workspace.js) */
+  position: relative;
 }
 
 .stage {
@@ -752,4 +754,46 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
    `optional` are hidden below 650px. Same rule already used on historical.html. */
 @media (max-width: 650px) {
   .doc-head .optional, header .optional { display: none; }
+}
+
+/* ------------------------------------------------------------ windowed mode
+ *
+ * workspace.js moves the panel subtrees into floating internal windows and
+ * adds `windowed` to <body>. The docked grid stays in the markup — these
+ * rules only quiet it down: one column, the emptied side panel and both
+ * splitters hidden, and the (now childless) views grid left as the desktop
+ * the windows float over. The statusbar deliberately stays docked at the
+ * bottom — status and progress belong to the app, not to any one window.
+ */
+
+body.windowed main { grid-template-columns: minmax(0, 1fr) !important; }
+body.windowed .panel.right,
+body.windowed .splitter { display: none; }
+body.windowed .views { background: var(--bg); }
+
+/* the sizing contract a .view expects from its host: a positioned box it can
+   fill — the same contract the docked grid cell and the tutorial figures give */
+.iw-interior > .view { position: absolute; inset: 0; }
+
+/* the cells group must flex inside a resizable window; its docked 200px
+   height stays untouched for the docked panel */
+.iw-interior > .cells-group {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  border-bottom: none;
+}
+.iw-interior > .cells-group .cells-wrap { height: auto; flex: 1; min-height: 90px; }
+
+/* header buttons that hold an svg icon rather than a text glyph */
+.win-btn svg.ic { display: block; margin: 0 auto; }
+button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--accent); }
+
+/* the windows menu only means something while windowed */
+#winMenu { display: none; }
+body.windowed #winMenu { display: inline-block; }
+
+@media (max-width: 780px) {
+  #modeBtn { display: none; }   /* narrow screens are always docked */
 }
