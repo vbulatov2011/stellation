@@ -2,6 +2,7 @@
     "items": [
         { "file": "icosahedron-chiral.json",          "name": "Icosahedron chiral" },
         { "file": "icosahedron.json",                 "name": "Icosahedron" },
+        { "file": "TD-4.json",                        "name": "TD-4" },
         { "file": "truncated-dodecahedron-1.json",    "name": "Truncated dodecahedron 1" },
         { "file": "truncated-dodecahedron-2.json",    "name": "Truncated dodecahedron 2" },
         { "file": "truncated-dodecahedron-3.json",    "name": "Truncated dodecahedron 3" },
