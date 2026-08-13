@@ -220,9 +220,14 @@ function createImageItemElem(options) {
 
   const caption = document.createElement('div');
   caption.className = 'thumbnail-caption';
-  let text = options.url ? options.url.split('/').pop()
-    : options.tmb ? (userData?.getName ? userData.getName() : userData?.name || '')
-    : options.file ? options.file.name : '';
+  /*
+   * The caller's name wins when it gave one — a manifest's "Deep stellation"
+   * beats the filename it happens to live in. The URL / file name is only the
+   * fallback for items that arrived without any.
+   */
+  let text = (userData?.getName ? userData.getName() : userData?.name)
+    || (options.url ? options.url.split('/').pop() : '')
+    || (options.file ? options.file.name : '');
   if (text.endsWith(EXT_JSON + EXT_PNG)) text = text.slice(0, -(EXT_JSON + EXT_PNG).length);
   caption.textContent = text;
   container.title = text;

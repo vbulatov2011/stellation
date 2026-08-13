@@ -1,0 +1,8 @@
+{
+    "items": [
+        { "file": "icosahedron.json",                 "name": "Icosahedron" },
+        { "file": "icosahedron-chiral.json",          "name": "A chiral stellation" },
+        { "file": "truncated-dodecahedron.json",      "name": "Truncated dodecahedron" },
+        { "file": "truncated-dodecahedron-deep.json", "name": "Deep stellation" }
+    ]
+}

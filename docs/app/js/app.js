@@ -9,6 +9,8 @@ import {
 } from '../../lib/modules.js';
 import { writePreset, readDocument, newDocumentName } from './preset.js';
 import { initWorkspace } from './workspace.js';
+import { getSquareThumbnailCanvas } from '../../lib/uilib/files.js';
+import { initPresets } from './presets.js';
 
 const $ = sel => document.querySelector(sel);
 const $$ = sel => [...document.querySelectorAll(sel)];
@@ -128,7 +130,8 @@ async function boot() {
   applyTheme(localStorage.getItem('theme') || 'auto');   // now that the views exist
 
   // handy from the console, and what the browser tests drive
-  window.stellation = { state, cells, diagram, renderer, call, select, refresh, applyToCell, openDocument };
+  window.stellation = { state, cells, diagram, renderer, call, select, refresh, applyToCell, openDocument,
+                        currentPresetText, makeThumbnail };
 
   /*
    * file / polyGroup / stellGroup / dDEPTH / vQX,QY,QZ,QW,ZOOM / {cells}
@@ -1111,21 +1114,7 @@ function wireControls() {
   $('#exportStl').onclick = () => download(`${name()}.stl`, toSTL(state.mesh, name()));
   $('#saveJson').onclick = () => {
     const docName = newDocumentName();
-    download(`${docName}.json`, writePreset({
-      name: docName,
-      polyhedron: state.current.name, file: state.current.file,
-      polySymmetry: state.polySym, stellSymmetry: state.stellSym,
-      planeDepth: state.depth, cells: state.cellsString,
-      diagramFace: state.planeIndex,
-      edges: currentEdgeStyle(),
-      // the master flag, for readers that predate the face/facet split
-      showEdges: $('#showFaceEdges').checked || $('#showFacetEdges').checked,
-      showAllFacets: $('#showAllFacets').checked,
-      spin: $('#autoRotate').checked,
-      colorMode: $('#colorMode').value,
-      view: renderer?.getView() || null,
-      planesText: state.customPlanes ? state.planesText : null,
-    }), 'application/json');
+    download(`${docName}.json`, currentPresetText(docName), 'application/json');
   };
   $('#exportStel').onclick = () => download(`${name()}.stel`, writeStel({
     polyhedron: state.current.name, polySymmetry: state.polySym,
@@ -1146,9 +1135,8 @@ function wireControls() {
     e.target.value = '';
   };
 
-  $$('.sample').forEach(b => {
-    b.onclick = async () => openDocument(await fetch(`samples/${b.dataset.file}`).then(r => r.text()), b.dataset.file);
-  });
+  const presets = initPresets({ openDocument, setStatus });
+  $('#showPresets').onclick = () => presets.show();
 
   $('#help').onclick = () => {
     const b = $('#buildStamp');
@@ -1315,6 +1303,46 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
 // ------------------------------------------------------------------ misc
 
 const name = () => `${state.current.file}-${state.polySym}-${state.stellSym}`;
+
+/*
+ * Everything on screen, serialized — the one producer of document text.
+ * Lifted out of the Save button so that every path that writes a document
+ * (the download button, the local-folder save, the preset generator) emits
+ * exactly the same envelope; two gathering sites would drift apart the first
+ * time a display setting is added to one of them.
+ */
+function currentPresetText(docName) {
+  return writePreset({
+    name: docName,
+    polyhedron: state.current.name, file: state.current.file,
+    polySymmetry: state.polySym, stellSymmetry: state.stellSym,
+    planeDepth: state.depth, cells: state.cellsString,
+    diagramFace: state.planeIndex,
+    edges: currentEdgeStyle(),
+    // the master flag, for readers that predate the face/facet split
+    showEdges: $('#showFaceEdges').checked || $('#showFacetEdges').checked,
+    showAllFacets: $('#showAllFacets').checked,
+    spin: $('#autoRotate').checked,
+    colorMode: $('#colorMode').value,
+    view: renderer?.getView() || null,
+    planesText: state.customPlanes ? state.planesText : null,
+  });
+}
+
+/*
+ * The document thumbnail: the 3D view, centre-cropped square. Drawn
+ * immediately before reading — the WebGL context has no preserveDrawingBuffer,
+ * so the pixels only exist in the same frame as a draw (the same rule
+ * snapshot() follows). When WebGL was refused, the diagram canvas stands in,
+ * so a document saved on that machine still gets a preview.
+ */
+function makeThumbnail(size = 256) {
+  if (renderer) {
+    renderer.draw();
+    return getSquareThumbnailCanvas(renderer.canvas, size);
+  }
+  return getSquareThumbnailCanvas($('#diagram'), size);
+}
 
 // ------------------------------------------------------------ edge styling
 
