@@ -1660,7 +1660,7 @@ function segTube(o, a, b, rad, col, sides = 6) {
  * mirror plane. Major radius `rad`, tube radius `tr`; unlike a flat annulus it
  * has volume, so seen edge-on it is a bar rather than nothing.
  */
-function torus(o, dir, rad, tr, col, sides = 56, ring = 8) {
+function torus(o, dir, rad, tr, col, sides = 224, ring = 8) {
   const { w, u, v } = basis(dir);
   const P = (t, s) => {
     // centre circle point + tube offset in the (radial, normal) frame
@@ -1686,7 +1686,7 @@ function torus(o, dir, rad, tr, col, sides = 56, ring = 8) {
 }
 
 /** a flat disc through the origin with normal `dir` — one mirror plane */
-function disc(o, dir, rad, col, sides = 48) {
+function disc(o, dir, rad, col, sides = 192) {
   const { w, u, v } = basis(dir);
   const at = (t) => {
     const c = Math.cos(t) * rad, s = Math.sin(t) * rad;
