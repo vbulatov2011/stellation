@@ -223,6 +223,8 @@
 .iw-menu button:hover { background: var(--panel-2); color: var(--accent); }
 .iw-menu .checked::before { content: "✓ "; color: var(--accent); }
 .iw-menu .unchecked::before { content: "\2003 "; }
+/* divides the layout windows from the ones you open over them */
+.iw-menu hr { margin: 4px 6px; border: 0; border-top: 1px solid var(--line); }
 
 /* ------------------------------------------------------- dialog form rows */
 

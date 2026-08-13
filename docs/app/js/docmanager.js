@@ -127,6 +127,13 @@ export function initDocManager({
     save, saveAs,
     browse: () => { ensureFileDialog().show(); },
     canFolders,
+    /*
+     * The file browser is a window like any other, so the windows menu can
+     * show and hide it. Only listed where folders exist at all — see
+     * canFolders, which is what gates every entry point into this file.
+     */
+    isBrowserOpen: () => !!fileDialog && fileDialog.isVisible(),
+    setBrowserOpen: (v) => { if (v) ensureFileDialog().show(); else fileDialog?.setVisible(false); },
     /** any non-folder open (preset, .stel, file input) clears the origin */
     clearOrigin: (name) => setOrigin(name || null, null, null),
     current: () => ({ ...currentDoc }),

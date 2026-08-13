@@ -770,9 +770,9 @@ body.windowed .views { background: var(--bg); }
 .win-btn svg.ic { display: block; margin: 0 auto; }
 button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--accent); }
 
-/* the windows menu only means something while windowed */
-#winMenu { display: none; }
-body.windowed #winMenu { display: inline-block; }
+/* The windows menu is live in both modes: docked it still lists the preset and
+   file browsers, which float over the docked layout just the same. */
+#winMenu { display: inline-block; }
 
 /* ---------------------------------------------------------------- responsive
  *

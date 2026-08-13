@@ -47,7 +47,7 @@ export const DEFAULT_THUMB =
  *                       filesFilter, container, role, transient })
  *
  * returns { addItems(items, {noSort}), updateItem, findItem, addFiles,
- *           setVisible, selectItem, clear, removeItem, setTitle,
+ *           setVisible, isVisible, selectItem, clear, removeItem, setTitle,
  *           getHeader, getTitleDiv, getInterior, getWindow }
  */
 export function createImageSelector(param = {}) {
@@ -188,6 +188,7 @@ export function createImageSelector(param = {}) {
   return {
     addItems, updateItem, findItem, addFiles,
     setVisible: (v) => intWin.setVisible(v),
+    isVisible: () => intWin.isVisible(),
     selectItem, clear, removeItem,
     setTitle: (t) => intWin.setTitle(t),
     getHeader: () => intWin.header,

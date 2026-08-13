@@ -246,6 +246,7 @@ export function createFileSelectionDialog(options = {}) {
   return {
     show,
     setVisible: (v) => selector?.setVisible(v),
+    isVisible: () => !!selector && selector.isVisible(),
     selectFolder,
     reload,
     loadRootHandle,

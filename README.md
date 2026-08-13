@@ -168,10 +168,15 @@ window system is `docs/lib/uilib/`, an adapted port of the same library in the
 sibling SymmHub project.
 
 Ready-made documents live in `docs/presets/`: each is a `<name>.json` with a
-`<name>.json.png` thumbnail beside it, listed in `docs/presets/index.json`.  To
-add one, save a document, render its thumbnail (the app's `Save As…` does both
-at once, or use `stellation.downloadThumb(name)` from the console), drop the
-pair into `docs/presets/`, and add a line to the manifest.
+`<name>.json.png` thumbnail beside it, listed in the manifest `docs/presets.json`
+(whose paths are relative to itself).  To add one, save a document, render its
+thumbnail (the app's `Save As…` does both at once, or use
+`stellation.downloadThumb(name)` from the console), drop the pair into
+`docs/presets/`, and add a line to the manifest.
+
+Every window — the panels, the preset browser, the file browser — is listed in
+the header's **windows menu**, which is where a window closed with its ✕ is
+reopened.  The panel windows appear there only in windowed mode.
 
 Local-file support depends on the browser:
 

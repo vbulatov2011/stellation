@@ -70,7 +70,7 @@ function call(type, payload, onProgress) {
 
 // ------------------------------------------------------------------ boot
 
-let renderer, diagram, cells, docs;
+let renderer, diagram, cells, docs, presets;
 
 async function boot() {
   const [catalog, symmetry, geometry] = await Promise.all([
@@ -127,7 +127,17 @@ async function boot() {
    * nodes the wiring grabbed by id, and adoption of live DOM only works if
    * everything was found in its docked place first.
    */
-  initWorkspace({ redraw: () => { renderer?.resize(); diagram?.draw(); cells?.draw(); } });
+  const workspace = initWorkspace({ redraw: () => { renderer?.resize(); diagram?.draw(); cells?.draw(); } });
+  /*
+   * The preset and file browsers join the same windows menu as the panels, so
+   * there is one list of every window rather than two ways to find one. Both
+   * also keep their buttons in Save & export; the menu is the path that stays
+   * reachable when the settings window itself is closed.
+   */
+  workspace.register({ title: 'Presets', isOpen: presets.isOpen, setOpen: presets.setOpen });
+  if (docs.canFolders) {
+    workspace.register({ title: 'Documents', isOpen: docs.isBrowserOpen, setOpen: docs.setBrowserOpen });
+  }
   applyTheme(localStorage.getItem('theme') || 'auto');   // now that the views exist
 
   // handy from the console, and what the browser tests drive
@@ -1158,7 +1168,7 @@ function wireControls() {
     e.target.value = '';
   };
 
-  const presets = initPresets({ openDocument, setStatus });
+  presets = initPresets({ openDocument, setStatus });
   $('#showPresets').onclick = () => presets.show();
 
   $('#help').onclick = () => {

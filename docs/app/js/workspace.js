@@ -76,6 +76,15 @@ export function initWorkspace({ redraw } = {}) {
   let stored = localStorage.getItem(MODE_KEY) === 'windows' ? 'windows' : 'docked';
   let active = 'docked';
 
+  /*
+   * Windows that are not part of the layout: the preset browser and the local
+   * file browser. They float over either mode, they come and go on their own
+   * schedule (nothing exists until first opened), and their owners register
+   * them here so that one menu covers every window in the app. A registration
+   * is just three functions — this file never learns what they are.
+   */
+  const extras = [];
+
   // ---- adoption ---------------------------------------------------------
 
   function ensureWindow(r) {
@@ -162,7 +171,12 @@ export function initWorkspace({ redraw } = {}) {
   /*
    * The windows menu is the recovery path: closing a window would otherwise
    * leave no way back short of DevTools. A small popup under the button lists
-   * the four windows with checkmarks; it lives only in windowed mode.
+   * every window there is, each with a checkmark, and clicking one toggles it.
+   *
+   * The panel windows are listed only in windowed mode, because docked they
+   * are not windows at all; the registered ones are always listed, since they
+   * float over either mode. When both blocks are present a rule separates
+   * them — the layout above, the things you open below.
    */
   if (winMenuBtn) {
     winMenuBtn.onclick = () => {
@@ -173,17 +187,22 @@ export function initWorkspace({ redraw } = {}) {
       const b = winMenuBtn.getBoundingClientRect();
       menu.style.top = (b.bottom + 4) + 'px';
       menu.style.right = Math.max(8, innerWidth - b.right) + 'px';
-      for (const r of regions) {
+
+      const add = (title, isOpen, setOpen) => {
         const item = document.createElement('button');
-        const on = r.win?.isVisible();
-        item.className = on ? 'checked' : 'unchecked';
-        item.textContent = r.title;
-        item.onclick = () => {
-          r.win?.setVisible(!r.win.isVisible());
-          menu.remove();
-        };
+        item.className = isOpen() ? 'checked' : 'unchecked';
+        item.textContent = title;
+        item.onclick = () => { setOpen(!isOpen()); menu.remove(); };
         menu.appendChild(item);
+      };
+
+      const layout = active === 'windows' ? regions : [];
+      for (const r of layout) {
+        add(r.title, () => !!r.win?.isVisible(), (v) => r.win?.setVisible(v));
       }
+      if (layout.length && extras.length) menu.appendChild(document.createElement('hr'));
+      for (const x of extras) add(x.title, x.isOpen, x.setOpen);
+
       document.body.appendChild(menu);
       // any press outside the menu dismisses it; deferred so this click survives
       setTimeout(() => {
@@ -204,5 +223,7 @@ export function initWorkspace({ redraw } = {}) {
   return {
     mode: () => active,
     setMode: (m) => { stored = m; try { localStorage.setItem(MODE_KEY, m); } catch { } apply(); },
+    /** register a free-floating window: { title, isOpen(), setOpen(v) } */
+    register: (entry) => { extras.push(entry); },
   };
 }

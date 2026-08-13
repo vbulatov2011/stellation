@@ -3,8 +3,10 @@
  * site ships.
  *
  * The server side is a naming convention, not code — docs/presets/ holds
- * <name>.json with <name>.json.png beside it, and index.json lists the files
- * (static hosting has no directory listing, so the manifest is the index).
+ * <name>.json with <name>.json.png beside it, and docs/presets.json lists the
+ * files (static hosting has no directory listing, so the manifest is the
+ * index). Its paths are relative to itself, so the manifest says where the
+ * documents are rather than relying on a folder name written in here.
  * The thumbnails are plain <img src> URLs: the browser fetches, caches and
  * lazily decodes them, which is why this works identically on every browser
  * and phone — there is no API in it at all.
@@ -22,7 +24,7 @@ export function initPresets({ openDocument, setStatus }) {
   async function load(sel) {
     let manifest;
     try {
-      const r = await fetch('presets/index.json');
+      const r = await fetch('presets.json');
       if (!r.ok) throw new Error(r.statusText);
       manifest = await r.json();
     } catch (err) {
@@ -30,10 +32,10 @@ export function initPresets({ openDocument, setStatus }) {
       return;
     }
     sel.addItems((manifest.items || []).map((it) => ({
-      url: 'presets/' + it.file + '.png',
+      url: it.file + '.png',
       data: {
-        getName: () => it.name || it.file.replace(/\.json$/, ''),
-        jsonUrl: 'presets/' + it.file,
+        getName: () => it.name || it.file.split('/').pop().replace(/\.json$/, ''),
+        jsonUrl: it.file,
       },
     })), { noSort: true });   // the manifest order is the curated order
   }
@@ -48,21 +50,30 @@ export function initPresets({ openDocument, setStatus }) {
     }
   }
 
+  function show() {
+    if (!selector) {
+      selector = createImageSelector({
+        title: 'Presets',
+        width: '460px', height: '380px', left: '60px', top: '48px',
+        storageId: 'stell.win.presets',
+        container: document.querySelector('main'),
+        role: 'dialog',
+        transient: true,          // near-fullscreen sheet on narrow screens
+        onSelect: open,
+      });
+      load(selector);
+    }
+    selector.setVisible(true);
+  }
+
   return {
-    show() {
-      if (!selector) {
-        selector = createImageSelector({
-          title: 'Presets',
-          width: '460px', height: '380px', left: '60px', top: '48px',
-          storageId: 'stell.win.presets',
-          container: document.querySelector('main'),
-          role: 'dialog',
-          transient: true,          // near-fullscreen sheet on narrow screens
-          onSelect: open,
-        });
-        load(selector);
-      }
-      selector.setVisible(true);
-    },
+    show,
+    /*
+     * The windows menu drives this like any other window. Nothing exists
+     * until the first open, so "not open yet" and "closed" are the same
+     * answer — which is what the menu wants to show anyway.
+     */
+    isOpen: () => !!selector && selector.isVisible(),
+    setOpen: (v) => { if (v) show(); else selector?.setVisible(false); },
   };
 }

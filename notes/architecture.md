@@ -31,7 +31,8 @@ docs/                        the published site (GitHub Pages, .nojekyll)
                              presets, docmanager)
   js/           1,600 loc    scripts for the essay pages
   data/           710 KB     catalog, geometry, symmetry, Brückner plates
-  presets/                   shipped documents: <name>.json + .json.png + index.json
+  presets/                   shipped documents: <name>.json + <name>.json.png
+  presets.json               the manifest listing them (paths relative to it)
   test/           350 loc    four Node harnesses
   index.html                 the landing page: a card per page, nothing else
   stellation_app.html        the app
@@ -196,6 +197,13 @@ moves them back to comment markers recording their docked slots. Nothing is
 cloned or recreated, so every id, every handler wired once in `wireControls`,
 and every canvas context survives — which is why `initWorkspace()` runs *after*
 `wireControls()`, on DOM that was all found in its docked place first.
+
+The **windows menu** is the one list of every window there is. The four panel
+windows are listed only while windowed, since docked they are not windows;
+the preset and file browsers float over either mode and register themselves
+through `workspace.register({title, isOpen, setOpen})`, which is all this file
+ever learns about them. So the menu exists in both modes, and a window closed
+by its ✕ always has a way back.
 
 **Documents** (`app/js/docmanager.js`) turn on the *origin*: a document opened
 from a local folder remembers its folder handle and file name, so Save
