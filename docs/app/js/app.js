@@ -97,6 +97,12 @@ async function boot() {
       $('#faceOpacity').value = String(savedOpacity);
       $('#faceOpacityLabel').textContent = savedOpacity;
     }
+    const savedElemW = Number(localStorage.getItem('elemWidth'));
+    if (savedElemW > 0) {
+      renderer.elemWidth = savedElemW;       // before the first setElements
+      $('#elemWidth').value = String(savedElemW);
+      $('#elemWidthLabel').textContent = savedElemW.toFixed(1);
+    }
     renderer.start();
     renderer.onPick = onPick3D;
     renderer.onPickHover = onHover3D;
@@ -1071,6 +1077,13 @@ function wireControls() {
     $('#faceOpacityLabel').textContent = pct;
     localStorage.setItem('faceOpacity', String(pct));
     renderer?.setFaceOpacity(pct / 100);
+  };
+  // like the edge widths: tuned against what you are looking at, so live
+  $('#elemWidth').oninput = (e) => {
+    const w = Number(e.target.value);
+    $('#elemWidthLabel').textContent = w.toFixed(1);
+    localStorage.setItem('elemWidth', String(w));
+    renderer?.setElemWidth(w);
   };
   /*
    * The per-view gesture panels. Each ? toggles its own, and clicking the panel

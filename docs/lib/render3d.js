@@ -301,6 +301,7 @@ export class Renderer3D {
     this.faceOpacity = 1;      // 1 solid … 0 wireframe — see draw()
     this.lastFaceClass = null;
     this.elements = null;      // symmetry axes / mirrors / Sn axes, see setElements
+    this.elemWidth = 1;        // thickness multiplier for them — see setElemWidth
     this.elemCount = 0;
     this.discCount = 0;
     this.background = [0.055, 0.06, 0.078];
@@ -346,6 +347,15 @@ export class Renderer3D {
     this.draw();
   }
 
+  /** thickness multiplier for the elements; a rebuild, but a cheap one */
+  setElemWidth(v) {
+    const w = Number(v);
+    if (!Number.isFinite(w) || w <= 0 || w === this.elemWidth) return;
+    this.elemWidth = w;
+    if (this.elements) this._buildElements();
+    this.draw();
+  }
+
   _buildElements() {
     const gl = this.gl;
     const el = this.elements;
@@ -360,7 +370,9 @@ export class Renderer3D {
        */
       const R = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1));
       const ext = R * 1.12;
-      const rad = R * 0.014;
+      // the slider scales the thickness; the extent stays put, so a thicker
+      // axis is a fatter tube reaching exactly as far as the thin one did
+      const rad = R * 0.014 * (this.elemWidth > 0 ? this.elemWidth : 1);
       // every element carries its own colour: inequivalent elements differ
       for (const a of (el.axes || [])) tube(tubes, a.dir, ext, rad, a.rgb || [0.25, 0.72, 0.95]);
       for (const a of (el.improper || [])) tube(tubes, a.dir, ext * 0.94, rad * 0.9, a.rgb || [0.72, 0.45, 0.95]);
