@@ -685,6 +685,7 @@ export class Renderer3D {
     upload(this.vao, this.normBuf, 'aNormal', norm, 3, this.prog);
     upload(this.vao, this.colBuf, 'aColor', col, 3, this.prog);
     this.count = pos.length / 3;
+    this._sortData = null;         // new geometry: the translucency order tables are stale
 
     this.faceLineCount = this._uploadSegments(this.faceLineVao, this.faceLineBufs, faceLines);
     this.facetLineCount = this._uploadSegments(this.facetLineVao, this.facetLineBufs, facetLines);
@@ -721,6 +722,137 @@ export class Renderer3D {
     if (!Number.isFinite(a) || a === this.faceOpacity) return;
     this.faceOpacity = a;
     this.draw();
+  }
+
+  /*
+   * Depth order for translucent facets — the original applet's algorithm,
+   * ported from card_shuffle() in the Java source (pvs/g3d/Stellation3D.java).
+   *
+   * The textbook painter's algorithm — sort faces by mean depth — is wrong
+   * for exactly the meshes a stellation produces: long thin facets at steep
+   * angles overlap on screen while their depth averages say otherwise. The
+   * Java code kept that sort commented out and used the structure of the
+   * model instead. A stellation is cut from a fixed set of planes, so every
+   * facet lies IN one of them and no facet crosses any of them — which means
+   * the planes themselves can order the facets. For each plane, stably move
+   * the facets on the viewer's far side before those on the near side,
+   * keeping the relative order inside each group (the "card shuffle"). One
+   * pass over all the planes leaves a correct back-to-front order.
+   *
+   * Why that is enough: if facet F occludes facet G, the ray from the eye
+   * hits F before it reaches G, so F sits wholly on the viewer's side of the
+   * plane CONTAINING G — facets never straddle planes, so "wholly" is free.
+   * That plane's pass therefore places G before F. And no later pass can
+   * swap them back: it would need some plane with F on the far side and G on
+   * the near side, which would put G's hit before F's — contradicting F
+   * occluding G. Every occluding pair is settled by the occluded facet's own
+   * plane, and settled for good.
+   *
+   * The cost is planes × triangles sign tests per frame — no comparison
+   * sort, and the signs are looked up, not computed: sidedness is a property
+   * of the model, not the view, so the table is built once per mesh (the
+   * Java facePlaneDist). The view enters only through one number per plane —
+   * the eye-space z of its normal, which says which of its sides the viewer
+   * is on.
+   */
+  _buildSortData() {
+    const tris = this.pickTris;
+    const T = tris ? tris.length : 0;
+    if (!T) return null;
+    /*
+     * The facet -> plane map comes from the worker when the app is driving
+     * (faceClass.planes); the figure pages do not send it, so they recover
+     * the planes geometrically — facets bucketed by their plane equation,
+     * canonicalised to d >= 0 so a facet and the underside it backs onto
+     * land in the same bucket. Quantisation errors can only split one plane
+     * into two buckets, and a duplicate plane just costs one redundant pass.
+     */
+    const workerPlanes = this.lastFaceClass?.planes || null;
+    const ids = new Map();
+    const eqs = [];                    // [nx, ny, nz, d] per plane, d >= 0
+    const triPlane = new Int32Array(T);
+    const cx = new Float64Array(T), cy = new Float64Array(T), cz = new Float64Array(T);
+    for (let t = 0; t < T; t++) {
+      const { a, b, c } = tris[t];
+      cx[t] = (a[0] + b[0] + c[0]) / 3;
+      cy[t] = (a[1] + b[1] + c[1]) / 3;
+      cz[t] = (a[2] + b[2] + c[2]) / 3;
+      const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+      const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+      let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      const nl = Math.hypot(nx, ny, nz);
+      if (nl < 1e-12) { triPlane[t] = -1; continue; }     // degenerate sliver
+      nx /= nl; ny /= nl; nz /= nl;
+      let d = nx * a[0] + ny * a[1] + nz * a[2];
+      if (d < 0) { nx = -nx; ny = -ny; nz = -nz; d = -d; }
+      const key = workerPlanes
+        ? 'w' + workerPlanes[tris[t].face]
+        : Math.round(nx * 1e4) + ',' + Math.round(ny * 1e4) + ','
+          + Math.round(nz * 1e4) + ',' + Math.round(d * 1e4);
+      let p = ids.get(key);
+      if (p === undefined) { p = eqs.length; ids.set(key, p); eqs.push([nx, ny, nz, d]); }
+      triPlane[t] = p;
+    }
+    const P = eqs.length;
+    // -1 behind / 0 on / +1 in front, for every (plane, facet) pair
+    const side = new Int8Array(P * T);
+    for (let p = 0; p < P; p++) {
+      const [nx, ny, nz, d] = eqs[p];
+      const eps = 1e-7 * (1 + d);
+      const row = p * T;
+      for (let t = 0; t < T; t++) {
+        if (triPlane[t] === p) continue;                 // its own plane: on it
+        const s = nx * cx[t] + ny * cy[t] + nz * cz[t] - d;
+        side[row + t] = s > eps ? 1 : (s < -eps ? -1 : 0);
+      }
+    }
+    return {
+      T, eqs, side,
+      order: Uint32Array.from({ length: T }, (_, i) => i),
+      far: new Uint32Array(T), near: new Uint32Array(T),
+      elements: new Uint32Array(T * 3),
+    };
+  }
+
+  /**
+   * The card shuffle itself: partition the running order once per plane,
+   * write the result into the element buffer, and return the index count.
+   * `order` persists between frames — any starting order is correct (every
+   * pair is settled by its own plane's pass), so last frame's order is as
+   * good a start as any and most passes barely move anything.
+   */
+  _sortedTriangles() {
+    const sd = this._sortData ||= this._buildSortData();
+    if (!sd) return 0;
+    const { T, eqs, side, order, far, near, elements } = sd;
+    const R = quatToMat4(this.rotation);        // column-major; row 2 is eye z
+    for (let p = 0; p < eqs.length; p++) {
+      const [nx, ny, nz] = eqs[p];
+      const zc = R[2] * nx + R[6] * ny + R[10] * nz;
+      // edge-on: its half-spaces project to disjoint half-planes, no occlusion
+      if (zc > -1e-6 && zc < 1e-6) continue;
+      const sign = zc > 0 ? 1 : -1;
+      const row = p * T;
+      let nf = 0, nn = 0;
+      for (let i = 0; i < T; i++) {
+        const t = order[i];
+        if (side[row + t] * sign > 0) near[nn++] = t;
+        else far[nf++] = t;                     // the far side and the plane's own facets
+      }
+      order.set(far.subarray(0, nf), 0);
+      order.set(near.subarray(0, nn), nf);
+    }
+    for (let i = 0; i < T; i++) {
+      const b = order[i] * 3, e = i * 3;
+      elements[e] = b; elements[e + 1] = b + 1; elements[e + 2] = b + 2;
+    }
+    const gl = this.gl;
+    gl.bindVertexArray(this.vao);
+    if (!this.sortEbo) this.sortEbo = gl.createBuffer();
+    // the element binding is VAO state, so this rides along with this.vao
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.sortEbo);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elements, gl.DYNAMIC_DRAW);
+    return T * 3;
   }
 
   /** expand [[x,y,z],[x,y,z], …] segment pairs into two triangles each */
@@ -794,27 +926,23 @@ export class Renderer3D {
      * is why anything below 100% shows the hidden edges too. At 0 the fill is
      * skipped outright and the edges alone remain: a wireframe.
      *
-     * The far side is drawn before the near side (cull front, then back).
-     * Blending is order-dependent and there is no sorting here — sorting every
-     * triangle each frame would cost more than the effect is worth — but this
-     * one extra draw call gets each shell blending in roughly the right order,
-     * which is most of the way to looking right for a nested solid.
+     * Blending is order-dependent, so the facets are drawn back-to-front in
+     * the order the card shuffle produces (_sortedTriangles) — the original
+     * applet's plane-partition sort, which is exact for a stellation. See
+     * _buildSortData for why.
      */
     const alpha = Math.max(0, Math.min(1, this.faceOpacity ?? 1));
     if (alpha >= 1) {
       gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
       gl.drawArrays(gl.TRIANGLES, 0, this.count);
     } else if (alpha > 0) {
+      const n = this._sortedTriangles();
       gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), alpha);
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       gl.depthMask(false);
-      gl.enable(gl.CULL_FACE);
-      for (const side of [gl.FRONT, gl.BACK]) {
-        gl.cullFace(side);
-        gl.drawArrays(gl.TRIANGLES, 0, this.count);
-      }
-      gl.disable(gl.CULL_FACE);
+      if (n) gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_INT, 0);
+      else gl.drawArrays(gl.TRIANGLES, 0, this.count);   // no mesh tables: draw unsorted
       gl.depthMask(true);
       gl.disable(gl.BLEND);
       gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);

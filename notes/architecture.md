@@ -135,10 +135,20 @@ come through. That x-ray is the point — the interior cells are what you cannot
 otherwise look at — and it is why anything under 100% shows the hidden edges
 too. At 0 the fill is skipped and the edges alone remain, a wireframe.
 
-The far side is drawn before the near side (cull front, then back). Blending is
-order-dependent and nothing is sorted — sorting every triangle per frame would
-cost more than the effect is worth — but that one extra draw call gets each
-shell blending in roughly the right order.
+Blending is order-dependent, and the order is exact: the facets draw
+back-to-front in the order produced by the original applet's **card shuffle**
+(`card_shuffle()` in the Java `pvs/g3d/Stellation3D.java`, ported as
+`_buildSortData`/`_sortedTriangles` in `render3d.js`). A depth sort is wrong
+for these meshes — long thin facets at steep angles overlap on screen while
+their depth averages disagree — but a stellation is cut from a fixed set of
+planes, so every facet lies IN one plane and crosses none. That makes the
+planes themselves the sort: for each plane, stably move the facets on the
+viewer's far side before those on the near side. If facet F occludes facet G,
+F sits wholly on the viewer's side of the plane containing G, so that plane's
+pass puts G first — and no later pass can undo it. Sidedness is a property of
+the model, precomputed once per mesh; the view enters only as one sign per
+plane. Cost per frame: planes × triangles sign tests (~0.2 ms at 2,500
+triangles × 32 planes), an element-buffer upload, one draw call.
 
 ### Two kinds of edge
 
