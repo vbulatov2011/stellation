@@ -455,10 +455,25 @@ export class Renderer3D {
    */
   getView() {
     const v = [...this.rotation, this.distance];
-    // the pan is only written when there is one, so an unpanned view still
-    // produces the five numbers every link shared so far contains
-    if (this.pan.x || this.pan.y) v.push(this.pan.x, this.pan.y);
-    return v.map(x => Math.round(x * 1e4) / 1e4);
+    /*
+     * `distance` alone does not determine what you see. Apparent size is
+     * modelScale / halfH, and halfH follows distance — so the same distance
+     * frames the solid differently depending on the model scale in force, and
+     * that scale is set by the FIRST mesh drawn after an arrangement is built
+     * (see setMesh). Build up from the core and it is one over the core's
+     * radius; load the same selection whole and it is one over the whole
+     * spiky thing's radius. Saving distance without the scale therefore
+     * reproduces the angle but not the size — a document opened from a folder
+     * came back several times smaller than the picture it was saved with.
+     *
+     * So the scale travels with the view. The trailing numbers are optional
+     * and positional, oldest first, which keeps every link ever shared valid:
+     * five numbers is a pre-pan view, seven adds the pan, eight the scale.
+     */
+    const scale = this.modelScale || 0;
+    if (this.pan.x || this.pan.y || scale) v.push(this.pan.x, this.pan.y);
+    if (scale) v.push(scale);
+    return v.map(x => Math.round(x * 1e6) / 1e6);
   }
 
   setView(v) {
@@ -469,9 +484,22 @@ export class Renderer3D {
     this.distance = Math.min(40, Math.max(0.05, v[4]));
     // five numbers is a view from before panning existed, and means no pan
     this.pan = { x: v[5] || 0, y: v[6] || 0 };
+    /*
+     * Adopt the scale so later re-uploads (toggling a cell) keep this framing.
+     * The mesh on screen was uploaded with the scale baked into its vertex
+     * buffer, so this alone cannot resize it — the caller applies
+     * viewModelScale(v) BEFORE the build for that. This only stops the next
+     * mesh from disagreeing with the view it is drawn under.
+     */
+    if (v[7] > 0) this.modelScale = v[7];
     this._pointerReset();
     this.draw();
     return true;
+  }
+
+  /** the model scale a saved view carries, if any — see getView */
+  static viewModelScale(v) {
+    return Array.isArray(v) && v[7] > 0 ? v[7] : 0;
   }
 
   resize() {

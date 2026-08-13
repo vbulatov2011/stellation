@@ -448,6 +448,13 @@ async function select(item, opts = {}) {
   }
 
   syncSymmetrySelects();
+  /*
+   * A saved view carries the model scale it was framed at, and the scale is
+   * baked into the vertex buffer when the mesh is uploaded — so it has to be
+   * in place before the build, not after it with setView. Without this the
+   * angle comes back but the size does not.
+   */
+  state.pendingScale = Renderer3D.viewModelScale(opts.view);
   await build(opts.cells);
   // after the build, so the mesh (and therefore the model scale) already exists
   if (opts.view && renderer?.setView(opts.view)) lastView = renderer.getView().join(',');
@@ -811,6 +818,9 @@ async function build(cellsString) {
 
   const g = state.customPlanes ? null : state.geometry[state.current.file];
   renderer?.resetScale();      // a new arrangement re-frames; edits within one do not
+  // a document being reopened frames itself; see select()
+  if (renderer && state.pendingScale) { renderer.modelScale = state.pendingScale; }
+  state.pendingScale = 0;
   clearHistory();              // a different arrangement: nothing earlier applies
   const polyM = state.symmetry[state.polySym]?.matrices || state.symmetry.E.matrices;
   const subM = state.symmetry[state.stellSym]?.matrices || null;

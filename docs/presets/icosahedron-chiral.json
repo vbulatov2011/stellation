@@ -24,12 +24,12 @@
             "showEdges": true,
             "showAllFacets": true,
             "spin": false,
-            "colorMode": "layer",
+            "colorMode": "class",
             "edges": {
                 "face": {
                     "show": true,
                     "color": "#000000",
-                    "width": 1
+                    "width": 2.5
                 },
                 "facet": {
                     "show": true,
@@ -43,8 +43,11 @@
                 -0.1991,
                 0.289,
                 0.0616,
-                0.9343,
-                1
+                0.9344,
+                1,
+                0,
+                0,
+                0.41947
             ]
         },
         "export": {
