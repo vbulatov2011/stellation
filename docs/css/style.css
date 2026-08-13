@@ -807,7 +807,16 @@ button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--
   body { overflow: auto; }
   main { grid-auto-rows: min-content; }
   .stage { min-height: 60dvh; }
-  .views { grid-template-rows: 50dvh 50dvh; }
+  /*
+   * Not 50dvh each: the canvases take every touch gesture for themselves
+   * (orbit, pan — touch-action: none), so if they and the header tile the
+   * whole screen there is no surface left that can scroll the page, and the
+   * panel below might as well not exist (issue #15: "can't scroll down or
+   * click anything"). At 40 the statusbar and the first ~90px of the panel
+   * show inside the first screen — visibly more page, and room to scroll
+   * from.
+   */
+  .views { grid-template-rows: 40dvh 40dvh; }
   .panel.right { max-height: none; }
   #stats, #modeBtn { display: none; }
 }

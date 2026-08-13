@@ -91,7 +91,15 @@ async function boot() {
       renderer.colorMode = savedColor;         // set before the first setMesh
       $('#colorMode').value = savedColor;
     }
-    const savedOpacity = Number(localStorage.getItem('faceOpacity'));
+    /*
+     * The null check is the load-bearing part: Number(null) is 0, so without
+     * it a browser with nothing stored — every first visit — read "no saved
+     * opacity" as "0%" and booted into an invisible wireframe (issue #15,
+     * the blank 3D view on Android; desktops only dodged it by having the
+     * key left over from earlier sessions).
+     */
+    const storedOpacity = localStorage.getItem('faceOpacity');
+    const savedOpacity = storedOpacity === null ? NaN : Number(storedOpacity);
     if (Number.isFinite(savedOpacity) && savedOpacity >= 0 && savedOpacity < 100) {
       renderer.faceOpacity = savedOpacity / 100;
       $('#faceOpacity').value = String(savedOpacity);
