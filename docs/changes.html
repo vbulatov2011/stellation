@@ -98,13 +98,17 @@
       it reads best.
     </div></li>
     <li><div>
-      <b>Edges can be thin cylinders.</b> A checkbox in the edges panel draws
-      both kinds of edge as slender capped cylinders instead of flat lines —
-      real geometry with thickness in the model, shaded by the same lights as
-      the solid, so an edge catches a highlight and shades round. The width
-      sliders set how thick; being real geometry, they grow as you zoom in
-      where the flat lines keep a constant screen width. Saved with the
-      document like the rest of the edge styling.
+      <b>Edges can be thin cylinders.</b> Each kind of edge — face and facet,
+      independently — can be drawn as slender capped cylinders instead of flat
+      lines: real geometry with thickness in the model, shaded by the same
+      lights as the solid, so an edge catches a highlight and shades round.
+      The choice is per kind because the two read differently: the solid's own
+      edges carry a cylinder well, while the hairline facet subdivision can
+      shimmer as sub-pixel geometry and often stays cleaner as lines. The
+      width sliders now move in steps of 0.1, down to 0.1; being real
+      geometry, cylinders grow as you zoom in where the flat lines keep a
+      constant screen width. Saved with the document like the rest of the
+      edge styling.
     </div></li>
     <li><div>
       <b>One menu for every window.</b> The <em>windows menu</em> in the header

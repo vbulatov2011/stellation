@@ -1049,8 +1049,8 @@ function wireControls() {
   });
 
   $('#autoRotate').onchange = (e) => { if (renderer) renderer.autoRotate = e.target.checked; };
-  for (const id of ['#showFaceEdges', '#faceEdgeColor', '#faceEdgeWidth',
-                    '#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth', '#edgeTubes']) {
+  for (const id of ['#showFaceEdges', '#faceEdgeColor', '#faceEdgeWidth', '#faceEdgeTubes',
+                    '#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth', '#facetEdgeTubes']) {
     // `input` rather than `change` so dragging a slider or scrubbing the colour
     // picker updates the solid as you go, which is the only way to tune a
     // weight or a shade against what you are actually looking at
@@ -1419,29 +1419,36 @@ function currentEdgeStyle() {
       show: $('#showFaceEdges').checked,
       color: $('#faceEdgeColor').value,
       width: Number($('#faceEdgeWidth').value),
+      // this kind drawn as thin lit cylinders instead of flat lines
+      tubes: $('#faceEdgeTubes').checked,
     },
     facet: {
       show: $('#showFacetEdges').checked,
       color: $('#facetEdgeColor').value,
       width: Number($('#facetEdgeWidth').value),
+      tubes: $('#facetEdgeTubes').checked,
     },
-    // both kinds drawn as thin lit cylinders instead of flat lines
-    tubes: $('#edgeTubes').checked,
   };
 }
 
 /** put a saved style on the controls, then hand it to the renderer */
 function applyEdgeStyle(style) {
   if (!style) return;
-  for (const [kind, ids] of [['face', ['#showFaceEdges', '#faceEdgeColor', '#faceEdgeWidth']],
-                             ['facet', ['#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth']]]) {
+  for (const [kind, ids] of [['face', ['#showFaceEdges', '#faceEdgeColor', '#faceEdgeWidth', '#faceEdgeTubes']],
+                             ['facet', ['#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth', '#facetEdgeTubes']]]) {
     const s = style[kind];
     if (!s) continue;
     if (typeof s.show === 'boolean') $(ids[0]).checked = s.show;
     if (hexToRgba(s.color)) $(ids[1]).value = s.color;
     if (s.width > 0) $(ids[2]).value = s.width;
+    // per kind since the two are often best drawn differently; a document
+    // from the brief spell when this was one flag sets both below
+    if (typeof s.tubes === 'boolean') $(ids[3]).checked = s.tubes;
   }
-  if (typeof style.tubes === 'boolean') $('#edgeTubes').checked = style.tubes;
+  if (typeof style.tubes === 'boolean') {
+    $('#faceEdgeTubes').checked = style.tubes;
+    $('#facetEdgeTubes').checked = style.tubes;
+  }
   pushEdgeStyle();
 }
 
@@ -1452,9 +1459,10 @@ function pushEdgeStyle() {
   $('#facetEdgeWidthLabel').textContent = style.facet.width.toFixed(1);
   localStorage.setItem('edgeStyle', JSON.stringify(style));
   if (!renderer) return;
-  renderer.faceEdges = { show: style.face.show, color: hexToRgba(style.face.color), width: style.face.width };
-  renderer.facetEdges = { show: style.facet.show, color: hexToRgba(style.facet.color), width: style.facet.width };
-  renderer.edgeTubes = !!style.tubes;
+  renderer.faceEdges = { show: style.face.show, color: hexToRgba(style.face.color),
+                         width: style.face.width, tubes: !!style.face.tubes };
+  renderer.facetEdges = { show: style.facet.show, color: hexToRgba(style.facet.color),
+                          width: style.facet.width, tubes: !!style.facet.tubes };
   renderer.draw();
 }
 

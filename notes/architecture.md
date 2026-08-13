@@ -146,13 +146,17 @@ threading the edges through the sorted stream itself needed per-frame
 adjacency juggling and still only approximated what the depth buffer gives
 for free.) At 0 the glass is skipped and the ink alone remains, a wireframe.
 
-**Edges as cylinders** (`params.display.edges.tubes`): both edge kinds can be
-drawn as thin capped prisms — real geometry with a world-space radius, lit by
-the same lights as the solid — instead of screen-space quads of constant
-pixel width. The width sliders set the radius, scaled to the mesh radius so
-the same number reads alike on any model; being geometry, they thicken as you
-zoom. Built lazily and cached against a key of everything baked into the
-vertices (widths, colours, mesh scale), so line mode never pays for them.
+**Edges as cylinders** (`params.display.edges.face.tubes` / `.facet.tubes`):
+each edge kind can independently be drawn as thin capped prisms — real
+geometry with a world-space radius, lit by the same lights as the solid —
+instead of screen-space quads of constant pixel width. Per kind because the
+two want different treatment: face edges are the solid's outline and carry a
+cylinder well, while facet edges are usually hairlines, and a sub-pixel
+cylinder aliases where a line stays clean. The width sliders (0.1 steps) set
+the radius, scaled to the mesh radius so the same number reads alike on any
+model; being geometry, they thicken as you zoom. Built lazily and cached
+against a key of everything baked into the vertices (widths, colours, mesh
+scale), so line mode never pays for them.
 
 Blending is order-dependent, and the order is exact: the facets draw
 back-to-front in the order produced by the original applet's **card shuffle**

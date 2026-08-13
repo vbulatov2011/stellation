@@ -299,7 +299,6 @@ export class Renderer3D {
     this.showEdges = true;
     this.colorMode = 'layer';  // 'layer' | 'class' — see setColorMode
     this.faceOpacity = 1;      // 1 solid … 0 wireframe — see draw()
-    this.edgeTubes = false;    // edges as lit cylinders — see _ensureTubes
     this.lastFaceClass = null;
     this.elements = null;      // symmetry axes / mirrors / Sn axes, see setElements
     this.elemCount = 0;
@@ -318,8 +317,12 @@ export class Renderer3D {
      * around the mirror discs, so these stay opaque and the distinction is
      * carried by colour and width, not alpha.
      */
-    this.faceEdges = { show: true, color: null, width: null };
-    this.facetEdges = { show: true, color: [0.42, 0.44, 0.50, 1.0], width: null };
+    // `tubes` swaps that kind's lines for thin lit cylinders — see _ensureTubes.
+    // Per kind, because the two want different treatment: face edges are the
+    // solid's outline and carry a cylinder well; facet edges are usually
+    // hairlines, and a sub-pixel cylinder shimmers where a line stays clean.
+    this.faceEdges = { show: true, color: null, width: null, tubes: false };
+    this.facetEdges = { show: true, color: [0.42, 0.44, 0.50, 1.0], width: null, tubes: false };
 
     this._installControls();
     this._raf = null;
@@ -990,7 +993,8 @@ export class Renderer3D {
 
     /*
      * All the opaque ink in one place: the edges — screen-space lines, or
-     * thin lit cylinders when edgeTubes is on — and the symmetry elements.
+     * thin lit cylinders when that kind's `tubes` flag is on — and the
+     * symmetry elements.
      * Depth writes stay on throughout, so the ink occludes itself correctly
      * from whichever pipeline calls it.
      *
@@ -1001,21 +1005,25 @@ export class Renderer3D {
      * because nothing occluded them.
      */
     const drawInk = () => {
-      if (this.showEdges && this.edgeTubes && (this.faceEdges.show || this.facetEdges.show)) {
+      if (this.showEdges &&
+          ((this.faceEdges.show && this.faceEdges.tubes) ||
+           (this.facetEdges.show && this.facetEdges.tubes))) {
         this._ensureTubes();
-        gl.useProgram(this.prog);
-        gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
-        const tubes = (show, vao, count) => {
-          if (!show || !count) return;
-          gl.bindVertexArray(vao);
-          gl.drawArrays(gl.TRIANGLES, 0, count);
-        };
-        tubes(this.facetEdges.show, this.facetTubeVao, this.facetTubeCount);
-        tubes(this.faceEdges.show, this.faceTubeVao, this.faceTubeCount);
-      } else {
-        drawEdges(this.facetEdges, this.facetLineVao, this.facetLineCount);
-        drawEdges(this.faceEdges, this.faceLineVao, this.faceLineCount);
       }
+      // each kind draws its own way — mixing cylinders and lines is the point
+      const kind = (spec, lineVao, lineCount, tubeVao, tubeCount) => {
+        if (!this.showEdges || !spec.show) return;
+        if (spec.tubes && tubeCount) {
+          gl.useProgram(this.prog);
+          gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
+          gl.bindVertexArray(tubeVao);
+          gl.drawArrays(gl.TRIANGLES, 0, tubeCount);
+        } else if (!spec.tubes && lineCount) {
+          drawLines(lineVao, lineCount, spec.color || this.edgeColor, spec.width ?? this.edgeWidth);
+        }
+      };
+      kind(this.facetEdges, this.facetLineVao, this.facetLineCount, this.facetTubeVao, this.facetTubeCount);
+      kind(this.faceEdges, this.faceLineVao, this.faceLineCount, this.faceTubeVao, this.faceTubeCount);
       if (this.elemCount) {
         gl.useProgram(this.prog);
         gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
