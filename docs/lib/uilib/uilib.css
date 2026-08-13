@@ -65,6 +65,23 @@
 .iw-close:hover { color: #fff; background: #c42b1c; }
 .iw-close svg.ic { width: 13px; height: 13px; }
 
+/* extra header buttons a dialog may inject ("folder…", "reload") */
+.iw-hbtn {
+  flex: none;
+  height: calc(var(--iw-header) - 8px);
+  margin-right: 4px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--dim);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.iw-hbtn:hover { border-color: var(--accent); color: var(--accent); }
+
 .iw-interior {
   position: absolute;
   top: var(--iw-header);

@@ -16,3 +16,10 @@ export {
   createImageSelector, createPresetsFilesFilter, createDefaultImageFilesFilter,
   DEFAULT_THUMB,
 } from './imageSelector.js';
+export {
+  hasFSAccess, writeFile, getSquareThumbnailCanvas,
+  getHandle, setHandle, restoreHandle,
+} from './files.js';
+export { createFileSelectionDialog } from './FileSelectionDialog.js';
+export { createFolderPickerDialog } from './FolderPickerDialog.js';
+export { createSaveAsDialog } from './SaveAsDialog.js';

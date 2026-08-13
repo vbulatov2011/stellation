@@ -11,6 +11,7 @@ import { writePreset, readDocument, newDocumentName } from './preset.js';
 import { initWorkspace } from './workspace.js';
 import { getSquareThumbnailCanvas } from '../../lib/uilib/files.js';
 import { initPresets } from './presets.js';
+import { initDocManager } from './docmanager.js';
 
 const $ = sel => document.querySelector(sel);
 const $$ = sel => [...document.querySelectorAll(sel)];
@@ -69,7 +70,7 @@ function call(type, payload, onProgress) {
 
 // ------------------------------------------------------------------ boot
 
-let renderer, diagram, cells;
+let renderer, diagram, cells, docs;
 
 async function boot() {
   const [catalog, symmetry, geometry] = await Promise.all([
@@ -131,7 +132,7 @@ async function boot() {
 
   // handy from the console, and what the browser tests drive
   window.stellation = { state, cells, diagram, renderer, call, select, refresh, applyToCell, openDocument,
-                        currentPresetText, makeThumbnail };
+                        currentPresetText, makeThumbnail, docsOrigin: () => docs?.current() };
 
   /*
    * file / polyGroup / stellGroup / dDEPTH / vQX,QY,QZ,QW,ZOOM / {cells}
@@ -1112,10 +1113,22 @@ function wireControls() {
   $('#exportOff').onclick = () => download(`${name()}.off`, toOFF(state.mesh));
   $('#exportObj').onclick = () => download(`${name()}.obj`, toOBJ(state.mesh));
   $('#exportStl').onclick = () => download(`${name()}.stl`, toSTL(state.mesh, name()));
-  $('#saveJson').onclick = () => {
-    const docName = newDocumentName();
-    download(`${docName}.json`, currentPresetText(docName), 'application/json');
-  };
+  /*
+   * Save routes through the document manager: over the origin file when the
+   * document came from a local folder, through Save As when it did not, and
+   * as a plain download on browsers without the File System Access API. The
+   * two folder buttons stay hidden unless the API exists, so no dead UI.
+   */
+  docs = initDocManager({
+    currentPresetText, makeThumbnail, openDocument, newDocumentName, download, setStatus,
+  });
+  $('#saveJson').onclick = () => docs.save();
+  $('#saveAsBtn').onclick = () => docs.saveAs();
+  $('#browseBtn').onclick = () => docs.browse();
+  if (docs.canFolders) {
+    $('#saveAsBtn').hidden = false;
+    $('#browseBtn').hidden = false;
+  }
   $('#exportStel').onclick = () => download(`${name()}.stel`, writeStel({
     polyhedron: state.current.name, polySymmetry: state.polySym,
     stellSymmetry: state.stellSym, cells: state.cellsString,
@@ -1439,6 +1452,14 @@ async function openDocument(text, filename = '') {
     setStatus(`could not read ${filename || 'that file'}: ${err.message}`, false);
     return;
   }
+
+  /*
+   * Every open severs the tie to any previously-saved file: a preset or a
+   * .stel must not silently overwrite whatever happened to be saved before
+   * it. The one caller that DOES want an origin — the folder browser — sets
+   * it right after this returns, which is why clearing comes first.
+   */
+  docs?.clearOrigin(doc.name || filename.replace(/\.(json|stel|txt)$/, ''));
 
   // a make-planes document rebuilds from its own plane sheet, no catalog item
   if (doc.planesText) {

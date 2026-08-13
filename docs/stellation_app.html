@@ -298,12 +298,18 @@
 
     <details class="group">
       <summary><h2>Save &amp; export</h2></summary>
+      <!-- Save As… and Browse… need the File System Access API; boot un-hides
+           them when the browser has it, so no dead buttons anywhere else -->
       <div class="row buttons">
-        <button id="saveJson" class="primary" title="Save everything on screen as a JSON document">Save JSON</button>
+        <button id="saveJson" class="primary" title="Save the document — over its file when it has one, else as a download">Save</button>
+        <button id="saveAsBtn" title="Save as a json + thumbnail pair into a folder you choose" hidden>Save As…</button>
+      </div>
+      <div class="row buttons">
         <label class="filebtn inline" title="Opens our .json documents and the original program's .stel files">
           Open…
           <input id="loadDoc" type="file" accept=".json,.stel,.txt">
         </label>
+        <button id="browseBtn" title="Browse a local folder of documents, with previews" hidden>Browse…</button>
       </div>
       <p class="note">
         Saves in the SymmHub preset shape. <code>.stel</code> files from the
