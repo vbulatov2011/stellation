@@ -110,7 +110,8 @@ main {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 322px;
+  /* the column template lives with the splitter rules below, in var form, so
+     there is one source of truth the responsive @media block can override */
   gap: 1px;
   background: var(--line);
   /* the positioning context for floating internal windows (workspace.js) */
@@ -129,7 +130,7 @@ main {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* column template with the splitter rules below (var form), single source */
   gap: 1px;
   background: var(--line);
 }
@@ -471,22 +472,6 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); 
 }
 #helpClose:hover { border-color: var(--accent); color: var(--accent); }
 
-/* ------------------------------------------------------------------ narrow */
-
-@media (max-width: 1080px) {
-  main { grid-template-columns: minmax(0, 1fr) 290px; }
-  .views { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-}
-
-@media (max-width: 780px) {
-  body { overflow: auto; }
-  main { grid-template-columns: 1fr; grid-auto-rows: min-content; }
-  .stage { min-height: 520px; }
-  .views { grid-template-rows: 260px 260px; }
-  .panel.right { max-height: none; }
-  #stats { display: none; }
-}
-
 /* the key to the Cells bar colours */
 .legend {
   display: flex;
@@ -531,11 +516,6 @@ main { grid-template-columns: minmax(0, 1fr) 6px var(--panel-w, 322px); }
   inset: 0 -4px;
 }
 .splitter:hover, .splitter.dragging { background: var(--accent); }
-
-@media (max-width: 900px) {
-  main { grid-template-columns: minmax(0, 1fr); }
-  .splitter.vertical { display: none; }
-}
 
 /* ------------------------------------------------ always-visible view tools */
 
@@ -794,6 +774,40 @@ button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--
 #winMenu { display: none; }
 body.windowed #winMenu { display: inline-block; }
 
+/* ---------------------------------------------------------------- responsive
+ *
+ * One responsive section, at the very end so it wins.
+ *
+ * This used to be scattered up the file, and half of it was dead: the docked
+ * grid was declared plain near the top AND again in var form lower down for the
+ * splitters, and the later declaration -- being later, at equal specificity --
+ * beat the media queries sitting above it. So the views never actually stacked
+ * on a narrow screen. The grid now has one home (the splitter rules), and these
+ * queries come after it, so they take effect.
+ *
+ * The panel splitters are grid children (column 2 of their track); to collapse
+ * a track they must be display:none, not just visually hidden.
+ */
+
+@media (max-width: 1080px) {
+  /* the two views stack instead of sitting side by side */
+  .views { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  #splitViews { display: none; }
+}
+
+@media (max-width: 900px) {
+  /* the side panel drops below the stage */
+  main { grid-template-columns: 1fr; }
+  #splitPanel { display: none; }
+}
+
 @media (max-width: 780px) {
-  #modeBtn { display: none; }   /* narrow screens are always docked */
+  /* a phone: the whole thing is one scrolling column, and windowed mode
+     (and its toggle) are gone -- floating panels here are a worse scroll */
+  body { overflow: auto; }
+  main { grid-auto-rows: min-content; }
+  .stage { min-height: 60dvh; }
+  .views { grid-template-rows: 50dvh 50dvh; }
+  .panel.right { max-height: none; }
+  #stats, #modeBtn { display: none; }
 }
