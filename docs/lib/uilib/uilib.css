@@ -1,0 +1,229 @@
+/*
+ * uilib chrome — internal windows, thumbnail grids, the folder tree, and the
+ * small popup menu. Adapted from SymmHub's lib/uilib/css, restyled onto the
+ * app's theme variables so windows follow light/dark like everything else.
+ * Linked only from stellation_app.html; the tutorial pages never load it.
+ */
+
+:root { --iw-header: 28px; }   /* SymmHub's 17px is untouchable with a finger */
+
+/* ------------------------------------------------------------------ window */
+
+.iw {
+  position: absolute;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  /* a stored geometry from a bigger screen must never exceed the container */
+  max-width: 100%;
+  max-height: 100dvh;
+}
+
+.iw-header {
+  position: absolute;
+  top: 0;
+  height: var(--iw-header);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  cursor: move;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+  /* the header IS the drag surface: a finger must move the window, not the page */
+  touch-action: none;
+  user-select: none;
+}
+.iw-header:hover { background: color-mix(in srgb, var(--accent) 12%, var(--panel-2)); }
+
+.iw-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.iw-close {
+  flex: none;
+  width: var(--iw-header);
+  height: var(--iw-header);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+}
+.iw-close:hover { color: #fff; background: #c42b1c; }
+.iw-close svg.ic { width: 13px; height: 13px; }
+
+.iw-interior {
+  position: absolute;
+  top: var(--iw-header);
+  height: calc(100% - var(--iw-header));
+  width: 100%;
+  overflow: auto;
+  /* the sizing contract the app's panels expect from any positioned host */
+}
+
+.iw-grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  cursor: nwse-resize;
+  color: var(--dim);
+  touch-action: none;
+  z-index: 2;
+}
+.iw-grip svg.ic { width: 12px; height: 12px; }
+.iw-grip:hover { color: var(--accent); }
+
+/* transient pickers become near-fullscreen sheets where floating is useless */
+@media (max-width: 780px) {
+  .iw.transient {
+    inset: 4dvh 2vw auto 2vw !important;
+    width: 96vw !important;
+    height: 88dvh !important;
+  }
+}
+
+/* -------------------------------------------------------------- thumbnails */
+
+.thumbnail-grid {
+  min-height: 100%;
+  padding: 6px;
+  box-sizing: border-box;
+}
+.thumbnail-grid.drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: -4px;
+}
+
+.thumbnail-container {
+  display: inline-block;
+  width: 128px;
+  margin: 5px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  vertical-align: top;
+  cursor: pointer;
+}
+.thumbnail-container:hover { border-color: var(--accent); }
+.thumbnail-container.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.thumbnail-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border-radius: calc(var(--radius) - 4px);
+  background: var(--bg);
+}
+.thumbnail-image.folder-thumbnail { background: none; }
+
+.thumbnail-caption {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------- folder tree */
+
+.iw-tree { padding: 6px 8px; font-size: 12.5px; }
+.iw-tree ul { list-style: none; margin: 0; padding-left: 16px; }
+.iw-tree .nested { display: none; }
+.iw-tree .nested.active { display: block; }
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--text);
+  white-space: nowrap;
+}
+.tree-row:hover { background: var(--panel-2); }
+.tree-row.selected-node {
+  background: color-mix(in srgb, var(--accent) 20%, var(--panel-2));
+}
+.tree-row .folder-arrow {
+  flex: none;
+  width: 10px;
+  color: var(--dim);
+  font-size: 9px;
+}
+
+/* -------------------------------------------------------------- popup menu */
+
+.iw-menu {
+  position: fixed;
+  z-index: 100002;               /* above modal windows; dialogs still win */
+  min-width: 140px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  font-size: 12.5px;
+}
+.iw-menu button {
+  display: block;
+  width: 100%;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.iw-menu button:hover { background: var(--panel-2); color: var(--accent); }
+.iw-menu .checked::before { content: "✓ "; color: var(--accent); }
+.iw-menu .unchecked::before { content: "\2003 "; }
+
+/* ------------------------------------------------------- dialog form rows */
+
+.iw-form { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.iw-form label { font-size: 12px; color: var(--dim); }
+.iw-form input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+.iw-form input[type="text"]:focus { outline: none; border-color: var(--accent); }
+.iw-form input.invalid { border-color: #f05454; }
+.iw-form .row { display: flex; gap: 6px; align-items: center; }
+.iw-form .row .grow { flex: 1; min-width: 0; }
+.iw-form .actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; }
