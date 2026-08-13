@@ -98,6 +98,21 @@
       it reads best.
     </div></li>
     <li><div>
+      <b>The stellation symmetry no longer clears your cells.</b> Changing it
+      used to reset the selection to the core and wipe the undo history. Now
+      the selection, the history and the camera all stay put, and the symmetry
+      means what it should have meant all along: how big a bite the next click
+      takes. Every editing operation toggles the whole orbit of the clicked
+      cell under the current group — so you can rough out a stellation under
+      the full symmetry, drop to a subgroup (E takes single cells) for the
+      asymmetric touches, and come back, without losing a thing. A box in the
+      Cells table holding only some of its pieces shows a faint fill, says
+      "k of n pieces" on hover, and fills whole on a click. Documents whose
+      selection is whole orbits save exactly as before; one that is not saves
+      in a new notation an old build declines to guess at, and exports to
+      .stel under E, which the original Java program reads exactly.
+    </div></li>
+    <li><div>
       <b>First visits no longer open on a wireframe.</b> A first visit — any
       browser with nothing remembered yet — read the absent opacity setting as
       0% and booted into an invisible wireframe: the blank 3D view reported on

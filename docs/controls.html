@@ -190,10 +190,15 @@
 
       <dt>polyhedron / stellation symmetry</dt>
       <dd>The first is the symmetry the cells are grouped under; the second, which
-        must be a subgroup of it, is the symmetry the finished stellation is required
-        to keep. Lowering the second splits each group into sub-cells — that is what
-        lets you take one hand of a chiral pair. Only genuine subgroups of the solid's
-        own point group are offered.</dd>
+        must be a subgroup of it, is the <em>editing</em> symmetry: every add or
+        remove toggles the whole orbit of the clicked cell under it. Lowering it
+        splits each group into sub-cells — that is what lets you take one hand of
+        a chiral pair, and at <em>E</em> a click takes a single cell. Changing the
+        stellation symmetry never touches what is already selected, so you can
+        rough out a form under the full symmetry, refine it asymmetrically under a
+        subgroup, and switch back; a box in the Cells table then holding only some
+        of its pieces shows a faint fill, and a click fills it. Only genuine
+        subgroups of the solid's own point group are offered.</dd>
 
       <dt>build out to N shells</dt>
       <dd>How far out to carry the arrangement. Chosen per solid; raise it if

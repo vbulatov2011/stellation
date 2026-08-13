@@ -86,21 +86,53 @@ each boundary face, whether the solid is below it (an outward cap) or above it
 
 ## Off the main thread
 
-`docs/app/js/worker.js` owns the built structure and answers seven messages:
+`docs/app/js/worker.js` owns the built structure and answers nine messages:
 
 ```
 build       the expensive one; keeps `stel` and the plane→class map
+regroup     re-split sub-cells under a new stellation symmetry, in place
 mesh        boundary surface for a selection
 diagram     one plane's regions for a selection
 both        the two above in one round trip — what the app actually uses
-parseCells  a .stel selection string to keys
-formatCells keys back to a .stel string
-layerKeys   every sub-cell key in the first n layers
+parseCells  a selection string (either notation) to atom keys
+formatCells atom keys back to a string, with an `aligned` verdict
+formatUnder the selection under some other grouping (.stel export via E)
+layerKeys   every atom key in the first n layers
 ```
 
-Selection changes are cheap, so only `build` rebuilds. Everything else reads the
-structure already in the worker. Selections are sets of `"layer.cell.sub"`
-strings, which is also the exchange format with the UI.
+Selection changes are cheap, so only `build` rebuilds. Everything else reads
+the structure already in the worker.
+
+### The atomic selection model (editing symmetry)
+
+A selection is a set of **atom keys** — `"layer.orbit.member"`, one per
+primitive cell. That triple depends only on the polyhedron, the depth and the
+polyhedron symmetry, never on the stellation symmetry: the arrangement and the
+orbit grouping are computed before `subMatrices` is ever consulted, and
+`makeSubCells` never reorders `orbit.cells`. So an atom key names the same
+piece of space under every stellation symmetry — which is what lets the
+selection **survive a symmetry switch**. The stellation group's whole role is
+editorial: a click toggles the clicked atom's entire orbit under the *current*
+group (`orbitAtoms` in app.js), so building at full symmetry and refining
+under a subgroup — down to `E`, one cell per click — compose freely.
+
+Switching the stellation symmetry is therefore a `regroup`, not a rebuild
+(the Java applet's `createSubcells`): sub-cells re-split in place, ~50 ms on
+the deepest preset, with the selection, the undo history and the camera
+untouched, and the mesh provably bit-identical. The panel's boxes are the
+orbits of the current group, tri-state — empty, **partially selected**
+(faint; cells picked under a finer group), full. A click fills a partial box,
+then clears it.
+
+Serialization keeps two dialects. Whole-orbit selections — everything the app
+could produce before this model — write exactly the classic sub-index string
+under the document's stellation symmetry, `fileFormatRelease` 1, byte-stable.
+A selection that is *not* whole orbits writes member-indexed brackets with a
+`c{…}` prefix, `params.cells.indexing: "cells"`, release 2 — old builds
+refuse it cleanly instead of misparsing. The `.stel` export of such a
+selection is written under `E` (where it *is* whole orbits) so the original
+Java program reproduces it. The tutorial pages drive the same `CellsPanel` in
+the legacy sub-key dialect; `atoms` in the outline is what switches it.
 
 ---
 

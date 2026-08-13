@@ -984,7 +984,11 @@ async function changeStellSym() {
     const info = await call('regroup', { subMatrices: subM, matrices: polyM });
     state.outline = info.outline;
     indexOutline(info.outline);
+    // keep the table where the user left it — the rows are the same rows
+    const scroll = [cells.scroll, cells.scrollX];
     cells.setOutline(info.outline);
+    [cells.scroll, cells.scrollX] = scroll;
+    cells._clampScroll();
     cells.setLabels(duValLabels());
     fillFaceSelect(info.faces);
     refreshElements();

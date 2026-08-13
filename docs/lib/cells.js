@@ -597,7 +597,15 @@ export class CellsPanel {
     }
     const s = hit.sub;
     const name = c.subCells.length > 1 ? `${L}(${c.index}[${s.index}])` : `${L}(${c.index})`;
-    return `${name} · ${s.primitives} elem. cells [${c.facets}, ${c.vertices}, ${s.volume.toFixed(5)}]`;
+    // a partially selected box says how much of it is in — cells picked under
+    // a finer editing symmetry than this box's grouping
+    let partial = '';
+    if (this.atomic) {
+      const atoms = this.atomKeysOf.get(hit.key) || [];
+      const on = atoms.filter(k => this.selected.has(k)).length;
+      if (on > 0 && on < atoms.length) partial = ` · ${on} of ${atoms.length} pieces selected`;
+    }
+    return `${name} · ${s.primitives} elem. cells [${c.facets}, ${c.vertices}, ${s.volume.toFixed(5)}]${partial}`;
   }
 }
 
