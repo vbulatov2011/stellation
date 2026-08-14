@@ -213,7 +213,7 @@ export function facePlanes(poly) {
 }
 
 /**
- * A plane arrangement from an explicit list of planes — the "make planes" path.
+ * A plane arrangement from an explicit list of planes — the plane-editor path.
  *
  * The original Java had a dialog for this: type in planes, apply a symmetry
  * group to each, stellate the result. The engine below never cared where its
@@ -820,7 +820,7 @@ export function buildStellation(poly, matrices, opts = {}) {
           subMatrices = null, planes: customPlanes = null } = opts;
 
   const pool = new VertexPool();
-  // a custom plane list ("make planes") takes the polyhedron's place entirely
+  // a custom plane list (the plane editor) takes the polyhedron's place entirely
   const planes = customPlanes ? planesFromList(customPlanes) : facePlanes(poly);
   const arrangement = makeArrangement(planes, pool, maxIntersection, onProgress);
   const layers = makeLayers(arrangement);
@@ -1403,7 +1403,7 @@ export function writeStel({ polyhedron, polySymmetry, stellSymmetry, cells, expo
 export function createDiagram(stel, planeIndex, selectedOrbits, vertexUp = 0) {
   const { pool, arrangement } = stel;
   // an out-of-range index — or an arrangement with no planes at all, which a
-  // make-planes sheet of nothing but central planes can produce — draws nothing
+  // plane sheet of nothing but central planes can produce — draws nothing
   const all = arrangement[planeIndex] || [];
   if (!all.length) return null;
 

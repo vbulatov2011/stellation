@@ -1,5 +1,5 @@
 /*
- * The plane-set editor — the friendly face of "make planes".
+ * The plane-set editor — the "edit planes" dialog.
  *
  * One ROW is one plane and the symmetry group that multiplies it: a text
  * field holding exactly four numbers (normal and distance, full double
@@ -404,7 +404,7 @@ export function initPlanesDialog(deps) {
     if (await deps.buildCustomPlanes(toRows())) $('#planesDialog').close();
   };
   $('#planesCancel').onclick = () => $('#planesDialog').close();
-  $('#makePlanes').onclick = open;
+  $('#editPlanes').onclick = open;
 
   return { open };
 }

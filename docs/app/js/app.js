@@ -505,7 +505,7 @@ function updateCatCount() {
 
 async function select(item, opts = {}) {
   if (!item) return;
-  state.customPlanes = null;         // picking a solid leaves make-planes mode
+  state.customPlanes = null;         // picking a solid leaves custom-plane mode
   state.current = item;
   state.polySym = opts.polySym || item.symmetry || 'Ih';
   state.stellSym = opts.stellSym || defaultStellSym(state.polySym);
@@ -1130,7 +1130,7 @@ function wireControls() {
    */
   $('#newFromPreset').onclick = () => { $('#catalogDialog').close(); presets.show(); };
   $('#newFromFile').onclick = () => { $('#catalogDialog').close(); $('#loadDoc').click(); };
-  $('#newFromPlanes').onclick = () => { $('#catalogDialog').close(); $('#makePlanes').click(); };
+  $('#newFromPlanes').onclick = () => { $('#catalogDialog').close(); $('#editPlanes').click(); };
 
   $('#polySym').onchange = (e) => {
     state.polySym = e.target.value;
@@ -1378,10 +1378,10 @@ function wireControls() {
   $('#catalogDialog').addEventListener('cancel', () => { $('#search').value = ''; });
 }
 
-// ------------------------------------------------------------------ make planes
+// ------------------------------------------------------------------ edit planes
 
 /*
- * The "make planes" dialog — the original Java program's plane-set editor,
+ * The "edit planes" dialog — the original Java program's plane-set editor,
  * ported. A plane set can be given directly instead of being taken from a
  * catalog solid: the engine has been plane-based from the start and could
  * always read such files; this is the front door the port did not have.
@@ -1641,7 +1641,7 @@ async function openDocument(text, filename = '') {
    */
   docs?.clearOrigin(doc.name || filename.replace(/\.(json|stel|txt)$/, ''));
 
-  // a make-planes document rebuilds from its own plane sheet, no catalog item
+  // a plane-set document rebuilds from its own sheet, with no catalog item
   if (doc.planeRows) {
     if (doc.polySymmetry) state.polySym = doc.polySymmetry;
     if (doc.stellSymmetry) state.stellSym = doc.stellSymmetry;

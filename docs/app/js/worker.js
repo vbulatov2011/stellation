@@ -155,7 +155,7 @@ self.onmessage = (e) => {
       case 'build': {
         const { geometry, customPlanes, matrices, subMatrices, maxIntersection, maxLayer } = payload;
         const t0 = performance.now();
-        // "make planes": an explicit plane list replaces the polyhedron entirely
+        // an explicit plane list replaces the polyhedron entirely
         stel = buildStellation(customPlanes ? null : toPoly(geometry), matrices, {
           planes: customPlanes || null,
           subMatrices, maxIntersection, maxLayer,

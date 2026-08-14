@@ -727,7 +727,7 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .elem-legend { margin-top: 4px; }
 .elem-legend:empty { display: none; }
 
-/* the make-planes editor: rows on the left, the preview on the right */
+/* the plane editor: rows on the left, the preview on the right */
 #planesDialog { width: min(880px, 94vw); }
 .planes-layout { display: grid; grid-template-columns: 1fr 280px; gap: 14px; }
 .planes-right { min-width: 0; }
