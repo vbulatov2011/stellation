@@ -98,6 +98,17 @@
       it reads best.
     </div></li>
     <li><div>
+      <b>Plane sets are stored as data, not as text.</b> A document's custom
+      plane set used to be saved as the lines of the editor — nx, ny, nz, d
+      and a group name, re-parsed on every read. It is now a list of proper
+      JSON objects with a normal, a distance, a symmetry and a factor, each
+      checked when it is read <em>and</em> when it is written, naming the row
+      at fault. A mistyped plane set now refuses to open instead of quietly
+      building a different solid, and numbers keep their full precision
+      because they are never turned back into text. Documents saved in the
+      old form still open: their lines are read once and re-saved as data.
+    </div></li>
+    <li><div>
       <b>One New dialog, and planes from anywhere.</b> The polyhedron picker
       is now the single front door: <em>New</em> starts from a polyhedron, a
       preset, a file on your computer, or your own plane set, and hands off to

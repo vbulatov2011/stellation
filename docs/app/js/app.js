@@ -7,7 +7,7 @@ import {
   Renderer3D, DiagramView, CellsPanel, labelKeys,
   toOFF, toOBJ, toSTL, writeStel, facePlanes, suggestDepth,
 } from '../../lib/modules.js';
-import { writePreset, readDocument, newDocumentName } from './preset.js';
+import { writePreset, readDocument, newDocumentName, normalizePlaneRows } from './preset.js';
 import { initWorkspace } from './workspace.js';
 import { getSquareThumbnailCanvas } from '../../lib/uilib/files.js';
 import { initPresets } from './presets.js';
@@ -1382,72 +1382,52 @@ function wireControls() {
 
 /*
  * The "make planes" dialog — the original Java program's plane-set editor,
- * ported. Each line is one plane and, optionally, the group that multiplies
- * it, so a plane set can be given directly instead of being taken from a
- * catalog solid. The engine has been plane-based from the start and could
+ * ported. A plane set can be given directly instead of being taken from a
+ * catalog solid: the engine has been plane-based from the start and could
  * always read such files; this is the front door the port did not have.
  *
- * Line format:  nx ny nz d [GROUP [FACTOR]]
- * The factor scales the distance, sliding the plane along its own normal;
- * it is written only when it is not 1, so a plain sheet reads and writes
- * exactly as it always did. The editor fills the sheet from the current
- * solid's own face planes, which is what the Java dialog started from.
+ * A row is { normal: [x,y,z], distance, symmetry?, factor? } — structured,
+ * validated by preset.js on the way in and out, and stored that way in the
+ * document. The editor's text field is a view of one row's four numbers,
+ * nothing more; no line format survives anywhere but the legacy reader.
  */
-function parsePlaneRows(text) {
-  const rows = [];
-  const errors = [];
-  text.split('\n').forEach((line, li) => {
-    const s = line.replace(/#.*$/, '').trim();
-    if (!s) return;
-    const parts = s.split(/[\s,]+/);
-    const nums = parts.slice(0, 4).map(Number);
-    const group = parts[4] || 'E';
-    const factor = parts[5] === undefined ? 1 : Number(parts[5]);
-    if (parts.length < 4 || nums.some(v => !Number.isFinite(v))) {
-      errors.push(`line ${li + 1}: expected "nx ny nz d [group [factor]]", got "${s}"`);
-      return;
-    }
-    if (parts[4] && !(state.symmetry[group]?.order > 0)) {
-      errors.push(`line ${li + 1}: no symmetry group named "${group}"`);
-      return;
-    }
-    if (!Number.isFinite(factor)) {
-      errors.push(`line ${li + 1}: "${parts[5]}" is not a number to scale by`);
-      return;
-    }
-    rows.push({ n: [nums[0], nums[1], nums[2]], d: nums[3] * factor, group });
-  });
-  return { rows, errors };
-}
 
-/** each row multiplied by its group — the worker dedupes and counts */
+/** each row multiplied by its group, scaled by its factor — the engine dedupes */
 function expandPlaneRows(rows) {
   const out = [];
   for (const r of rows) {
-    const M = state.symmetry[r.group]?.matrices || state.symmetry.E.matrices;
+    const M = state.symmetry[r.symmetry || 'E']?.matrices || state.symmetry.E.matrices;
+    const n0 = r.normal, d = r.distance * (r.factor ?? 1);
     for (const m of M) {
-      const [a, b, c, d, e, f, g, h, i] = m.length === 9
+      const [a, b, c, e, f, g, h, i, j] = m.length === 9
         ? m : [m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]];
       out.push({
-        n: [a * r.n[0] + b * r.n[1] + c * r.n[2],
-            d * r.n[0] + e * r.n[1] + f * r.n[2],
-            g * r.n[0] + h * r.n[1] + i * r.n[2]],
-        d: r.d,
+        n: [a * n0[0] + b * n0[1] + c * n0[2],
+            e * n0[0] + f * n0[1] + g * n0[2],
+            h * n0[0] + i * n0[1] + j * n0[2]],
+        d,
       });
     }
   }
   return out;
 }
 
-async function buildCustomPlanes(text) {
-  const { rows, errors } = parsePlaneRows(text);
+async function buildCustomPlanes(planeRows) {
   const info = $('#planesInfo');
-  if (errors.length) { info.textContent = errors.slice(0, 3).join(' · '); return false; }
-  if (!rows.length) { info.textContent = 'no planes yet — one per line: nx ny nz d [group]'; return false; }
+  let rows;
+  try {
+    rows = normalizePlaneRows(planeRows || []);
+  } catch (err) {
+    info.textContent = err.message;
+    return false;
+  }
+  if (!rows.length) { info.textContent = 'no planes yet'; return false; }
+  const unknown = rows.find(r => r.symmetry && !(state.symmetry[r.symmetry]?.order > 0));
+  if (unknown) { info.textContent = `no symmetry group named "${unknown.symmetry}"`; return false; }
   const expanded = expandPlaneRows(rows);
   info.textContent = '';
-  const prev = { planesText: state.planesText, customPlanes: state.customPlanes, current: state.current };
-  state.planesText = text;
+  const prev = { planeRows: state.planeRows, customPlanes: state.customPlanes, current: state.current };
+  state.planeRows = rows;
   state.customPlanes = expanded;
   state.current = { file: 'custom', name: `custom planes (${rows.length} rows → ${expanded.length})`, symmetry: null };
   $('#pickName').textContent = 'custom planes';
@@ -1524,7 +1504,7 @@ function currentPresetText(docName) {
     colorMode: $('#colorMode').value,
     faceOpacity: Number($('#faceOpacity').value) / 100,
     view: renderer?.getView() || null,
-    planesText: state.customPlanes ? state.planesText : null,
+    planeRows: state.customPlanes ? state.planeRows : null,
   });
 }
 
@@ -1662,7 +1642,7 @@ async function openDocument(text, filename = '') {
   docs?.clearOrigin(doc.name || filename.replace(/\.(json|stel|txt)$/, ''));
 
   // a make-planes document rebuilds from its own plane sheet, no catalog item
-  if (doc.planesText) {
+  if (doc.planeRows) {
     if (doc.polySymmetry) state.polySym = doc.polySymmetry;
     if (doc.stellSymmetry) state.stellSym = doc.stellSymmetry;
     if (doc.planeDepth != null) setDepth(doc.planeDepth, false);
@@ -1670,7 +1650,7 @@ async function openDocument(text, filename = '') {
     // catalog ones, so they restore the same way too
     state.planeIndex = doc.diagramFace || 0;
     applyDisplaySettings(doc);
-    const ok = await buildCustomPlanes(doc.planesText);
+    const ok = await buildCustomPlanes(doc.planeRows);
     if (ok && doc.cells) {
       const { selected } = await call('parseCells', { cells: doc.cells, indexing: doc.cellsIndexing || null });
       state.selected = new Set(selected);

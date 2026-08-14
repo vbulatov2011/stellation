@@ -128,7 +128,7 @@ export function initPlanesDialog(deps) {
    */
   function rowsFromDocument(text) {
     const doc = readDocument(text);
-    if (doc.planesText) return fromText(doc.planesText);
+    if (doc.planeRows) return fromRows(doc.planeRows);
     if (doc.file && state.geometry[doc.file]) {
       // the SOLID's own symmetry, not the document's chosen subgroup: the
       // planes belong to the polyhedron, and the fullest group reduces them
@@ -138,28 +138,32 @@ export function initPlanesDialog(deps) {
     return null;
   }
 
-  // ---- serialization (the document's planesText, unchanged format) --------
+  // ---- the editor's rows <-> the document's rows ---------------------------
 
-  /* the factor is written only when it is doing something, so a sheet of
-     plain rows serializes exactly as it always did */
-  function toText() {
-    return '# one plane per line: nx ny nz d [group [factor]]\n' +
-           rows.map(r => `${r.text.trim()} ${r.group}` +
-                         (Number(r.factor) !== 1 ? ` ${num(Number(r.factor))}` : '')).join('\n');
+  /*
+   * The document holds structured rows; the editor holds a text buffer per
+   * row, because a half-typed normal is not a number triple yet. These two
+   * convert between them, and `toRows` is only ever called when every row
+   * reads — Build is disabled otherwise, so a malformed sheet cannot reach
+   * the document.
+   */
+  function toRows() {
+    return rows.map((r) => {
+      const parts = r.text.trim().split(/[\s,]+/).filter(Boolean).map(Number);
+      const out = { normal: [parts[0], parts[1], parts[2]], distance: parts[3] };
+      if (r.group && r.group !== 'E') out.symmetry = r.group;
+      const f = Number(r.factor);
+      if (f !== 1) out.factor = f;
+      return out;
+    });
   }
 
-  function fromText(text) {
-    const out = [];
-    for (const line of text.split('\n')) {
-      const s = line.replace(/#.*$/, '').trim();
-      if (!s) continue;
-      const parts = s.split(/[\s,]+/);
-      const group = parts.length > 4 && state.symmetry[parts[4]] ? parts[4] : 'E';
-      const f = parts.length > 5 ? Number(parts[5]) : 1;
-      out.push({ text: parts.slice(0, 4).join(' '), group,
-                 factor: Number.isFinite(f) ? f : 1 });
-    }
-    return out;
+  function fromRows(list) {
+    return (list || []).map((r) => ({
+      text: r.normal.map(num).join(' ') + ' ' + num(r.distance),
+      group: r.symmetry || 'E',
+      factor: r.factor ?? 1,
+    }));
   }
 
   // ---- the rows -----------------------------------------------------------
@@ -196,12 +200,25 @@ export function initPlanesDialog(deps) {
       const fac = el.querySelector('.plane-factor');
       fac.oninput = () => { row.factor = fac.value; update(false); };
       /* a multi-line paste becomes multiple rows — the copy half of
-         copy-and-paste already works row-wise, this is the paste half */
+         copy-and-paste already works row-wise, this is the paste half.
+         Tolerant on purpose: this is the clipboard, not the file format,
+         and a bad line simply makes a row that reads as bad. */
       input.addEventListener('paste', (e) => {
         const text = e.clipboardData?.getData('text') || '';
         if (!text.includes('\n')) return;
         e.preventDefault();
-        const pasted = fromText(text);
+        const pasted = text.split('\n')
+          .map(line => line.replace(/#.*$/, '').trim())
+          .filter(Boolean)
+          .map((line) => {
+            const parts = line.split(/[\s,]+/);
+            const f = parts.length > 5 ? Number(parts[5]) : 1;
+            return {
+              text: parts.slice(0, 4).join(' '),
+              group: parts.length > 4 && state.symmetry[parts[4]] ? parts[4] : 'E',
+              factor: Number.isFinite(f) ? f : 1,
+            };
+          });
         if (!pasted.length) return;
         row.text = pasted[0].text;
         if (state.symmetry[pasted[0].group]) row.group = pasted[0].group;
@@ -302,8 +319,8 @@ export function initPlanesDialog(deps) {
   // ---- opening, importing, building ---------------------------------------
 
   function open() {
-    if (state.customPlanes && state.planesText) {
-      rows = fromText(state.planesText);
+    if (state.customPlanes && state.planeRows) {
+      rows = fromRows(state.planeRows);
     } else if (state.current?.file && state.geometry[state.current.file]) {
       rows = reduceSolid(state.current.file, state.current.symmetry || 'E') || [];
     } else {
@@ -384,7 +401,7 @@ export function initPlanesDialog(deps) {
   $('#planesClear').onclick = () => { rows = []; render(); update(true); };
 
   $('#planesBuild').onclick = async () => {
-    if (await deps.buildCustomPlanes(toText())) $('#planesDialog').close();
+    if (await deps.buildCustomPlanes(toRows())) $('#planesDialog').close();
   };
   $('#planesCancel').onclick = () => $('#planesDialog').close();
   $('#makePlanes').onclick = open;

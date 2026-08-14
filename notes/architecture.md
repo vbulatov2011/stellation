@@ -134,6 +134,28 @@ selection is written under `E` (where it *is* whole orbits) so the original
 Java program reproduces it. The tutorial pages drive the same `CellsPanel` in
 the legacy sub-key dialect; `atoms` in the outline is what switches it.
 
+### The document's plane set
+
+A custom arrangement saves its planes as **structured rows** under
+`params.planes.rows`, release 3:
+
+```json
+{ "normal": [0, 0.8506508083520423, 0.5257311121191299],
+  "distance": 0.838505147445722, "symmetry": "Ih", "factor": 1.6 }
+```
+
+`symmetry` (default `E`) and `factor` (default 1) are written only when they
+carry information. Releases 1 and 2 wrote `params.planes.text` — the editor's
+own lines, re-tokenized on every read, which put a hand-rolled parser between
+the file and the geometry: silent on a missing field, wrong on a stray one,
+and lossy the moment a number was formatted. `normalizePlaneRows` in
+`preset.js` now validates on the way **in and out**, naming the offending
+row, so a malformed sheet cannot be written or opened — where before it would
+quietly build a different solid. Documents that used `text` still open: it is
+parsed once into rows and saved back structured. The editor keeps a text
+buffer per row because a half-typed normal is not a number triple yet, but
+that buffer reaches no file.
+
 ---
 
 ## Three linked views
