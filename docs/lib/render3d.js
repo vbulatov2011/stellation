@@ -360,9 +360,12 @@ export class Renderer3D {
    * The three coordinate axes, each a cylinder spanning the scene with an
    * arrowhead at its positive end. The cone has a 60° apex and a base twice
    * the cylinder's radius, so its height is r·2·√3 — slender enough to read
-   * as a direction rather than a lump. The tip sits exactly AT the scene
-   * radius, so the whole frame spans ±R and nothing pokes out past the
-   * solid's own bounds.
+   * as a direction rather than a lump.
+   *
+   * They reach a little past the symmetry elements (AXES_EXT against
+   * ELEM_EXT), so where both are shown the frame reads as the outermost
+   * thing and the two sets of lines do not end together in a way that makes
+   * them look like one another's continuation.
    */
   _buildCoordAxes() {
     const gl = this.gl;
@@ -376,7 +379,7 @@ export class Renderer3D {
        * at the cost of their re-scaling as cells are added — which is what
        * the symmetry elements already do, for the same reason.
        */
-      const R = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1));
+      const R = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1)) * AXES_EXT;
       const rad = R * 0.006 * (this.coordAxesWidth > 0 ? this.coordAxesWidth : 1);
       const coneR = rad * 2;
       const coneH = coneR * Math.sqrt(3);        // 60° apex: tan(30°) = r / h
@@ -448,7 +451,7 @@ export class Renderer3D {
        * still but makes them dwarf a small selection, which is worse.
        */
       const R = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1));
-      const ext = R * 1.12;
+      const ext = R * ELEM_EXT;
       // the slider scales the thickness; the extent stays put, so a thicker
       // axis is a fatter tube reaching exactly as far as the thin one did
       const rad = R * 0.014 * (this.elemWidth > 0 ? this.elemWidth : 1);
@@ -1946,6 +1949,15 @@ const STANDARD_VIEWS = VIEW_SPECS.map(([name, dir, up, title]) => ({
 
 /** the default: the frame the symmetry groups' matrices are written in */
 const DEFAULT_VIEW = STANDARD_VIEWS.findIndex(v => v.name === '+z');
+
+/*
+ * How far past the selection's own radius the two sets of scaffolding
+ * reach. The symmetry elements clear the solid enough to be followed; the
+ * coordinate axes clear THEM, by 5%, so the frame is unmistakably the
+ * outermost thing when both are drawn.
+ */
+const ELEM_EXT = 1.12;
+const AXES_EXT = ELEM_EXT * 1.05;
 
 // named orientations, for callers that want to jump straight to one
 Renderer3D.STANDARD_VIEWS = STANDARD_VIEWS;
