@@ -1940,42 +1940,42 @@ function quatFromAxis(axis, angle) {
  */
 const TAU = (1 + Math.sqrt(5)) / 2;          // the golden section
 
+/*
+ * A view is nothing but the direction brought to face the viewer: the turn
+ * that gets there is always the SHORTEST one from the canonical +z frame.
+ *
+ * That settles the roll, which is otherwise an arbitrary choice, and settles
+ * it the way a hand would: to see a solid down its (0,1,1) edge you tip it
+ * 45° about x and nothing else, so x stays across the screen where it
+ * started. Every view is then one turn from home about one axis, and none of
+ * them spins the model on the way.
+ *
+ * The axes worth looking down: the coordinate axes; the body diagonal, which
+ * is a cube's 3-fold; (1, 0, τ), an icosahedron's vertex and so a 5-fold;
+ * (0, 1/τ, τ), a face centre and so a 3-fold; (0, 1, 1), a cube's edge
+ * midpoint and so a 2-fold. Down those last the solids look like what they
+ * are — an icosahedral stellation seen down its 5-fold axis is five-fold on
+ * the screen.
+ */
 const VIEW_SPECS = [
-  ['+x', [1, 0, 0], [0, 1, 0], 'from +x — y up, z to the left'],
-  ['-x', [-1, 0, 0], [0, 1, 0], 'from -x — y up, z to the right'],
-  ['+y', [0, 1, 0], [0, 0, -1], 'from above — x to the right, z down'],
-  ['-y', [0, -1, 0], [0, 0, 1], 'from below — x to the right, z up'],
-  ['+z', [0, 0, 1], [0, 1, 0], 'from +z — x to the right, y up (the canonical frame)'],
-  ['-z', [0, 0, -1], [0, 1, 0], 'from behind — y up, x to the left'],
-  ['+iso', [1, 1, 1], [0, 1, 0], 'down the body diagonal — the axes 120° apart, equally foreshortened'],
-  ['-iso', [-1, -1, -1], [0, 1, 0], 'the opposite corner'],
-  /*
-   * Down the symmetry axes themselves, which is where these solids look like
-   * what they are: a five-fold view of an icosahedral stellation is the one
-   * that shows its five-fold-ness. (1, 0, τ) is an icosahedron's vertex
-   * direction and so a 5-fold axis; (0, 1/τ, τ) is a face centre and so a
-   * 3-fold axis; (0, 1, 1) is a cube's edge midpoint and so a 2-fold axis.
-   * The up hints are exactly perpendicular to their axes where a simple one
-   * is — quatLookAt orthogonalises anyway, but a perpendicular hint is the
-   * roll somebody reading this would predict.
-   */
-  ['+i5', [1, 0, TAU], [0, 1, 0], 'down an icosahedral 5-fold axis, (1, 0, τ)'],
-  ['-i5', [-1, 0, -TAU], [0, 1, 0], 'the opposite 5-fold vertex'],
-  /*
-   * The up hint here is what puts x across the screen rather than up it:
-   * quatLookAt sends `up` to screen-up and `up × dir` to screen-right, and
-   * (0, τ, -1/τ) × (0, 1/τ, τ) is exactly +x. Both signs share the hint, so
-   * -i3 comes out mirrored, with x to the left — the same way -z reads as
-   * the back of +z.
-   */
-  ['+i3', [0, 1 / TAU, TAU], [0, TAU, -1 / TAU], 'down an icosahedral 3-fold axis, (0, 1/τ, τ) — x to the right'],
-  ['-i3', [0, -1 / TAU, -TAU], [0, TAU, -1 / TAU], 'the opposite 3-fold face'],
-  ['+o2', [0, 1, 1], [1, 0, 0], 'down a cubic 2-fold axis, (0, 1, 1)'],
-  ['-o2', [0, -1, -1], [1, 0, 0], 'the opposite 2-fold edge'],
+  ['+x', [1, 0, 0], 'from +x — y up, z to the left'],
+  ['-x', [-1, 0, 0], 'from -x — y up, z to the right'],
+  ['+y', [0, 1, 0], 'from above — x to the right, z down'],
+  ['-y', [0, -1, 0], 'from below — x to the right, z up'],
+  ['+z', [0, 0, 1], 'from +z — x to the right, y up (the canonical frame)'],
+  ['-z', [0, 0, -1], 'from behind — y up, x to the left'],
+  ['+iso', [1, 1, 1], 'down the body diagonal — the axes 120° apart, equally foreshortened'],
+  ['-iso', [-1, -1, -1], 'the opposite corner'],
+  ['+i5', [1, 0, TAU], 'down an icosahedral 5-fold axis, (1, 0, τ)'],
+  ['-i5', [-1, 0, -TAU], 'the opposite 5-fold vertex'],
+  ['+i3', [0, 1 / TAU, TAU], 'down an icosahedral 3-fold axis, (0, 1/τ, τ)'],
+  ['-i3', [0, -1 / TAU, -TAU], 'the opposite 3-fold face'],
+  ['+o2', [0, 1, 1], 'down a cubic 2-fold axis, (0, 1, 1) — a 45° tip about x'],
+  ['-o2', [0, -1, -1], 'the opposite 2-fold edge'],
 ];
 
-const STANDARD_VIEWS = VIEW_SPECS.map(([name, dir, up, title]) => ({
-  name, title, q: quatLookAt(dir, up),
+const STANDARD_VIEWS = VIEW_SPECS.map(([name, dir, title]) => ({
+  name, title, q: quatBringToViewer(dir),
 }));
 
 /** the default: the frame the symmetry groups' matrices are written in */
@@ -1994,32 +1994,23 @@ const AXES_EXT = ELEM_EXT * 1.05;
 Renderer3D.STANDARD_VIEWS = STANDARD_VIEWS;
 
 /**
- * The rotation that brings model direction `dir` to face the viewer with
- * `up` pointing up the screen. Rows of the matrix are the model vectors
- * that map to eye x, y and z — then the usual matrix-to-quaternion.
+ * The SHORTEST rotation bringing model direction `dir` round to face the
+ * viewer — the standard half-way-vector construction: the axis is dir × z
+ * and the scalar part 1 + dir·z, normalised.
+ *
+ * Straight back (dir = -z) is the one direction with no shortest turn: every
+ * half turn about every axis in the screen plane does it. That one is chosen
+ * rather than derived — about y, which keeps y upright and swings the model
+ * left to right, the way a hand would turn it over.
  */
-function quatLookAt(dir, up) {
-  const norm = (v) => { const l = Math.hypot(...v) || 1; return v.map(x => x / l); };
-  const d = norm(dir);
-  const k = up[0] * d[0] + up[1] * d[1] + up[2] * d[2];
-  const u = norm([up[0] - k * d[0], up[1] - k * d[1], up[2] - k * d[2]]);
-  const r = [u[1] * d[2] - u[2] * d[1], u[2] * d[0] - u[0] * d[2], u[0] * d[1] - u[1] * d[0]];
-  const [m00, m01, m02] = r, [m10, m11, m12] = u, [m20, m21, m22] = d;
-  const tr = m00 + m11 + m22;
-  if (tr > 0) {
-    const s = Math.sqrt(tr + 1) * 2;
-    return [(m21 - m12) / s, (m02 - m20) / s, (m10 - m01) / s, 0.25 * s];
-  }
-  if (m00 > m11 && m00 > m22) {
-    const s = Math.sqrt(1 + m00 - m11 - m22) * 2;
-    return [0.25 * s, (m01 + m10) / s, (m02 + m20) / s, (m21 - m12) / s];
-  }
-  if (m11 > m22) {
-    const s = Math.sqrt(1 + m11 - m00 - m22) * 2;
-    return [(m01 + m10) / s, 0.25 * s, (m12 + m21) / s, (m02 - m20) / s];
-  }
-  const s = Math.sqrt(1 + m22 - m00 - m11) * 2;
-  return [(m02 + m20) / s, (m12 + m21) / s, 0.25 * s, (m10 - m01) / s];
+function quatBringToViewer(dir) {
+  const l = Math.hypot(...dir) || 1;
+  const [x, y, z] = dir.map(v => v / l);
+  const w = 1 + z;
+  if (w < 1e-9) return [0, 1, 0, 0];             // straight back: a half turn about y
+  const q = [y, -x, 0, w];
+  const n = Math.hypot(...q);
+  return q.map(v => v / n);
 }
 
 function quatFromEuler(x, y, z) {

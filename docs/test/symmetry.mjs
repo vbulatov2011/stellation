@@ -267,10 +267,30 @@ console.log('\n5. the viewpoints named after symmetry axes really are axes');
   };
   const is = (v, w) => Math.abs(v[0]-w[0]) + Math.abs(v[1]-w[1]) + Math.abs(v[2]-w[2]) < 1e-9;
   ok(is(screenRow('+i3', 0), [1, 0, 0]), '+i3 puts the x axis to the right');
-  ok(is(screenRow('-i3', 0), [-1, 0, 0]), '-i3 mirrors it, x to the left');
+  ok(is(screenRow('+o2', 0), [1, 0, 0]), '+o2 puts the x axis to the right');
   ok(is(screenRow('+z', 0), [1, 0, 0]) && is(screenRow('+z', 1), [0, 1, 0]),
      '+z still has x right and y up');
   ok(is(screenRow('+i5', 1), [0, 1, 0]), '+i5 puts the y axis up');
+
+  /*
+   * The rule the views are built on: each is the SHORTEST turn from the
+   * canonical +z frame to that direction — no roll on top. So the angle of
+   * the rotation must equal the angle between the direction and +z, which
+   * is a single number to compare and leaves nowhere for a stray roll to
+   * hide. Straight back is the exception: every half turn gets there, so
+   * there is no shortest one and the choice is made rather than derived.
+   */
+  for (const v of Renderer3D.STANDARD_VIEWS) {
+    const d = viewDir(v.name);
+    const turn = 2 * Math.acos(Math.min(1, Math.abs(v.q[3]))) * 180 / Math.PI;
+    const shortest = Math.acos(Math.max(-1, Math.min(1, d[2]))) * 180 / Math.PI;
+    ok(Math.abs(turn - shortest) < 1e-6,
+       `${v.name} is the shortest turn from home (${turn.toFixed(1)}°)`);
+  }
+  // and 45° about x is what the (0,1,1) view should be, exactly
+  ok(Math.abs(2 * Math.acos(views.get('+o2').q[3]) * 180 / Math.PI - 45) < 1e-9 &&
+     Math.abs(views.get('+o2').q[1]) < 1e-12 && Math.abs(views.get('+o2').q[2]) < 1e-12,
+     '+o2 is a 45° turn about x and nothing else');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
