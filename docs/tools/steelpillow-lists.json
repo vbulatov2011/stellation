@@ -1,0 +1,92 @@
+{
+  "$comment": [
+    "Guy Inchbald's stellation lists, transcribed from",
+    "https://www.steelpillow.com/polyhedra/icosa/printouts.html",
+    "read on 16 August 2026.",
+    "",
+    "They are the output of a program he wrote in SAM BASIC, printed on a",
+    "dot-matrix printer and later OCR'd; the page says so, and it shows. Each",
+    "list applies a different set of acceptance rules to the same arrangement,",
+    "so together they show how much of 'the 59' is the rules rather than the",
+    "geometry.",
+    "",
+    "`code` is the authority here, not `symbol`. It is a bit per cell type --",
+    "1 a, 2 b, 4 c, 8 d, 16 e1, 32 e2, 64 f1 one hand, 128 f1 other hand,",
+    "256 f2, 512 g1, 1024 g2, 2048 h -- so it says exactly which cells the",
+    "figure holds, while the printed symbol is prose about it and can be (and",
+    "in one case is) mistyped. make-icosahedra-rules.mjs regenerates every",
+    "symbol from its code and checks it against the printed one.",
+    "",
+    "Two entries are marked `reconstructed`. The fifth list prints '50",
+    "icosahedra found' but only 48 rows survive, and its heading is visibly",
+    "damaged ('No enanti(omorphs'), so two rows were lost. They can only be",
+    "2047 and 4095: this list's rules are those of the fourth list minus one",
+    "condition, so it must contain everything the fourth does, and the fourth",
+    "ends with those two."
+  ],
+  "source": {
+    "who": "Guy Inchbald",
+    "work": "Stellation Lists under Different Rules",
+    "url": "https://www.steelpillow.com/polyhedra/icosa/printouts.html",
+    "read": "2026-08-16"
+  },
+  "sets": [
+    {
+      "slug": "the-59",
+      "title": "The 59 icosahedra",
+      "blurb": "Miller's rules as Coxeter, Du Val, Flather and Petrie applied them — the canonical list.",
+      "rules": ["No enantiomorphs", "No hidden cavities", "No separated shells"],
+      "tally": 59,
+      "entries": "1=A 3=B 7=C 15=D 16=e1 31=D,e1 32=e2 47=D,e2 63=E 64=f1d 80=e1,f1d 95=D,e1,f1d 96=e2,f1d 111=D,e2,f1d 127=E,f1d 192=f1 208=e1,f1 223=D,e1,f1 255=E,f1 256=f2 288=e2,f2 303=D,e2,f2 319=E,f2 352=e2,f1d,f2 367=D,e2,f1d,f2 383=E,f1d,f2 511=F 512=g1 576=f1d,g1 592=e1,f1d,g1 607=D,e1,f1d,g1 608=e2,f1d,g1 623=D,e2,f1d,g1 639=E,f1d,g1 704=f1,g1 720=e1,f1,g1 735=D,e11f1,g1 767=E,f1,g1 864=e2,f1d,f2,g1 879=D,e2,f1d,f2,g1 895=E,f1d,f2,g1 1023=F,g1 1024=g2 1088=f1d,g2 1104=e1,f1d,g2 1119=D,e1,f1d,g2 1280=f2,g2 1312=e2,f2,g2 1327=D,e2,f2,g2 1343=E,f2,g2 1344=f1d,f2,g2 1360=e1,f1d,f2,g2 1375=D,e1,f1d,f2,g2 1376=e2,f1d,f2,g2 1391=D,e2,f1d,f2,g2 1407=E,f1d,f2,g2 1535=F,g2 2047=G 4095=H"
+    },
+    {
+      "slug": "faces-subset",
+      "title": "The 59, with continuous face planes",
+      "blurb": "The canonical rules with one more: a face plane may not be broken. It removes 25 of the 59.",
+      "rules": ["No enantiomorphs", "No hidden cavities", "No separated shells", "Face planes continuous"],
+      "tally": 34,
+      "entries": "1=A 3=B 7=C 15=D 31=D,e1 47=D,e2 63=E 95=D,e1,f1d 111=D,e2,f1d 127=E,f1d 223=D,e1,f1 255=E,f1 303=D,e2,f2 319=E,f2 367=D,e2,f1d,f2 383=E,f1d,f2 511=F 607=D,e1,f1d,g1 623=D,e2,f1d,g1 639=E,f1d,g1 735=D,e1,f1,g1 767=E,f1,g1 879=D,e2,f1d,f2,g1 895=E,f1d,f2,g1 1023=F,g1 1119=D,e1,f1d,g2 1327=D,e2,f2,g2 1343=E,f2,g2 1375=D,e1,f1d,f2,g2 1391=D,e2,f1d,f2,g2 1407=E,f1d,f2,g2 1535=F,g2 2047=G 4095=H"
+    },
+    {
+      "slug": "faces",
+      "title": "Continuous faces instead of rule (v)",
+      "blurb": "Drop the ban on separated shells and require continuous face planes in its place. Two figures the canonical list rejects come back.",
+      "rules": ["No enantiomorphs", "No hidden cavities", "Face planes continuous"],
+      "tally": 36,
+      "entries": "1=A 3=B 7=C 15=D 31=D,e1 47=D,e2 63=E 95=D,e1,f1d 111=D,e2,f1d 127=E,f1d 223=D,e1,f1 255=E,f1 303=D,e2,f2 319=E,f2 351=D,e1,f1d,f2 367=D,e2,f1d,f2 383=E,f1d,f2 511=F 607=D,e1,f1d,g1 623=D,e2,f1d,g1 639=E,f1d,g1 735=D,e1,f1,g1 767=E,f1,g1 863=D,e1,f1d,f2,g1 879=D,e2,f1d,f2,g1 895=E,f1d,f2,g1 1023=F,g1 1119=D,e1,f1d,g2 1327=D,e2,f2,g2 1343=E,f2,g2 1375=D,e1,f1d,f2,g2 1391=D,e2,f1d,f2,g2 1407=E,f1d,f2,g2 1535=F,g2 2047=G 4095=H"
+    },
+    {
+      "slug": "edges-subset",
+      "title": "The 59, with continuous edges",
+      "blurb": "The canonical rules plus a ban on segmented edges — the harshest cut of the canonical list, leaving 25.",
+      "rules": ["No enantiomorphs", "No hidden cavities", "No separated shells", "No segmented edges"],
+      "tally": 25,
+      "entries": "1=A 3=B 7=C 15=D 31=D,e1 47=D,e2 63=E 111=D,e2,f1d 127=E,f1d 223=D,e1,f1 255=E,f1 303=D,e2,f2 319=E,f2 367=D,e2,f1d,f2 383=E,f1d,f2 511=F 623=D,e2,f1d,g1 639=E,f1d,g1 735=D,e1,f1,g1 767=E,f1,g1 879=D,e2,f1d,f2,g1 895=E,f1d,f2,g1 1023=F,g1 2047=G 4095=H"
+    },
+    {
+      "slug": "edges",
+      "title": "Continuous edges instead of rule (v)",
+      "blurb": "Drop the ban on separated shells and require unsegmented edges instead. This is the one set that admits figures far outside the 59 — shells floating free of the core.",
+      "rules": ["No enantiomorphs", "No hidden cavities", "No segmented edges"],
+      "tally": 50,
+      "entries": "1=A 3=B 7=C 15=D 31=D,e1 33=A,e2 35=B,e2 39=C,e2 47=D,e2 63=E 103=C,e2,f1d 111=D,e2,f1d 127=E,f1d 223=D,e1,f1 255=E,f1 289=A,e2,f2 291=B,e2,f2 295=C,e2,f2 303=D,e2,f2 319=E,f2 335=D,f1d,f2 343=C,e1,f1d,f2 351=D,e1,f1d,f2 359=C,e2,f1d,f2 367=D,e2,f1d,f2 383=E,f1d,f2 511=F 551=C,e2,g1 559=D,e2,g1 575=E,g1 615=C,e2,f1d,g1 623=D,e2,f1d,g1 639=E,f1d,g1 735=D,e1,f1,g1 767=E,f1,g1 783=D,f2,g1 791=C,e1,f2,g1 799=D,e1,f2,g1 807=C,e2,f2,g1 815=D,e2,f2,g1 831=E,f2,g1 847=D,f1d,f2,g1 855=C,e1,f1d,f2,g1 863=D,e1,f1d,f2,g1 871=C,e2,f1d,f2,g1 879=D,e2,f1d,f2,g1 895=E,f1d,f2,g1 1023=F,g1",
+      "reconstructed": [2047, 4095]
+    },
+    {
+      "slug": "faces-edges-subset",
+      "title": "The 59, with continuous faces and edges",
+      "blurb": "Both continuity rules on top of the canonical ones. It happens to select the same 25 as the edge rule alone.",
+      "rules": ["No enantiomorphs", "No hidden cavities", "No separated shells", "No segmented edges", "Face planes continuous"],
+      "tally": 25,
+      "entries": "1=A 3=B 7=C 15=D 31=D,e1 47=D,e2 63=E 111=D,e2,f1d 127=E,f1d 223=D,e1,f1 255=E,f1 303=D,e2,f2 319=E,f2 367=D,e2,f1d,f2 383=E,f1d,f2 511=F 623=D,e2,f1d,g1 639=E,f1d,g1 735=D,e1,f1,g1 767=E,f1,g1 879=D,e2,f1d,f2,g1 895=E,f1d,f2,g1 1023=F,g1 2047=G 4095=H"
+    },
+    {
+      "slug": "faces-edges",
+      "title": "Continuous faces and edges instead of rule (v)",
+      "blurb": "Both continuity rules, with the ban on separated shells dropped. Two more than the subset above.",
+      "rules": ["No enantiomorphs", "No hidden cavities", "No segmented edges", "Face planes continuous"],
+      "tally": 27,
+      "entries": "1=A 3=B 7=C 15=D 31=D,e1 47=D,e2 63=E 111=D,e2,f1d 127=E,f1d 223=D,e1,f1 255=E,f1 303=D,e2,f2 319=E,f2 351=D,e1,f1d,f2 367=D,e2,f1d,f2 383=E,f1d,f2 511=F 623=D,e2,f1d,g1 639=E,f1d,g1 735=D,e1,f1,g1 767=E,f1,g1 863=D,e1,f1d,f2,g1 879=D,e2,f1d,f2,g1 895=E,f1d,f2,g1 1023=F,g1 2047=G 4095=H"
+    }
+  ]
+}

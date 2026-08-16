@@ -1,0 +1,47 @@
+{
+    "name": "E,f₂,g₁ — stellation of the icosahedron",
+    "appInfo": {
+        "appName": "Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1",
+        "fileFormatRelease": 1
+    },
+    "params": {
+        "polyhedron": {
+            "name": "icosahedron",
+            "file": "u27"
+        },
+        "symmetry": {
+            "polyhedron": "Ih",
+            "stellation": "Ih"
+        },
+        "arrangement": {
+            "planeDepth": -1
+        },
+        "cells": {
+            "selection": "{0,1,2,3,4,5(0)6(0)}"
+        },
+        "display": {
+            "diagramFace": 0,
+            "showEdges": true,
+            "showAllFacets": true,
+            "spin": false,
+            "colorMode": "layer",
+            "faceOpacity": 1,
+            "edges": null
+        },
+        "camera": {
+            "view": [
+                0,
+                0,
+                0,
+                1,
+                0.733795,
+                0,
+                0,
+                0.236068
+            ]
+        },
+        "export": {
+            "lengthUnit": 0.01
+        }
+    }
+}

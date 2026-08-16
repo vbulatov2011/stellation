@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stellations under different rules — Stellation</title>
+<meta name="description" content="Seven lists of icosahedron stellations, each from a different set of acceptance rules.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/walkthrough.css">
+<link rel="stylesheet" href="css/icosahedra.css">
+<style>@media (max-width: 650px) { .doc-head .optional { display: none; } }</style>
+<script>
+  (() => {
+    const saved = localStorage.getItem('theme') || 'auto';
+    const dark = saved === 'dark' || (saved === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = saved;
+  })();
+</script>
+</head>
+<body class="doc">
+
+<header class="doc-head">
+  <a class="brand" href="index.html">✦ Stellation</a>
+  <span class="crumb">Under different rules</span>
+  <div class="spacer"></div>
+  <a class="ghost optional" href="icosahedra.html">The 59</a>
+  <a class="ghost optional" href="examples.html">Examples</a>
+  <a class="ghost" href="stellation_app.html">Open the app →</a>
+  <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
+</header>
+
+<main class="doc-body narrow">
+  <h1>Stellations under different rules</h1>
+  <p class="standfirst">
+    "The fifty-nine icosahedra" is not a count of what the icosahedron has. It
+    is a count of what survives a particular set of rules — Miller's — about
+    what a stellation is allowed to be. Change one rule and the number changes
+    with it.
+  </p>
+
+  <p>
+    These seven lists are Guy Inchbald's, each computed by applying a different
+    set of acceptance conditions to the same arrangement of twenty planes. The
+    canonical 59 is the first. The others tighten it, by demanding that a face
+    plane not be broken or an edge not be segmented, or loosen it, by dropping
+    Miller's rule (v) — the ban on shells separated from the core — and putting
+    a continuity rule in its place.
+  </p>
+  <p>
+    Between them they name 84 distinct figures,
+    25 of which the
+    canonical list rejects. Every one is a document: click it and the app opens
+    with those cells chosen.
+  </p>
+
+  <div class="ic-sets">
+    <a class="ic-set" href="icosa-the-59.html">
+      <span class="count">59</span>
+      <b>The 59 icosahedra</b>
+      <p>Miller's rules as Coxeter, Du Val, Flather and Petrie applied them — the canonical list.</p>
+      <ul>
+        <li>No enantiomorphs</li>
+        <li>No hidden cavities</li>
+        <li>No separated shells</li>
+      </ul>
+    </a>
+    <a class="ic-set" href="icosa-faces-subset.html">
+      <span class="count">34</span>
+      <b>The 59, with continuous face planes</b>
+      <p>The canonical rules with one more: a face plane may not be broken. It removes 25 of the 59.</p>
+      <ul>
+        <li>No enantiomorphs</li>
+        <li>No hidden cavities</li>
+        <li>No separated shells</li>
+        <li>Face planes continuous</li>
+      </ul>
+    </a>
+    <a class="ic-set" href="icosa-faces.html">
+      <span class="count">36</span>
+      <b>Continuous faces instead of rule (v)</b>
+      <p>Drop the ban on separated shells and require continuous face planes in its place. Two figures the canonical list rejects come back.</p>
+      <ul>
+        <li>No enantiomorphs</li>
+        <li>No hidden cavities</li>
+        <li>Face planes continuous</li>
+      </ul>
+      <p>2 of them are not among the 59.</p>
+    </a>
+    <a class="ic-set" href="icosa-edges-subset.html">
+      <span class="count">25</span>
+      <b>The 59, with continuous edges</b>
+      <p>The canonical rules plus a ban on segmented edges — the harshest cut of the canonical list, leaving 25.</p>
+      <ul>
+        <li>No enantiomorphs</li>
+        <li>No hidden cavities</li>
+        <li>No separated shells</li>
+        <li>No segmented edges</li>
+      </ul>
+    </a>
+    <a class="ic-set" href="icosa-edges.html">
+      <span class="count">50</span>
+      <b>Continuous edges instead of rule (v)</b>
+      <p>Drop the ban on separated shells and require unsegmented edges instead. This is the one set that admits figures far outside the 59 — shells floating free of the core.</p>
+      <ul>
+        <li>No enantiomorphs</li>
+        <li>No hidden cavities</li>
+        <li>No segmented edges</li>
+      </ul>
+      <p>25 of them are not among the 59.</p>
+    </a>
+    <a class="ic-set" href="icosa-faces-edges-subset.html">
+      <span class="count">25</span>
+      <b>The 59, with continuous faces and edges</b>
+      <p>Both continuity rules on top of the canonical ones. It happens to select the same 25 as the edge rule alone.</p>
+      <ul>
+        <li>No enantiomorphs</li>
+        <li>No hidden cavities</li>
+        <li>No separated shells</li>
+        <li>No segmented edges</li>
+        <li>Face planes continuous</li>
+      </ul>
+    </a>
+    <a class="ic-set" href="icosa-faces-edges.html">
+      <span class="count">27</span>
+      <b>Continuous faces and edges instead of rule (v)</b>
+      <p>Both continuity rules, with the ban on separated shells dropped. Two more than the subset above.</p>
+      <ul>
+        <li>No enantiomorphs</li>
+        <li>No hidden cavities</li>
+        <li>No segmented edges</li>
+        <li>Face planes continuous</li>
+      </ul>
+      <p>2 of them are not among the 59.</p>
+    </a>
+  </div>
+
+  <p class="colophon">
+    The lists come from
+    <a href="https://www.steelpillow.com/polyhedra/icosa/printouts.html">Stellation Lists under Different Rules</a>
+    by Guy Inchbald, read on 2026-08-16. They were
+    computed by a program of his, printed on a dot-matrix printer and later
+    scanned, and each entry carries a numeric cell code as well as a printed
+    symbol. The figures here are built from the codes; every symbol was
+    regenerated from its code and checked against the printed one, which found
+    one casualty of the scanning (entry 735 of the first list) and no
+    disagreement anywhere else. Generated by
+    <code>docs/tools/make-icosahedra-rules.mjs</code>.
+  </p>
+</main>
+
+
+<script type="module">
+  const btn = document.querySelector('#themeBtn');
+  const apply = (pref) => {
+    const dark = pref === 'dark' || (pref === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = pref;
+    btn.textContent = pref === 'auto' ? '◐' : pref === 'dark' ? '●' : '○';
+  };
+  btn.onclick = () => {
+    const order = ['auto', 'light', 'dark'];
+    const cur = document.documentElement.dataset.themePref || 'auto';
+    apply(order[(order.indexOf(cur) + 1) % order.length]);
+    localStorage.setItem('theme', document.documentElement.dataset.themePref);
+  };
+  apply(localStorage.getItem('theme') || 'auto');
+</script>
+</body>
+</html>
