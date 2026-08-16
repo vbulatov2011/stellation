@@ -11,7 +11,7 @@
  * misparsing it. Every shipped preset must load and stay release 1.
  */
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { writePreset, readPreset, readDocument, normalizePlaneRows, FILE_FORMAT_RELEASE }
@@ -60,22 +60,33 @@ const base = {
   ok(refused, `release ${FILE_FORMAT_RELEASE + 1} is refused with the format message`);
 }
 
-// every shipped preset still loads, and stays release 1
+/*
+ * Every shipped preset still loads, and stays release 1.
+ *
+ * "Shipped" means listed in the manifest, not merely present in the folder:
+ * the app's Save can land a working document in docs/presets/ when that is
+ * the folder it was last pointed at, and an unlisted stray is nobody's
+ * promise. The manifest is what the site serves.
+ */
 {
-  const dir = join(DOCS, 'presets');
-  const files = readdirSync(dir).filter(n => n.endsWith('.json'));
+  const manifest = JSON.parse(readFileSync(join(DOCS, 'presets.json'), 'utf8'));
+  const files = manifest.items.map(it => it.file);
   let all = true, allR1 = true;
   for (const f of files) {
-    const raw = JSON.parse(readFileSync(join(dir, f), 'utf8'));
-    if ((raw.appInfo?.fileFormatRelease ?? 1) !== 1) allR1 = false;
+    const text = readFileSync(join(DOCS, f), 'utf8');
+    if ((JSON.parse(text).appInfo?.fileFormatRelease ?? 1) !== 1) allR1 = false;
     try {
-      const d = readDocument(readFileSync(join(dir, f), 'utf8'));
+      const d = readDocument(text);
       if (!d.cells || d.cellsIndexing !== null) all = false;
     } catch { all = false; }
   }
-  ok(files.length >= 8, `${files.length} shipped presets found`);
+  ok(files.length >= 8, `${files.length} presets in the manifest`);
   ok(all, 'every shipped preset reads as sub-indexed');
   ok(allR1, 'every shipped preset is release 1');
+
+  // and the manifest names nothing that is missing
+  const missing = files.filter(f => !existsSync(join(DOCS, f)) || !existsSync(join(DOCS, f + '.png')));
+  ok(missing.length === 0, 'every manifest entry has its document and thumbnail');
 }
 
 // ---------------------------------------------------------------- planes
