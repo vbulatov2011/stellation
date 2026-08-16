@@ -34,7 +34,12 @@ export const APP_NAME = 'Stellation.PolyhedronCatalog.PlaneArrangement.CellSelec
  * refuses instead ("this file is format release 3…").
  */
 export const FILE_FORMAT_RELEASE = 3;
-const PARAM_PREFIX = 'par';
+/*
+ * The prefix on a generated document name. SymmHub's own apps write `par`
+ * (for "parameters"); this one writes `stel`, because what it saves is a
+ * stellation and the name is the first thing offered in the Save As box.
+ */
+const PARAM_PREFIX = 'stel';
 
 /** `-YY-MM-DD-HH-MM-SS-mmm`, the SymmHub date2s() format */
 export function date2s(date = new Date(), sep = '-') {

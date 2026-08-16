@@ -84,9 +84,21 @@ export function initDocManager({
     if (!root) return;
     saveAsDialog ||= createSaveAsDialog({ storageId: 'stell.saveAs' });
     saveAsDialog.show({
+      /*
+       * One rule for the offered name: the document's own if it has one —
+       * the file it came from, or the preset it came from — and otherwise a
+       * fresh generated one. Starting something new (picking a solid from
+       * the catalog) drops the name, so a new document never arrives
+       * wearing the last one's.
+       */
       suggestedName: currentDoc.name || newDocumentName(),
       suggestedHandle: currentDoc.folderHandle,
       rootHandle: root,
+      // the dialog asks before landing on a name already in that folder
+      exists: async (name, folder) => {
+        try { await folder.getFileHandle(`${name.replace(/\.json$/, '')}.json`); return true; }
+        catch { return false; }
+      },
       onSave: async (name, folderHandle) => {
         try {
           const fileName = await writePair(folderHandle, name);

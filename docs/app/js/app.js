@@ -185,11 +185,30 @@ async function boot() {
    * written before it existed still open.
    */
   const hash = decodeURIComponent(location.hash.slice(1));
+  /*
+   * `#doc=<path>` opens a document served beside the app — how the examples
+   * gallery links to a particular stellation. The segments below can carry a
+   * catalog solid and a selection, but not a custom plane set, and half the
+   * examples ARE plane sets; naming the document instead says all of it.
+   *
+   * Same-origin relative paths only: a link is a thing strangers send, and
+   * this one must not be able to fetch an arbitrary host.
+   */
+  const docLink = hash.match(/^doc=([\w./-]+\.(?:json|stel|txt))$/);
   // the cells segment allows the c{…} member-indexed form — an unaligned
   // selection, which parseCellsAny recognises by the prefix
   const m = hash.match(
     /^([\w]+)(?:\/([\w()]+))?(?:\/([\w()]+))?(?:\/d(\d+))?(?:\/v([-\d.,eE]+))?(?:\/(c?\{.*\}))?$/);
-  if (m && geometry[m[1]]) {
+  if (docLink && !docLink[1].includes('..')) {
+    try {
+      const r = await fetch(docLink[1]);
+      if (!r.ok) throw new Error(r.statusText);
+      await openDocument(await r.text(), docLink[1].split('/').pop());
+    } catch (err) {
+      setStatus(`could not open ${docLink[1]}: ${err.message}`, false);
+      await select(findItem('u27'));
+    }
+  } else if (m && geometry[m[1]]) {
     await select(findItem(m[1]) || { file: m[1], name: m[1], symmetry: m[2] || 'Ih' },
                  { polySym: m[2], stellSym: m[3], cells: m[6],
                    depth: m[4] ? Number(m[4]) : undefined,
@@ -492,6 +511,15 @@ function buildCatalog() {
       b.onclick = () => {
         $('#catalogDialog').close();
         state.depthAuto = true;          // a new solid gets its own suggested depth
+        /*
+         * Starting from a solid starts a NEW document, so it inherits
+         * neither the last one's name nor its file: Save As will offer a
+         * generated name rather than the name of whatever was open before,
+         * and Save will not write over that file. Opening a document takes
+         * the other road — openDocument sets the name first, then calls
+         * select() itself.
+         */
+        docs?.clearOrigin(null);
         select({ ...item, category: cat.category });
       };
       grid.appendChild(b);

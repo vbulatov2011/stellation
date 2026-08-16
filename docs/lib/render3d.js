@@ -368,7 +368,15 @@ export class Renderer3D {
     const gl = this.gl;
     const o = { pos: [], norm: [], col: [] };
     if (this.showCoordAxes) {
-      const R = Math.max(1e-3, this.frameR || (this.lastMaxR || 1) * (this.modelScale || 1));
+      /*
+       * Sized to the SELECTION, not to the whole buildable arrangement:
+       * frameR spans everything the planes could ever produce, so on a small
+       * selection the arrows shot far past the solid and dwarfed it. The
+       * mesh's own radius keeps them the size of what is actually on screen,
+       * at the cost of their re-scaling as cells are added — which is what
+       * the symmetry elements already do, for the same reason.
+       */
+      const R = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1));
       const rad = R * 0.006 * (this.coordAxesWidth > 0 ? this.coordAxesWidth : 1);
       const coneR = rad * 2;
       const coneH = coneR * Math.sqrt(3);        // 60° apex: tan(30°) = r / h

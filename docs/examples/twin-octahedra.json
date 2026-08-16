@@ -1,0 +1,102 @@
+{
+    "name": "Two octahedra, two depths",
+    "appInfo": {
+        "appName": "Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1",
+        "fileFormatRelease": 3
+    },
+    "params": {
+        "polyhedron": {
+            "name": "custom planes (4 rows → 144)",
+            "file": "custom"
+        },
+        "symmetry": {
+            "polyhedron": "Td",
+            "stellation": "T"
+        },
+        "arrangement": {
+            "planeDepth": 60
+        },
+        "cells": {
+            "selection": "{0,1,2,3(0,1,2)4(1,2)5(4)6(5[1])7(7[1])}"
+        },
+        "display": {
+            "diagramFace": 0,
+            "showEdges": true,
+            "showAllFacets": true,
+            "spin": false,
+            "colorMode": "class",
+            "faceOpacity": 1,
+            "edges": {
+                "face": {
+                    "show": true,
+                    "color": "#000000",
+                    "width": 1,
+                    "tubes": true
+                },
+                "facet": {
+                    "show": true,
+                    "color": "#6b7080",
+                    "width": 1,
+                    "tubes": false
+                }
+            }
+        },
+        "camera": {
+            "view": [
+                0,
+                0,
+                0,
+                -1,
+                2.316367,
+                0,
+                0,
+                1
+            ]
+        },
+        "planes": {
+            "rows": [
+                {
+                    "normal": [
+                        0.5773502691896256,
+                        0.5773502691896256,
+                        0.5773502691896261
+                    ],
+                    "distance": 0.5222329678670932,
+                    "symmetry": "Td"
+                },
+                {
+                    "normal": [
+                        0.5773502691896255,
+                        -0.5773502691896254,
+                        0.5773502691896264
+                    ],
+                    "distance": 0.8703882797784883,
+                    "symmetry": "Td"
+                },
+                {
+                    "normal": [
+                        0.5773502691896256,
+                        0.5773502691896256,
+                        0.5773502691896261
+                    ],
+                    "distance": 0.5222329678670932,
+                    "symmetry": "Oh",
+                    "factor": 2
+                },
+                {
+                    "normal": [
+                        0.5773502691896255,
+                        -0.5773502691896254,
+                        0.5773502691896264
+                    ],
+                    "distance": 0.8703882797784883,
+                    "symmetry": "Oh",
+                    "factor": 2
+                }
+            ]
+        },
+        "export": {
+            "lengthUnit": 0.01
+        }
+    }
+}

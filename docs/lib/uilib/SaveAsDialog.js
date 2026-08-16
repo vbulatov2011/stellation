@@ -75,10 +75,25 @@ export function createSaveAsDialog(options = {}) {
     nameInput.addEventListener('input', () => nameInput.classList.remove('invalid'));
   }
 
-  function trySave() {
+  /*
+   * Saving onto an existing name replaces somebody's work, and the two
+   * documents need not have anything to do with each other — so it asks
+   * first, once, naming the file. The check is the caller's (`exists`),
+   * because only the caller knows what a document is made of; without one
+   * the dialog behaves as it always did.
+   */
+  async function trySave() {
     const name = nameInput.value.trim();
     if (!name) { nameInput.classList.add('invalid'); nameInput.focus(); return; }
     if (!folderHandle) { pathInput.classList.add('invalid'); return; }
+    if (cb.exists && await cb.exists(name, folderHandle)) {
+      const file = name.replace(/\.json$/, '') + '.json';
+      if (!confirm(`${file} already exists in this folder.\n\nReplace it?`)) {
+        nameInput.focus();
+        nameInput.select();
+        return;
+      }
+    }
     close(false);
     cb.onSave?.(name, folderHandle);
   }

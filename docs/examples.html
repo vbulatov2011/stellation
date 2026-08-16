@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Examples — Stellation</title>
+<meta name="description" content="A growing gallery of stellations, each one a document you can open and take apart.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/walkthrough.css">
+<style>
+  @media (max-width: 650px) { .doc-head .optional { display: none; } }
+
+  .ex-filter { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .ex-filter button {
+    padding: 4px 11px;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: var(--panel-2); color: var(--dim);
+    font: inherit; font-size: 12.5px; cursor: pointer;
+  }
+  .ex-filter button:hover { border-color: var(--accent); color: var(--accent); }
+  .ex-filter button.on { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+
+  .ex-section { margin: 26px 0; }
+  .ex-section > h2 { font-size: 13px; margin-bottom: 2px; }
+  .ex-section > p.blurb { margin: 0 0 12px; color: var(--dim); font-size: 13px; }
+
+  .ex-grid {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  }
+  .ex-card {
+    display: flex; flex-direction: column;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--panel); overflow: hidden;
+    text-decoration: none; color: inherit;
+  }
+  .ex-card:hover { border-color: var(--accent); }
+  .ex-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: var(--bg); }
+  .ex-card .body { padding: 9px 11px 11px; }
+  .ex-card b { display: block; font-size: 13.5px; font-weight: 600; }
+  .ex-card .note { margin: 4px 0 0; font-size: 12px; color: var(--dim); line-height: 1.45; }
+  .ex-card .src { margin-top: 6px; font-size: 11.5px; color: var(--dim); }
+  .ex-tags { margin-top: 7px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .ex-tags i {
+    font-style: normal; font-size: 10.5px; color: var(--dim);
+    border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px;
+  }
+  #exCount { color: var(--dim); font-size: 12.5px; }
+</style>
+<script>
+  (() => {
+    const saved = localStorage.getItem('theme') || 'auto';
+    const dark = saved === 'dark' || (saved === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = saved;
+  })();
+</script>
+</head>
+<body class="doc">
+
+<header class="doc-head">
+  <a class="brand" href="index.html">✦ Stellation</a>
+  <span class="crumb">Examples</span>
+  <div class="spacer"></div>
+  <a class="ghost optional" href="controls.html">Controls</a>
+  <a class="ghost optional" href="walkthrough.html">Cells walkthrough</a>
+  <a class="ghost optional" href="bruckner.html">Brückner 1900</a>
+  <a class="ghost" href="stellation_app.html">Open the app →</a>
+  <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
+</header>
+
+<main class="doc-body narrow">
+  <h1>Examples</h1>
+  <p class="standfirst">
+    Stellations worth a second look. Each one is a saved document: click it and
+    the app opens with that arrangement built and those cells chosen, ready to
+    be pulled apart, added to, or saved somewhere of your own.
+  </p>
+
+  <div id="exFilter" class="ex-filter"></div>
+  <p id="exCount"></p>
+  <div id="exSections"></div>
+
+  <p class="colophon">
+    The gallery reads <code>examples.json</code>, which lists each document with
+    its tags and a note. Adding one is three steps: save the document, drop the
+    <code>.json</code> and its <code>.json.png</code> thumbnail into
+    <code>examples/</code>, and add an entry to the catalog.
+  </p>
+</main>
+
+<script type="module" src="js/examples.js"></script>
+<script type="module">
+  const btn = document.querySelector('#themeBtn');
+  const apply = (pref) => {
+    const dark = pref === 'dark' || (pref === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = pref;
+    btn.textContent = pref === 'auto' ? '◐' : pref === 'dark' ? '●' : '○';
+  };
+  btn.onclick = () => {
+    const order = ['auto', 'light', 'dark'];
+    const cur = document.documentElement.dataset.themePref || 'auto';
+    apply(order[(order.indexOf(cur) + 1) % order.length]);
+    localStorage.setItem('theme', document.documentElement.dataset.themePref);
+  };
+  apply(localStorage.getItem('theme') || 'auto');
+</script>
+</body>
+</html>
