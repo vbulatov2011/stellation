@@ -1941,6 +1941,17 @@ function quatFromAxis(axis, angle) {
 const TAU = (1 + Math.sqrt(5)) / 2;          // the golden section
 
 /*
+ * The isometric pose. -45° about y, then the 35.264° about x that lands
+ * (1,1,1) exactly on the line of sight — atan(1/√2). Written out rather than
+ * derived like the rest, because isometric is a pose and not merely a
+ * direction: this roll is what stands y upright, which the shortest turn to
+ * the same corner misses by 1.9°, and an isometric with a tilted vertical is
+ * not what anybody means by one.
+ */
+const ISO_Q = quatMul(quatFromAxis([1, 0, 0], Math.atan(Math.SQRT1_2)),
+                      quatFromAxis([0, 1, 0], -Math.PI / 4));
+
+/*
  * A view is nothing but the direction brought to face the viewer: the turn
  * that gets there is always the SHORTEST one from the canonical +z frame.
  *
@@ -1964,8 +1975,23 @@ const VIEW_SPECS = [
   ['-y', [0, -1, 0], 'from below — x to the right, z up'],
   ['+z', [0, 0, 1], 'from +z — x to the right, y up (the canonical frame)'],
   ['-z', [0, 0, -1], 'from behind — y up, x to the left'],
-  ['+iso', [1, 1, 1], 'down the body diagonal — the axes 120° apart, equally foreshortened'],
-  ['-iso', [-1, -1, -1], 'the opposite corner'],
+  /*
+   * The two exceptions, and they earn it: isometric is a pose, not just a
+   * direction. Rolled so that y stands upright — which the shortest turn
+   * misses by 1.9° — the three axes come off the origin at 120° to one
+   * another with one of them vertical, and that picture is the whole point
+   * of an isometric view. The classic construction: -45° about y, then the
+   * 35.264° about x that lands (1,1,1) exactly on the line of sight,
+   * atan(1/√2).
+   */
+  ['+iso', [1, 1, 1], 'down the body diagonal — the axes 120° apart, y upright', ISO_Q],
+  /*
+   * The far corner is the near one turned around, not a different tilt: a
+   * half turn about the screen's own vertical, which swaps the direction it
+   * looks down and leaves y standing.
+   */
+  ['-iso', [-1, -1, -1], 'the opposite corner',
+   quatMul(quatFromAxis([0, 1, 0], Math.PI), ISO_Q)],
   ['+i5', [1, 0, TAU], 'down an icosahedral 5-fold axis, (1, 0, τ)'],
   ['-i5', [-1, 0, -TAU], 'the opposite 5-fold vertex'],
   ['+i3', [0, 1 / TAU, TAU], 'down an icosahedral 3-fold axis, (0, 1/τ, τ)'],
@@ -1974,8 +2000,9 @@ const VIEW_SPECS = [
   ['-o2', [0, -1, -1], 'the opposite 2-fold edge'],
 ];
 
-const STANDARD_VIEWS = VIEW_SPECS.map(([name, dir, title]) => ({
-  name, title, q: quatBringToViewer(dir),
+// the shortest turn, unless a spec names the pose it wants instead
+const STANDARD_VIEWS = VIEW_SPECS.map(([name, dir, title, q]) => ({
+  name, title, q: q || quatBringToViewer(dir),
 }));
 
 /** the default: the frame the symmetry groups' matrices are written in */

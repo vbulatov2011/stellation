@@ -279,8 +279,13 @@ console.log('\n5. the viewpoints named after symmetry axes really are axes');
    * is a single number to compare and leaves nowhere for a stray roll to
    * hide. Straight back is the exception: every half turn gets there, so
    * there is no shortest one and the choice is made rather than derived.
+   *
+   * The isometrics are the other exception, and a deliberate one — they are
+   * a pose rather than a direction, checked below on what makes them right.
    */
+  const POSED = new Set(['+iso', '-iso']);
   for (const v of Renderer3D.STANDARD_VIEWS) {
+    if (POSED.has(v.name)) continue;
     const d = viewDir(v.name);
     const turn = 2 * Math.acos(Math.min(1, Math.abs(v.q[3]))) * 180 / Math.PI;
     const shortest = Math.acos(Math.max(-1, Math.min(1, d[2]))) * 180 / Math.PI;
@@ -291,6 +296,33 @@ console.log('\n5. the viewpoints named after symmetry axes really are axes');
   ok(Math.abs(2 * Math.acos(views.get('+o2').q[3]) * 180 / Math.PI - 45) < 1e-9 &&
      Math.abs(views.get('+o2').q[1]) < 1e-12 && Math.abs(views.get('+o2').q[2]) < 1e-12,
      '+o2 is a 45° turn about x and nothing else');
+
+  /*
+   * What an isometric view is for: the three axes leaving the origin 120°
+   * apart, equally foreshortened, and one of them standing upright. The
+   * first two follow from looking down the body diagonal; the upright is
+   * the roll, and is why these two are posed rather than derived.
+   */
+  for (const name of ['+iso', '-iso']) {
+    const q = views.get(name).q;
+    const R = (v) => {
+      const [x, y, z, w] = q;
+      const M = [1-2*(y*y+z*z), 2*(x*y-z*w), 2*(x*z+y*w),
+                 2*(x*y+z*w), 1-2*(x*x+z*z), 2*(y*z-x*w),
+                 2*(x*z-y*w), 2*(y*z+x*w), 1-2*(x*x+y*y)];
+      return [M[0]*v[0]+M[1]*v[1]+M[2]*v[2], M[3]*v[0]+M[4]*v[1]+M[5]*v[2],
+              M[6]*v[0]+M[7]*v[1]+M[8]*v[2]];
+    };
+    const ax = [R([1,0,0]), R([0,1,0]), R([0,0,1])];
+    const len = ax.map(v => Math.hypot(v[0], v[1]));
+    const deg = ax.map(v => Math.atan2(v[1], v[0]) * 180 / Math.PI);
+    const gap = (a, b) => { const g = Math.abs(a - b) % 360; return g > 180 ? 360 - g : g; };
+    ok(len.every(l => Math.abs(l - Math.sqrt(2 / 3)) < 1e-9),
+       `${name}: all three axes foreshortened alike (√⅔)`);
+    ok(Math.abs(gap(deg[0], deg[1]) - 120) < 1e-6 && Math.abs(gap(deg[1], deg[2]) - 120) < 1e-6,
+       `${name}: the three axes 120° apart on screen`);
+    ok(Math.abs(Math.abs(deg[1]) - 90) < 1e-6, `${name}: y stands upright`);
+  }
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
