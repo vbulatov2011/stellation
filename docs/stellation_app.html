@@ -349,7 +349,7 @@
         <button id="exportOff">OFF</button>
       </div>
       <div class="row buttons">
-        <button id="exportSvg" title="The diagram as vector art, for printing or cutting">diagram SVG</button>
+        <button id="exportSvg" title="The stellation diagrams as vector art, for printing or cutting">diagrams…</button>
         <button id="exportPng">view PNG</button>
         <button id="exportStel" title="For the original Java program">.stel</button>
       </div>
@@ -427,6 +427,84 @@
   <div class="row buttons">
     <button id="planesBuild" class="primary">Build</button>
     <button id="planesCancel">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="exportDialog" class="export-dialog">
+  <h2>Export diagrams</h2>
+  <p class="note">
+    The stellation diagram is one face plane with every other plane's trace
+    drawn on it. Faces of the same kind give the same diagram, so only the
+    distinct ones are offered. Zoom and pan are not saved: an exported diagram
+    is always the whole plane, so two of them can be compared.
+  </p>
+
+  <div class="ex-section">
+    <b>Which</b>
+    <label><input type="radio" name="exScope" id="exAll" checked>
+      All distinct diagrams <span id="exAllCount" class="dim"></span></label>
+    <label><input type="radio" name="exScope" id="exOne">
+      Only the one shown <span id="exOneCount" class="dim"></span></label>
+  </div>
+
+  <div class="ex-section">
+    <b>Format</b>
+    <div class="row">
+      <label><input type="radio" name="exFmt" id="exSvg" checked> SVG</label>
+      <label><input type="radio" name="exFmt" id="exPng"> PNG</label>
+      <label class="dim">size <input type="number" id="exPngSize" value="1024" min="64" max="4096" step="64" disabled> px</label>
+    </div>
+    <p class="note">An SVG carries the document it came from, so the picture can be rebuilt exactly.</p>
+  </div>
+
+  <div class="ex-section">
+    <b>Appearance</b>
+    <div class="ex-grid">
+      <label>Preset
+        <select id="exPreset">
+          <option value="plate">Plate — black on white</option>
+          <option value="screen">As shown on screen</option>
+          <option value="custom">Custom</option>
+        </select></label>
+      <label>Shading
+        <select id="exShading">
+          <option value="fill">Chosen cells filled</option>
+          <option value="outline">Outline only</option>
+        </select></label>
+      <label>Colour by
+        <select id="exColor">
+          <option value="layer">Shell</option>
+          <option value="class">Face class</option>
+          <option value="stellClass">Stellation face class</option>
+          <option value="none">None — plain</option>
+        </select></label>
+      <label>Traces
+        <select id="exTraces">
+          <option value="facets">Facets of the arrangement</option>
+          <option value="full">Full plane traces</option>
+        </select></label>
+    </div>
+    <div class="row">
+      <label class="ex-line">Line
+        <input type="range" id="exLine" min="1" max="30" value="7">
+        <span id="exLineOut" class="dim">0.7</span></label>
+      <label><input type="checkbox" id="exTransparent"> Transparent background</label>
+    </div>
+  </div>
+
+  <div class="ex-section ex-where">
+    <b>Where</b>
+    <div class="row">
+      <label><input type="radio" name="exDest" id="exFolder" checked> A folder…</label>
+      <label><input type="radio" name="exDest" id="exZip"> One zip file</label>
+    </div>
+  </div>
+
+  <p id="exName" class="note mono"></p>
+  <p id="exInfo" class="note"></p>
+  <div class="row buttons">
+    <button id="exGo" class="primary">Export</button>
+    <button id="exCancel">Cancel</button>
   </div>
 </dialog>
 

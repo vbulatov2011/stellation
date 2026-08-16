@@ -750,6 +750,27 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .ax-y { color: #5cc75c; }
 .ax-z { color: #5c8cf2; }
 
+/* saving diagrams: what, how it looks, where it goes */
+#exportDialog { width: min(560px, 94vw); }
+.ex-section {
+  border-top: 1px solid var(--line);
+  padding-top: 9px; margin-top: 11px;
+}
+.ex-section > b { display: block; margin-bottom: 6px; }
+.ex-section label { display: flex; gap: 6px; align-items: center; margin: 3px 0; }
+.ex-grid {
+  display: grid; gap: 7px 14px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+.ex-grid label { flex-direction: column; align-items: stretch; gap: 3px; }
+.ex-grid select { width: 100%; }
+.ex-section .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+.ex-line { flex: 1; min-width: 190px; }
+.ex-line input[type="range"] { flex: 1; }
+#exPngSize { width: 78px; }
+#exName { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.export-dialog select:disabled, .export-dialog input:disabled { opacity: 0.45; }
+
 /* the plane editor: rows on the left, the preview on the right */
 #planesDialog { width: min(880px, 94vw); }
 .planes-layout { display: grid; grid-template-columns: 1fr 280px; gap: 14px; }

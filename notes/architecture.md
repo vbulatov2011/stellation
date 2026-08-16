@@ -377,6 +377,7 @@ node docs/test/examples.mjs    the examples catalog names what it has
 node docs/test/symmetry.mjs    the groups are groups, and the lattice is complete
 node docs/test/icosahedra.mjs  the generated 59 are still the 59
 node docs/test/icosahedra-rules.mjs   the seven rule sets, and what they share
+node docs/test/zip.mjs         the archive writer, read back with node's inflate
 ```
 
 **`validate.mjs` is the important one.** It holds numbers captured from a real

@@ -14,6 +14,7 @@ import { getSquareThumbnailCanvas } from '../../lib/uilib/files.js';
 import { initPresets } from './presets.js';
 import { initDocManager } from './docmanager.js';
 import { initPlanesDialog } from './planesdialog.js';
+import { initExportDialog } from './exportdialog.js';
 
 const $ = sel => document.querySelector(sel);
 const $$ = sel => [...document.querySelectorAll(sel)];
@@ -1399,7 +1400,16 @@ function wireControls() {
       stellSymmetry: stellSym, cells: cellsText,
     }));
   };
-  $('#exportSvg').onclick = () => download(`${name()}-diagram.svg`, diagram.toSVG(), 'image/svg+xml');
+  /*
+   * The diagrams go through a dialog now. A solid has one diagram per kind
+   * of face and the old button saved whichever was on screen, in one style,
+   * with nothing in the file to say what it was a picture of.
+   */
+  const exportDialog = initExportDialog({
+    state, call, diagram, download, setStatus,
+    currentName: () => docs?.current()?.name || name(),
+  });
+  $('#exportSvg').onclick = () => exportDialog?.open();
   $('#exportPng').onclick = () => {
     const a = document.createElement('a');
     a.download = `${name()}.png`;

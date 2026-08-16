@@ -65,6 +65,49 @@
 
   <!-- ══════════════════════════════════════════════ -->
   <div class="grp">
+    <h3>Seventh round</h3>
+  </div>
+  <ul class="done">
+    <li><div>
+      <b>The fifty-nine icosahedra, and the rules that make them fifty-nine.</b>
+      A page for <a href="icosahedra.html">all 59</a>, generated from Du Val's
+      symbols rather than built by hand — each symbol is parsed into shells,
+      the shells into cells, and the result checked against the counts the
+      literature records before anything is written. Seven more pages take
+      the same twenty planes <a href="icosa-rules.html">under different
+      rules</a>: demand that a face plane not be broken and 59 becomes 34,
+      that an edge not be segmented and it becomes 25, or drop Miller's ban on
+      shells separated from the core and it becomes 50, admitting figures with
+      a shell hanging free of the middle. 84 distinct stellations in all, each
+      one a document the app opens.
+    </div></li>
+    <li><div>
+      <b>Stellation diagrams, on the page and out of it.</b> Every figure in
+      those galleries now carries its diagram beside its picture, and the
+      gallery switches between the two. The drawing became a pure function —
+      geometry in, SVG out, no canvas and no renderer — so the same code draws
+      the card on the page and the file you export, and the generators can draw
+      all 84 on the command line. A new export dialog asks what you want: one
+      diagram or every distinct one, SVG or PNG at a size you choose, the
+      printed plate look or the colours on screen. Each SVG carries the
+      document that produced it, so the picture can be rebuilt. Where the
+      browser can be given a folder the files go into it; where it cannot,
+      they come back as one zip.
+    </div></li>
+    <li><div>
+      <b>A picture no longer depends on the window it was made in.</b>
+      Thumbnails were cropped out of the live canvas, and the camera accounts
+      for the aspect ratio — it must, or a narrow canvas would cut the sides
+      off — so the same solid at the same zoom filled a different fraction of a
+      wide window than a tall one. They are now drawn into a fixed square
+      buffer, which makes the picture a property of the document rather than of
+      the reader's screen. The same fault, and the same fix, for exported
+      diagram PNGs.
+    </div></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="grp">
     <h3>Sixth round</h3>
   </div>
   <ul class="done">
