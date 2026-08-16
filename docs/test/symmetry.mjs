@@ -253,6 +253,24 @@ console.log('\n5. the viewpoints named after symmetry axes really are axes');
     ok(Math.abs(a[0]+b[0]) + Math.abs(a[1]+b[1]) + Math.abs(a[2]+b[2]) < 1e-9,
        `${m} is ${p} from the other side`);
   }
+
+  /*
+   * Where a view is asked to put a model axis somewhere on the screen, check
+   * it lands there. A rotation's first row is what it sends to screen-right,
+   * its second what it sends to screen-up.
+   */
+  const screenRow = (name, row) => {
+    const [x, y, z, w] = views.get(name).q;
+    return row === 0
+      ? [1 - 2*(y*y + z*z), 2*(x*y - z*w), 2*(x*z + y*w)]
+      : [2*(x*y + z*w), 1 - 2*(x*x + z*z), 2*(y*z - x*w)];
+  };
+  const is = (v, w) => Math.abs(v[0]-w[0]) + Math.abs(v[1]-w[1]) + Math.abs(v[2]-w[2]) < 1e-9;
+  ok(is(screenRow('+i3', 0), [1, 0, 0]), '+i3 puts the x axis to the right');
+  ok(is(screenRow('-i3', 0), [-1, 0, 0]), '-i3 mirrors it, x to the left');
+  ok(is(screenRow('+z', 0), [1, 0, 0]) && is(screenRow('+z', 1), [0, 1, 0]),
+     '+z still has x right and y up');
+  ok(is(screenRow('+i5', 1), [0, 1, 0]), '+i5 puts the y axis up');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

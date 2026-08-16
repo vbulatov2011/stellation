@@ -1961,8 +1961,15 @@ const VIEW_SPECS = [
    */
   ['+i5', [1, 0, TAU], [0, 1, 0], 'down an icosahedral 5-fold axis, (1, 0, τ)'],
   ['-i5', [-1, 0, -TAU], [0, 1, 0], 'the opposite 5-fold vertex'],
-  ['+i3', [0, 1 / TAU, TAU], [1, 0, 0], 'down an icosahedral 3-fold axis, (0, 1/τ, τ)'],
-  ['-i3', [0, -1 / TAU, -TAU], [1, 0, 0], 'the opposite 3-fold face'],
+  /*
+   * The up hint here is what puts x across the screen rather than up it:
+   * quatLookAt sends `up` to screen-up and `up × dir` to screen-right, and
+   * (0, τ, -1/τ) × (0, 1/τ, τ) is exactly +x. Both signs share the hint, so
+   * -i3 comes out mirrored, with x to the left — the same way -z reads as
+   * the back of +z.
+   */
+  ['+i3', [0, 1 / TAU, TAU], [0, TAU, -1 / TAU], 'down an icosahedral 3-fold axis, (0, 1/τ, τ) — x to the right'],
+  ['-i3', [0, -1 / TAU, -TAU], [0, TAU, -1 / TAU], 'the opposite 3-fold face'],
   ['+o2', [0, 1, 1], [1, 0, 0], 'down a cubic 2-fold axis, (0, 1, 1)'],
   ['-o2', [0, -1, -1], [1, 0, 0], 'the opposite 2-fold edge'],
 ];
