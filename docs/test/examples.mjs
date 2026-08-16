@@ -72,15 +72,22 @@ ok(Object.keys(tags).length > 0, `${Object.keys(tags).length} tags declared`);
   ok(docs, 'every document still reads');
 }
 
-// the presets folder holds only what the preset manifest lists — the examples
-// live in their own folder, and a stray save in either is worth catching
+// Both document folders hold only what their manifest lists. Either one can
+// pick up a stray, because either can be the folder the app last saved into,
+// and a document nothing points at is invisible: it ships, and no page ever
+// offers it. Catching it here is the difference between "not catalogued yet"
+// and "catalogued, one line above".
 {
-  const manifest = JSON.parse(readFileSync(join(DOCS, 'presets.json'), 'utf8'));
-  const listed = new Set(manifest.items.map(i => i.file.split('/').pop()));
   const { readdirSync } = await import('node:fs');
-  const stray = readdirSync(join(DOCS, 'presets'))
-    .filter(n => n.endsWith('.json') && !listed.has(n));
-  ok(stray.length === 0, 'no unlisted documents loose in presets/' + (stray.length ? ` — ${stray}` : ''));
+  const patrol = (folder, listed) => {
+    const stray = readdirSync(join(DOCS, folder))
+      .filter(n => n.endsWith('.json') && !listed.has(n));
+    ok(stray.length === 0,
+       `no unlisted documents loose in ${folder}/` + (stray.length ? ` — ${stray}` : ''));
+  };
+  const manifest = JSON.parse(readFileSync(join(DOCS, 'presets.json'), 'utf8'));
+  patrol('presets', new Set(manifest.items.map(i => i.file.split('/').pop())));
+  patrol('examples', new Set(items.map(i => i.file.split('/').pop())));
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
