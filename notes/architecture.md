@@ -338,21 +338,43 @@ handles, keyed per dialog).
 
 Precomputed, so the app needs no server: **121 solids** across five catalog
 categories (regular, Archimedean, Archimedean duals, nonconvex uniform, duals to
-uniform), **150 geometry entries**, **85 symmetry groups** with their matrices,
+uniform), **150 geometry entries**, **97 symmetry groups** with their matrices,
 and Brückner's 1900 plates.
+
+### Groups in more than one frame
+
+A group is offered as a stellation symmetry when its matrices are literally
+inside the parent's — the app tests set containment rather than trusting a
+table of names (`subgroupsOf`, app.js). That is exact, but it means a group
+stored in the wrong orientation is invisible even when it genuinely is a
+subgroup: D3d belongs inside Ih, a triangular antiprism sitting inside an
+icosahedron, but the stored D3d has its 3-fold axis along z while the
+icosahedron's run along body diagonals.
+
+So a group whose canonical frame does not fit carries the frame in brackets —
+`D3d(I)`, `C5(I)`, `S6(O)` — and holds matrices taken from the parent's own.
+These are ordinary entries in every other respect; nothing keys off the name,
+and the symmetry-element display derives axes and mirrors from the matrices,
+so an off-canonical frame draws in the right place. `docs/test/symmetry.mjs`
+enumerates the full subgroup lattice of every symmetry the catalog uses and
+fails if any subgroup type has no name that reaches it.
 
 ---
 
 ## Tests
 
-Four Node harnesses, run directly with no runner. Each holds a different kind of
-contract, which is why there are four rather than one:
+Node harnesses, run directly with no runner. Each holds a different kind of
+contract, which is why there are several rather than one:
 
 ```
 node docs/test/validate.mjs    against the Java original — 42 assertions
 node docs/test/facing.mjs      the solid-side invariant — 7 assertions
 node docs/test/samples.mjs     the four shipped .stel files rebuild and round-trip
 node docs/test/sweep.mjs       every catalog entry, for timing and failures
+node docs/test/atoms.mjs       the atomic selection model and its serialization
+node docs/test/docformat.mjs   document releases, plane rows, shipped presets
+node docs/test/examples.mjs    the examples catalog names what it has
+node docs/test/symmetry.mjs    the groups are groups, and the lattice is complete
 ```
 
 **`validate.mjs` is the important one.** It holds numbers captured from a real
