@@ -155,9 +155,49 @@ console.log('\n3. the antiprism inside the icosahedron');
   ok(inIh('D3d(I)'), 'D3d(I) is a subgroup of Ih');
   ok(S['D3d(I)'].order === 12, 'D3d has order 12');
   ok(!inIh('D3d'), 'the canonical D3d is NOT — it is stored about z, hence the (I) copy');
-  for (const n of ['C5(I)', 'D5(I)', 'D5d(I)', 'S10(I)', 'C5v(I)', 'S6(I)', 'D3(I)', 'C3v(I)']) {
+  for (const n of ['C5(I)', 'D5(I)', 'D5d(I)', 'S10(I)', 'C5v(I)', 'D3(I)', 'C3v(I)']) {
     ok(inIh(n), `${n} is a subgroup of Ih`);
   }
+  ok(inIh('S6(O)'), 'S6 needs no (I) copy — S6(O) is already inside Ih');
+}
+
+/*
+ * Every copy of a group inside a parent is an equally good subgroup, so which
+ * one is stored is a choice — and it should be the one that lines up with the
+ * frames already in use, or switching between two symmetries spins the model's
+ * axes for no reason.
+ */
+console.log('\n4. the icosahedral frames line up with the cubic ones');
+{
+  /** the axis of the highest-order proper rotation, sign-canonicalised */
+  const principal = (ms) => {
+    let best = null, bo = 0;
+    for (const m of ms) {
+      if (det(m) < 0) continue;
+      const ang = Math.acos(Math.max(-1, Math.min(1, (trace(m) - 1) / 2)));
+      if (ang < 1e-6) continue;
+      const k = Math.round(2 * Math.PI / ang);
+      if (k > bo) { bo = k; best = [m[7] - m[5], m[2] - m[6], m[3] - m[1]]; }
+    }
+    const L = Math.hypot(...best) || 1;
+    let v = best.map(x => x / L);
+    if (v[0] < -1e-9 || (Math.abs(v[0]) < 1e-9 && (v[1] < -1e-9 ||
+        (Math.abs(v[1]) < 1e-9 && v[2] < 0)))) v = v.map(x => -x);
+    return v;
+  };
+  const along = (a, b) => Math.abs(Math.abs(a[0]*b[0] + a[1]*b[1] + a[2]*b[2]) - 1) < 1e-6;
+  const diag = [1, 1, 1].map(v => v / Math.sqrt(3));
+
+  // the cube diagonal IS a 3-fold axis of the icosahedron — which is why the
+  // cubic-frame C3 and S6 fit inside Ih at all
+  for (const n of ['C3(O)', 'S6(O)', 'D3d(O)', 'D3d(I)', 'D3(I)', 'C3v(I)']) {
+    ok(along(principal(S[n].matrices), diag), `${n} turns about the cube diagonal`);
+  }
+  // and the five-fold family shares one icosahedral axis between them
+  const five = ['C5(I)', 'D5(I)', 'D5d(I)', 'C5v(I)', 'S10(I)'];
+  const ax = principal(S[five[0]].matrices);
+  ok(five.every(n => along(principal(S[n].matrices), ax)),
+     `the five-fold groups share one axis (${ax.map(v => +v.toFixed(4))})`);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
