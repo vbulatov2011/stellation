@@ -1,0 +1,35 @@
+{
+    "name": "18. e₂f₂",
+    "appInfo": {
+        "appName": "Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1",
+        "fileFormatRelease": 1
+    },
+    "params": {
+        "polyhedron": {
+            "name": "icosahedron",
+            "file": "u27"
+        },
+        "symmetry": {
+            "polyhedron": "Ih",
+            "stellation": "Ih"
+        },
+        "arrangement": {
+            "planeDepth": -1
+        },
+        "cells": {
+            "selection": "{4(1)5(0)}"
+        },
+        "display": {
+            "diagramFace": 0,
+            "showEdges": true,
+            "showAllFacets": true,
+            "spin": false,
+            "colorMode": "layer",
+            "faceOpacity": 1,
+            "edges": null
+        },
+        "export": {
+            "lengthUnit": 0.01
+        }
+    }
+}

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The fifty-nine icosahedra — Stellation</title>
+<meta name="description" content="All 59 stellations of the icosahedron, each one a document you can open and take apart.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/walkthrough.css">
+<style>
+  @media (max-width: 650px) { .doc-head .optional { display: none; } }
+
+  .ic-filter { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 16px 0 4px; }
+  .ic-filter button {
+    padding: 4px 11px;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: var(--panel-2); color: var(--dim);
+    font: inherit; font-size: 12.5px; cursor: pointer;
+  }
+  .ic-filter button:hover { border-color: var(--accent); color: var(--accent); }
+  .ic-filter button.on { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .ic-sep { color: var(--dim); font-size: 12px; margin-left: 8px; }
+  #icCount { color: var(--dim); font-size: 12.5px; margin: 6px 0 0; }
+
+  .ic-grid {
+    display: grid; gap: 12px; margin-top: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  }
+  .ic-card {
+    display: flex; flex-direction: column;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--panel); overflow: hidden;
+    text-decoration: none; color: inherit;
+  }
+  .ic-card:hover { border-color: var(--accent); }
+  .ic-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: var(--bg); }
+  .ic-card .body { padding: 8px 10px 10px; }
+  .ic-head { display: flex; align-items: baseline; gap: 6px; }
+  .ic-n { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .ic-sym { font-size: 14px; font-weight: 600; }
+  .ic-sym.chiral { font-style: italic; }
+  .ic-name { margin: 3px 0 0; font-size: 11.5px; color: var(--dim); line-height: 1.4; }
+  .ic-stat { margin: 4px 0 0; font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .ic-shells { margin-top: 6px; display: flex; gap: 3px; flex-wrap: wrap; }
+  .ic-shells i {
+    font-style: normal; font-size: 10px; color: var(--dim);
+    border: 1px solid var(--line); border-radius: 999px; padding: 0 6px;
+  }
+
+  .ic-shell-key {
+    display: grid; gap: 2px 14px; margin: 10px 0 0;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  }
+  .ic-shell-row { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; }
+  .ic-shell-row b { min-width: 1.6em; }
+  .ic-shell-row .n { color: var(--dim); font-variant-numeric: tabular-nums; }
+  .ic-shell-row .in { color: var(--dim); margin-left: auto; font-size: 11.5px; }
+</style>
+<script>
+  (() => {
+    const saved = localStorage.getItem('theme') || 'auto';
+    const dark = saved === 'dark' || (saved === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = saved;
+  })();
+</script>
+</head>
+<body class="doc">
+
+<header class="doc-head">
+  <a class="brand" href="index.html">✦ Stellation</a>
+  <span class="crumb">The 59 icosahedra</span>
+  <div class="spacer"></div>
+  <a class="ghost optional" href="examples.html">Examples</a>
+  <a class="ghost optional" href="walkthrough.html">Cells walkthrough</a>
+  <a class="ghost optional" href="bruckner.html">Brückner 1900</a>
+  <a class="ghost" href="stellation_app.html">Open the app →</a>
+  <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
+</header>
+
+<main class="doc-body narrow">
+  <h1>The fifty-nine icosahedra</h1>
+  <p class="standfirst">
+    Twenty planes, extended until they stop crossing, cut space into 473 cells.
+    Choose cells by a few rules about symmetry and connectedness and you get
+    exactly fifty-nine figures — the list Coxeter, Du Val, Flather and Petrie
+    published in 1938. Each card below is a document: click it and the app
+    opens with that arrangement built and those cells chosen.
+  </p>
+
+  <h2>Reading the symbols</h2>
+  <p>
+    The cells fall into shells, numbered outward from the core and lettered
+    <b>a</b> to <b>h</b>. Three shells hold two kinds of cell and so split in
+    two: <b>e</b> into e₁ and e₂, <b>f</b> into f₁ and f₂, <b>g</b> into g₁ and
+    g₂. A symbol lists exactly the cells the figure is made of, with one
+    abbreviation — a figure that holds a complete shell <em>and everything
+    inside it</em> is named after that outer shell, capitalised, and the inner
+    shells go unwritten. So <b>De₁</b> means a + b + c + d + e₁, and <b>H</b>
+    means all of them.
+  </p>
+  <p>
+    One shell has two hands. The 120 cells of f₁ come in mirror-image pairs, and
+    a figure may take both or only one. Taking both leaves the figure
+    reflexible; taking one makes it chiral, and its mirror image is not counted
+    as a separate stellation. That is the whole difference between the two
+    halves of the list: <b>1–32</b> are reflexible, and <b>33–59</b> are the
+    same constructions with a single hand of f₁ — which is why every one of them
+    has f₁ in its symbol, and why some symbols appear twice. The chiral ones are
+    set in <i>italic</i> below.
+  </p>
+
+  <div id="icShells" class="ic-shell-key"></div>
+
+  <p style="margin-top:18px">
+    The pictures are coloured by shell, so the letters are visible on the
+    solid: everything of one colour is one shell. Open any card and the cells
+    panel shows the same shells as rows, which is where you can add to a figure
+    or take it apart.
+  </p>
+
+  <div id="icFilter" class="ic-filter"></div>
+  <p id="icCount"></p>
+  <div id="icGrid" class="ic-grid"></div>
+
+  <p class="colophon">
+    Generated by <code>docs/tools/make-icosahedra.mjs</code> from the symbols
+    alone: each one is parsed into shells, the shells into cells, and the
+    result checked before anything is written — the eleven orbits must have Du
+    Val's cell counts, f₁ and only f₁ must split in two under the rotations,
+    and the five stellations whose sizes are recorded in the literature must
+    come out at those sizes. Symbols, order and numbering follow
+    <i>The Fifty-Nine Icosahedra</i> (Coxeter, Du Val, Flather and Petrie,
+    1938; numbering from the Crennells' third edition, 1999). Names are given
+    only where this repository already had a sourced one.
+  </p>
+</main>
+
+<script type="module" src="js/icosahedra.js"></script>
+<script type="module">
+  const btn = document.querySelector('#themeBtn');
+  const apply = (pref) => {
+    const dark = pref === 'dark' || (pref === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = pref;
+    btn.textContent = pref === 'auto' ? '◐' : pref === 'dark' ? '●' : '○';
+  };
+  btn.onclick = () => {
+    const order = ['auto', 'light', 'dark'];
+    const cur = document.documentElement.dataset.themePref || 'auto';
+    apply(order[(order.indexOf(cur) + 1) % order.length]);
+    localStorage.setItem('theme', document.documentElement.dataset.themePref);
+  };
+  apply(localStorage.getItem('theme') || 'auto');
+</script>
+</body>
+</html>
