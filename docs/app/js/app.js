@@ -73,6 +73,15 @@ function call(type, payload, onProgress) {
 
 let renderer, diagram, cells, docs, presets;
 
+/*
+ * How the facets are coloured. `class` groups the original faces under the
+ * POLYHEDRON's symmetry — a property of the solid you started from, so an
+ * icosahedron has one class however you stellate it — and `stellClass` under
+ * the STELLATION symmetry, which splits those faces the moment you build
+ * under a subgroup that can no longer carry them onto one another.
+ */
+const COLOR_MODES = ['layer', 'class', 'stellClass'];
+
 async function boot() {
   const [catalog, symmetry, geometry] = await Promise.all([
     fetch('data/catalog.json').then(r => r.json()),
@@ -88,7 +97,7 @@ async function boot() {
     // agreeing rather than relying on two sets of defaults matching
     applyEdgeStyle(readJSON(localStorage.getItem('edgeStyle')) || currentEdgeStyle());
     const savedColor = localStorage.getItem('colorMode');
-    if (savedColor === 'class' || savedColor === 'layer') {
+    if (COLOR_MODES.includes(savedColor)) {
       renderer.colorMode = savedColor;         // set before the first setMesh
       $('#colorMode').value = savedColor;
     }
@@ -1054,7 +1063,8 @@ async function refresh() {
 
   state.mesh = mesh;
   renderer?.setMesh(mesh, mesh.faceLayers,
-    { classes: mesh.faceClasses, top: mesh.faceTop, planes: mesh.facePlanes });
+    { classes: mesh.faceClasses, classesStell: mesh.faceClassesStell,
+      top: mesh.faceTop, planes: mesh.facePlanes });
   diagram.setData(dia);
   state.diagramFrame = dia?.frame || null;
   refreshDiagramOverlay();

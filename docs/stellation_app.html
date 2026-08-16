@@ -268,11 +268,12 @@
 
     <details class="group">
       <summary><h2>View</h2></summary>
-      <label class="field" title="How the facets are coloured. By shell: one colour per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one colour per kind of face of the original polyhedron, so every facet lying in the same kind of face matches however far apart they are — undersides in the same colour, darkened. An icosahedron has one kind of face and so takes two colours; a cuboctahedron has two and takes four.">
+      <label class="field" title="How the facets are coloured. By shell: one colour per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one colour per kind of face of the ORIGINAL polyhedron — an icosahedron has one kind however you stellate it, so it takes one colour (two with the darkened undersides). By stellation face class: the same, but grouped under the stellation symmetry, so dropping to a subgroup splits those faces into the several kinds that symmetry can still tell apart — an icosahedron under a subgroup shows more than one colour.">
         <span>face colours</span>
         <select id="colorMode">
           <option value="layer">by shell</option>
           <option value="class">by face class</option>
+          <option value="stellClass">by stellation face class</option>
         </select>
       </label>
       <label class="field" title="How solid the facets are. Below 100% the solid turns to glass and its hidden edges come through, so you can look at the cells inside it — the interior of a stellation is otherwise the one thing you cannot see. At 0% only the edges are left, which is a wireframe of the whole arrangement.">

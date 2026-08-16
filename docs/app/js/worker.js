@@ -15,7 +15,17 @@ import {
 
 let stel = null;
 let meta = null;
-let faceClass = null;   // plane index -> symmetry class of the original face
+/*
+ * plane index -> symmetry class of the original face, under each of the two
+ * groups. They answer different questions and both are worth colouring by:
+ * the polyhedron's group says which faces are the same KIND of face of the
+ * solid you started from, and the stellation group says which of those the
+ * symmetry you are building under can still carry onto one another. Under
+ * the full group an icosahedron has one class; drop to a subgroup and its
+ * twenty faces fall into several.
+ */
+let faceClass = null;
+let faceClassStell = null;
 
 function toPoly(g) {
   const vertices = [];
@@ -83,6 +93,7 @@ function meshFor(selected) {
      * colour attribute and never another round trip to this worker.
      */
     faceClasses: mesh.facetRefs.map(f => (faceClass ? faceClass[f.plane] : 0)),
+    faceClassesStell: mesh.facetRefs.map(f => (faceClassStell ? faceClassStell[f.plane] : 0)),
     faceTop: mesh.facetTop,
     // which face plane each facet lies in — what separates a crease between two
     // planes (a face edge) from a join within one plane (a facet edge)
@@ -118,6 +129,7 @@ function diagramFor(planeIndex, selected) {
      * lies in the same face of the solid, by construction.
      */
     faceClass: faceClass ? faceClass[d.planeIndex] : 0,
+    faceClassStell: faceClassStell ? faceClassStell[d.planeIndex] : 0,
     extent: d.extent,
     frame: d.frame,                // projection basis, for the element overlay
     facets: d.facets.map(f => {
@@ -172,6 +184,8 @@ self.onmessage = (e) => {
          * subgroup, which is not what the colouring is claiming to show.
          */
         faceClass = stel.planes.length ? planeClasses(stel, matrices).group : null;
+        faceClassStell = stel.planes.length
+          ? planeClasses(stel, subMatrices || matrices).group : null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
@@ -247,6 +261,9 @@ self.onmessage = (e) => {
       case 'regroup': {
         if (!stel) { fail('nothing built yet'); break; }
         regroupSubCells(stel, payload.subMatrices || null);
+        // the stellation group decides this classification, so it moves too
+        faceClassStell = stel.planes.length
+          ? planeClasses(stel, payload.subMatrices || payload.matrices || null).group : null;
         reply({
           outline: outline(),
           faces: diagramFaces(stel, payload.subMatrices || payload.matrices || null),

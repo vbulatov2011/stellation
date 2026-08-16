@@ -181,10 +181,13 @@ export class DiagramView {
    * it makes the diagram and the solid agree at a glance — the plane you are
    * drawing on is the colour you see on the model.
    */
+  /** either of the two face-class modes, as against colouring by shell */
+  _byClass() { return this.colorMode === 'class' || this.colorMode === 'stellClass'; }
+
   _color(facet, outward = true) {
-    return this.colorMode === 'class'
-      ? classColor(this.data?.faceClass || 0, outward)
-      : layerColor(facet.layer);
+    if (this.colorMode === 'class') return classColor(this.data?.faceClass || 0, outward);
+    if (this.colorMode === 'stellClass') return classColor(this.data?.faceClassStell || 0, outward);
+    return layerColor(facet.layer);
   }
 
   /** symmetry-element marks: [{kind:'point'|'line', p:[x,y], q?, color}] or null */
@@ -339,7 +342,9 @@ export class DiagramView {
       const c = this._color(facet, !inward).map(v => Math.round(v * 255));
       // inward faces were pale enough to be missed entirely at the old alpha.
       // Still clearly lighter than an outward face, but readable.
-      ctx.fillStyle = (inward && this.colorMode !== 'class')
+      // by class, either class, the underside already has its own darkened
+      // hue — fading it as well would say the same thing twice
+      ctx.fillStyle = (inward && !this._byClass())
         ? `rgba(${c.join(',')},${dark ? 0.42 : 0.34})`
         : `rgb(${c.join(',')})`;
       this._path(ctx, facet.poly, f);

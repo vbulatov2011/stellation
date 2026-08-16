@@ -297,7 +297,7 @@ export class Renderer3D {
      */
     this.autoRotate = false;
     this.showEdges = true;
-    this.colorMode = 'layer';  // 'layer' | 'class' — see setColorMode
+    this.colorMode = 'layer';  // 'layer' | 'class' | 'stellClass' — setColorMode
     this.faceOpacity = 1;      // 1 solid … 0 wireframe — see draw()
     this.lastFaceClass = null;
     this.elements = null;      // symmetry axes / mirrors / Sn axes, see setElements
@@ -702,11 +702,13 @@ export class Renderer3D {
   /**
    * upload a mesh: {vertices:[{x,y,z}], faces:[[i,...]]} plus a layer per face.
    *
-   * `faceClass` is optional and carries the other colouring: {classes, top},
-   * one entry per face — which symmetry class of original face the facet lies
-   * in, and whether it is an outward cap or an underside. Callers that do not
-   * have it (the walkthrough and the Brückner and historical figures) simply
-   * get the layer palette, whatever colorMode says.
+   * `faceClass` is optional and carries the other colourings:
+   * {classes, classesStell, top}, one entry per face — which symmetry class
+   * of original face the facet lies in, under the polyhedron's group and
+   * under the stellation group, and whether it is an outward cap or an
+   * underside. Callers that do not have it (the walkthrough and the Brückner
+   * and historical figures) simply get the layer palette, whatever colorMode
+   * says.
    */
   setMesh(mesh, faceLayers, faceClass = null) {
     const gl = this.gl;
@@ -715,7 +717,11 @@ export class Renderer3D {
     this.mesh = mesh;
     this.lastFaceLayers = faceLayers;
     this.lastFaceClass = faceClass;
-    const byClass = this.colorMode === 'class' && faceClass;
+    // which of the two class maps this mode wants, if either
+    const classes = this.colorMode === 'class' ? faceClass?.classes
+                  : this.colorMode === 'stellClass' ? faceClass?.classesStell
+                  : null;
+    const byClass = !!classes;
     /*
      * key -> {a, b, plane, uses, crease}. A Set of seen keys was enough when
      * every edge was drawn the same; telling the two kinds apart needs to know
@@ -784,7 +790,7 @@ export class Renderer3D {
 
     mesh.faces.forEach((face, fi) => {
       const c = byClass
-        ? classColor(faceClass.classes[fi] || 0, faceClass.top ? faceClass.top[fi] !== false : true)
+        ? classColor(classes[fi] || 0, faceClass.top ? faceClass.top[fi] !== false : true)
         : layerColor(faceLayers ? faceLayers[fi] : 0);
       const p = face.map(i => mesh.vertices[i]);
       // flat normal from the first non-degenerate corner

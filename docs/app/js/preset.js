@@ -245,9 +245,15 @@ export function readPreset(doc) {
     showEdges: p.display?.showEdges ?? true,
     showAllFacets: p.display?.showAllFacets ?? true,
     spin: p.display?.spin ?? false,
-    // documents written before face-class colouring existed have no setting;
-    // they were all drawn by shell, so that is what they should reopen as
-    colorMode: p.display?.colorMode === 'class' ? 'class' : 'layer',
+    /*
+     * Documents written before face-class colouring existed have no setting;
+     * they were all drawn by shell, so that is what they should reopen as.
+     * An unknown value falls back the same way rather than being trusted:
+     * the colouring is a view of the geometry, and the wrong one is better
+     * than a mode this build cannot draw.
+     */
+    colorMode: ['class', 'stellClass'].includes(p.display?.colorMode)
+      ? p.display.colorMode : 'layer',
     // written since translucency existed; anything older was drawn solid
     faceOpacity: clamp01(p.display?.faceOpacity, 1),
     /*

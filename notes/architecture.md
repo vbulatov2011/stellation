@@ -170,14 +170,28 @@ that buffer reaches no file.
 All three share one gesture palette (`ACTION` in `render3d.js`) and toggle the
 same selection, so green means add and red means remove everywhere.
 
-### Two colourings
+### Three colourings
 
-Chosen in the View panel, saved under `params.display.colorMode`: **by shell**, a
-hue per layer outward from the core; and **by face class**, a hue per symmetry
-class of original face, undersides darkened. An icosahedron has one class and so
-takes two colours. The diagram follows the same choice — it is drawn on one
-plane, so by class it takes that plane's colour and the only variation left is
-the above/below split.
+Chosen in the View panel, saved under `params.display.colorMode`:
+
+- **by shell** (`layer`) — a hue per layer outward from the core.
+- **by face class** (`class`) — a hue per symmetry class of original face
+  under the POLYHEDRON's group, undersides darkened. "The same kind of face"
+  is a property of the solid you started from, so an icosahedron has one
+  class however you stellate it.
+- **by stellation face class** (`stellClass`) — the same, under the
+  STELLATION group. Those two coincide at full symmetry and part company
+  below it: the icosahedron's twenty faces are one class under I, two under
+  Th, and twenty under E, because that is how many kinds the chosen symmetry
+  can still tell apart.
+
+The worker keeps both plane→class maps (`faceClass`, `faceClassStell`) and
+sends both arrays with every mesh, so switching the menu is a re-upload of
+the colour attribute and never another build. The stellation one is
+recomputed by `regroup` as well as `build`, since the group that defines it
+is exactly what a regroup changes. The diagram follows the same choice — it
+is drawn on one plane, so by either class it takes that plane's colour and
+the only variation left is the above/below split.
 
 ### Facet opacity
 
