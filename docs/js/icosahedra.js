@@ -34,11 +34,25 @@ function card(item) {
   a.href = `stellation_app.html#doc=${item.file}`;
   a.title = `${item.symbol} — ${item.shells.join(' + ')}`;
 
-  const img = el('img');
-  img.src = `${item.file}.png`;
-  img.alt = '';
-  img.loading = 'lazy';
-  a.appendChild(img);
+  /*
+   * Two pictures of the same figure, and the page shows one at a time. Side by
+   * side in a card this narrow, each would be small enough that the diagram —
+   * which is a fine line drawing — would be unreadable, so it is a switch
+   * rather than a pair. Both srcs are set now and swapped by class, so
+   * flipping the whole gallery costs no fetch after the first look.
+   */
+  const solid = el('img', 'pic-solid');
+  solid.src = `${item.file}.png`;
+  solid.alt = '';
+  solid.loading = 'lazy';
+  a.appendChild(solid);
+  if (item.diagram) {
+    const dia = el('img', 'pic-diagram');
+    dia.src = item.diagram;
+    dia.alt = '';
+    dia.loading = 'lazy';
+    a.appendChild(dia);
+  }
 
   const body = el('div', 'body');
   const head = el('div', 'ic-head');
@@ -51,6 +65,10 @@ function card(item) {
   if (item.name) body.appendChild(el('p', 'ic-name', item.name));
   body.appendChild(el('p', 'ic-stat',
     `${item.cells} cells · ${item.f} faces` + (item.chiral ? ' · one hand' : '')));
+  if (item.regions) {
+    body.appendChild(el('p', 'ic-stat pic-diagram-only',
+      `${item.regions} regions · ${item.onSurface} on the surface`));
+  }
 
   const shells = el('div', 'ic-shells');
   for (const s of item.shells) shells.appendChild(el('i', null, s));
@@ -68,7 +86,9 @@ const FILTERS = [
 
 function render(man, filter) {
   const host = $('#icGrid');
+  const showing = host.className;      // survives a re-render after filtering
   host.innerHTML = '';
+  host.className = showing || 'ic-grid pics-solid';
   const items = man.items.filter(filter.test);
 
   $('#icCount').textContent = items.length === man.items.length
@@ -94,6 +114,20 @@ function filterRow(man, onPick) {
     return b;
   };
   for (const f of FILTERS) add(f.label, f.test, f.key === null);
+
+  // which of the two pictures the whole gallery shows
+  host.appendChild(el('span', 'ic-sep', 'show'));
+  const pics = [];
+  for (const [label, cls] of [['solid', 'pics-solid'], ['diagram', 'pics-diagram']]) {
+    const b = el('button', label === 'solid' ? 'on' : null, label);
+    b.onclick = () => {
+      for (const o of pics) o.classList.toggle('on', o === b);
+      document.querySelector('#icGrid').className = 'ic-grid ' + cls;
+    };
+    pics.push(b);
+    host.appendChild(b);
+  }
+
   host.appendChild(el('span', 'ic-sep', 'containing'));
   for (const [name] of SHELLS) {
     // only shells something actually uses — every one of them does, but the

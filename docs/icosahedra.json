@@ -15,6 +15,7 @@
   "items": [
     {
       "file": "icosahedra/01-a.json",
+      "diagram": "icosahedra/01-a.svg",
       "n": 1,
       "symbol": "A",
       "name": "the icosahedron itself",
@@ -24,10 +25,13 @@
       ],
       "cells": 1,
       "v": 12,
-      "f": 20
+      "f": 20,
+      "regions": 67,
+      "onSurface": 1
     },
     {
       "file": "icosahedra/02-b.json",
+      "diagram": "icosahedra/02-b.svg",
       "n": 2,
       "symbol": "B",
       "name": "first stellation — the small triambic icosahedron",
@@ -38,10 +42,13 @@
       ],
       "cells": 21,
       "v": 32,
-      "f": 60
+      "f": 60,
+      "regions": 67,
+      "onSurface": 3
     },
     {
       "file": "icosahedra/03-c.json",
+      "diagram": "icosahedra/03-c.svg",
       "n": 3,
       "symbol": "C",
       "name": "compound of five octahedra",
@@ -53,10 +60,13 @@
       ],
       "cells": 51,
       "v": 62,
-      "f": 120
+      "f": 120,
+      "regions": 67,
+      "onSurface": 6
     },
     {
       "file": "icosahedra/04-d.json",
+      "diagram": "icosahedra/04-d.svg",
       "n": 4,
       "symbol": "D",
       "name": "the nonagon-faced solid",
@@ -69,10 +79,13 @@
       ],
       "cells": 111,
       "v": 122,
-      "f": 180
+      "f": 180,
+      "regions": 67,
+      "onSurface": 9
     },
     {
       "file": "icosahedra/05-e.json",
+      "diagram": "icosahedra/05-e.svg",
       "n": 5,
       "symbol": "E",
       "name": null,
@@ -87,10 +100,13 @@
       ],
       "cells": 191,
       "v": 182,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/06-f.json",
+      "diagram": "icosahedra/06-f.svg",
       "n": 6,
       "symbol": "F",
       "name": null,
@@ -107,10 +123,13 @@
       ],
       "cells": 323,
       "v": 182,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/07-g.json",
+      "diagram": "icosahedra/07-g.svg",
       "n": 7,
       "symbol": "G",
       "name": "the great icosahedron",
@@ -129,10 +148,13 @@
       ],
       "cells": 413,
       "v": 92,
-      "f": 180
+      "f": 180,
+      "regions": 67,
+      "onSurface": 9
     },
     {
       "file": "icosahedra/08-h.json",
+      "diagram": "icosahedra/08-h.svg",
       "n": 8,
       "symbol": "H",
       "name": "the final stellation",
@@ -152,10 +174,13 @@
       ],
       "cells": 473,
       "v": 92,
-      "f": 180
+      "f": 180,
+      "regions": 67,
+      "onSurface": 9
     },
     {
       "file": "icosahedra/09-e1.json",
+      "diagram": "icosahedra/09-e1.svg",
       "n": 9,
       "symbol": "e₁",
       "name": null,
@@ -165,10 +190,13 @@
       ],
       "cells": 20,
       "v": 130,
-      "f": 180
+      "f": 180,
+      "regions": 67,
+      "onSurface": 9
     },
     {
       "file": "icosahedra/10-f1.json",
+      "diagram": "icosahedra/10-f1.svg",
       "n": 10,
       "symbol": "f₁",
       "name": null,
@@ -178,10 +206,13 @@
       ],
       "cells": 120,
       "v": 170,
-      "f": 480
+      "f": 480,
+      "regions": 67,
+      "onSurface": 24
     },
     {
       "file": "icosahedra/11-g1.json",
+      "diagram": "icosahedra/11-g1.svg",
       "n": 11,
       "symbol": "g₁",
       "name": null,
@@ -191,10 +222,13 @@
       ],
       "cells": 30,
       "v": 110,
-      "f": 180
+      "f": 180,
+      "regions": 67,
+      "onSurface": 9
     },
     {
       "file": "icosahedra/12-e1f1.json",
+      "diagram": "icosahedra/12-e1f1.svg",
       "n": 12,
       "symbol": "e₁f₁",
       "name": null,
@@ -205,10 +239,13 @@
       ],
       "cells": 140,
       "v": 190,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/13-e1f1g1.json",
+      "diagram": "icosahedra/13-e1f1g1.svg",
       "n": 13,
       "symbol": "e₁f₁g₁",
       "name": null,
@@ -220,10 +257,13 @@
       ],
       "cells": 170,
       "v": 190,
-      "f": 360
+      "f": 360,
+      "regions": 67,
+      "onSurface": 18
     },
     {
       "file": "icosahedra/14-f1g1.json",
+      "diagram": "icosahedra/14-f1g1.svg",
       "n": 14,
       "symbol": "f₁g₁",
       "name": null,
@@ -234,10 +274,13 @@
       ],
       "cells": 150,
       "v": 170,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/15-e2.json",
+      "diagram": "icosahedra/15-e2.svg",
       "n": 15,
       "symbol": "e₂",
       "name": null,
@@ -247,10 +290,13 @@
       ],
       "cells": 60,
       "v": 162,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/16-f2.json",
+      "diagram": "icosahedra/16-f2.svg",
       "n": 16,
       "symbol": "f₂",
       "name": null,
@@ -260,10 +306,13 @@
       ],
       "cells": 12,
       "v": 144,
-      "f": 120
+      "f": 120,
+      "regions": 67,
+      "onSurface": 6
     },
     {
       "file": "icosahedra/17-g2.json",
+      "diagram": "icosahedra/17-g2.svg",
       "n": 17,
       "symbol": "g₂",
       "name": null,
@@ -273,10 +322,13 @@
       ],
       "cells": 60,
       "v": 152,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/18-e2f2.json",
+      "diagram": "icosahedra/18-e2f2.svg",
       "n": 18,
       "symbol": "e₂f₂",
       "name": null,
@@ -287,10 +339,13 @@
       ],
       "cells": 72,
       "v": 174,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/19-e2f2g2.json",
+      "diagram": "icosahedra/19-e2f2g2.svg",
       "n": 19,
       "symbol": "e₂f₂g₂",
       "name": null,
@@ -302,10 +357,13 @@
       ],
       "cells": 132,
       "v": 194,
-      "f": 480
+      "f": 480,
+      "regions": 67,
+      "onSurface": 24
     },
     {
       "file": "icosahedra/20-f2g2.json",
+      "diagram": "icosahedra/20-f2g2.svg",
       "n": 20,
       "symbol": "f₂g₂",
       "name": null,
@@ -316,10 +374,13 @@
       ],
       "cells": 72,
       "v": 164,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/21-de1.json",
+      "diagram": "icosahedra/21-de1.svg",
       "n": 21,
       "symbol": "De₁",
       "name": null,
@@ -333,10 +394,13 @@
       ],
       "cells": 131,
       "v": 122,
-      "f": 240
+      "f": 240,
+      "regions": 67,
+      "onSurface": 12
     },
     {
       "file": "icosahedra/22-ef1.json",
+      "diagram": "icosahedra/22-ef1.svg",
       "n": 22,
       "symbol": "Ef₁",
       "name": "compound of ten tetrahedra",
@@ -352,10 +416,13 @@
       ],
       "cells": 311,
       "v": 182,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/23-fg1.json",
+      "diagram": "icosahedra/23-fg1.svg",
       "n": 23,
       "symbol": "Fg₁",
       "name": "sixth stellation of the icosahedron",
@@ -373,10 +440,13 @@
       ],
       "cells": 353,
       "v": 152,
-      "f": 240
+      "f": 240,
+      "regions": 67,
+      "onSurface": 12
     },
     {
       "file": "icosahedra/24-de1f1.json",
+      "diagram": "icosahedra/24-de1f1.svg",
       "n": 24,
       "symbol": "De₁f₁",
       "name": null,
@@ -391,10 +461,13 @@
       ],
       "cells": 251,
       "v": 182,
-      "f": 480
+      "f": 480,
+      "regions": 67,
+      "onSurface": 24
     },
     {
       "file": "icosahedra/25-de1f1g1.json",
+      "diagram": "icosahedra/25-de1f1g1.svg",
       "n": 25,
       "symbol": "De₁f₁g₁",
       "name": null,
@@ -410,10 +483,13 @@
       ],
       "cells": 281,
       "v": 182,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/26-ef1g1.json",
+      "diagram": "icosahedra/26-ef1g1.svg",
       "n": 26,
       "symbol": "Ef₁g₁",
       "name": "excavated dodecahedron — third stellation",
@@ -430,10 +506,13 @@
       ],
       "cells": 341,
       "v": 152,
-      "f": 240
+      "f": 240,
+      "regions": 67,
+      "onSurface": 12
     },
     {
       "file": "icosahedra/27-de2.json",
+      "diagram": "icosahedra/27-de2.svg",
       "n": 27,
       "symbol": "De₂",
       "name": null,
@@ -447,10 +526,13 @@
       ],
       "cells": 171,
       "v": 182,
-      "f": 240
+      "f": 240,
+      "regions": 67,
+      "onSurface": 12
     },
     {
       "file": "icosahedra/28-ef2.json",
+      "diagram": "icosahedra/28-ef2.svg",
       "n": 28,
       "symbol": "Ef₂",
       "name": "the solid Brückner presented as new",
@@ -466,10 +548,13 @@
       ],
       "cells": 203,
       "v": 182,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/29-fg2.json",
+      "diagram": "icosahedra/29-fg2.svg",
       "n": 29,
       "symbol": "Fg₂",
       "name": null,
@@ -487,10 +572,13 @@
       ],
       "cells": 383,
       "v": 122,
-      "f": 240
+      "f": 240,
+      "regions": 67,
+      "onSurface": 12
     },
     {
       "file": "icosahedra/30-de2f2.json",
+      "diagram": "icosahedra/30-de2f2.svg",
       "n": 30,
       "symbol": "De₂f₂",
       "name": null,
@@ -505,10 +593,13 @@
       ],
       "cells": 183,
       "v": 182,
-      "f": 240
+      "f": 240,
+      "regions": 67,
+      "onSurface": 12
     },
     {
       "file": "icosahedra/31-de2f2g2.json",
+      "diagram": "icosahedra/31-de2f2g2.svg",
       "n": 31,
       "symbol": "De₂f₂g₂",
       "name": null,
@@ -524,10 +615,13 @@
       ],
       "cells": 243,
       "v": 202,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/32-ef2g2.json",
+      "diagram": "icosahedra/32-ef2g2.svg",
       "n": 32,
       "symbol": "Ef₂g₂",
       "name": null,
@@ -544,10 +638,13 @@
       ],
       "cells": 263,
       "v": 182,
-      "f": 480
+      "f": 480,
+      "regions": 67,
+      "onSurface": 24
     },
     {
       "file": "icosahedra/33-f1-chiral.json",
+      "diagram": "icosahedra/33-f1-chiral.svg",
       "n": 33,
       "symbol": "f₁",
       "name": null,
@@ -557,10 +654,13 @@
       ],
       "cells": 60,
       "v": 170,
-      "f": 240
+      "f": 240,
+      "regions": 67,
+      "onSurface": 12
     },
     {
       "file": "icosahedra/34-e1f1-chiral.json",
+      "diagram": "icosahedra/34-e1f1-chiral.svg",
       "n": 34,
       "symbol": "e₁f₁",
       "name": null,
@@ -571,10 +671,13 @@
       ],
       "cells": 80,
       "v": 190,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/35-de1f1-chiral.json",
+      "diagram": "icosahedra/35-de1f1-chiral.svg",
       "n": 35,
       "symbol": "De₁f₁",
       "name": null,
@@ -589,10 +692,13 @@
       ],
       "cells": 191,
       "v": 182,
-      "f": 360
+      "f": 360,
+      "regions": 67,
+      "onSurface": 18
     },
     {
       "file": "icosahedra/36-f1g1-chiral.json",
+      "diagram": "icosahedra/36-f1g1-chiral.svg",
       "n": 36,
       "symbol": "f₁g₁",
       "name": null,
@@ -603,10 +709,13 @@
       ],
       "cells": 90,
       "v": 170,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/37-e1f1g1-chiral.json",
+      "diagram": "icosahedra/37-e1f1g1-chiral.svg",
       "n": 37,
       "symbol": "e₁f₁g₁",
       "name": null,
@@ -618,10 +727,13 @@
       ],
       "cells": 110,
       "v": 190,
-      "f": 360
+      "f": 360,
+      "regions": 67,
+      "onSurface": 18
     },
     {
       "file": "icosahedra/38-de1f1g1-chiral.json",
+      "diagram": "icosahedra/38-de1f1g1-chiral.svg",
       "n": 38,
       "symbol": "De₁f₁g₁",
       "name": null,
@@ -637,10 +749,13 @@
       ],
       "cells": 221,
       "v": 182,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/39-f1g2-chiral.json",
+      "diagram": "icosahedra/39-f1g2-chiral.svg",
       "n": 39,
       "symbol": "f₁g₂",
       "name": null,
@@ -651,10 +766,13 @@
       ],
       "cells": 120,
       "v": 182,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/40-e1f1g2-chiral.json",
+      "diagram": "icosahedra/40-e1f1g2-chiral.svg",
       "n": 40,
       "symbol": "e₁f₁g₂",
       "name": null,
@@ -666,10 +784,13 @@
       ],
       "cells": 140,
       "v": 202,
-      "f": 480
+      "f": 480,
+      "regions": 67,
+      "onSurface": 24
     },
     {
       "file": "icosahedra/41-de1f1g2-chiral.json",
+      "diagram": "icosahedra/41-de1f1g2-chiral.svg",
       "n": 41,
       "symbol": "De₁f₁g₂",
       "name": null,
@@ -685,10 +806,13 @@
       ],
       "cells": 251,
       "v": 194,
-      "f": 540
+      "f": 540,
+      "regions": 67,
+      "onSurface": 27
     },
     {
       "file": "icosahedra/42-f1f2g2-chiral.json",
+      "diagram": "icosahedra/42-f1f2g2-chiral.svg",
       "n": 42,
       "symbol": "f₁f₂g₂",
       "name": null,
@@ -700,10 +824,13 @@
       ],
       "cells": 132,
       "v": 194,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/43-e1f1f2g2-chiral.json",
+      "diagram": "icosahedra/43-e1f1f2g2-chiral.svg",
       "n": 43,
       "symbol": "e₁f₁f₂g₂",
       "name": null,
@@ -716,10 +843,13 @@
       ],
       "cells": 152,
       "v": 214,
-      "f": 480
+      "f": 480,
+      "regions": 67,
+      "onSurface": 24
     },
     {
       "file": "icosahedra/44-de1f1f2g2-chiral.json",
+      "diagram": "icosahedra/44-de1f1f2g2-chiral.svg",
       "n": 44,
       "symbol": "De₁f₁f₂g₂",
       "name": null,
@@ -736,10 +866,13 @@
       ],
       "cells": 263,
       "v": 194,
-      "f": 540
+      "f": 540,
+      "regions": 67,
+      "onSurface": 27
     },
     {
       "file": "icosahedra/45-e2f1-chiral.json",
+      "diagram": "icosahedra/45-e2f1-chiral.svg",
       "n": 45,
       "symbol": "e₂f₁",
       "name": null,
@@ -750,10 +883,13 @@
       ],
       "cells": 120,
       "v": 182,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/46-de2f1-chiral.json",
+      "diagram": "icosahedra/46-de2f1-chiral.svg",
       "n": 46,
       "symbol": "De₂f₁",
       "name": null,
@@ -768,10 +904,13 @@
       ],
       "cells": 231,
       "v": 202,
-      "f": 360
+      "f": 360,
+      "regions": 67,
+      "onSurface": 18
     },
     {
       "file": "icosahedra/47-ef1-chiral.json",
+      "diagram": "icosahedra/47-ef1-chiral.svg",
       "n": 47,
       "symbol": "Ef₁",
       "name": "compound of five tetrahedra",
@@ -787,10 +926,13 @@
       ],
       "cells": 251,
       "v": 182,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/48-e2f1g1-chiral.json",
+      "diagram": "icosahedra/48-e2f1g1-chiral.svg",
       "n": 48,
       "symbol": "e₂f₁g₁",
       "name": null,
@@ -802,10 +944,13 @@
       ],
       "cells": 150,
       "v": 182,
-      "f": 480
+      "f": 480,
+      "regions": 67,
+      "onSurface": 24
     },
     {
       "file": "icosahedra/49-de2f1g1-chiral.json",
+      "diagram": "icosahedra/49-de2f1g1-chiral.svg",
       "n": 49,
       "symbol": "De₂f₁g₁",
       "name": null,
@@ -821,10 +966,13 @@
       ],
       "cells": 261,
       "v": 202,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/50-ef1g1-chiral.json",
+      "diagram": "icosahedra/50-ef1g1-chiral.svg",
       "n": 50,
       "symbol": "Ef₁g₁",
       "name": null,
@@ -841,10 +989,13 @@
       ],
       "cells": 281,
       "v": 182,
-      "f": 360
+      "f": 360,
+      "regions": 67,
+      "onSurface": 18
     },
     {
       "file": "icosahedra/51-e2f1f2-chiral.json",
+      "diagram": "icosahedra/51-e2f1f2-chiral.svg",
       "n": 51,
       "symbol": "e₂f₁f₂",
       "name": null,
@@ -856,10 +1007,13 @@
       ],
       "cells": 132,
       "v": 194,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/52-de2f1f2-chiral.json",
+      "diagram": "icosahedra/52-de2f1f2-chiral.svg",
       "n": 52,
       "symbol": "De₂f₁f₂",
       "name": null,
@@ -875,10 +1029,13 @@
       ],
       "cells": 243,
       "v": 202,
-      "f": 360
+      "f": 360,
+      "regions": 67,
+      "onSurface": 18
     },
     {
       "file": "icosahedra/53-ef1f2-chiral.json",
+      "diagram": "icosahedra/53-ef1f2-chiral.svg",
       "n": 53,
       "symbol": "Ef₁f₂",
       "name": null,
@@ -895,10 +1052,13 @@
       ],
       "cells": 263,
       "v": 182,
-      "f": 300
+      "f": 300,
+      "regions": 67,
+      "onSurface": 15
     },
     {
       "file": "icosahedra/54-e2f1f2g1-chiral.json",
+      "diagram": "icosahedra/54-e2f1f2g1-chiral.svg",
       "n": 54,
       "symbol": "e₂f₁f₂g₁",
       "name": null,
@@ -911,10 +1071,13 @@
       ],
       "cells": 162,
       "v": 194,
-      "f": 480
+      "f": 480,
+      "regions": 67,
+      "onSurface": 24
     },
     {
       "file": "icosahedra/55-de2f1f2g1-chiral.json",
+      "diagram": "icosahedra/55-de2f1f2g1-chiral.svg",
       "n": 55,
       "symbol": "De₂f₁f₂g₁",
       "name": null,
@@ -931,10 +1094,13 @@
       ],
       "cells": 273,
       "v": 202,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/56-ef1f2g1-chiral.json",
+      "diagram": "icosahedra/56-ef1f2g1-chiral.svg",
       "n": 56,
       "symbol": "Ef₁f₂g₁",
       "name": null,
@@ -952,10 +1118,13 @@
       ],
       "cells": 293,
       "v": 182,
-      "f": 360
+      "f": 360,
+      "regions": 67,
+      "onSurface": 18
     },
     {
       "file": "icosahedra/57-e2f1f2g2-chiral.json",
+      "diagram": "icosahedra/57-e2f1f2g2-chiral.svg",
       "n": 57,
       "symbol": "e₂f₁f₂g₂",
       "name": null,
@@ -968,10 +1137,13 @@
       ],
       "cells": 192,
       "v": 194,
-      "f": 480
+      "f": 480,
+      "regions": 67,
+      "onSurface": 24
     },
     {
       "file": "icosahedra/58-de2f1f2g2-chiral.json",
+      "diagram": "icosahedra/58-de2f1f2g2-chiral.svg",
       "n": 58,
       "symbol": "De₂f₁f₂g₂",
       "name": null,
@@ -988,10 +1160,13 @@
       ],
       "cells": 303,
       "v": 202,
-      "f": 420
+      "f": 420,
+      "regions": 67,
+      "onSurface": 21
     },
     {
       "file": "icosahedra/59-ef1f2g2-chiral.json",
+      "diagram": "icosahedra/59-ef1f2g2-chiral.svg",
       "n": 59,
       "symbol": "Ef₁f₂g₂",
       "name": null,
@@ -1009,7 +1184,9 @@
       ],
       "cells": 323,
       "v": 182,
-      "f": 360
+      "f": 360,
+      "regions": 67,
+      "onSurface": 18
     }
   ]
 }

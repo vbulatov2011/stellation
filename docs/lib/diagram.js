@@ -5,7 +5,9 @@
  * region is a cell, and clicking one adds or removes it.
  */
 
-import { layerColor, classColor, ACTION } from './render3d.js';
+import { ACTION } from './render3d.js';
+import { layerColor, classColor } from './palette.js';
+import { diagramSVG } from './diagramsvg.js';
 
 export class DiagramView {
   constructor(canvas, { onToggle, onHover } = {}) {
@@ -461,25 +463,25 @@ export class DiagramView {
   snapshot() { this.draw(); return this.canvas.toDataURL('image/png'); }
 
   /** standalone SVG of the diagram, for printing or laser cutting */
-  toSVG() {
+  /**
+   * The diagram as vector art.
+   *
+   * The drawing itself is diagramSVG() in diagramsvg.js — a pure function, so
+   * that the file you export and the pictures on the example pages come out of
+   * one piece of code. What belongs to the view, and so is supplied here, is
+   * only what the view happens to be showing: which colouring, and whether the
+   * traces are drawn as the arrangement's facets or straight across the plane.
+   * Zoom and pan are deliberately not passed — an exported diagram is always
+   * the whole plane, or two of them could not be compared.
+   */
+  toSVG(options = {}) {
     if (!this.data) return '';
-    const e = this.data.extent * 1.05;
-    const S = 1000, k = S / (2 * e);
-    const X = x => (S / 2 + x * k).toFixed(2);
-    const Y = y => (S / 2 - y * k).toFixed(2);
-    const path = p => 'M' + p.map(([x, y]) => `${X(x)},${Y(y)}`).join('L') + 'Z';
-    const out = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${S}" height="${S}">`,
-      `<rect width="${S}" height="${S}" fill="white"/>`];
-    for (const f of this.data.facets) {
-      if (!f.selected) continue;
-      const c = this._color(f, f.facing !== 0).map(v => Math.round(v * 255));
-      out.push(`<path d="${path(f.poly)}" fill="rgb(${c})" stroke="none"/>`);
-    }
-    for (const f of this.data.facets) {
-      out.push(`<path d="${path(f.poly)}" fill="none" stroke="#222" stroke-width="0.7"/>`);
-    }
-    out.push('</svg>');
-    return out.join('\n');
+    return diagramSVG(this.data, {
+      colorMode: this.colorMode,
+      traces: this.lineOnly ? 'full' : 'facets',
+      shading: this.lineOnly ? 'outline' : 'fill',
+      ...options,
+    });
   }
 }
 

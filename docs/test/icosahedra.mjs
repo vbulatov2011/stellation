@@ -98,6 +98,55 @@ const arrangement = (stellSym) => {
   ok(measures, 'every one rebuilds to the cells, vertices and faces recorded');
 }
 
+/*
+ * The diagrams. Drawn by the generator, so what is checked here is that the
+ * file on disk still IS the drawing the geometry gives — the same trap the
+ * documents are in, and worse, because a wrong diagram is a picture of a
+ * different stellation and looks perfectly plausible.
+ */
+{
+  const { diagramSVG } = await import('../lib/diagramsvg.js');
+  const { createDiagram, diagramFaces } = await import('../lib/core.js');
+  let files = true, matches = true, counts = true;
+  for (const it of items) {
+    const path = join(DOCS, it.diagram || '');
+    if (!it.diagram || !existsSync(path)) {
+      files = false; console.log(`        (no diagram: ${it.n} ${it.symbol})`); continue;
+    }
+    const doc = readDocument(readFileSync(join(DOCS, it.file), 'utf8'));
+    const stel = arrangement(doc.stellSymmetry);
+    const cells = selectedCells(stel, parseCellsAny(stel, doc.cells, doc.cellsIndexing));
+    const faces = diagramFaces(stel, symmetry[doc.stellSymmetry].matrices);
+    if (faces.length !== 1) {
+      counts = false;
+      console.log(`        (${it.n} ${it.symbol}: ${faces.length} distinct diagrams, expected 1)`);
+      continue;
+    }
+    const data = createDiagram(stel, faces[0].index, [{ cells }], 0);
+    if (data.facets.length !== it.regions ||
+        data.facets.filter(f => f.selected).length !== it.onSurface) {
+      counts = false;
+      console.log(`        (${it.n} ${it.symbol}: ${data.facets.length} regions / ` +
+                  `${data.facets.filter(f => f.selected).length} on the surface, ` +
+                  `recorded ${it.regions}/${it.onSurface})`);
+    }
+    const want = diagramSVG(data, {
+      colorMode: 'layer',
+      metadata: {
+        title: `${it.n}. ${it.symbol} — stellation diagram`,
+        polyhedron: 'u27', polySymmetry: 'Ih', stellSymmetry: doc.stellSymmetry,
+        planeDepth: DEPTH, plane: faces[0].index, cells: doc.cells,
+      },
+    });
+    if (readFileSync(path, 'utf8').replace(/\r\n/g, '\n') !== want) {
+      matches = false; console.log(`        (${it.n} ${it.symbol}: diagram differs from the geometry)`);
+    }
+  }
+  ok(files, 'every one has its diagram');
+  ok(counts, 'each diagram has the regions recorded, on the plane it should be drawn on');
+  ok(matches, 'every diagram on disk is what the geometry draws today');
+}
+
 // ------------------------------------------------- the sizes the books record
 
 {

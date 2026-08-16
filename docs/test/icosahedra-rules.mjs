@@ -126,6 +126,14 @@ const arrangement = (sym) => {
     }
   }
   ok(files, 'every figure has its document and its thumbnail');
+  {
+    const missing = figs.filter(f => !f.diagram || !existsSync(join(DOCS, f.diagram)));
+    ok(missing.length === 0, 'every figure has its stellation diagram' +
+       (missing.length ? ` — missing: ${missing.map(f => f.code)}` : ''));
+    // a figure in five lists is drawn once, like its document
+    const drawn = new Set(figs.map(f => f.diagram));
+    ok(drawn.size === figs.length, 'and each is drawn once, however many lists name it');
+  }
   ok(holds, 'every figure holds exactly the cells its code names');
   ok(hands, 'a single hand of f₁ is built under the rotations, both hands under the full group');
 }
