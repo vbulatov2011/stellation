@@ -1938,6 +1938,8 @@ function quatFromAxis(axis, angle) {
  * The signed pairs are the same axis seen from opposite sides, so +z and -z
  * are front and back, +y and -y are top and bottom.
  */
+const TAU = (1 + Math.sqrt(5)) / 2;          // the golden section
+
 const VIEW_SPECS = [
   ['+x', [1, 0, 0], [0, 1, 0], 'from +x — y up, z to the left'],
   ['-x', [-1, 0, 0], [0, 1, 0], 'from -x — y up, z to the right'],
@@ -1947,6 +1949,22 @@ const VIEW_SPECS = [
   ['-z', [0, 0, -1], [0, 1, 0], 'from behind — y up, x to the left'],
   ['+iso', [1, 1, 1], [0, 1, 0], 'down the body diagonal — the axes 120° apart, equally foreshortened'],
   ['-iso', [-1, -1, -1], [0, 1, 0], 'the opposite corner'],
+  /*
+   * Down the symmetry axes themselves, which is where these solids look like
+   * what they are: a five-fold view of an icosahedral stellation is the one
+   * that shows its five-fold-ness. (1, 0, τ) is an icosahedron's vertex
+   * direction and so a 5-fold axis; (0, 1/τ, τ) is a face centre and so a
+   * 3-fold axis; (0, 1, 1) is a cube's edge midpoint and so a 2-fold axis.
+   * The up hints are exactly perpendicular to their axes where a simple one
+   * is — quatLookAt orthogonalises anyway, but a perpendicular hint is the
+   * roll somebody reading this would predict.
+   */
+  ['+i5', [1, 0, TAU], [0, 1, 0], 'down an icosahedral 5-fold axis, (1, 0, τ)'],
+  ['-i5', [-1, 0, -TAU], [0, 1, 0], 'the opposite 5-fold vertex'],
+  ['+i3', [0, 1 / TAU, TAU], [1, 0, 0], 'down an icosahedral 3-fold axis, (0, 1/τ, τ)'],
+  ['-i3', [0, -1 / TAU, -TAU], [1, 0, 0], 'the opposite 3-fold face'],
+  ['+o2', [0, 1, 1], [1, 0, 0], 'down a cubic 2-fold axis, (0, 1, 1)'],
+  ['-o2', [0, -1, -1], [1, 0, 0], 'the opposite 2-fold edge'],
 ];
 
 const STANDARD_VIEWS = VIEW_SPECS.map(([name, dir, up, title]) => ({

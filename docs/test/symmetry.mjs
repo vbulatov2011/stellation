@@ -200,5 +200,60 @@ console.log('\n4. the icosahedral frames line up with the cubic ones');
      `the five-fold groups share one axis (${ax.map(v => +v.toFixed(4))})`);
 }
 
+/*
+ * The 3D view offers to look down a named symmetry axis. Those directions
+ * are written out in render3d.js as literal numbers — (1, τ, 0) and friends
+ * — where nothing would catch a mistyped one but the eye. So they are
+ * checked here against the group data: an axis is real when some rotation of
+ * the group fixes it, and its order is how many do.
+ */
+console.log('\n5. the viewpoints named after symmetry axes really are axes');
+{
+  const { Renderer3D } = await import('../lib/render3d.js');
+  const views = new Map(Renderer3D.STANDARD_VIEWS.map(v => [v.name, v]));
+
+  /** the order of the rotation axis along `dir` in group `g`, or 0 */
+  const axisOrder = (groupName, dir) => {
+    const L = Math.hypot(...dir);
+    const d = dir.map(x => x / L);
+    let count = 0;
+    for (const m of S[groupName].matrices) {
+      if (det(m) < 0) continue;                       // rotations only
+      const im = [m[0]*d[0] + m[1]*d[1] + m[2]*d[2],
+                  m[3]*d[0] + m[4]*d[1] + m[5]*d[2],
+                  m[6]*d[0] + m[7]*d[1] + m[8]*d[2]];
+      if (Math.abs(im[0]-d[0]) + Math.abs(im[1]-d[1]) + Math.abs(im[2]-d[2]) < 1e-9) count++;
+    }
+    return count;                                      // includes the identity
+  };
+  // the direction a view looks along is the one it brings to face the viewer:
+  // the third row of its rotation, read back out of the quaternion
+  const viewDir = (name) => {
+    const [x, y, z, w] = views.get(name).q;
+    return [2*(x*z - y*w), 2*(y*z + x*w), 1 - 2*(x*x + y*y)];
+  };
+  const TAU = (1 + Math.sqrt(5)) / 2;
+  for (const [name, group, order, ideal] of [
+    ['+i5', 'Ih', 5, [1, 0, TAU]],
+    ['+i3', 'Ih', 3, [0, 1 / TAU, TAU]],
+    ['+o2', 'Oh', 2, [0, 1, 1]],
+    ['+iso', 'Oh', 3, [1, 1, 1]],
+    ['+z', 'Oh', 4, [0, 0, 1]],
+  ]) {
+    const n = axisOrder(group, ideal);
+    ok(n === order, `${ideal.map(v => +v.toFixed(3))} is a ${order}-fold axis of ${group} (found ${n})`);
+    // and the view actually looks down it
+    const v = viewDir(name), L = Math.hypot(...ideal);
+    const dot = (v[0]*ideal[0] + v[1]*ideal[1] + v[2]*ideal[2]) / L;
+    ok(Math.abs(dot - 1) < 1e-9, `${name} looks down it`);
+  }
+  // the signed pairs are opposite views of the same axis
+  for (const [p, m] of [['+i5', '-i5'], ['+i3', '-i3'], ['+o2', '-o2'], ['+iso', '-iso']]) {
+    const a = viewDir(p), b = viewDir(m);
+    ok(Math.abs(a[0]+b[0]) + Math.abs(a[1]+b[1]) + Math.abs(a[2]+b[2]) < 1e-9,
+       `${m} is ${p} from the other side`);
+  }
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
