@@ -209,6 +209,10 @@ async function boot() {
     const v = renderer.getView().join(',');
     if (v === lastView) return;
     lastView = v;
+    // the orientation menu is a readout too: it names a standard view only
+    // while the solid is actually in one
+    const sel = $('#viewOrient');
+    if (sel) sel.value = String(renderer.matchStandardView());
     syncHash();
   };
   setInterval(catchUp, 900);
@@ -1269,10 +1273,22 @@ function wireControls() {
   // and kept firing on two quick cell toggles
   $('#fitDiagram').onclick = () => { diagram?.resetView(); setStatus('diagram centred', false); };
   $('#fitView').onclick = () => { renderer?.fit(); setStatus('rescaled to fit', false); };
-  // each press steps to the next standard view, which home() names back
-  $('#homeView').onclick = () => {
-    const view = renderer?.home();
-    if (view) setStatus(`${view} view`, false);
+  /*
+   * The orientation control is both a readout and a chooser: the button
+   * steps through the standard views and the menu jumps to one, and either
+   * way the menu ends up showing where the solid is now. Turning the model
+   * by hand blanks it — see syncOrient, called from the same interval that
+   * watches the camera.
+   */
+  const showOrient = (view) => {
+    if (!view) return;
+    $('#viewOrient').value = String(view.index);
+    setStatus(`${view.name} view`, false);
+  };
+  $('#homeView').onclick = () => showOrient(renderer?.home());
+  $('#viewOrient').onchange = (e) => {
+    const i = Number(e.target.value);
+    if (i >= 0) showOrient(renderer?.goToView(i));
   };
 
   for (const id of ['#showAxes', '#showMirrors', '#showImproper', '#showDiagElems']) {

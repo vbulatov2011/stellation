@@ -377,8 +377,19 @@ export class Renderer3D {
         [[0, 1, 0], [0.36, 0.78, 0.36]],         // y — green
         [[0, 0, 1], [0.36, 0.55, 0.95]],         // z — blue
       ];
+      /*
+       * The shaft stops INSIDE the arrowhead rather than running the whole
+       * span. A cone tapers to nothing at its tip, so it is only wider than
+       * the shaft over the half of its height nearest the base — a shaft
+       * carried to the tip bursts out through the cone's surface for the
+       * last half. Ending it three quarters of the way in puts the cap where
+       * the cone is 1.5× the shaft, comfortably swallowed, and clear of the
+       * base plane so the two caps cannot z-fight.
+       */
+      const shaftEnd = R - coneH * 0.75;
       for (const [dir, col] of AXES) {
-        tube(o, dir, R, rad, col, 12);           // spans -R … +R through the origin
+        segTube(o, [-dir[0] * R, -dir[1] * R, -dir[2] * R],
+                [dir[0] * shaftEnd, dir[1] * shaftEnd, dir[2] * shaftEnd], rad, col, 12);
         cone(o, dir, R, coneH, coneR, col);      // the arrowhead, tip at +R
       }
     }
@@ -524,32 +535,54 @@ export class Renderer3D {
   }
 
   /*
-   * The four standard viewpoints the home button cycles through.
+   * The standard viewpoints, each named for the axis that faces you.
    *
-   * FRONT is the canonical orientation — x to the right, y up, z toward the
+   * `z` is the canonical orientation — x to the right, y up, z toward the
    * viewer — the frame the symmetry groups' matrices are written in, so a
-   * subgroup's axes point where the group says they do. SIDE turns the model
-   * a quarter turn about y, bringing +x toward the viewer; TOP a quarter turn
-   * about x, bringing +y toward the viewer. ISOMETRIC looks down the body
-   * diagonal: -45° about y, then the 35.264° about x that puts (1,1,1) exactly
-   * on the view axis (atan(1/√2)), which is what makes the three axes leave
-   * the origin at 120° to one another and equally foreshortened.
+   * subgroup's axes point where the group says they do. `x` and `y` are
+   * quarter turns bringing those axes to the front, and `iso` looks down the
+   * body diagonal: -45° about y, then the 35.264° about x that puts (1,1,1)
+   * exactly on the view axis (atan(1/√2)), which is what makes the three
+   * axes leave the origin at 120° to one another and equally foreshortened.
    */
   /**
-   * Step to the next standard view, easing there. Orientation and pan only:
-   * home used to send `distance` to 1 as well, but distance is a world
-   * radius, so 1 frames a model of scaled radius 1 — the original
-   * polyhedron, whatever is actually selected. On anything stellated that is
-   * a hidden zoom-in, and the solid overflowed the frame. Sizing is `fit()`'s
-   * job; this just turns the model to a face-on or corner-on view.
-   *
-   * Returns the name of the view, for the status line.
+   * Turn to a standard view, easing there, and leave the cycle pointing at
+   * the next one. Orientation and pan only: home used to send `distance` to
+   * 1 as well, but distance is a world radius, so 1 frames a model of scaled
+   * radius 1 — the original polyhedron, whatever is actually selected. On
+   * anything stellated that is a hidden zoom-in, and the solid overflowed
+   * the frame. Sizing is `fit()`'s job; this only turns the model.
+   */
+  goToView(i) {
+    const n = STANDARD_VIEWS.length;
+    const k = ((Math.round(i) % n) + n) % n;
+    this._homeIndex = (k + 1) % n;
+    this._ease({ rotation: STANDARD_VIEWS[k].q, pan: { x: 0, y: 0 } });
+    return { index: k, name: STANDARD_VIEWS[k].name };
+  }
+
+  /**
+   * The home button: the next standard view, over and over. The first press
+   * of all lands on `z`, the canonical frame — that is what home has always
+   * meant — and later presses walk the list from there.
    */
   home() {
-    const i = this._homeIndex ?? 0;
-    this._homeIndex = (i + 1) % STANDARD_VIEWS.length;
-    this._ease({ rotation: STANDARD_VIEWS[i].q, pan: { x: 0, y: 0 } });
-    return STANDARD_VIEWS[i].name;
+    return this.goToView(this._homeIndex ?? STANDARD_VIEWS.findIndex(v => v.name === 'z'));
+  }
+
+  /**
+   * Which standard view the model is in, or -1 for none — so a control that
+   * shows the orientation stops claiming one the moment the model is dragged
+   * off it. Quaternions double-cover rotations, so q and -q are the same
+   * orientation: compare the absolute dot product.
+   */
+  matchStandardView(tol = 0.9995) {
+    const r = this.rotation;
+    for (let i = 0; i < STANDARD_VIEWS.length; i++) {
+      const q = STANDARD_VIEWS[i].q;
+      if (Math.abs(r[0] * q[0] + r[1] * q[1] + r[2] * q[2] + r[3] * q[3]) > tol) return i;
+    }
+    return -1;
   }
 
   /*
@@ -1890,11 +1923,15 @@ function quatFromAxis(axis, angle) {
  * time rather than at class-definition time.
  */
 const STANDARD_VIEWS = [
-  { name: 'front', q: [0, 0, 0, 1] },
-  { name: 'side', q: quatFromAxis([0, 1, 0], -Math.PI / 2) },
-  { name: 'top', q: quatFromAxis([1, 0, 0], Math.PI / 2) },
-  { name: 'isometric', q: quatMul(quatFromAxis([1, 0, 0], Math.atan(Math.SQRT1_2)),
-                                  quatFromAxis([0, 1, 0], -Math.PI / 4)) },
+  { name: 'x', title: 'down the x axis — y up, z to the left',
+    q: quatFromAxis([0, 1, 0], -Math.PI / 2) },
+  { name: 'y', title: 'down the y axis — x to the right, z down',
+    q: quatFromAxis([1, 0, 0], Math.PI / 2) },
+  { name: 'z', title: 'down the z axis — x to the right, y up (the home frame)',
+    q: [0, 0, 0, 1] },
+  { name: 'iso', title: 'down the body diagonal — the three axes 120° apart, equally foreshortened',
+    q: quatMul(quatFromAxis([1, 0, 0], Math.atan(Math.SQRT1_2)),
+               quatFromAxis([0, 1, 0], -Math.PI / 4)) },
 ];
 // named orientations, for callers that want to jump straight to one
 Renderer3D.STANDARD_VIEWS = STANDARD_VIEWS;
