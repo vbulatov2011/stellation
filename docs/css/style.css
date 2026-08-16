@@ -750,8 +750,15 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .ax-y { color: #5cc75c; }
 .ax-z { color: #5c8cf2; }
 
-/* saving diagrams: what, how it looks, where it goes */
-#exportDialog { width: min(560px, 94vw); }
+/*
+ * Saving diagrams: what, how it looks, where it goes.
+ *
+ * The body of an internal window rather than a <dialog>, so it wears the same
+ * chrome as the app's other floating panels. The window scrolls its own
+ * interior, which is why the padding lives here and not on a fixed height.
+ */
+.ex-body { padding: 11px 13px 13px; }
+.ex-body .note { margin: 0 0 4px; }
 .ex-section {
   border-top: 1px solid var(--line);
   padding-top: 9px; margin-top: 11px;
@@ -768,8 +775,21 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .ex-line { flex: 1; min-width: 190px; }
 .ex-line input[type="range"] { flex: 1; }
 #exPngSize { width: 78px; }
-#exName { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.export-dialog select:disabled, .export-dialog input:disabled { opacity: 0.45; }
+#exName { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+.ex-body select:disabled, .ex-body input:disabled { opacity: 0.45; }
+/*
+ * Export and Cancel stay put while the rest scrolls. The window can be resized
+ * to anything and the list of choices is longer on a solid with several kinds
+ * of face, so the buttons cannot be trusted to be on screen — sticky is what
+ * makes the dialog work at any height instead of at one.
+ */
+.ex-body .row.buttons {
+  position: sticky; bottom: 0;
+  justify-content: flex-end; gap: 6px;
+  margin-top: 12px; padding: 9px 0 2px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
 
 /* the plane editor: rows on the left, the preview on the right */
 #planesDialog { width: min(880px, 94vw); }

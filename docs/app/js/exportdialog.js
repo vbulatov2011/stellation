@@ -31,6 +31,7 @@
 import { diagramSVG, DIAGRAM_DEFAULTS } from '../../lib/diagramsvg.js';
 import { makeZip } from '../../lib/uilib/zip.js';
 import { hasFSAccess } from '../../lib/uilib/files.js';
+import { createInternalWindow } from '../../lib/uilib/modules.js';
 
 const $ = (q) => document.querySelector(q);
 
@@ -47,10 +48,33 @@ const PRESETS = {
 };
 
 export function initExportDialog({ state, call, diagram, currentName, download, setStatus }) {
-  const dlg = $('#exportDialog');
-  if (!dlg) return null;
+  const template = $('#exportBody');
+  if (!template) return null;
 
+  /*
+   * An internal window, not a <dialog>, so it looks and behaves like the rest
+   * of the app's floating panels — same chrome, same close button, same
+   * drag and resize, and it follows the theme. Built on first use and kept:
+   * the geometry then persists under its storageId, so it reopens where it
+   * was left.
+   */
+  const win = createInternalWindow({
+    title: 'Export diagrams',
+    // tall enough that the buttons are not below the fold in the widest case,
+    // five face classes with the destination row showing; the manager clamps
+    // it down on a short viewport and the interior scrolls
+    width: '420px', height: '690px',
+    left: 'calc(50% - 210px)', top: '4%',
+    canClose: true, canResize: true, modal: true, role: 'dialog',
+    storageId: 'stell.exportDiagrams',
+  });
+  win.wnd.classList.add('transient');
+  win.interior.appendChild(template.content.cloneNode(true));
+  win.setVisible(false);
+
+  const dlg = win.interior;
   const el = (id) => dlg.querySelector(id);
+  const close = () => win.setVisible(false);
   const scopeAll = el('#exAll'), scopeOne = el('#exOne');
   const fmtSvg = el('#exSvg'), fmtPng = el('#exPng'), pngSize = el('#exPngSize');
   const preset = el('#exPreset'), shading = el('#exShading'), colorBy = el('#exColor');
@@ -188,7 +212,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
         download(f.name, f.text, 'image/svg+xml');
       }
       setStatus(`saved ${f.name}`);
-      dlg.close();
+      close();
       return;
     }
 
@@ -218,11 +242,11 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
       setStatus(`saved ${files.length} diagrams in one archive`);
     }
     info.textContent = '';
-    dlg.close();
+    close();
   }
 
   go.onclick = () => run().catch(err => { info.textContent = err.message; });
-  el('#exCancel').onclick = () => dlg.close();
+  el('#exCancel').onclick = () => close();
 
   return {
     open() {
@@ -244,7 +268,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
       scopeOne.checked = n < 2;
       info.textContent = '';
       sync();
-      dlg.showModal();
+      win.setVisible(true);
     },
   };
 }
