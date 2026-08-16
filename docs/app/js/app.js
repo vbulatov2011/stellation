@@ -112,6 +112,17 @@ async function boot() {
       $('#elemWidth').value = String(savedElemW);
       $('#elemWidthLabel').textContent = savedElemW.toFixed(1);
     }
+    const savedAxes = readJSON(localStorage.getItem('coordAxes'));
+    if (savedAxes) {
+      $('#showCoordAxes').checked = !!savedAxes.show;
+      if (savedAxes.width > 0) {
+        $('#coordAxesWidth').value = String(savedAxes.width);
+        $('#coordAxesWidthLabel').textContent = Number(savedAxes.width).toFixed(1);
+      }
+      // the geometry is sized to the scene, so it is built after the first mesh
+      renderer.showCoordAxes = !!savedAxes.show;
+      renderer.coordAxesWidth = savedAxes.width > 0 ? savedAxes.width : 1;
+    }
     renderer.start();
     renderer.onPick = onPick3D;
     renderer.onPickHover = onHover3D;
@@ -1209,6 +1220,15 @@ function wireControls() {
     localStorage.setItem('faceOpacity', String(pct));
     renderer?.setFaceOpacity(pct / 100);
   };
+  const pushCoordAxes = () => {
+    const w = Number($('#coordAxesWidth').value);
+    $('#coordAxesWidthLabel').textContent = w.toFixed(1);
+    localStorage.setItem('coordAxes', JSON.stringify({ show: $('#showCoordAxes').checked, width: w }));
+    renderer?.setCoordAxes($('#showCoordAxes').checked, w);
+  };
+  $('#showCoordAxes').onchange = pushCoordAxes;
+  $('#coordAxesWidth').oninput = pushCoordAxes;
+
   // like the edge widths: tuned against what you are looking at, so live
   $('#elemWidth').oninput = (e) => {
     const w = Number(e.target.value);
@@ -1249,7 +1269,11 @@ function wireControls() {
   // and kept firing on two quick cell toggles
   $('#fitDiagram').onclick = () => { diagram?.resetView(); setStatus('diagram centred', false); };
   $('#fitView').onclick = () => { renderer?.fit(); setStatus('rescaled to fit', false); };
-  $('#homeView').onclick = () => { renderer?.home(); setStatus('canonical orientation', false); };
+  // each press steps to the next standard view, which home() names back
+  $('#homeView').onclick = () => {
+    const view = renderer?.home();
+    if (view) setStatus(`${view} view`, false);
+  };
 
   for (const id of ['#showAxes', '#showMirrors', '#showImproper', '#showDiagElems']) {
     const el = $(id);

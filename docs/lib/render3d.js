@@ -302,6 +302,15 @@ export class Renderer3D {
     this.lastFaceClass = null;
     this.elements = null;      // symmetry axes / mirrors / Sn axes, see setElements
     this.elemWidth = 1;        // thickness multiplier for them — see setElemWidth
+    /*
+     * The coordinate frame: x, y, z as arrows through the origin. In the
+     * home orientation x points right, y up and z toward the viewer, which
+     * is the frame the symmetry groups' matrices are written in — so the
+     * arrows say which way a group's axes are meant to run.
+     */
+    this.showCoordAxes = false;
+    this.coordAxesWidth = 1;
+    this.coordAxesCount = 0;
     this.elemCount = 0;
     this.discCount = 0;
     this.background = [0.055, 0.06, 0.078];
@@ -344,6 +353,57 @@ export class Renderer3D {
   setElements(elements) {
     this.elements = elements || null;
     this._buildElements();
+    this.draw();
+  }
+
+  /**
+   * The three coordinate axes, each a cylinder spanning the scene with an
+   * arrowhead at its positive end. The cone has a 60° apex and a base twice
+   * the cylinder's radius, so its height is r·2·√3 — slender enough to read
+   * as a direction rather than a lump. The tip sits exactly AT the scene
+   * radius, so the whole frame spans ±R and nothing pokes out past the
+   * solid's own bounds.
+   */
+  _buildCoordAxes() {
+    const gl = this.gl;
+    const o = { pos: [], norm: [], col: [] };
+    if (this.showCoordAxes) {
+      const R = Math.max(1e-3, this.frameR || (this.lastMaxR || 1) * (this.modelScale || 1));
+      const rad = R * 0.006 * (this.coordAxesWidth > 0 ? this.coordAxesWidth : 1);
+      const coneR = rad * 2;
+      const coneH = coneR * Math.sqrt(3);        // 60° apex: tan(30°) = r / h
+      const AXES = [
+        [[1, 0, 0], [0.90, 0.28, 0.28]],         // x — red
+        [[0, 1, 0], [0.36, 0.78, 0.36]],         // y — green
+        [[0, 0, 1], [0.36, 0.55, 0.95]],         // z — blue
+      ];
+      for (const [dir, col] of AXES) {
+        tube(o, dir, R, rad, col, 12);           // spans -R … +R through the origin
+        cone(o, dir, R, coneH, coneR, col);      // the arrowhead, tip at +R
+      }
+    }
+    if (!this.coordVao) {
+      this.coordVao = gl.createVertexArray();
+      this.coordBufs = { p: gl.createBuffer(), n: gl.createBuffer(), c: gl.createBuffer() };
+    }
+    gl.bindVertexArray(this.coordVao);
+    const b = this.coordBufs;
+    for (const [buf, arr, name] of [[b.p, o.pos, 'aPos'], [b.n, o.norm, 'aNormal'], [b.c, o.col, 'aColor']]) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW);
+      const l = gl.getAttribLocation(this.prog, name);
+      if (l >= 0) { gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 3, gl.FLOAT, false, 0, 0); }
+    }
+    gl.bindVertexArray(null);
+    this.coordAxesCount = o.pos.length / 3;
+  }
+
+  /** show or hide the coordinate frame */
+  setCoordAxes(on, width) {
+    const w = Number(width);
+    if (Number.isFinite(w) && w > 0) this.coordAxesWidth = w;
+    this.showCoordAxes = !!on;
+    this._buildCoordAxes();
     this.draw();
   }
 
@@ -463,19 +523,33 @@ export class Renderer3D {
     this._tubeArrays = { key: st.key };
   }
 
-  /**
-   * Canonical orientation: x to the right, y up, z toward the viewer — the
-   * frame the symmetry groups' matrices are written in, so a subgroup's axes
-   * point where the group says they do.
+  /*
+   * The four standard viewpoints the home button cycles through.
    *
-   * Orientation and pan only. Home used to send `distance` to 1 as well, but
-   * distance is a world radius, so 1 frames a model of scaled radius 1 — the
-   * original polyhedron, whatever is actually selected. On anything stellated
-   * that is a hidden zoom-in, and the solid overflowed the frame. Sizing is
-   * `fit()`'s job; home just puts you back the right way up.
+   * FRONT is the canonical orientation — x to the right, y up, z toward the
+   * viewer — the frame the symmetry groups' matrices are written in, so a
+   * subgroup's axes point where the group says they do. SIDE turns the model
+   * a quarter turn about y, bringing +x toward the viewer; TOP a quarter turn
+   * about x, bringing +y toward the viewer. ISOMETRIC looks down the body
+   * diagonal: -45° about y, then the 35.264° about x that puts (1,1,1) exactly
+   * on the view axis (atan(1/√2)), which is what makes the three axes leave
+   * the origin at 120° to one another and equally foreshortened.
+   */
+  /**
+   * Step to the next standard view, easing there. Orientation and pan only:
+   * home used to send `distance` to 1 as well, but distance is a world
+   * radius, so 1 frames a model of scaled radius 1 — the original
+   * polyhedron, whatever is actually selected. On anything stellated that is
+   * a hidden zoom-in, and the solid overflowed the frame. Sizing is `fit()`'s
+   * job; this just turns the model to a face-on or corner-on view.
+   *
+   * Returns the name of the view, for the status line.
    */
   home() {
-    this._ease({ rotation: [0, 0, 0, 1], pan: { x: 0, y: 0 } });
+    const i = this._homeIndex ?? 0;
+    this._homeIndex = (i + 1) % STANDARD_VIEWS.length;
+    this._ease({ rotation: STANDARD_VIEWS[i].q, pan: { x: 0, y: 0 } });
+    return STANDARD_VIEWS[i].name;
   }
 
   /*
@@ -767,6 +841,7 @@ export class Renderer3D {
     gl.bindVertexArray(null);
     // the elements are sized to the arrangement, so they follow it as it grows
     if (this.elements) this._buildElements();
+    if (this.showCoordAxes) this._buildCoordAxes();      // and so is the frame
     this.draw();
   }
 
@@ -1041,6 +1116,12 @@ export class Renderer3D {
         gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
         gl.bindVertexArray(this.elemVao);
         gl.drawArrays(gl.TRIANGLES, 0, this.elemCount);
+      }
+      if (this.showCoordAxes && this.coordAxesCount) {
+        gl.useProgram(this.prog);
+        gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
+        gl.bindVertexArray(this.coordVao);
+        gl.drawArrays(gl.TRIANGLES, 0, this.coordAxesCount);
       }
     };
 
@@ -1636,6 +1717,43 @@ function tube(o, dir, ext, rad, col, sides = 10) {
   }
 }
 
+/**
+ * A cone along `dir`, its tip at distance `tip` from the origin and its base
+ * `height` back along the axis — the arrowhead on a coordinate axis. Side
+ * normals lean out by the half-angle (radial·h + axial·r, normalised), so it
+ * shades as a cone rather than as a faceted fan.
+ */
+function cone(o, dir, tip, height, rad, col, sides = 18) {
+  const { w, u, v } = basis(dir);
+  const at = (t) => [w[0] * t, w[1] * t, w[2] * t];
+  const T = at(tip), B = at(tip - height);
+  const nl = Math.hypot(height, rad) || 1;
+  const ring = [];
+  for (let i = 0; i < sides; i++) {
+    const a = (i / sides) * Math.PI * 2;
+    const c = Math.cos(a), s = Math.sin(a);
+    const radial = [u[0] * c + v[0] * s, u[1] * c + v[1] * s, u[2] * c + v[2] * s];
+    ring.push({
+      p: [B[0] + radial[0] * rad, B[1] + radial[1] * rad, B[2] + radial[2] * rad],
+      n: [(radial[0] * height + w[0] * rad) / nl,
+          (radial[1] * height + w[1] * rad) / nl,
+          (radial[2] * height + w[2] * rad) / nl],
+    });
+  }
+  for (let i = 0; i < sides; i++) {
+    const a = ring[i], b = ring[(i + 1) % sides];
+    // the apex takes the average of its two edge normals — a single normal
+    // there would tilt the whole facet one way
+    const an = [(a.n[0] + b.n[0]) / 2, (a.n[1] + b.n[1]) / 2, (a.n[2] + b.n[2]) / 2];
+    push(o, T, an, col); push(o, a.p, a.n, col); push(o, b.p, b.n, col);
+  }
+  const back = [-w[0], -w[1], -w[2]];
+  for (let i = 0; i < sides; i++) {
+    const a = ring[i], b = ring[(i + 1) % sides];
+    push(o, B, back, col); push(o, b.p, back, col); push(o, a.p, back, col);
+  }
+}
+
 /** a capped prism between two points — an edge drawn as a thin lit cylinder */
 function segTube(o, a, b, rad, col, sides = 6) {
   const dir = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
@@ -1765,6 +1883,21 @@ function quatFromAxis(axis, angle) {
   const s = Math.sin(angle / 2);
   return [axis[0] / l * s, axis[1] / l * s, axis[2] / l * s, Math.cos(angle / 2)];
 }
+
+/*
+ * The four viewpoints home() cycles through — see home() for what each one
+ * looks along. Built here, below the helpers they call, and read at call
+ * time rather than at class-definition time.
+ */
+const STANDARD_VIEWS = [
+  { name: 'front', q: [0, 0, 0, 1] },
+  { name: 'side', q: quatFromAxis([0, 1, 0], -Math.PI / 2) },
+  { name: 'top', q: quatFromAxis([1, 0, 0], Math.PI / 2) },
+  { name: 'isometric', q: quatMul(quatFromAxis([1, 0, 0], Math.atan(Math.SQRT1_2)),
+                                  quatFromAxis([0, 1, 0], -Math.PI / 4)) },
+];
+// named orientations, for callers that want to jump straight to one
+Renderer3D.STANDARD_VIEWS = STANDARD_VIEWS;
 
 function quatFromEuler(x, y, z) {
   let q = quatFromAxis([1, 0, 0], x);

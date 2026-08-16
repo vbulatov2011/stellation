@@ -727,6 +727,11 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .elem-legend { margin-top: 4px; }
 .elem-legend:empty { display: none; }
 
+/* the same three colours the arrows are drawn in, so the label is the key */
+.ax-x { color: #e64747; }
+.ax-y { color: #5cc75c; }
+.ax-z { color: #5c8cf2; }
+
 /* the plane editor: rows on the left, the preview on the right */
 #planesDialog { width: min(880px, 94vw); }
 .planes-layout { display: grid; grid-template-columns: 1fr 280px; gap: 14px; }
