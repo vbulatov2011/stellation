@@ -1302,19 +1302,30 @@ function wireControls() {
   $('#fitDiagram').onclick = () => { diagram?.resetView(); setStatus('diagram centred', false); };
   $('#fitView').onclick = () => { renderer?.fit(); setStatus('rescaled to fit', false); };
   /*
-   * The orientation control is both a readout and a chooser: the button
-   * steps through the standard views and the menu jumps to one, and either
-   * way the menu ends up showing where the solid is now. Turning the model
-   * by hand blanks it — see syncOrient, called from the same interval that
-   * watches the camera.
+   * The orientation control is both a readout and a chooser. The menu picks
+   * the direction the solid is seen from; the home button returns to
+   * whichever was picked, however far the model has been dragged since.
+   * Turning it by hand blanks the menu — the catchUp interval keeps that
+   * honest — and home fills it in again.
+   *
+   * The options come from the renderer, which owns the views: one list, and
+   * their order and descriptions cannot drift apart from the geometry.
    */
+  const orientSel = $('#viewOrient');
+  Renderer3D.STANDARD_VIEWS.forEach((v, i) => {
+    const o = document.createElement('option');
+    o.value = String(i);
+    o.textContent = v.name;
+    o.title = v.title;
+    orientSel.appendChild(o);
+  });
   const showOrient = (view) => {
     if (!view) return;
-    $('#viewOrient').value = String(view.index);
-    setStatus(`${view.name} view`, false);
+    orientSel.value = String(view.index);
+    setStatus(`seen from ${view.name}`, false);
   };
   $('#homeView').onclick = () => showOrient(renderer?.home());
-  $('#viewOrient').onchange = (e) => {
+  orientSel.onchange = (e) => {
     const i = Number(e.target.value);
     if (i >= 0) showOrient(renderer?.goToView(i));
   };

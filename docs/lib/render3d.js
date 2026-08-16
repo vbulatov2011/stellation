@@ -542,41 +542,32 @@ export class Renderer3D {
     this._tubeArrays = { key: st.key };
   }
 
-  /*
-   * The standard viewpoints, each named for the axis that faces you.
-   *
-   * `z` is the canonical orientation — x to the right, y up, z toward the
-   * viewer — the frame the symmetry groups' matrices are written in, so a
-   * subgroup's axes point where the group says they do. `x` and `y` are
-   * quarter turns bringing those axes to the front, and `iso` looks down the
-   * body diagonal: -45° about y, then the 35.264° about x that puts (1,1,1)
-   * exactly on the view axis (atan(1/√2)), which is what makes the three
-   * axes leave the origin at 120° to one another and equally foreshortened.
-   */
   /**
-   * Turn to a standard view, easing there, and leave the cycle pointing at
-   * the next one. Orientation and pan only: home used to send `distance` to
-   * 1 as well, but distance is a world radius, so 1 frames a model of scaled
-   * radius 1 — the original polyhedron, whatever is actually selected. On
-   * anything stellated that is a hidden zoom-in, and the solid overflowed
-   * the frame. Sizing is `fit()`'s job; this only turns the model.
+   * Turn to a standard view (see VIEW_SPECS), easing there, and remember it
+   * as the orientation this model is being looked at from.
+   *
+   * Orientation and pan only: home used to send `distance` to 1 as well, but
+   * distance is a world radius, so 1 frames a model of scaled radius 1 — the
+   * original polyhedron, whatever is actually selected. On anything
+   * stellated that is a hidden zoom-in, and the solid overflowed the frame.
+   * Sizing is `fit()`'s job; this only turns the model.
    */
   goToView(i) {
     const n = STANDARD_VIEWS.length;
     const k = ((Math.round(i) % n) + n) % n;
-    this._homeIndex = (k + 1) % n;
+    this._chosenView = k;
     this._ease({ rotation: STANDARD_VIEWS[k].q, pan: { x: 0, y: 0 } });
     return { index: k, name: STANDARD_VIEWS[k].name };
   }
 
   /**
-   * The home button: the next standard view, over and over. The first press
-   * of all lands on `z`, the canonical frame — that is what home has always
-   * meant — and later presses walk the list from there.
+   * The home button: back to the orientation you chose, whatever the drag
+   * since. It does NOT step to the next one — a button that moved somewhere
+   * new each press could not put you back where you were, which is the one
+   * thing "home" should do. Choosing a different orientation is the menu's
+   * job. Until something is chosen, home means the canonical `+z` frame.
    */
-  home() {
-    return this.goToView(this._homeIndex ?? STANDARD_VIEWS.findIndex(v => v.name === 'z'));
-  }
+  home() { return this.goToView(this._chosenView ?? DEFAULT_VIEW); }
 
   /**
    * Which standard view the model is in, or -1 for none — so a control that
@@ -1926,23 +1917,67 @@ function quatFromAxis(axis, angle) {
 }
 
 /*
- * The four viewpoints home() cycles through — see home() for what each one
- * looks along. Built here, below the helpers they call, and read at call
- * time rather than at class-definition time.
+ * The named viewpoints.
+ *
+ * Each is given as the model direction that should face the viewer, plus a
+ * hint at which way is up; the quaternion is derived. Writing them out by
+ * hand was fine for four and would be eight chances to fumble a sign for
+ * eight — and the derivation states the intent, which a quaternion literal
+ * never does. `up` only needs to be non-parallel to `dir`: it is
+ * orthogonalised against it.
+ *
+ * The signed pairs are the same axis seen from opposite sides, so +z and -z
+ * are front and back, +y and -y are top and bottom.
  */
-const STANDARD_VIEWS = [
-  { name: 'x', title: 'down the x axis — y up, z to the left',
-    q: quatFromAxis([0, 1, 0], -Math.PI / 2) },
-  { name: 'y', title: 'down the y axis — x to the right, z down',
-    q: quatFromAxis([1, 0, 0], Math.PI / 2) },
-  { name: 'z', title: 'down the z axis — x to the right, y up (the home frame)',
-    q: [0, 0, 0, 1] },
-  { name: 'iso', title: 'down the body diagonal — the three axes 120° apart, equally foreshortened',
-    q: quatMul(quatFromAxis([1, 0, 0], Math.atan(Math.SQRT1_2)),
-               quatFromAxis([0, 1, 0], -Math.PI / 4)) },
+const VIEW_SPECS = [
+  ['+x', [1, 0, 0], [0, 1, 0], 'from +x — y up, z to the left'],
+  ['-x', [-1, 0, 0], [0, 1, 0], 'from -x — y up, z to the right'],
+  ['+y', [0, 1, 0], [0, 0, -1], 'from above — x to the right, z down'],
+  ['-y', [0, -1, 0], [0, 0, 1], 'from below — x to the right, z up'],
+  ['+z', [0, 0, 1], [0, 1, 0], 'from +z — x to the right, y up (the canonical frame)'],
+  ['-z', [0, 0, -1], [0, 1, 0], 'from behind — y up, x to the left'],
+  ['+iso', [1, 1, 1], [0, 1, 0], 'down the body diagonal — the axes 120° apart, equally foreshortened'],
+  ['-iso', [-1, -1, -1], [0, 1, 0], 'the opposite corner'],
 ];
+
+const STANDARD_VIEWS = VIEW_SPECS.map(([name, dir, up, title]) => ({
+  name, title, q: quatLookAt(dir, up),
+}));
+
+/** the default: the frame the symmetry groups' matrices are written in */
+const DEFAULT_VIEW = STANDARD_VIEWS.findIndex(v => v.name === '+z');
+
 // named orientations, for callers that want to jump straight to one
 Renderer3D.STANDARD_VIEWS = STANDARD_VIEWS;
+
+/**
+ * The rotation that brings model direction `dir` to face the viewer with
+ * `up` pointing up the screen. Rows of the matrix are the model vectors
+ * that map to eye x, y and z — then the usual matrix-to-quaternion.
+ */
+function quatLookAt(dir, up) {
+  const norm = (v) => { const l = Math.hypot(...v) || 1; return v.map(x => x / l); };
+  const d = norm(dir);
+  const k = up[0] * d[0] + up[1] * d[1] + up[2] * d[2];
+  const u = norm([up[0] - k * d[0], up[1] - k * d[1], up[2] - k * d[2]]);
+  const r = [u[1] * d[2] - u[2] * d[1], u[2] * d[0] - u[0] * d[2], u[0] * d[1] - u[1] * d[0]];
+  const [m00, m01, m02] = r, [m10, m11, m12] = u, [m20, m21, m22] = d;
+  const tr = m00 + m11 + m22;
+  if (tr > 0) {
+    const s = Math.sqrt(tr + 1) * 2;
+    return [(m21 - m12) / s, (m02 - m20) / s, (m10 - m01) / s, 0.25 * s];
+  }
+  if (m00 > m11 && m00 > m22) {
+    const s = Math.sqrt(1 + m00 - m11 - m22) * 2;
+    return [0.25 * s, (m01 + m10) / s, (m02 + m20) / s, (m21 - m12) / s];
+  }
+  if (m11 > m22) {
+    const s = Math.sqrt(1 + m11 - m00 - m22) * 2;
+    return [(m01 + m10) / s, 0.25 * s, (m12 + m21) / s, (m02 - m20) / s];
+  }
+  const s = Math.sqrt(1 + m22 - m00 - m11) * 2;
+  return [(m02 + m20) / s, (m12 + m21) / s, 0.25 * s, (m10 - m01) / s];
+}
 
 function quatFromEuler(x, y, z) {
   let q = quatFromAxis([1, 0, 0], x);

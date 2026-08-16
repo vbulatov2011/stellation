@@ -69,20 +69,18 @@
           </button>
           <!-- home: a house, the usual mark for "the view you started from" -->
           <button id="homeView" aria-label="Home"
-                  title="Home — each press turns to the next standard view: x, y, z, iso">
+                  title="Home — back to the orientation chosen beside this button, however far you have turned the solid">
             <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
               <path d="M2.4 7.1 8 2.4l5.6 4.7M4.3 8.4v5.2h7.4V8.4"/>
             </svg>
           </button>
           <!-- the orientation, both as a readout and as a way to pick one;
-               blank whenever the model has been turned off a standard view -->
+               blank whenever the model has been turned off a standard view.
+               The option list is filled from the renderer, which owns the
+               views and their descriptions. -->
           <select id="viewOrient" class="view-orient" aria-label="Orientation"
-                  title="The standard view the solid is facing — pick one, or press home to step through them">
+                  title="The direction the solid is seen from — pick one, and the home button returns to it">
             <option value="-1" hidden></option>
-            <option value="0" title="Down the x axis — y up, z to the left">x</option>
-            <option value="1" title="Down the y axis — x to the right, z down">y</option>
-            <option value="2" title="Down the z axis — x to the right, y up">z</option>
-            <option value="3" title="Down the body diagonal — the three axes 120° apart, equally foreshortened">iso</option>
           </select>
           <!-- undo/redo sit in every view, so a mis-click is undone where it
                happened rather than by looking away to the cells table -->
