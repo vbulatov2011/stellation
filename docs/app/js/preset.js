@@ -144,6 +144,36 @@ export function normalizePlaneRows(rows) {
 }
 
 /*
+ * Rows to planes: each row multiplied by its group and scaled by its factor.
+ * The engine dedupes, so a row whose normal already lies on a symmetry axis
+ * costs nothing extra.
+ *
+ * `symmetry` is the whole table, passed in rather than reached for, because
+ * this file is imported by the tests and the catalog tool as well as by the
+ * app — and those have no `state`. It lives next to normalizePlaneRows for
+ * the same reason that reader does: a plane sheet has exactly one meaning,
+ * and two implementations of it would eventually disagree.
+ */
+export function expandPlaneRows(rows, symmetry) {
+  const out = [];
+  for (const r of rows) {
+    const M = symmetry[r.symmetry || 'E']?.matrices || symmetry.E.matrices;
+    const n0 = r.normal, d = r.distance * (r.factor ?? 1);
+    for (const m of M) {
+      const [a, b, c, e, f, g, h, i, j] = m.length === 9
+        ? m : [m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]];
+      out.push({
+        n: [a * n0[0] + b * n0[1] + c * n0[2],
+            e * n0[0] + f * n0[1] + g * n0[2],
+            h * n0[0] + i * n0[1] + j * n0[2]],
+        d,
+      });
+    }
+  }
+  return out;
+}
+
+/*
  * The releases that wrote `planes.text`: one plane per line,
  * "nx ny nz d [group [factor]]", comments after #. Kept so those documents
  * still open — and kept HERE, next to the format it belongs to, rather than

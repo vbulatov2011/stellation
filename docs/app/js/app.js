@@ -7,7 +7,8 @@ import {
   Renderer3D, DiagramView, CellsPanel, labelKeys,
   toOFF, toOBJ, toSTL, writeStel, facePlanes, suggestDepth,
 } from '../../lib/modules.js';
-import { writePreset, readDocument, newDocumentName, normalizePlaneRows } from './preset.js';
+import { writePreset, readDocument, newDocumentName, normalizePlaneRows,
+         expandPlaneRows } from './preset.js';
 import { initWorkspace } from './workspace.js';
 import { getSquareThumbnailCanvas } from '../../lib/uilib/files.js';
 import { initPresets } from './presets.js';
@@ -1481,26 +1482,6 @@ function wireControls() {
  * nothing more; no line format survives anywhere but the legacy reader.
  */
 
-/** each row multiplied by its group, scaled by its factor — the engine dedupes */
-function expandPlaneRows(rows) {
-  const out = [];
-  for (const r of rows) {
-    const M = state.symmetry[r.symmetry || 'E']?.matrices || state.symmetry.E.matrices;
-    const n0 = r.normal, d = r.distance * (r.factor ?? 1);
-    for (const m of M) {
-      const [a, b, c, e, f, g, h, i, j] = m.length === 9
-        ? m : [m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]];
-      out.push({
-        n: [a * n0[0] + b * n0[1] + c * n0[2],
-            e * n0[0] + f * n0[1] + g * n0[2],
-            h * n0[0] + i * n0[1] + j * n0[2]],
-        d,
-      });
-    }
-  }
-  return out;
-}
-
 async function buildCustomPlanes(planeRows) {
   const info = $('#planesInfo');
   let rows;
@@ -1513,7 +1494,7 @@ async function buildCustomPlanes(planeRows) {
   if (!rows.length) { info.textContent = 'no planes yet'; return false; }
   const unknown = rows.find(r => r.symmetry && !(state.symmetry[r.symmetry]?.order > 0));
   if (unknown) { info.textContent = `no symmetry group named "${unknown.symmetry}"`; return false; }
-  const expanded = expandPlaneRows(rows);
+  const expanded = expandPlaneRows(rows, state.symmetry);
   info.textContent = '';
   const prev = { planeRows: state.planeRows, customPlanes: state.customPlanes, current: state.current };
   state.planeRows = rows;
@@ -1603,11 +1584,25 @@ function currentPresetText(docName) {
  * so the pixels only exist in the same frame as a draw (the same rule
  * snapshot() follows). When WebGL was refused, the diagram canvas stands in,
  * so a document saved on that machine still gets a preview.
+ *
+ * The coordinate frame and the symmetry elements come off first. A thumbnail
+ * is a promise about what opening the document gives you, and those two are
+ * not in the document: currentDisplay() saves the edge style, the colouring
+ * and the opacity, but the frame and the elements are view preferences that
+ * live in localStorage and belong to whoever is looking, not to the figure.
+ * A card drawn with them shows a picture the document cannot reproduce.
  */
 function makeThumbnail(size = 256) {
   if (renderer) {
+    const elements = renderer.elements;
+    const axes = renderer.showCoordAxes;
+    if (elements) renderer.setElements(null);
+    if (axes) renderer.setCoordAxes(false);
     renderer.draw();
-    return getSquareThumbnailCanvas(renderer.canvas, size);
+    const out = getSquareThumbnailCanvas(renderer.canvas, size);
+    if (elements) renderer.setElements(elements);
+    if (axes) renderer.setCoordAxes(true);
+    return out;
   }
   return getSquareThumbnailCanvas($('#diagram'), size);
 }

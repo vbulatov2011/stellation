@@ -25,11 +25,26 @@
             "title": "Built under a subgroup",
             "blurb": "Stellations that keep only part of the solid's symmetry, because the cells were chosen under a smaller group than the arrangement has."
         },
-        "icosahedral": { "title": "Icosahedral symmetry", "blurb": "Arrangements with the symmetry of the icosahedron." },
-        "octahedral": { "title": "Octahedral symmetry", "blurb": "Arrangements with the symmetry of the cube and octahedron." },
-        "compound": { "title": "Compounds", "blurb": "Figures that fall into separate pieces — Brückner's \"discontinuous\" polyhedra." },
-        "kepler-poinsot": { "title": "The regular star polyhedra", "blurb": "The four regular polyhedra of higher kind." },
-        "brueckner": { "title": "From Brückner 1900", "blurb": "Models photographed on the plates of Vielecke und Vielflache." }
+        "icosahedral": {
+            "title": "Icosahedral symmetry",
+            "blurb": "Arrangements with the symmetry of the icosahedron."
+        },
+        "octahedral": {
+            "title": "Octahedral symmetry",
+            "blurb": "Arrangements with the symmetry of the cube and octahedron."
+        },
+        "compound": {
+            "title": "Compounds",
+            "blurb": "Figures that fall into separate pieces — Brückner's \"discontinuous\" polyhedra."
+        },
+        "kepler-poinsot": {
+            "title": "The regular star polyhedra",
+            "blurb": "The four regular polyhedra of higher kind."
+        },
+        "brueckner": {
+            "title": "From Brückner 1900",
+            "blurb": "Models photographed on the plates of Vielecke und Vielflache."
+        }
     },
     "items": [
         {
@@ -42,7 +57,7 @@
             "file": "examples/twin-octahedra.json",
             "name": "Two octahedra, two depths",
             "tags": ["custom-planes", "octahedral"],
-            "note": "The eight body-diagonal directions taken twice, at two distances — the face planes of two concentric octahedra. Sixteen planes, grouped under Td and stellated with the rotations alone, so the chiral cells can be taken one hand at a time."
+            "note": "The eight body-diagonal directions, at three distances. Two tetrahedral orbits sit closest in, one nearer than the other, so the inner figure is an octahedron pulled out of shape; outside them two true octahedra, at twice those distances. Twenty-four planes, grouped under Td and stellated with the rotations alone, so the chiral cells can be taken one hand at a time."
         },
         {
             "file": "examples/truncated-cuboctahedron-d3d.json",
