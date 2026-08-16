@@ -53,6 +53,10 @@ const OUT = join(DOCS, 'icosahedra');
 const MANIFEST = join(DOCS, 'icosahedra.json');
 const dryRun = process.argv.includes('--dry-run');
 
+/* fitted cameras — see the header of that file for how they were arrived at */
+const VIEWS = JSON.parse(
+  readFileSync(join(DOCS, 'tools', 'icosahedra-views.json'), 'utf8')).views;
+
 const die = (m) => { console.error('make-icosahedra: ' + m); process.exit(1); };
 
 // ------------------------------------------------------------------ the solid
@@ -263,6 +267,18 @@ SYMBOLS.forEach((symbol, i) => {
 
   const slug = String(n).padStart(2, '0') + '-' +
     symbol.toLowerCase().replace(/[^a-z0-9]/g, '') + (chiral ? '-chiral' : '');
+  /*
+   * Every one must have a fitted camera, and every rotation must be the same
+   * +z — the whole point of writing them down is that the set is comparable,
+   * and one figure quietly turned a different way is exactly the defect this
+   * replaced.
+   */
+  const view = VIEWS[slug];
+  if (!view) problems.push(`${n} ${symbol}: no camera for "${slug}" in icosahedra-views.json`);
+  else if (view.length !== 8) problems.push(`${n} ${symbol}: camera is not eight numbers`);
+  else if (view[0] || view[1] || view[2] || view[3] !== 1) {
+    problems.push(`${n} ${symbol}: camera is not the +z view [0,0,0,1]`);
+  }
   items.push({
     file: `icosahedra/${slug}.json`,
     n,
@@ -280,12 +296,16 @@ SYMBOLS.forEach((symbol, i) => {
       planeDepth: DEPTH, cells, diagramFace: 0,
       colorMode: 'layer',        // colour by shell: the letters, made visible
       /*
-       * No camera. The 59 range from the bare icosahedron to the final
-       * stellation, which is several times its size, so a saved zoom would
-       * frame one of them and crop or strand the rest; with no camera each
-       * document opens auto-fitted, and they all open from the same default
-       * angle anyway, which is what makes the gallery comparable.
+       * The camera, from icosahedra-views.json: the same +z rotation for all
+       * 59, and a zoom fitted so each fills the frame. Written into the
+       * document rather than left to the app's own framing, because without it
+       * the angle a figure opens at is whatever was last on screen — which is
+       * how the first set of these pictures came out in three different
+       * orientations. A document that names its own camera opens the same way
+       * every time, and its thumbnail is a picture of what you will actually
+       * see.
        */
+      view: VIEWS[slug] || null,
     }),
   });
 });

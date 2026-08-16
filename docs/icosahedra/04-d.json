@@ -28,6 +28,18 @@
             "faceOpacity": 1,
             "edges": null
         },
+        "camera": {
+            "view": [
+                0,
+                0,
+                0,
+                1,
+                0.818723,
+                0,
+                0,
+                0.689152
+            ]
+        },
         "export": {
             "lengthUnit": 0.01
         }

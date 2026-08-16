@@ -1579,11 +1579,12 @@ function currentPresetText(docName) {
 }
 
 /*
- * The document thumbnail: the 3D view, centre-cropped square. Drawn
- * immediately before reading — the WebGL context has no preserveDrawingBuffer,
- * so the pixels only exist in the same frame as a draw (the same rule
- * snapshot() follows). When WebGL was refused, the diagram canvas stands in,
- * so a document saved on that machine still gets a preview.
+ * The document thumbnail: the 3D view, rendered square.
+ *
+ * Rendered at a fixed size rather than cropped out of the live canvas, so the
+ * picture is the same whatever shape the window was — see squareImage().
+ * Two thumbnails are meant to be comparable with each other, and a framing
+ * that depends on the reader's window makes them not.
  *
  * The coordinate frame and the symmetry elements come off first. A thumbnail
  * is a promise about what opening the document gives you, and those two are
@@ -1591,6 +1592,10 @@ function currentPresetText(docName) {
  * and the opacity, but the frame and the elements are view preferences that
  * live in localStorage and belong to whoever is looking, not to the figure.
  * A card drawn with them shows a picture the document cannot reproduce.
+ *
+ * When WebGL was refused there is no renderer to ask, and the diagram canvas
+ * stands in — cropped, since it is a 2-D drawing at whatever size the layout
+ * gave it, so a document saved on that machine still gets a preview.
  */
 function makeThumbnail(size = 256) {
   if (renderer) {
@@ -1598,8 +1603,7 @@ function makeThumbnail(size = 256) {
     const axes = renderer.showCoordAxes;
     if (elements) renderer.setElements(null);
     if (axes) renderer.setCoordAxes(false);
-    renderer.draw();
-    const out = getSquareThumbnailCanvas(renderer.canvas, size);
+    const out = renderer.squareImage(size);
     if (elements) renderer.setElements(elements);
     if (axes) renderer.setCoordAxes(true);
     return out;
