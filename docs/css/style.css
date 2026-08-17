@@ -772,8 +772,14 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .ex-grid label { flex-direction: column; align-items: stretch; gap: 3px; }
 .ex-grid select { width: 100%; }
 .ex-section .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
-.ex-line { flex: 1; min-width: 190px; }
-.ex-line input[type="range"] { flex: 1; }
+/* the two line weights, stacked so each slider gets the full width to aim in */
+.ex-line-row { display: flex; flex-direction: column; gap: 5px; margin: 7px 0 3px; }
+.ex-line { display: flex; gap: 8px; align-items: center; }
+.ex-line input[type="range"] { flex: 1; min-width: 90px; }
+.ex-line > span { min-width: 2.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.ex-line { font-size: 12px; color: var(--dim); }
+#exWhere { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ex-body .note.warn { color: var(--accent); }
 #exPngSize { width: 78px; }
 #exName { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
 .ex-body select:disabled, .ex-body input:disabled { opacity: 0.45; }

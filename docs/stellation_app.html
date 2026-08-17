@@ -465,6 +465,7 @@
         <select id="exPreset">
           <option value="plate">Plate — black on white</option>
           <option value="screen">As shown on screen</option>
+          <option value="figure">The figure alone — no traces</option>
           <option value="custom">Custom</option>
         </select></label>
       <label>Shading
@@ -485,22 +486,40 @@
           <option value="full">Full plane traces</option>
         </select></label>
     </div>
-    <div class="row">
-      <label class="ex-line">Line
-        <input type="range" id="exLine" min="1" max="30" value="7">
+    <!--
+      Two weights, because there are two kinds of line: the arrangement the
+      figure was chosen from, and the edges of the figure itself. Either can
+      go to nothing — the traces at zero leave the chosen facets alone on the
+      page, which is the picture for a net or a cut file.
+    -->
+    <div class="ex-line-row">
+      <label class="ex-line" title="Every plane's trace across the face — the web the stellation is chosen from">
+        Diagram lines
+        <input type="range" id="exLine" min="0" max="30" value="7">
         <span id="exLineOut" class="dim">0.7</span></label>
+      <label class="ex-line" title="The outline of the facets this stellation takes">
+        Facet lines
+        <input type="range" id="exFacetLine" min="0" max="30" value="7">
+        <span id="exFacetLineOut" class="dim">0.7</span></label>
+    </div>
+    <div class="row">
       <label><input type="checkbox" id="exTransparent"> Transparent background</label>
     </div>
+    <p id="exEmpty" class="note warn" hidden></p>
   </div>
 
-  <div class="ex-section ex-where">
+  <div class="ex-section" id="exWhereRow">
     <b>Where</b>
     <div class="row">
-      <label><input type="radio" name="exDest" id="exFolder" checked> A folder…</label>
-      <label><input type="radio" name="exDest" id="exZip"> One zip file</label>
+      <span class="dim">folder:</span>
+      <span id="exWhere" class="dim">you will be asked once</span>
+      <button id="exChangeFolder" type="button">change…</button>
     </div>
   </div>
 
+  <p id="exZipNote" class="note" hidden>
+    This browser cannot be given a folder, so the files come back as one zip.
+  </p>
   <p id="exName" class="note mono"></p>
   <p id="exInfo" class="note"></p>
   <div class="row buttons">

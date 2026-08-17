@@ -28,10 +28,13 @@
  * they go into one zip instead.
  */
 
-import { diagramSVG, DIAGRAM_DEFAULTS } from '../../lib/diagramsvg.js';
+import { diagramSVG, diagramHasInk, DIAGRAM_DEFAULTS } from '../../lib/diagramsvg.js';
 import { makeZip } from '../../lib/uilib/zip.js';
-import { hasFSAccess } from '../../lib/uilib/files.js';
+import { hasFSAccess, restoreHandle, setHandle, writeFile } from '../../lib/uilib/files.js';
 import { createInternalWindow } from '../../lib/uilib/modules.js';
+
+/* where the last export went — asked for once, then remembered */
+const FOLDER_KEY = 'stell.exportDiagrams.folder';
 
 const $ = (q) => document.querySelector(q);
 
@@ -42,9 +45,24 @@ const $ = (q) => document.querySelector(q);
  * what is on screen, chosen cells filled in the colours the app is using.
  */
 const PRESETS = {
+  /*
+   * The printed plate: the arrangement and nothing else. Its facet weight is
+   * 0 because a chosen facet's edges lie along the traces already, so drawing
+   * them again would ink the same lines twice — raise it and the figure is
+   * picked out of the web, which is the reason the two weights are separate.
+   */
   plate: { shading: 'outline', traces: 'full', colorMode: 'none',
-           background: 'white', lineWidth: 0.7 },
-  screen: { shading: 'fill', traces: 'facets', background: 'white', lineWidth: 0.7 },
+           background: 'white', traceWidth: 0.7, facetWidth: 0 },
+  screen: { shading: 'fill', traces: 'facets', background: 'white',
+            traceWidth: 0.7, facetWidth: 0.7 },
+  /*
+   * The figure by itself: the arrangement turned off, so only the facets the
+   * stellation actually takes are drawn — filled, with their own outline. It
+   * is the picture for a net or a cut file, where the web of construction
+   * lines is not wanted and would be cut.
+   */
+  figure: { shading: 'fill', traces: 'facets', background: 'white',
+            traceWidth: 0, facetWidth: 1.2 },
 };
 
 export function initExportDialog({ state, call, diagram, currentName, download, setStatus }) {
@@ -79,25 +97,43 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   const fmtSvg = el('#exSvg'), fmtPng = el('#exPng'), pngSize = el('#exPngSize');
   const preset = el('#exPreset'), shading = el('#exShading'), colorBy = el('#exColor');
   const traces = el('#exTraces'), lineW = el('#exLine'), lineOut = el('#exLineOut');
+  const facetW = el('#exFacetLine'), facetOut = el('#exFacetLineOut');
   const transparent = el('#exTransparent');
-  const destFolder = el('#exFolder'), destZip = el('#exZip');
   const nameOut = el('#exName'), info = el('#exInfo'), go = el('#exGo');
 
   /** the distinct diagrams: one plane per class of face */
   const classes = () => (state.faces?.length ? state.faces : [{ index: 0, sides: 0, count: 1 }]);
 
-  const options = () => {
-    const base = PRESETS[preset.value] || {};
-    const o = { ...DIAGRAM_DEFAULTS, ...base };
-    if (preset.value === 'custom') {
-      o.shading = shading.value;
-      o.colorMode = colorBy.value;
-      o.traces = traces.value;
-    }
-    o.lineWidth = Number(lineW.value) / 10;
-    if (transparent.checked) o.background = null;
-    return o;
-  };
+  /**
+   * The faces this export will draw.
+   *
+   * ONE definition, used by the export and by every readout above it. They
+   * were computed separately and disagreed: the prediction looked at the first
+   * face class while the export drew the one on screen, so on a solid with
+   * several kinds of face the dialog could disable its own button over a
+   * diagram that was perfectly good, or promise a file it would not write.
+   */
+  const facesToExport = () => scopeAll.checked
+    ? classes()
+    : [classes().find(f => f.index === state.planeIndex) || classes()[0]];
+
+  /*
+   * Every control is read from the controls, not from the preset. The preset
+   * fills them in (applyPreset) and then has no further say — otherwise a
+   * dropdown can show one thing while the export uses another, which is what
+   * happened when two of the presets carried no colour mode and the export
+   * quietly fell back to the default while the disabled dropdown displayed
+   * whatever the app was using.
+   */
+  const options = () => ({
+    ...DIAGRAM_DEFAULTS,
+    shading: shading.value,
+    colorMode: colorBy.value,
+    traces: traces.value,
+    traceWidth: Number(lineW.value) / 10,
+    facetWidth: Number(facetW.value) / 10,
+    background: transparent.checked ? null : 'white',
+  });
 
   /**
    * What the files will be called — <document>-diagram[-<plane>].
@@ -107,47 +143,256 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
    * good title and a poor filename. The plane index is only added when there
    * is more than one file, so the ordinary case stays a plain name.
    */
-  const stem = () => currentName().replace(/\.(json|stel|txt)$/i, '')
+  const stem = (name = currentName()) => name.replace(/\.(json|stel|txt)$/i, '')
     .toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stellation';
 
-  const fileFor = (face, n, ext) =>
-    `${stem()}-diagram${n > 1 ? '-' + String(face.index).padStart(2, '0') : ''}.${ext}`;
+  const fileFor = (face, n, ext, name) =>
+    `${stem(name)}-diagram${n > 1 ? '-' + String(face.index).padStart(2, '0') : ''}.${ext}`;
 
   function sync() {
-    const n = scopeAll.checked ? classes().length : 1;
+    // the document moved under us — unless asking already failed for this one
+    if (staleSince() && scanFailedFor !== signature()) scanFaces();
+    const asked = facesToExport();
+    const o = options();
     const ext = fmtPng.checked ? 'png' : 'svg';
     pngSize.disabled = !fmtPng.checked;
-    const custom = preset.value === 'custom';
-    for (const c of [shading, colorBy, traces]) c.disabled = !custom;
-    if (!custom) {
-      const o = PRESETS[preset.value];
-      shading.value = o.shading;
-      traces.value = o.traces;
-      colorBy.value = o.colorMode ?? diagram.colorMode;
-    }
-    lineOut.textContent = (Number(lineW.value) / 10).toFixed(1);
-    // one file needs no folder and no archive; it is just a download
-    dlg.querySelector('.ex-where').hidden = n < 2;
-    destFolder.parentElement.hidden = !hasFSAccess();
-    if (!hasFSAccess()) destZip.checked = true;
-    nameOut.textContent = fileFor(classes()[0], n, ext) + (n > 1 ? `  … ${n} files` : '');
-    go.textContent = `Export ${n} diagram${n === 1 ? '' : 's'}`;
-  }
+    for (const c of [shading, colorBy, traces]) c.disabled = preset.value !== 'custom';
+    lineOut.textContent = o.traceWidth === 0 ? 'off' : o.traceWidth.toFixed(1);
+    facetOut.textContent = o.facetWidth === 0 ? 'off' : o.facetWidth.toFixed(1);
 
-  for (const c of [scopeAll, scopeOne, fmtSvg, fmtPng, preset, shading, colorBy,
-                   traces, lineW, transparent, destFolder, destZip]) {
-    c.addEventListener('input', sync);
+    /*
+     * What will actually be written, decided by the SAME predicate the export
+     * uses — diagramHasInk on the real geometry — rather than by a rule of
+     * thumb about the traces. With both weights at zero and no fills, every
+     * face draws a blank page, and only asking the drawing itself catches
+     * that; a prediction that merely counted faces with no chosen facets said
+     * "Export 5" and then wrote nothing.
+     *
+     * A face not yet scanned counts as drawable: the scan is a few worker
+     * round trips and the button should not flicker to disabled while it runs.
+     */
+    const blank = asked.filter(f => scanned.has(f.index) && !diagramHasInk(scanned.get(f.index), o));
+    /*
+     * Two different reasons a page comes out blank, and they want different
+     * words. Either the settings draw nothing whatever the figure is — both
+     * weights at zero with no fill — or the settings are fine and the figure
+     * simply does not reach that face.
+     */
+    const drawsNothing = o.traceWidth === 0 && o.facetWidth === 0 && o.shading !== 'fill';
+    el('#exEmpty').hidden = !blank.length;
+    el('#exEmpty').textContent = !blank.length ? ''
+      : drawsNothing
+        ? 'these settings draw nothing — turn up a line weight, or fill the chosen cells'
+        : `${blank.length} of ${asked.length} would be blank — nothing of the figure falls on ` +
+          `${blank.length === 1 ? 'that face' : 'those faces'}, so ` +
+          `${blank.length === 1 ? 'it is' : 'they are'} skipped`;
+
+    const willWrite = asked.length - blank.length;
+    el('#exWhereRow').hidden = !hasFSAccess();
+    el('#exZipNote').hidden = hasFSAccess() || willWrite < 2;
+    nameOut.textContent = willWrite
+      ? fileFor(asked.find(f => !blank.includes(f)) || asked[0], willWrite, ext) +
+        (willWrite > 1 ? `  … ${willWrite} files` : '')
+      : '';
+    go.textContent = `Export ${willWrite} diagram${willWrite === 1 ? '' : 's'}`;
+    go.disabled = willWrite === 0 || busy;
   }
 
   /*
-   * The diagram for one plane. The one on screen is already here; the others
-   * have to be asked for, because the worker owns the arrangement and only
-   * ever sends the app the plane it is showing.
+   * A preset is a starting point, not a constraint: choosing one sets every
+   * control it speaks for — including both line weights, which is what makes
+   * "the figure alone" actually turn the traces off — and moving any control
+   * afterwards drops the dropdown to Custom rather than leaving it claiming a
+   * preset whose values are no longer on screen.
+   */
+  function applyPreset() {
+    const o = PRESETS[preset.value];
+    if (!o) return;
+    shading.value = o.shading;
+    traces.value = o.traces;
+    colorBy.value = o.colorMode ?? diagram.colorMode;
+    lineW.value = Math.round((o.traceWidth ?? 0.7) * 10);
+    facetW.value = Math.round((o.facetWidth ?? 0.7) * 10);
+    // options() reads the checkbox, so a preset that names a background has to
+    // set it here or the field is decoration and the label can contradict it
+    transparent.checked = o.background === null;
+  }
+  preset.addEventListener('change', () => { applyPreset(); sync(); });
+
+  const toCustom = () => { if (preset.value !== 'custom') preset.value = 'custom'; };
+  for (const c of [lineW, facetW, transparent]) {
+    c.addEventListener('input', () => { toCustom(); sync(); });
+  }
+
+  /*
+   * Nothing in the app tells this window that the document moved — it floats
+   * over an app that stays live — so it re-reads on the way back in. Clicking
+   * anywhere in the window is the moment the reader's attention returns to it,
+   * and it is exactly when a stale count would be believed.
+   */
+  win.wnd.addEventListener('pointerdown', () => sync(), true);
+  for (const c of [scopeAll, scopeOne, fmtSvg, fmtPng, shading, colorBy, traces]) {
+    c.addEventListener('input', sync);
+  }
+  el('#exChangeFolder').onclick = async () => {
+    // chooseFolder rethrows anything that is not a dismissal — say so, rather
+    // than dropping it as an unhandled rejection with the dialog unchanged
+    try { await chooseFolder(true); }
+    catch (err) { info.textContent = err && err.message ? err.message : String(err); }
+    sync();
+  };
+
+  /*
+   * The folder to write into.
+   *
+   * Remembered between exports, the way the app remembers where documents are
+   * saved: the handle is kept in IndexedDB and restoreHandle re-checks the
+   * permission, asking again only if the browser has forgotten it or the
+   * folder has gone. So the second export and every one after it writes
+   * straight out with no picker at all — which is the point of remembering,
+   * and what makes exporting five diagrams a single click.
+   *
+   * `force` is the "change…" button: ask even though we have one.
+   */
+  let folder = null;
+  async function chooseFolder(force = false) {
+    if (!force) {
+      // re-check after the await: the user may have picked one meanwhile
+      if (!folder) {
+        const restored = await restoreHandle(FOLDER_KEY, 'readwrite');
+        folder ||= restored;
+      }
+      if (folder) return folder;
+    }
+    let picked;
+    try {
+      picked = await showDirectoryPicker({ id: 'stellation-diagrams', mode: 'readwrite' });
+    } catch (err) {
+      /*
+       * A dismissed picker is an AbortError and means "never mind". Anything
+       * else is a real failure — no permission, a browser that refuses because
+       * the click that started this has gone stale — and swallowing it made
+       * pressing Export do nothing at all, with no message and the drawn files
+       * thrown away.
+       */
+      if (err && err.name === 'AbortError') return null;
+      throw err;
+    }
+    folder = picked;
+    await setHandle(FOLDER_KEY, folder);
+    showFolder();
+    return folder;
+  }
+
+  async function showFolder() {
+    if (!hasFSAccess()) return;
+    folder ||= await restoreHandle(FOLDER_KEY, 'readwrite');
+    const where = el('#exWhere');
+    if (where) {
+      where.textContent = folder ? folder.name : 'you will be asked once';
+      where.classList.toggle('dim', !folder);
+    }
+  }
+
+  /*
+   * The diagrams, kept only while they are still true.
+   *
+   * This window floats: it does not stop you clicking a cell behind it, and
+   * nothing closes it when a different document is loaded. A cache keyed by
+   * plane index alone therefore goes bad two ways — the same plane after the
+   * selection changed, and plane 2 of an entirely different solid — and both
+   * are silent, because a file's name and metadata are built at export time
+   * while its picture would come from the cache. The result is an SVG whose
+   * recorded cell string does not draw the picture inside it, which is the one
+   * promise the metadata exists to make.
+   *
+   * So everything the drawing depends on is rolled into a signature, and two
+   * things guard it. The signature says WHETHER what we hold is still true.
+   * The generation counter says whether a reply that is already in flight
+   * still belongs to us: it is bumped whenever the cache is thrown away, and a
+   * fetch that returns to find it changed neither caches its answer nor lets
+   * the caller mistake it for a current one. Without that second guard a reply
+   * posted for the old document lands in the new document's map and is then
+   * certified as current, which is the same wrong file by a longer road.
+   */
+  const signature = () => JSON.stringify([
+    state.current?.file, state.polySym, state.stellSym, state.depth,
+    state.cellsString,
+    // two custom plane sheets are both `current.file === 'custom'`, so the
+    // sheet itself has to be in the signature or they are indistinguishable
+    state.customPlanes ? state.planeRows : null,
+  ]);
+
+  let scanned = new Map();       // plane index -> diagram data
+  let scannedSig = null;         // the signature those entries belong to
+  let generation = 0;
+  let scanning = null;
+  let scanFailedFor = null;      // do not loop retrying a scan that threw
+
+  /** has the document moved since what we hold was fetched? */
+  const staleSince = () => scannedSig !== null && scannedSig !== signature();
+
+  function invalidate() {
+    generation++;
+    scanned = new Map();
+    scannedSig = null;
+    scanFailedFor = null;
+  }
+
+  /**
+   * One plane's regions, from the worker that owns the arrangement.
+   *
+   * Returns null when the answer arrived for a document that is no longer the
+   * one on screen — the caller must treat that as "try again", never as a
+   * diagram.
    */
   async function dataFor(face) {
-    if (diagram.data && diagram.data.planeIndex === face.index) return diagram.data;
-    return call('diagram', { planeIndex: face.index, selected: [...state.selected] });
+    if (staleSince()) invalidate();
+    if (scanned.has(face.index)) return scanned.get(face.index);
+
+    const sig = signature();
+    const mine = generation;
+    const d = (diagram.data && diagram.data.planeIndex === face.index)
+      ? diagram.data
+      : await call('diagram', { planeIndex: face.index, selected: [...state.selected] });
+
+    // the document may have moved while that was in flight
+    if (mine !== generation || signature() !== sig) return null;
+    scanned.set(face.index, d);
+    scannedSig = sig;
+    return d;
+  }
+
+  /*
+   * Draw every face class once, so the dialog can say which of them the figure
+   * does not reach before you press the button — and so the export does not
+   * fetch them a second time. One scan at a time; a second request while one
+   * is in flight waits for it rather than racing it.
+   */
+  function scanFaces() {
+    if (scanning) return scanning;
+    scanning = (async () => {
+      try {
+        if (staleSince()) invalidate();
+        for (const face of classes()) {
+          // a null means the document moved; the next sync starts a fresh scan
+          if (await dataFor(face) === null) break;
+        }
+      } catch (err) {
+        /*
+         * Remember which document the failure was for. sync() starts a scan
+         * whenever what we hold is stale, so without this a worker that
+         * refuses once is asked again on every slider nudge, for ever.
+         */
+        scanFailedFor = signature();
+        info.textContent = 'could not read the diagrams: ' + err.message;
+      } finally {
+        scanning = null;
+      }
+      sync();
+    })();
+    return scanning;
   }
 
   /** an SVG string rasterised at a fixed square size — never the live canvas */
@@ -169,83 +414,156 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   }
 
   async function run() {
-    const faces = scopeAll.checked ? classes()
-                                   : [classes().find(f => f.index === state.planeIndex) || classes()[0]];
+    const faces = facesToExport();
     const o = options();
     const png = fmtPng.checked;
     const size = Math.max(64, Math.min(4096, Number(pngSize.value) || 1024));
+
+    /*
+     * The folder first, before any drawing.
+     *
+     * showDirectoryPicker needs the page to still hold the user activation
+     * from the click that started this, and drawing twenty diagrams and
+     * rasterising them to PNG can outlast it — after which the browser refuses
+     * the picker and the work is thrown away. Asking first also means a
+     * dismissed picker costs nothing.
+     */
+    let dir = null;
+    if (hasFSAccess()) {
+      dir = await chooseFolder();
+      if (!dir) { info.textContent = ''; return; }     // dismissed; not an error
+    }
+
     info.textContent = 'drawing…';
 
-    const files = [];
+    /*
+     * One export is one document. Everything that ends up in the files — the
+     * name, and every field of the metadata — is read once, here, and the
+     * signature is checked after every fetch: if the document moves while this
+     * is running, the export stops and says so rather than writing a set of
+     * plates that came from two different figures, or a picture labelled with
+     * a cell string that does not draw it.
+     */
+    const sig = signature();
+    const doc = {
+      name: currentName(),
+      polyhedron: state.current?.file || 'custom',
+      polySymmetry: state.polySym,
+      stellSymmetry: state.stellSym,
+      planeDepth: state.depth,
+      cells: state.cellsString || undefined,
+    };
+    const moved = () => signature() !== sig;
+
+    const drawn = [];
+    let skipped = 0;
     for (const face of faces) {
       const data = await dataFor(face);
+      if (moved()) throw new Error('the document changed while exporting — nothing was written');
       if (!data) continue;
+      /*
+       * With the traces turned off, a face with nothing chosen on it draws a
+       * blank page. That is a real answer to "show me what this figure takes
+       * from this face" — the answer is nothing — but it is not a file worth
+       * writing, so it is skipped and counted. With the traces on there is
+       * always the arrangement to draw and nothing is ever skipped.
+       */
+      if (!diagramHasInk(data, o)) { skipped++; continue; }
       const svg = diagramSVG(data, {
         ...o,
         metadata: {
-          title: `${currentName()} — diagram on plane ${face.index}`,
-          polyhedron: state.current?.file || 'custom',
-          polySymmetry: state.polySym,
-          stellSymmetry: state.stellSym,
-          planeDepth: state.depth,
+          ...doc,
+          title: `${doc.name} — diagram on plane ${face.index}`,
           plane: face.index,
           faceSides: face.sides || undefined,
-          cells: state.cellsString || undefined,
         },
       });
       if (!svg) continue;
-      const name = fileFor(face, faces.length, png ? 'png' : 'svg');
-      files.push(png ? { name, blob: await toPNG(svg, size) } : { name, text: svg });
+      drawn.push({ face, svg });
     }
 
-    if (!files.length) { info.textContent = 'nothing to draw'; return; }
+    /*
+     * Named only now. The name says which plane it is only when there is more
+     * than one file, and how many files there are is not known until the blank
+     * ones have been skipped — naming inside the loop used the number of faces
+     * ASKED for, so a run that skipped all but one wrote a numbered name while
+     * the dialog had previewed a plain one.
+     */
+    const files = [];
+    for (const { face, svg } of drawn) {
+      const name = fileFor(face, drawn.length, png ? 'png' : 'svg', doc.name);
+      files.push(png ? { name, blob: await toPNG(svg, size) } : { name, text: svg });
+    }
+    if (moved()) throw new Error('the document changed while exporting — nothing was written');
 
-    // one file is a plain download whatever the browser can do
-    if (files.length === 1) {
-      const f = files[0];
-      if (f.blob) {
-        const url = URL.createObjectURL(f.blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = f.name; a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } else {
-        download(f.name, f.text, 'image/svg+xml');
-      }
-      setStatus(`saved ${f.name}`);
-      close();
+    if (!files.length) {
+      info.textContent = skipped
+        ? `nothing to draw — nothing of the figure falls on ` +
+          `${skipped === 1 ? 'that face' : 'those faces'}`
+        : 'nothing to draw';
       return;
     }
 
-    if (destFolder.checked && hasFSAccess()) {
-      let dir;
-      try {
-        dir = await showDirectoryPicker({ id: 'stellation-diagrams', mode: 'readwrite' });
-      } catch { info.textContent = ''; return; }        // the picker was dismissed
-      for (const f of files) {
-        const handle = await dir.getFileHandle(f.name, { create: true });
-        const w = await handle.createWritable();
-        await w.write(f.blob ?? f.text);
-        await w.close();
-      }
-      setStatus(`saved ${files.length} diagrams`);
+    /*
+     * Where it goes. The folder if this browser has the File System Access API,
+     * whether that is one file or twenty — before this, a single file went to
+     * the downloads folder however capable the browser was, so the one case
+     * people do most often ignored the folder they had just chosen. Without
+     * the API, one file downloads and several become one archive.
+     */
+    if (dir) {
+      for (const f of files) await writeFile(dir, f.name, f.blob ?? f.text);
+      setStatus(files.length === 1
+        ? `saved ${files[0].name} in ${dir.name}`
+        : `saved ${files.length} diagrams in ${dir.name}`);
+    } else if (files.length === 1) {
+      const f = files[0];
+      if (f.blob) saveBlob(f.blob, f.name);
+      else download(f.name, f.text, 'image/svg+xml');
+      setStatus(`saved ${f.name}`);
     } else {
       const entries = await Promise.all(files.map(async f => f.blob
         ? { name: f.name, bytes: new Uint8Array(await f.blob.arrayBuffer()) }
         : { name: f.name, text: f.text }));
-      const zip = await makeZip(entries);
-      const url = URL.createObjectURL(zip);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${stem()}-diagrams.zip`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      saveBlob(await makeZip(entries), `${stem(doc.name)}-diagrams.zip`);
       setStatus(`saved ${files.length} diagrams in one archive`);
+    }
+    if (skipped) {
+      setStatus(`${files.length} saved, ${skipped} skipped for drawing nothing`);
     }
     info.textContent = '';
     close();
   }
 
-  go.onclick = () => run().catch(err => { info.textContent = err.message; });
+  function saveBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  /*
+   * One run at a time. Nothing disabled the button while an export was in
+   * flight, so a second click started a second run over the same files — and
+   * whichever finished first closed the dialog, possibly one the user had
+   * since reopened.
+   */
+  let busy = false;
+  go.onclick = async () => {
+    if (busy) return;
+    busy = true;
+    go.disabled = true;
+    try {
+      await run();
+    } catch (err) {
+      info.textContent = err && err.message ? err.message : String(err);
+    } finally {
+      busy = false;
+      sync();
+    }
+  };
   el('#exCancel').onclick = () => close();
 
   return {
@@ -267,8 +585,11 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
       scopeAll.checked = n >= 2;
       scopeOne.checked = n < 2;
       info.textContent = '';
+      applyPreset();
       sync();
       win.setVisible(true);
+      showFolder();
+      scanFaces();          // re-reads only if the document has moved
     },
   };
 }

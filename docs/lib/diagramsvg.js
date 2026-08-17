@@ -23,9 +23,24 @@ export const DIAGRAM_DEFAULTS = {
   shading: 'fill',      // 'fill' — chosen cells shaded | 'outline' — no fills
   colorMode: 'layer',   // 'layer' | 'class' | 'stellClass' | 'none'
   traces: 'facets',     // 'facets' — the arrangement | 'full' — whole plane traces
-  lineWidth: 0.7,       // in viewBox units at size 1000
+  /*
+   * Two line weights, because the drawing has two kinds of line and they are
+   * wanted at different weights — often at very different weights.
+   *
+   * `traceWidth` is the arrangement itself: every plane's trace across the
+   * face, the web of lines the stellation is chosen from. `facetWidth` is the
+   * outline of the facets actually taken, the edges of the figure.
+   *
+   * Either may be 0, which draws none of that kind. traceWidth 0 is the
+   * useful one: it leaves the chosen facets alone on the page, filled or as
+   * bare outlines, which is the picture you want for cutting a net or for a
+   * figure that has to read at a glance rather than be studied.
+   */
+  traceWidth: 0.7,      // in viewBox units at size 1000; 0 draws no traces
+  facetWidth: 0.7,      // outline of the chosen facets; 0 draws none
   background: 'white',  // any CSS colour, or null for transparent
-  ink: '#222',
+  ink: '#222',          // the traces
+  facetInk: null,       // the chosen facets' outline; null follows `ink`
   metadata: null,       // {…} describing the document, written into the file
 };
 
@@ -92,10 +107,24 @@ function metadataBlock(meta) {
          rows.join('\n') + `\n    </stel:stellation>\n  </metadata>\n`;
 }
 
+/** would diagramSVG() draw anything at all with these options? */
+export function diagramHasInk(data, options = {}) {
+  if (!data || !data.facets?.length) return false;
+  const o = { ...DIAGRAM_DEFAULTS, ...options };
+  if (o.traceWidth > 0) return true;              // the arrangement is always there
+  const chosen = data.facets.some(f => f.selected);
+  return chosen && (o.shading === 'fill' || o.facetWidth > 0);
+}
+
 /** the diagram, as an SVG document */
 export function diagramSVG(data, options = {}) {
   if (!data || !data.facets?.length) return '';
   const o = { ...DIAGRAM_DEFAULTS, ...options };
+  // one width for both is how this was called before the two were separated
+  if (options.lineWidth !== undefined) {
+    if (options.traceWidth === undefined) o.traceWidth = options.lineWidth;
+    if (options.facetWidth === undefined) o.facetWidth = options.lineWidth;
+  }
   const S = o.size;
   const e = (data.extent || 1) * (1 + o.margin);
   const k = S / (2 * e);
@@ -120,26 +149,50 @@ export function diagramSVG(data, options = {}) {
   }
 
   /*
-   * The lines last, over the fills. Grouped so the stroke is stated once: a
-   * deep arrangement runs to thousands of paths, and repeating the stroke on
-   * each one roughly doubles the file for nothing.
+   * The lines over the fills, and the arrangement under the figure: traces
+   * first, then the chosen facets' own outline on top of them, so an edge of
+   * the figure is never broken by a trace crossing it.
+   *
+   * Each kind is one group, so its stroke is stated once — a deep arrangement
+   * runs to thousands of paths and repeating the stroke on every one roughly
+   * doubles the file for nothing.
    */
-  out.push(`  <g fill="none" stroke="${o.ink}" stroke-width="${o.lineWidth}" ` +
-           `stroke-linejoin="round">`);
-  if (o.traces === 'full') {
-    // a chord long enough to cross the box from any angle
-    const R = S;
-    for (const [a, b, c] of traceLines(data)) {
-      const x0 = -a * c, y0 = -b * c;
-      const px = S / 2 + x0 * k, py = S / 2 - y0 * k;
-      const dx = -b, dy = a;
-      out.push(`    <path d="M${fmt(px - dx * R)},${fmt(py + dy * R)}` +
-               `L${fmt(px + dx * R)},${fmt(py - dy * R)}"/>`);
+  if (o.traceWidth > 0) {
+    out.push(`  <g fill="none" stroke="${o.ink}" stroke-width="${o.traceWidth}" ` +
+             `stroke-linejoin="round">`);
+    if (o.traces === 'full') {
+      // a chord long enough to cross the box from any angle
+      const R = S;
+      for (const [a, b, c] of traceLines(data)) {
+        const x0 = -a * c, y0 = -b * c;
+        const px = S / 2 + x0 * k, py = S / 2 - y0 * k;
+        const dx = -b, dy = a;
+        out.push(`    <path d="M${fmt(px - dx * R)},${fmt(py + dy * R)}` +
+                 `L${fmt(px + dx * R)},${fmt(py - dy * R)}"/>`);
+      }
+    } else {
+      /*
+       * The chosen facets are left to the group below when it is drawing them,
+       * so no edge is stroked twice. At equal widths the two groups together
+       * are exactly the outline of every facet, which is what this drew before
+       * the weights were separated.
+       */
+      const mine = o.facetWidth > 0 ? data.facets.filter(f => !f.selected) : data.facets;
+      for (const f of mine) out.push(`    <path d="${path(f.poly)}"/>`);
     }
-  } else {
-    for (const f of data.facets) out.push(`    <path d="${path(f.poly)}"/>`);
+    out.push('  </g>');
   }
-  out.push('  </g>');
+
+  if (o.facetWidth > 0) {
+    const chosen = data.facets.filter(f => f.selected);
+    if (chosen.length) {
+      out.push(`  <g fill="none" stroke="${o.facetInk || o.ink}" ` +
+               `stroke-width="${o.facetWidth}" stroke-linejoin="round">`);
+      for (const f of chosen) out.push(`    <path d="${path(f.poly)}"/>`);
+      out.push('  </g>');
+    }
+  }
+
   out.push('</svg>');
   return out.join('\n');
 }
