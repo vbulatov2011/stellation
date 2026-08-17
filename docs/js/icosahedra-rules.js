@@ -30,19 +30,22 @@ function card(fig, set) {
   a.title = `${fig.symbol} — ${fig.shells.join(' + ')}`;
   if (!fig.crennell) a.classList.add('outside');
 
-  // the solid and its stellation diagram; the grid says which is showing
+  // the solid and its stellation diagram, side by side; the grid says how
+  // much of the card each one gets
+  const pics = el('div', 'ic-pics');
   const solid = el('img', 'pic-solid');
   solid.src = `${fig.file}.png`;
   solid.alt = '';
   solid.loading = 'lazy';
-  a.appendChild(solid);
+  pics.appendChild(solid);
   if (fig.diagram) {
     const dia = el('img', 'pic-diagram');
     dia.src = fig.diagram;
     dia.alt = '';
     dia.loading = 'lazy';
-    a.appendChild(dia);
+    pics.appendChild(dia);
   }
+  a.appendChild(pics);
 
   const body = el('div', 'body');
   const head = el('div', 'ic-head');
@@ -78,7 +81,7 @@ function render(man, set, filter) {
   const host = $('#icGrid');
   const showing = host.className;      // survives a re-render after filtering
   host.innerHTML = '';
-  host.className = showing || 'ic-grid pics-solid';
+  host.className = showing || 'ic-grid pics-both';
   const all = set.codes.map(c => man.figures[c]).filter(Boolean);
   const items = all.filter(filter.test);
 
@@ -109,11 +112,12 @@ function filterRow(man, set, onPick) {
   if (figs.some(f => f.crennell)) add('among the 59', (f) => !!f.crennell, false);
   if (figs.some(f => f.chiral)) add('chiral', (f) => f.chiral, false);
 
-  // which of the two pictures the whole gallery shows
+  // how much of the card each picture gets
   host.appendChild(el('span', 'ic-sep', 'show'));
   const pics = [];
-  for (const [label, cls] of [['solid', 'pics-solid'], ['diagram', 'pics-diagram']]) {
-    const b = el('button', label === 'solid' ? 'on' : null, label);
+  for (const [label, cls] of [['both', 'pics-both'], ['solid', 'pics-solid'],
+                              ['diagram', 'pics-diagram']]) {
+    const b = el('button', label === 'both' ? 'on' : null, label);
     b.onclick = () => {
       for (const o of pics) o.classList.toggle('on', o === b);
       $('#icGrid').className = 'ic-grid ' + cls;

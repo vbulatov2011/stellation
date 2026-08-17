@@ -372,7 +372,7 @@ ${s.rules.map(r => `    <li>${esc(r)}</li>`).join('\n')}
 
   <div id="icFilter" class="ic-filter"></div>
   <p id="icCount"></p>
-  <div id="icGrid" class="ic-grid pics-solid"></div>
+  <div id="icGrid" class="ic-grid pics-both"></div>
 
   <h2>The other lists</h2>
   <ul class="ic-others">

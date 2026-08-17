@@ -35,24 +35,28 @@ function card(item) {
   a.title = `${item.symbol} — ${item.shells.join(' + ')}`;
 
   /*
-   * Two pictures of the same figure, and the page shows one at a time. Side by
-   * side in a card this narrow, each would be small enough that the diagram —
-   * which is a fine line drawing — would be unreadable, so it is a switch
-   * rather than a pair. Both srcs are set now and swapped by class, so
-   * flipping the whole gallery costs no fetch after the first look.
+   * Two pictures of the same figure, side by side: the solid, and the
+   * stellation diagram it was chosen on. Both are shown by default, because
+   * the diagram is half of what these pages are about and a gallery that
+   * hides it behind a control looks like a gallery that has none. The
+   * `show` buttons then give either one the whole card when you want it
+   * bigger — the images are both in the DOM and swapped by a class on the
+   * grid, so switching costs no fetch.
    */
+  const pics = el('div', 'ic-pics');
   const solid = el('img', 'pic-solid');
   solid.src = `${item.file}.png`;
   solid.alt = '';
   solid.loading = 'lazy';
-  a.appendChild(solid);
+  pics.appendChild(solid);
   if (item.diagram) {
     const dia = el('img', 'pic-diagram');
     dia.src = item.diagram;
     dia.alt = '';
     dia.loading = 'lazy';
-    a.appendChild(dia);
+    pics.appendChild(dia);
   }
+  a.appendChild(pics);
 
   const body = el('div', 'body');
   const head = el('div', 'ic-head');
@@ -88,7 +92,7 @@ function render(man, filter) {
   const host = $('#icGrid');
   const showing = host.className;      // survives a re-render after filtering
   host.innerHTML = '';
-  host.className = showing || 'ic-grid pics-solid';
+  host.className = showing || 'ic-grid pics-both';
   const items = man.items.filter(filter.test);
 
   $('#icCount').textContent = items.length === man.items.length
@@ -115,11 +119,13 @@ function filterRow(man, onPick) {
   };
   for (const f of FILTERS) add(f.label, f.test, f.key === null);
 
-  // which of the two pictures the whole gallery shows
+  // how much of the card each picture gets
   host.appendChild(el('span', 'ic-sep', 'show'));
   const pics = [];
-  for (const [label, cls] of [['solid', 'pics-solid'], ['diagram', 'pics-diagram']]) {
-    const b = el('button', label === 'solid' ? 'on' : null, label);
+  for (const [label, cls] of [['both', 'pics-both'],
+                              ['solid', 'pics-solid'],
+                              ['diagram', 'pics-diagram']]) {
+    const b = el('button', label === 'both' ? 'on' : null, label);
     b.onclick = () => {
       for (const o of pics) o.classList.toggle('on', o === b);
       document.querySelector('#icGrid').className = 'ic-grid ' + cls;
