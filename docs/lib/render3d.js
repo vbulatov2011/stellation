@@ -232,7 +232,15 @@ export class Renderer3D {
     this.edgeWidth = 1.0;   // CSS pixels of total line width, scaled by dpr at draw
 
     this.modelScale = 0;   // sticky; see setMesh() and fit()
-    this.rotation = quatFromEuler(-0.42, 0.6, 0);
+    /*
+     * The opening pose is the isometric, ISO_Q — a named view, not an
+     * arbitrary tilt. It used to be a bare Euler triple (-0.42, 0.6, 0), a
+     * perfectly good three-quarter angle but is not any of the views the menu
+     * offers, so the app started in an orientation it could not name and the
+     * readout beside the home button sat blank until you picked something. The
+     * isometric is the same kind of picture and has a name: +o3.
+     */
+    this.rotation = [...ISO_Q];
     this.distance = 1.0;   // relative zoom; the fit distance is computed per frame
     /*
      * Sideways shift of the view, in world units on the camera's own axes.
@@ -2041,7 +2049,12 @@ const STANDARD_VIEWS = VIEW_SPECS.map(([name, dir, title, q]) => ({
 }));
 
 /** the default: the frame the symmetry groups' matrices are written in */
-const DEFAULT_VIEW = STANDARD_VIEWS.findIndex(v => v.name === '+z');
+/*
+ * Where home goes before you have chosen anything: the pose the app opens in,
+ * so the button returns you to the picture you started from rather than to a
+ * different one.
+ */
+const DEFAULT_VIEW = STANDARD_VIEWS.findIndex(v => v.name === '+o3');
 
 /*
  * How far past the selection's own radius the two sets of scaffolding
@@ -2073,12 +2086,6 @@ function quatBringToViewer(dir) {
   const q = [y, -x, 0, w];
   const n = Math.hypot(...q);
   return q.map(v => v / n);
-}
-
-function quatFromEuler(x, y, z) {
-  let q = quatFromAxis([1, 0, 0], x);
-  q = quatMul(quatFromAxis([0, 1, 0], y), q);
-  return quatMul(quatFromAxis([0, 0, 1], z), q);
 }
 
 function quatMul(a, b) {

@@ -241,8 +241,7 @@ async function boot() {
     lastView = v;
     // the orientation menu is a readout too: it names a standard view only
     // while the solid is actually in one
-    const sel = $('#viewOrient');
-    if (sel) sel.value = String(renderer.matchStandardView());
+    syncOrient();
     syncHash();
   };
   setInterval(catchUp, 900);
@@ -585,6 +584,22 @@ async function select(item, opts = {}) {
   await build(opts.cells, opts.cellsIndexing || null);
   // after the build, so the mesh (and therefore the model scale) already exists
   if (opts.view && renderer?.setView(opts.view)) lastView = renderer.getView().join(',');
+  syncOrient();
+}
+
+/**
+ * Point the orientation menu at whatever the solid is actually facing.
+ *
+ * A document stores its camera as a quaternion, so a document saved while
+ * looking down a named axis comes back looking down it — and the menu should
+ * say so rather than sit blank until you touch it. This asks the renderer
+ * which standard view the current rotation is, and -1, meaning none of them,
+ * selects the hidden blank option, which is what a freely dragged angle
+ * should read as.
+ */
+function syncOrient() {
+  const sel = $('#viewOrient');
+  if (sel && renderer) sel.value = String(renderer.matchStandardView());
 }
 
 const NO_LIMIT = 60;   // slider top = build every layer there is
@@ -1336,6 +1351,7 @@ function wireControls() {
     orientSel.value = String(view.index);
     setStatus(`seen from ${view.name}`, false);
   };
+  syncOrient();          // the pose the app opens in has a name; show it
   $('#homeView').onclick = () => showOrient(renderer?.home());
   orientSel.onchange = (e) => {
     const i = Number(e.target.value);
@@ -1755,6 +1771,7 @@ async function openDocument(text, filename = '') {
       await refresh();
     }
     if (ok && doc.view) renderer?.setView(doc.view);
+    syncOrient();
     setStatus(ok ? `opened ${doc.name || filename} (custom planes)` : 'could not build that plane sheet', false);
     return;
   }

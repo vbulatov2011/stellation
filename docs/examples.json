@@ -70,6 +70,12 @@
             "name": "Icosahedron under D5",
             "tags": ["subgroup", "icosahedral"],
             "note": "Ten operations out of the icosahedron's hundred and twenty: one five-fold axis kept and everything else let go. Six of the nine cell orbits it touches are taken only in part — twenty of f₁'s hundred and twenty, ten of e₁'s twenty, fifty of e₂'s sixty — which is what a genuinely five-fold figure looks like from the inside, as against a symmetric one that merely happened to be built under a subgroup. 201 of the 473 pieces. It is saved looking straight down that axis, which is what the +i5 view now means."
+        },
+        {
+            "file": "examples/icosahedron-under-c5.json",
+            "name": "Icosahedron under C5",
+            "tags": ["subgroup", "icosahedral"],
+            "note": "The same five-fold axis as the D5 figure beside it, with the mirrors given up as well: C5 is five rotations and nothing else, the smallest group in this gallery, and the result is chiral — the points sweep round like a pinwheel and no reflection of it can be turned back into it. Not one of the seven orbits it touches is taken whole, and some barely at all: five of b's twenty, thirty of f₁'s hundred and twenty. 115 of the 473 pieces, without the core, so it is pierced. Saved looking down the axis."
         }
     ]
 }

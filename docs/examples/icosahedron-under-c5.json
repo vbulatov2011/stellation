@@ -1,0 +1,60 @@
+{
+ "name": "Icosahedron under C5",
+ "appInfo": {
+  "appName": "Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1",
+  "fileFormatRelease": 1
+ },
+ "params": {
+  "polyhedron": {
+   "name": "icosahedron",
+   "file": "u27"
+  },
+  "symmetry": {
+   "polyhedron": "Ih",
+   "stellation": "C5(I)"
+  },
+  "arrangement": {
+   "planeDepth": 60
+  },
+  "cells": {
+   "selection": "{1(0[3])2(0[2,3,4,5])3(0[2,3,5,8,9,10])4(0[2,3]1[2,9])5(1[1,9,11,12,13,16])6(1[6,7])}"
+  },
+  "display": {
+   "diagramFace": 0,
+   "showEdges": true,
+   "showAllFacets": true,
+   "spin": false,
+   "colorMode": "stellClass",
+   "faceOpacity": 0.81,
+   "edges": {
+    "face": {
+     "show": true,
+     "color": "#3d2c6d",
+     "width": 2.9,
+     "tubes": true
+    },
+    "facet": {
+     "show": true,
+     "color": "#6b7080",
+     "width": 1,
+     "tubes": false
+    }
+   }
+  },
+  "camera": {
+   "view": [
+    0,
+    0.273267,
+    0,
+    -0.961938,
+    1.461806,
+    0,
+    0,
+    0.41947
+   ]
+  },
+  "export": {
+   "lengthUnit": 0.01
+  }
+ }
+}
