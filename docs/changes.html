@@ -104,9 +104,9 @@
       gallery switches between the two. The drawing became a pure function —
       geometry in, SVG out, no canvas and no renderer — so the same code draws
       the card on the page and the file you export, and the generators can draw
-      all 84 on the command line. A new export dialog asks what you want: one
-      diagram or every distinct one, SVG or PNG at a size you choose, the
-      printed plate look or the colours on screen. Each SVG carries the
+      all 84 on the command line. A new export dialog asks what you want: which
+      of the distinct diagrams, SVG or PNG, at a size and a weight of line you
+      choose. Each SVG carries the
       document that produced it, so the picture can be rebuilt. The folder is
       asked for once and remembered, and everything goes into it — a single
       diagram as much as twenty. Where the browser cannot be given a folder,
@@ -121,12 +121,10 @@
       inside the figure where two chosen facets meet; and the <b>faces
       outline</b>, the edge with the figure on one side and nothing on the
       other — the line you would cut. A plate for reading is the first alone;
-      a net is the last two with the arrangement gone. Beside them is a preview
-      that calls the same drawing code on the same geometry with the same
-      options, so it is the file rather than an impression of it. A page that
-      would come out blank — a face the figure never reaches, or settings that
-      draw nothing at all — is skipped, and the dialog says so before the
-      button is pressed rather than writing an empty file.
+      a net is the last two with the arrangement gone. A page that would come
+      out blank — a face the figure never reaches, or settings that draw
+      nothing at all — is skipped, and the dialog says so before the button is
+      pressed rather than writing an empty file.
     </div></li>
     <li><div>
       <b>How big, how full, and how heavy are three different questions.</b>
@@ -137,8 +135,9 @@
       multiplies the drawing's coordinates and nothing else, so 1 fits the
       figure with a small margin and anything above about 1.05 crops it. And a
       line weight is now an absolute width <em>in pixels of the finished
-      picture</em>, so a 0.7 px hairline is 0.7 px whether the plate is 500
-      pixels or 4000 — where before it was a fraction of the frame and thickened
+      picture</em> — a tenth of a pixel to ten pixels, the same range whatever
+      the resolution — so a 0.7 px hairline is 0.7 px whether the plate is 500
+      pixels or 4000, where before it was a fraction of the frame and thickened
       as the frame grew. A picture that is not square fits the figure to the
       shorter side and centres it in both, and the previews take the picture's
       own proportions.

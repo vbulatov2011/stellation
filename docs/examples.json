@@ -1,81 +1,114 @@
 {
-    "$schema": {
-        "$comment": "The examples catalog. Hand-edited; docs/test/examples.mjs checks it.",
-        "item": {
-            "file": "path to the document, relative to this file; <file>.png is its thumbnail",
-            "name": "what the gallery calls it — short, and its own, not the solid's",
-            "tags": "one or more keys of the `tags` block below; the first is the section it files under",
-            "note": "a sentence or two: what it is, and what is worth looking at",
-            "source": "optional provenance — { book, plate, figure, page } or { who, year, work }"
-        },
-        "$why": [
-            "Curation lives here and not in the documents: a document is a thing to open,",
-            "and it should not have to carry an opinion about which gallery it belongs to.",
-            "Tags rather than folders, because an extensive set wants several orderings at",
-            "once — by source solid, by symmetry, by provenance, by kind — and a folder",
-            "forces one of them."
-        ]
+  "$schema": {
+    "$comment": "The examples catalog. Hand-edited; docs/test/examples.mjs checks it.",
+    "item": {
+      "file": "path to the document, relative to this file; <file>.png is its thumbnail",
+      "name": "what the gallery calls it — short, and its own, not the solid's",
+      "tags": "one or more keys of the `tags` block below; the first is the section it files under",
+      "note": "a sentence or two: what it is, and what is worth looking at",
+      "source": "optional provenance — { book, plate, figure, page } or { who, year, work }"
     },
-    "tags": {
-        "custom-planes": {
-            "title": "Built from plane sets",
-            "blurb": "Stellations of an arrangement written in the plane editor rather than taken from a catalog solid — planes of different solids, or one solid's planes at more than one depth."
-        },
-        "subgroup": {
-            "title": "Built under a subgroup",
-            "blurb": "Stellations that keep only part of the solid's symmetry, because the cells were chosen under a smaller group than the arrangement has."
-        },
-        "icosahedral": {
-            "title": "Icosahedral symmetry",
-            "blurb": "Arrangements with the symmetry of the icosahedron."
-        },
-        "octahedral": {
-            "title": "Octahedral symmetry",
-            "blurb": "Arrangements with the symmetry of the cube and octahedron."
-        },
-        "compound": {
-            "title": "Compounds",
-            "blurb": "Figures that fall into separate pieces — Brückner's \"discontinuous\" polyhedra."
-        },
-        "kepler-poinsot": {
-            "title": "The regular star polyhedra",
-            "blurb": "The four regular polyhedra of higher kind."
-        },
-        "brueckner": {
-            "title": "From Brückner 1900",
-            "blurb": "Models photographed on the plates of Vielecke und Vielflache."
-        }
-    },
-    "items": [
-        {
-            "file": "examples/ico-dodeca-planes.json",
-            "name": "Icosahedron and dodecahedron planes",
-            "tags": ["custom-planes", "icosahedral"],
-            "note": "Two plane orbits in one arrangement: the twenty face planes of an icosahedron and the twelve of a dodecahedron, set at different distances from the centre. Thirty-two planes that belong to no single solid, stellated under Th."
-        },
-        {
-            "file": "examples/twin-octahedra.json",
-            "name": "Two octahedra, two depths",
-            "tags": ["custom-planes", "octahedral"],
-            "note": "The eight body-diagonal directions, at three distances. Two tetrahedral orbits sit closest in, one nearer than the other, so the inner figure is an octahedron pulled out of shape; outside them two true octahedra, at twice those distances. Twenty-four planes, grouped under Td and stellated with the rotations alone, so the chiral cells can be taken one hand at a time."
-        },
-        {
-            "file": "examples/truncated-cuboctahedron-d3d.json",
-            "name": "Truncated cuboctahedron under D3d",
-            "tags": ["subgroup", "octahedral"],
-            "note": "The twenty-six planes have the full symmetry of the cube, but the cells were picked under D3d on a body diagonal — twelve operations out of forty-eight. So the figure keeps one three-fold axis and loses the other three: 473 pieces that a full-symmetry selection could not have produced. Switch the stellation symmetry to Oh and the panel shows the cost, most boxes only partly filled."
-        },
-        {
-            "file": "examples/icosahedron-under-d5.json",
-            "name": "Icosahedron under D5",
-            "tags": ["subgroup", "icosahedral"],
-            "note": "Ten operations out of the icosahedron's hundred and twenty: one five-fold axis kept and everything else let go. Six of the nine cell orbits it touches are taken only in part — twenty of f₁'s hundred and twenty, ten of e₁'s twenty, fifty of e₂'s sixty — which is what a genuinely five-fold figure looks like from the inside, as against a symmetric one that merely happened to be built under a subgroup. 201 of the 473 pieces. It is saved looking straight down that axis, which is what the +i5 view now means."
-        },
-        {
-            "file": "examples/icosahedron-under-c5.json",
-            "name": "Icosahedron under C5",
-            "tags": ["subgroup", "icosahedral"],
-            "note": "The same five-fold axis as the D5 figure beside it, with the mirrors given up as well: C5 is five rotations and nothing else, the smallest group in this gallery, and the result is chiral — the points sweep round like a pinwheel and no reflection of it can be turned back into it. Not one of the seven orbits it touches is taken whole, and some barely at all: five of b's twenty, thirty of f₁'s hundred and twenty. 115 of the 473 pieces, without the core, so it is pierced. Saved looking down the axis."
-        }
+    "$why": [
+      "Curation lives here and not in the documents: a document is a thing to open,",
+      "and it should not have to carry an opinion about which gallery it belongs to.",
+      "Tags rather than folders, because an extensive set wants several orderings at",
+      "once — by source solid, by symmetry, by provenance, by kind — and a folder",
+      "forces one of them."
     ]
+  },
+  "tags": {
+    "custom-planes": {
+      "title": "Built from plane sets",
+      "blurb": "Stellations of an arrangement written in the plane editor rather than taken from a catalog solid — planes of different solids, or one solid's planes at more than one depth."
+    },
+    "subgroup": {
+      "title": "Built under a subgroup",
+      "blurb": "Stellations that keep only part of the solid's symmetry, because the cells were chosen under a smaller group than the arrangement has."
+    },
+    "icosahedral": {
+      "title": "Icosahedral symmetry",
+      "blurb": "Arrangements with the symmetry of the icosahedron."
+    },
+    "octahedral": {
+      "title": "Octahedral symmetry",
+      "blurb": "Arrangements with the symmetry of the cube and octahedron."
+    },
+    "compound": {
+      "title": "Compounds",
+      "blurb": "Figures that fall into separate pieces — Brückner's \"discontinuous\" polyhedra."
+    },
+    "kepler-poinsot": {
+      "title": "The regular star polyhedra",
+      "blurb": "The four regular polyhedra of higher kind."
+    },
+    "brueckner": {
+      "title": "From Brückner 1900",
+      "blurb": "Models photographed on the plates of Vielecke und Vielflache."
+    }
+  },
+  "items": [
+    {
+      "file": "examples/ico-dodeca-planes.json",
+      "name": "Icosahedron and dodecahedron planes",
+      "tags": [
+        "custom-planes",
+        "icosahedral"
+      ],
+      "note": "Two plane orbits in one arrangement: the twenty face planes of an icosahedron and the twelve of a dodecahedron, set at different distances from the centre. Thirty-two planes that belong to no single solid, stellated under Th."
+    },
+    {
+      "file": "examples/twin-octahedra.json",
+      "name": "Two octahedra, two depths",
+      "tags": [
+        "custom-planes",
+        "octahedral"
+      ],
+      "note": "The eight body-diagonal directions, at three distances. Two tetrahedral orbits sit closest in, one nearer than the other, so the inner figure is an octahedron pulled out of shape; outside them two true octahedra, at twice those distances. Twenty-four planes, grouped under Td and stellated with the rotations alone, so the chiral cells can be taken one hand at a time."
+    },
+    {
+      "file": "examples/truncated-cuboctahedron-d3d.json",
+      "name": "Truncated cuboctahedron under D3d",
+      "tags": [
+        "subgroup",
+        "octahedral"
+      ],
+      "note": "The twenty-six planes have the full symmetry of the cube, but the cells were picked under D3d on a body diagonal — twelve operations out of forty-eight. So the figure keeps one three-fold axis and loses the other three: 473 pieces that a full-symmetry selection could not have produced. Switch the stellation symmetry to Oh and the panel shows the cost, most boxes only partly filled."
+    },
+    {
+      "file": "examples/icosahedron-under-d5.json",
+      "name": "Icosahedron under D5",
+      "tags": [
+        "subgroup",
+        "icosahedral"
+      ],
+      "note": "Ten operations out of the icosahedron's hundred and twenty: one five-fold axis kept and everything else let go. Six of the nine cell orbits it touches are taken only in part — twenty of f₁'s hundred and twenty, ten of e₁'s twenty, fifty of e₂'s sixty — which is what a genuinely five-fold figure looks like from the inside, as against a symmetric one that merely happened to be built under a subgroup. 201 of the 473 pieces. It is saved looking straight down that axis, which is what the +i5 view now means."
+    },
+    {
+      "file": "examples/icosahedron-under-c5.json",
+      "name": "Icosahedron under C5",
+      "tags": [
+        "subgroup",
+        "icosahedral"
+      ],
+      "note": "The same five-fold axis as the D5 figure beside it, with the mirrors given up as well: C5 is five rotations and nothing else, the smallest group in this gallery, and the result is chiral — the points sweep round like a pinwheel and no reflection of it can be turned back into it. Not one of the seven orbits it touches is taken whole, and some barely at all: five of b's twenty, thirty of f₁'s hundred and twenty. 115 of the 473 pieces, without the core, so it is pierced. Saved looking down the axis."
+    },
+    {
+      "file": "examples/icosahedron-under-t.json",
+      "name": "Icosahedron under T",
+      "tags": [
+        "subgroup",
+        "icosahedral"
+      ],
+      "note": "Twelve operations out of the icosahedron's hundred and twenty: the rotations of a tetrahedron inscribed in it — four three-fold axes and three two-fold — with every mirror and every five-fold let go. That is what the two picks buy. The first shell's orbit is twenty cells under the full group and can only be taken whole; under T it falls into four, four and twelve, and this figure takes the twelve. The second shell's thirty falls into six, twelve and twelve, and this takes the six. Eighteen pieces where the full group could not have taken fewer than twenty; the mesh is 30 vertices and 60 faces."
+    },
+    {
+      "file": "examples/icosahedron-under-t-six-shells-deep.json",
+      "name": "Icosahedron under T, six shells deep",
+      "tags": [
+        "subgroup",
+        "icosahedral"
+      ],
+      "note": "The same twelve rotations as the small figure beside it, spent on a great deal more of the arrangement: 148 pieces reaching through six of the eight shells — four from the first, eighteen from the second, forty-eight from the third. Not one of them is a sub-cell the full group could have taken: under Ih every pick here would have dragged in the rest of its orbit and the figure would have closed up into something icosahedral. Under T each is a single tick in the cells table, which is why the file records the group it was picked under and not just the solid. 136 vertices and 244 faces."
+    }
+  ]
 }
