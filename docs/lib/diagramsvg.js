@@ -40,6 +40,17 @@ import { layerColor, classColor } from './palette.js';
  */
 export const DIAGRAM_DEFAULTS = {
   size: 1000,           // viewBox side; the SVG scales to any display size
+  /*
+   * How big the file says it is, as a multiple of `size`.
+   *
+   * Only the width and height change: the viewBox, the geometry and the line
+   * weights in user units are all untouched, so the picture is identical and
+   * everything in it grows together. That is the difference between asking for
+   * a bigger drawing and asking for a closer one — this is the first. An SVG
+   * with no units is measured in px, so scale 2 on the default gives a
+   * 2000 px drawing, about 21 inches of paper at 96 dpi.
+   */
+  scale: 1,
   margin: 0.05,         // fraction of the extent left as air around the drawing
 
   diagramLines: true,   // the arrangement
@@ -190,7 +201,8 @@ export function diagramSVG(data, options = {}) {
   const path = (p) => 'M' + p.map(([x, y]) => `${X(x)},${Y(y)}`).join('L') + 'Z';
 
   const out = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${S}" height="${S}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" ` +
+    `width="${fmt(S * o.scale)}" height="${fmt(S * o.scale)}">`,
   ];
   const title = o.metadata?.title;
   if (title) out.push(`  <title>${esc(title)}</title>`);

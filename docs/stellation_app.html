@@ -455,6 +455,12 @@
       <label><input type="radio" name="exFmt" id="exPng"> PNG</label>
       <label class="dim">size <input type="number" id="exPngSize" value="1024" min="64" max="4096" step="64" disabled> px</label>
     </div>
+    <div class="row">
+      <label class="dim" title="How big the file says it is. The picture does not change — everything in it, lines included, grows together.">
+        scale <input type="number" id="exScale" value="1" min="0.05" max="20" step="0.25"> ×
+      </label>
+      <span id="exScaleOut" class="dim"></span>
+    </div>
     <p class="note">An SVG carries the document it came from, so the picture can be rebuilt exactly.</p>
   </div>
 

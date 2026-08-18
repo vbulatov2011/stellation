@@ -68,6 +68,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   const close = () => win.setVisible(false);
   const scopeAll = el('#exAll'), scopeOne = el('#exOne');
   const fmtSvg = el('#exSvg'), fmtPng = el('#exPng'), pngSize = el('#exPngSize');
+  const scaleIn = el('#exScale');
   const colorBy = el('#exColor');
   const transparent = el('#exTransparent'), fullTraces = el('#exFullTraces');
   const nameOut = el('#exName'), info = el('#exInfo'), go = el('#exGo');
@@ -102,6 +103,21 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     ? classes()
     : [classes().find(f => f.index === state.planeIndex) || classes()[0]];
 
+  /** the scale factor, clamped to what the field allows */
+  const scaleOf = () => {
+    const v = Number(scaleIn.value);
+    return Number.isFinite(v) && v > 0 ? Math.min(20, Math.max(0.05, v)) : 1;
+  };
+
+  /**
+   * The PNG's side in pixels: the size asked for, times the scale, clamped to
+   * something a canvas will actually allocate. The scale multiplies the file
+   * whichever format it is, so it has to reach here as well as the SVG's
+   * width and height.
+   */
+  const pxSize = () => Math.max(64, Math.min(8192,
+    Math.round((Number(pngSize.value) || 1024) * scaleOf())));
+
   /*
    * Every option is read from the control that shows it, so what the dialog
    * displays and what the export draws cannot disagree. There is no preset
@@ -110,6 +126,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
    */
   const options = () => ({
     ...DIAGRAM_DEFAULTS,
+    scale: scaleOf(),
     diagramLines: kind('diagram').on.checked,
     diagramWidth: Number(kind('diagram').w.value) / 10,
     faceLines: kind('face').on.checked,
@@ -144,6 +161,17 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     const o = options();
     const ext = fmtPng.checked ? 'png' : 'svg';
     pngSize.disabled = !fmtPng.checked;
+    /*
+     * What the scale actually comes to. It multiplies the size of the file
+     * either way — the SVG's width and height, the PNG's pixels — so saying
+     * the answer in the units of the format is worth more than repeating the
+     * multiplier back.
+     */
+    const sc = scaleOf();
+    el('#exScaleOut').textContent = fmtPng.checked
+      ? `${pxSize()} × ${pxSize()} px`
+      : `${Math.round(DIAGRAM_DEFAULTS.size * sc)} × ${Math.round(DIAGRAM_DEFAULTS.size * sc)}` +
+        `${sc === 1 ? '' : ' — the drawing is unchanged, only its size'}`;
     // a kind that is switched off greys its own weight rather than hiding it
     for (const k of KINDS) {
       if (!k.w) continue;
@@ -233,7 +261,8 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   win.wnd.addEventListener('pointerdown', () => sync(), true);
 
   // every control redraws the preview, which is the whole point of having one
-  for (const c of [scopeAll, scopeOne, fmtSvg, fmtPng, colorBy, transparent, fullTraces,
+  for (const c of [scopeAll, scopeOne, fmtSvg, fmtPng, pngSize, scaleIn,
+                   colorBy, transparent, fullTraces,
                    ...KINDS.flatMap(k => [k.on, k.w].filter(Boolean))]) {
     c.addEventListener('input', sync);
   }
@@ -419,7 +448,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     const faces = facesToExport();
     const o = options();
     const png = fmtPng.checked;
-    const size = Math.max(64, Math.min(4096, Number(pngSize.value) || 1024));
+    const size = pxSize();
 
     /*
      * The folder first, before any drawing.
