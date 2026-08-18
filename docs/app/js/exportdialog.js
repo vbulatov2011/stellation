@@ -66,9 +66,9 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   const dlg = win.interior;
   const el = (id) => dlg.querySelector(id);
   const close = () => win.setVisible(false);
-  const scopeAll = el('#exAll'), scopeOne = el('#exOne');
-  const fmtSvg = el('#exSvg'), fmtPng = el('#exPng'), pngSize = el('#exPngSize');
-  const scaleIn = el('#exScale');
+  const picksBox = el('#exPicks');
+  const fmtSvg = el('#exSvg'), fmtPng = el('#exPng');
+  const scaleIn = el('#exScale'), widthIn = el('#exWidth'), heightIn = el('#exHeight');
   const colorBy = el('#exColor');
   const transparent = el('#exTransparent'), fullTraces = el('#exFullTraces');
   const nameOut = el('#exName'), info = el('#exInfo'), go = el('#exGo');
@@ -90,6 +90,17 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   /** the distinct diagrams: one plane per class of face */
   const classes = () => (state.faces?.length ? state.faces : [{ index: 0, sides: 0, count: 1 }]);
 
+  /*
+   * Which ones are wanted, by plane index.
+   *
+   * The user's intent, kept apart from what is drawable: a face the figure
+   * does not reach cannot be exported, but unticking it on the user's behalf
+   * and leaving it unticked when they turn the fill back on would be a control
+   * that argues with them. So this set says what they asked for, the ink
+   * decides what can be written, and facesToExport() is the two together.
+   */
+  const picked = new Set();
+
   /**
    * The faces this export will draw.
    *
@@ -99,24 +110,30 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
    * several kinds of face the dialog could disable its own button over a
    * diagram that was perfectly good, or promise a file it would not write.
    */
-  const facesToExport = () => scopeAll.checked
-    ? classes()
-    : [classes().find(f => f.index === state.planeIndex) || classes()[0]];
+  const facesToExport = () => classes().filter(f => picked.has(f.index));
 
-  /** the scale factor, clamped to what the field allows */
+  /*
+   * Size, in two independent parts.
+   *
+   * The resolution is how many pixels the picture is — the PNG's dimensions,
+   * and the SVG's viewBox, which comes to the same thing since the viewBox is
+   * one unit per pixel. The scale is how much of that frame the figure fills.
+   * Neither touches the line weights, which are in pixels of the finished
+   * picture and stay put however the other two are set.
+   *
+   * Both are clamped rather than trusted: a number field will hand back
+   * anything typed into it, including nothing at all.
+   */
   const scaleOf = () => {
     const v = Number(scaleIn.value);
     return Number.isFinite(v) && v > 0 ? Math.min(20, Math.max(0.05, v)) : 1;
   };
-
-  /**
-   * The PNG's side in pixels: the size asked for, times the scale, clamped to
-   * something a canvas will actually allocate. The scale multiplies the file
-   * whichever format it is, so it has to reach here as well as the SVG's
-   * width and height.
-   */
-  const pxSize = () => Math.max(64, Math.min(8192,
-    Math.round((Number(pngSize.value) || 1024) * scaleOf())));
+  const pxOf = (input, dflt) => {
+    const v = Math.round(Number(input.value));
+    return Number.isFinite(v) && v > 0 ? Math.min(8192, Math.max(16, v)) : dflt;
+  };
+  const outW = () => pxOf(widthIn, DIAGRAM_DEFAULTS.width);
+  const outH = () => pxOf(heightIn, DIAGRAM_DEFAULTS.height);
 
   /*
    * Every option is read from the control that shows it, so what the dialog
@@ -126,6 +143,8 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
    */
   const options = () => ({
     ...DIAGRAM_DEFAULTS,
+    width: outW(),
+    height: outH(),
     scale: scaleOf(),
     diagramLines: kind('diagram').on.checked,
     diagramWidth: Number(kind('diagram').w.value) / 10,
@@ -158,25 +177,41 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     // the document moved under us — unless asking already failed for this one
     if (staleSince() && scanFailedFor !== signature()) scanFaces();
     const asked = facesToExport();
+    /*
+     * The weight sliders cover a range that follows the resolution: a tenth of
+     * a pixel per step at the default 1000, proportionally more on a bigger
+     * picture. The weights themselves stay absolute pixels — this only decides
+     * how far the slider can be pushed, so that dragging feels the same at any
+     * resolution and a 4000-pixel plate can still be given a heavy cut line.
+     * Done before the options are read, or a clamp here would not reach the
+     * preview until the next event.
+     */
+    const wMax = Math.max(10, Math.round(40 * Math.min(outW(), outH()) / 1000));
+    for (const k of KINDS) {
+      if (!k.w || Number(k.w.max) === wMax) continue;
+      k.w.max = wMax;
+      if (Number(k.w.value) > wMax) k.w.value = wMax;
+    }
     const o = options();
     const ext = fmtPng.checked ? 'png' : 'svg';
-    pngSize.disabled = !fmtPng.checked;
     /*
-     * What the scale actually comes to. It multiplies the size of the file
-     * either way — the SVG's width and height, the PNG's pixels — so saying
-     * the answer in the units of the format is worth more than repeating the
-     * multiplier back.
+     * What the two size controls come to, in the terms they are actually in:
+     * the resolution in pixels, and what the scale does with it, which is fill
+     * a percentage of the frame. Saying the answer beats repeating the
+     * multiplier back — the useful fact about scale 1 is that it leaves a
+     * five-percent margin, and the useful fact about 1.2 is that the figure no
+     * longer fits.
      */
-    const sc = scaleOf();
-    el('#exScaleOut').textContent = fmtPng.checked
-      ? `${pxSize()} × ${pxSize()} px`
-      : `${Math.round(DIAGRAM_DEFAULTS.size * sc)} × ${Math.round(DIAGRAM_DEFAULTS.size * sc)}` +
-        `${sc === 1 ? '' : ' — the drawing is unchanged, only its size'}`;
+    const fill = Math.round(100 * o.scale / (1 + o.margin));
+    const side = o.width === o.height ? 'the frame' : 'the shorter side';
+    el('#exScaleOut').textContent =
+      `${o.width} × ${o.height} px — the figure fills ${fill}% of ${side}` +
+      (fill > 100 ? ', running past the edges, which are cropped' : '');
     // a kind that is switched off greys its own weight rather than hiding it
     for (const k of KINDS) {
       if (!k.w) continue;
       k.w.disabled = !k.on.checked;
-      k.out.textContent = (Number(k.w.value) / 10).toFixed(1);
+      k.out.textContent = (Number(k.w.value) / 10).toFixed(1) + ' px';
       k.out.classList.toggle('dim', !k.on.checked);
     }
     colorBy.disabled = !kind('fill').on.checked;
@@ -194,19 +229,14 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
      */
     const blank = asked.filter(f => scanned.has(f.index) && !diagramHasInk(scanned.get(f.index), o));
     /*
-     * Two different reasons a page comes out blank, and they want different
-     * words. Either the settings draw nothing whatever the figure is — both
-     * weights at zero with no fill — or the settings are fine and the figure
-     * simply does not reach that face.
+     * Which face draws nothing is now said on the face's own card, so the only
+     * thing left for a general warning is the case that is not about any
+     * particular face: settings that would draw nothing whatever the figure is.
      */
     const drawsNothing = !KINDS.some(k => k.on.checked && (!k.w || Number(k.w.value) > 0));
-    el('#exEmpty').hidden = !blank.length;
-    el('#exEmpty').textContent = !blank.length ? ''
-      : drawsNothing
-        ? 'these settings draw nothing — turn up a line weight, or fill the chosen cells'
-        : `${blank.length} of ${asked.length} would be blank — nothing of the figure falls on ` +
-          `${blank.length === 1 ? 'that face' : 'those faces'}, so ` +
-          `${blank.length === 1 ? 'it is' : 'they are'} skipped`;
+    el('#exEmpty').hidden = !(drawsNothing && blank.length);
+    el('#exEmpty').textContent = drawsNothing && blank.length
+      ? 'these settings draw nothing — turn up a line weight, or fill the chosen cells' : '';
 
     const willWrite = asked.length - blank.length;
     el('#exWhereRow').hidden = !hasFSAccess();
@@ -217,39 +247,120 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
       : '';
     go.textContent = `Export ${willWrite} diagram${willWrite === 1 ? '' : 's'}`;
     go.disabled = willWrite === 0 || busy;
-    preview(asked, o, blank);
+    drawPicks(o);
   }
 
   /*
-   * The preview is the export.
+   * The pictures ARE the question.
    *
-   * It calls diagramSVG with exactly the options the export will use, on
-   * exactly the geometry the export will draw, so what you are looking at is
-   * the file — not an impression of it. That is worth more than it sounds:
-   * four switches and three weights make a lot of combinations, and several of
-   * them differ only in ways you would never predict from the words.
+   * A solid has one diagram per kind of face, and which of them you want is
+   * not a thing you can answer from the words "all" and "the one shown" —
+   * especially under a low symmetry, where two faces that look alike give
+   * genuinely different diagrams. So each is drawn, and each carries the
+   * checkbox that decides whether it is written.
    *
-   * The one difference is size: the preview asks for a small viewBox so the
-   * strokes are in proportion to what you see. Everything else, including the
-   * background, is what will be written.
+   * Every card is the file: diagramSVG with exactly the options the export
+   * will use, on exactly the geometry the export will draw. It is drawn at the
+   * export's own resolution and shrunk by CSS, not redrawn small, so it is a
+   * true miniature — the weights are in pixels of the finished picture, and a
+   * hairline on a big plate has to look like a hairline here. Redrawing into a
+   * small viewBox instead made every weight look several times heavier than it
+   * would be saved.
    */
-  function preview(asked, o, blank) {
-    const box = el('#exPreview');
-    const note = el('#exPreviewNote');
-    if (!box) return;
-    const face = asked.find(f => !blank.includes(f)) || asked[0];
-    const data = face && scanned.get(face.index);
-    if (!data) {
-      box.innerHTML = '';
-      note.textContent = scanning ? 'reading the diagram…' : '';
-      return;
+  let picksKey = null;
+
+  /** the cards themselves, rebuilt only when the list of face classes changes */
+  function buildPicks() {
+    const key = classes().map(f => `${f.index}/${f.sides}/${f.count}`).join(' ');
+    if (key === picksKey) return;
+    picksKey = key;
+    /*
+     * A different solid, or the same one under a symmetry that splits its
+     * faces differently, is a different question — so the ticks start again at
+     * all of them. Within one such list the choice is the user's and survives
+     * closing and reopening the window.
+     */
+    picked.clear();
+    for (const f of classes()) picked.add(f.index);
+    picksBox.textContent = '';
+    for (const face of classes()) {
+      const card = document.createElement('label');
+      card.className = 'ex-pick';
+      card.dataset.face = String(face.index);
+      const art = document.createElement('span');
+      art.className = 'ex-pick-art';
+      const cap = document.createElement('span');
+      cap.className = 'ex-pick-cap';
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = picked.has(face.index);
+      box.addEventListener('change', () => {
+        if (box.checked) picked.add(face.index); else picked.delete(face.index);
+        sync();
+      });
+      const name = document.createElement('b');
+      name.textContent = face.sides
+        ? (POLYGON[face.sides] || face.sides + '-gon') : 'plane ' + face.index;
+      cap.append(box, name);
+      const sub = document.createElement('span');
+      sub.className = 'ex-pick-sub';
+      card.append(art, cap, sub);
+      picksBox.append(card);
     }
-    box.innerHTML = diagramSVG(data, { ...o, size: 240, metadata: null });
-    const chosen = data.facets.filter(f => f.selected).length;
-    note.textContent = asked.length > 1
-      ? `plane ${face.index}, the first of ${asked.length} — ${data.facets.length} regions, ` +
-        `${chosen} on the surface`
-      : `${data.facets.length} regions, ${chosen} on the surface`;
+    picksBox.classList.toggle('one', classes().length === 1);
+  }
+
+  /*
+   * Drawing them is the expensive part — a deep arrangement is thousands of
+   * paths, and a solid with five kinds of face is five of those — so it is
+   * coalesced. Dragging a weight slider fires an event per pixel of travel and
+   * only the last one is worth drawing. Everything else in sync() stays
+   * immediate: it is only the pictures that wait.
+   */
+  let drawTimer = null, drawWith = null;
+  function drawPicks(o) {
+    buildPicks();
+    const n = classes().length;
+    el('#exPicksCount').textContent = n === 1 ? 'one for this solid'
+      : `${picked.size} of ${n} kinds of face`;
+    drawWith = o;
+    if (drawTimer) return;
+    drawTimer = setTimeout(() => { drawTimer = null; paintPicks(drawWith); }, 60);
+  }
+
+  function paintPicks(o) {
+    for (const card of picksBox.children) {
+      const index = Number(card.dataset.face);
+      const face = classes().find(f => f.index === index);
+      const art = card.querySelector('.ex-pick-art');
+      const box = card.querySelector('input');
+      const sub = card.querySelector('.ex-pick-sub');
+      const data = scanned.get(index);
+      box.checked = picked.has(index);
+      art.style.aspectRatio = `${o.width} / ${o.height}`;
+      if (!data) {
+        art.textContent = '';
+        card.classList.remove('blank');
+        sub.textContent = scanning ? 'reading…' : '';
+        continue;
+      }
+      /*
+       * A face the figure never reaches draws a blank page. It is still shown
+       * — that IS the answer to "what does this figure take from this face" —
+       * but it is not written, and the card says so instead of the button
+       * quietly counting one lower than the ticks suggest.
+       */
+      const ink = diagramHasInk(data, o);
+      card.classList.toggle('blank', !ink);
+      art.innerHTML = ink ? diagramSVG(data, { ...o, metadata: null }) : '';
+      const chosen = data.facets.filter(f => f.selected).length;
+      // blank for want of a figure on this face, or blank whatever the face is
+      const drawsNothing = !o.fill && !(o.diagramLines && o.diagramWidth > 0) &&
+        !(o.faceLines && o.faceWidth > 0) && !(o.facetLines && o.facetWidth > 0);
+      sub.textContent = ink
+        ? `${face && face.count > 1 ? face.count + ' planes · ' : ''}${chosen} of ${data.facets.length} regions`
+        : drawsNothing ? 'nothing to draw' : 'nothing on this face';
+    }
   }
 
   /*
@@ -261,11 +372,13 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   win.wnd.addEventListener('pointerdown', () => sync(), true);
 
   // every control redraws the preview, which is the whole point of having one
-  for (const c of [scopeAll, scopeOne, fmtSvg, fmtPng, pngSize, scaleIn,
+  for (const c of [fmtSvg, fmtPng, scaleIn, widthIn, heightIn,
                    colorBy, transparent, fullTraces,
                    ...KINDS.flatMap(k => [k.on, k.w].filter(Boolean))]) {
     c.addEventListener('input', sync);
   }
+  el('#exPickAll').onclick = () => { for (const f of classes()) picked.add(f.index); sync(); };
+  el('#exPickNone').onclick = () => { picked.clear(); sync(); };
   el('#exChangeFolder').onclick = async () => {
     // chooseFolder rethrows anything that is not a dismissal — say so, rather
     // than dropping it as an unhandled rejection with the dialog unchanged
@@ -426,16 +539,16 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     return scanning;
   }
 
-  /** an SVG string rasterised at a fixed square size — never the live canvas */
-  function toPNG(svg, size) {
+  /** an SVG string rasterised at a stated size — never the live canvas */
+  function toPNG(svg, w, h) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
       img.onload = () => {
         const c = document.createElement('canvas');
-        c.width = c.height = size;
+        c.width = w; c.height = h;
         const ctx = c.getContext('2d');
-        ctx.drawImage(img, 0, 0, size, size);
+        ctx.drawImage(img, 0, 0, w, h);
         URL.revokeObjectURL(url);
         c.toBlob(b => b ? resolve(b) : reject(new Error('could not encode the PNG')), 'image/png');
       };
@@ -448,7 +561,6 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     const faces = facesToExport();
     const o = options();
     const png = fmtPng.checked;
-    const size = pxSize();
 
     /*
      * The folder first, before any drawing.
@@ -523,7 +635,8 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     const files = [];
     for (const { face, svg } of drawn) {
       const name = fileFor(face, drawn.length, png ? 'png' : 'svg', doc.name);
-      files.push(png ? { name, blob: await toPNG(svg, size) } : { name, text: svg });
+      // from the snapshot, not the fields: the raster must match the SVG it came from
+      files.push(png ? { name, blob: await toPNG(svg, o.width, o.height) } : { name, text: svg });
     }
     if (moved()) throw new Error('the document changed while exporting — nothing was written');
 
@@ -599,22 +712,13 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
 
   return {
     open() {
-      const n = classes().length;
-      el('#exAllCount').textContent =
-        `${n} for this solid` + (n === 1 ? '' : ' — one per kind of face');
-      const cur = classes().find(f => f.index === state.planeIndex);
-      el('#exOneCount').textContent = cur?.sides
-        ? `${POLYGON[cur.sides] || cur.sides + '-gon'}, ${cur.count} plane${cur.count === 1 ? '' : 's'}`
-        : 'the one on screen';
       /*
-       * Set both radios, not just the disabled flag. A solid with one kind of
-       * face leaves "only the one shown" checked, and opening the dialog on a
-       * solid with five afterwards would otherwise inherit that and offer to
-       * save one of the five.
+       * Never open on nothing. Unticking every card is a fair thing to do
+       * while the window is up, but coming back to a dialog whose Export
+       * button is dead and whose reason scrolled off is not — so an empty
+       * choice reverts to all of them.
        */
-      scopeAll.disabled = n < 2;
-      scopeAll.checked = n >= 2;
-      scopeOne.checked = n < 2;
+      if (!picked.size) for (const f of classes()) picked.add(f.index);
       info.textContent = '';
       sync();
       win.setVisible(true);

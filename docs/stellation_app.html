@@ -440,12 +440,21 @@
     is always the whole plane, so two of them can be compared.
   </p>
 
+  <!--
+    Which diagrams to export, asked with the pictures themselves. Faces of the
+    same kind give the same diagram, so there is one card per kind of face, and
+    each card holds the file that would be written — same drawing code, same
+    geometry, same options. The checkbox on each says whether to write it.
+  -->
   <div class="ex-section">
-    <b>Which</b>
-    <label><input type="radio" name="exScope" id="exAll" checked>
-      All distinct diagrams <span id="exAllCount" class="dim"></span></label>
-    <label><input type="radio" name="exScope" id="exOne">
-      Only the one shown <span id="exOneCount" class="dim"></span></label>
+    <div class="ex-picks-head">
+      <b>Which</b>
+      <span id="exPicksCount" class="dim"></span>
+      <button id="exPickAll" type="button">all</button>
+      <button id="exPickNone" type="button">none</button>
+    </div>
+    <div id="exPicks" class="ex-picks"></div>
+    <p id="exEmpty" class="note warn" hidden></p>
   </div>
 
   <div class="ex-section">
@@ -453,14 +462,25 @@
     <div class="row">
       <label><input type="radio" name="exFmt" id="exSvg" checked> SVG</label>
       <label><input type="radio" name="exFmt" id="exPng"> PNG</label>
-      <label class="dim">size <input type="number" id="exPngSize" value="1024" min="64" max="4096" step="64" disabled> px</label>
     </div>
+    <!--
+      Resolution and framing are two different questions and get two different
+      controls. The width and height are how many pixels the picture is; the
+      scale is how much of that frame the figure fills. Line weights are in
+      pixels and follow neither.
+    -->
     <div class="row">
-      <label class="dim" title="How big the file says it is. The picture does not change — everything in it, lines included, grows together.">
-        scale <input type="number" id="exScale" value="1" min="0.05" max="20" step="0.25"> ×
+      <label class="dim" title="How much of the frame the figure fills. It multiplies the drawing, not the file: the picture stays the same size and the line weights, which are in pixels, do not change.">
+        scale <input type="number" id="exScale" value="1" min="0.05" max="20" step="0.05"> ×
       </label>
-      <span id="exScaleOut" class="dim"></span>
     </div>
+    <!-- width and height stay on one row: split across two they read as separate settings -->
+    <div class="row" title="The picture's resolution in pixels — for the PNG, and for the SVG's viewBox, which is what makes a line weight mean pixels.">
+      <label class="dim">width <input type="number" id="exWidth" value="1000" min="16" max="8192" step="100"></label>
+      <label class="dim">height <input type="number" id="exHeight" value="1000" min="16" max="8192" step="100"></label>
+      <span class="dim">px</span>
+    </div>
+    <p id="exScaleOut" class="note dim"></p>
     <p class="note">An SVG carries the document it came from, so the picture can be rebuilt exactly.</p>
   </div>
 
@@ -506,11 +526,6 @@
       <label><input type="checkbox" id="exFullTraces"> Traces right across the plane</label>
     </div>
 
-    <div class="ex-preview">
-      <div id="exPreview" class="ex-preview-box"></div>
-      <p id="exPreviewNote" class="note"></p>
-    </div>
-    <p id="exEmpty" class="note warn" hidden></p>
   </div>
 
   <div class="ex-section" id="exWhereRow">

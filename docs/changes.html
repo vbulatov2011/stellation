@@ -129,6 +129,23 @@
       button is pressed rather than writing an empty file.
     </div></li>
     <li><div>
+      <b>How big, how full, and how heavy are three different questions.</b>
+      The export now asks them separately. <b>Width</b> and <b>height</b> are
+      the picture's resolution in pixels — the PNG's dimensions, and the SVG's
+      viewBox, which comes to the same thing because the viewBox is one unit
+      per pixel. <b>Scale</b> is how much of that frame the figure fills: it
+      multiplies the drawing's coordinates and nothing else, so 1 fits the
+      figure with a small margin and anything above about 1.05 crops it. And a
+      line weight is now an absolute width <em>in pixels of the finished
+      picture</em>, so a 0.7 px hairline is 0.7 px whether the plate is 500
+      pixels or 4000 — where before it was a fraction of the frame and thickened
+      as the frame grew. A picture that is not square fits the figure to the
+      shorter side and centres it in both, and the preview takes the picture's
+      own proportions. The weight sliders' range follows the resolution, so a
+      4000-pixel plate can be given a heavy cut line without the slider losing
+      its fine end at ordinary sizes.
+    </div></li>
+    <li><div>
       <b>A picture no longer depends on the window it was made in.</b>
       Thumbnails were cropped out of the live canvas, and the camera accounts
       for the aspect ratio — it must, or a narrow canvas would cut the sides

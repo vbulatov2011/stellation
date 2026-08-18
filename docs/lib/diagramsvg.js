@@ -11,8 +11,10 @@
  * `data` is what createDiagram() returns: facets with their projected polygons,
  * which shell each belongs to, and which of them the current selection puts on
  * the surface. Nothing about zoom or pan reaches this — the drawing is always
- * the whole plane at its full extent, which is what makes two of them
- * comparable and one of them reproducible.
+ * the whole plane at its full extent, centred, which is what makes two of them
+ * comparable and one of them reproducible. `scale` frames that drawing more
+ * tightly or more loosely, but it is a number stated in the options, the same
+ * for every plane in an export, not wherever the view happened to be left.
  */
 
 import { layerColor, classColor } from './palette.js';
@@ -38,23 +40,29 @@ import { layerColor, classColor } from './palette.js';
  * a net wants the outline heavy and the internal divisions faint or absent,
  * while a plate for reading wants the arrangement and no outline at all.
  */
+/*
+ * Three numbers decide the picture's size, and they are deliberately separate.
+ *
+ *   width, height   the resolution: how many pixels the picture is. The viewBox
+ *                   is tied to it one unit per pixel, which is what makes the
+ *                   line weights below mean pixels and go on meaning pixels at
+ *                   any resolution.
+ *   scale           how much of that frame the figure fills. It multiplies the
+ *                   drawing's coordinates and nothing else.
+ *
+ * So resolution and framing are independent — asking for a bigger file does not
+ * crop the figure, and cropping in does not change the file — and a line
+ * weight is an absolute width on the finished picture rather than a fraction of
+ * it that has to be re-guessed every time the resolution changes.
+ */
 export const DIAGRAM_DEFAULTS = {
-  size: 1000,           // viewBox side; the SVG scales to any display size
-  /*
-   * How big the file says it is, as a multiple of `size`.
-   *
-   * Only the width and height change: the viewBox, the geometry and the line
-   * weights in user units are all untouched, so the picture is identical and
-   * everything in it grows together. That is the difference between asking for
-   * a bigger drawing and asking for a closer one — this is the first. An SVG
-   * with no units is measured in px, so scale 2 on the default gives a
-   * 2000 px drawing, about 21 inches of paper at 96 dpi.
-   */
-  scale: 1,
+  width: 1000,          // the picture, in pixels; the viewBox matches it
+  height: 1000,
+  scale: 1,             // how much of the frame the figure fills; 1 = fit
   margin: 0.05,         // fraction of the extent left as air around the drawing
 
   diagramLines: true,   // the arrangement
-  diagramWidth: 0.7,    // in viewBox units at size 1000
+  diagramWidth: 0.7,    // every width is in pixels of the finished picture
   traces: 'facets',     // 'facets' — facet by facet | 'full' — whole plane traces
 
   fill: true,           // the chosen regions, shaded
@@ -193,22 +201,29 @@ export function diagramHasInk(data, options = {}) {
 export function diagramSVG(data, options = {}) {
   if (!data || !data.facets?.length) return '';
   const o = { ...DIAGRAM_DEFAULTS, ...options };
-  const S = o.size;
+  const W = o.width, H = o.height;
+  /*
+   * The figure is fitted to the SHORTER side and centred in both, so a picture
+   * that is not square is the same drawing with air added, never a squashed
+   * one. `scale` then multiplies the fit: above 1 the figure fills more of the
+   * frame and eventually runs past it, which the viewBox crops — that is what
+   * asking to fill more of the frame means.
+   */
   const e = (data.extent || 1) * (1 + o.margin);
-  const k = S / (2 * e);
-  const X = (x) => fmt(S / 2 + x * k);
-  const Y = (y) => fmt(S / 2 - y * k);
+  const k = Math.min(W, H) * o.scale / (2 * e);
+  const X = (x) => fmt(W / 2 + x * k);
+  const Y = (y) => fmt(H / 2 - y * k);
   const path = (p) => 'M' + p.map(([x, y]) => `${X(x)},${Y(y)}`).join('L') + 'Z';
 
   const out = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" ` +
-    `width="${fmt(S * o.scale)}" height="${fmt(S * o.scale)}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" ` +
+    `width="${W}" height="${H}">`,
   ];
   const title = o.metadata?.title;
   if (title) out.push(`  <title>${esc(title)}</title>`);
   const meta = metadataBlock(o.metadata);
   if (meta) out.push(meta.replace(/\n$/, ''));
-  if (o.background) out.push(`  <rect width="${S}" height="${S}" fill="${o.background}"/>`);
+  if (o.background) out.push(`  <rect width="${W}" height="${H}" fill="${o.background}"/>`);
 
   const chosen = data.facets.filter(f => f.selected);
 
@@ -229,11 +244,18 @@ export function diagramSVG(data, options = {}) {
     out.push(`  <g fill="none" stroke="${o.ink}" stroke-width="${o.diagramWidth}" ` +
              `stroke-linejoin="round">`);
     if (o.traces === 'full') {
-      // a chord long enough to cross the box from any angle
-      const R = S;
+      /*
+       * Each trace is drawn as a chord about its own closest point to the
+       * centre, long enough to leave the box from there whatever its angle:
+       * that distance plus the half-diagonal is an upper bound on the way out
+       * to any corner. A single fixed length was enough only while the picture
+       * was square and the figure always fitted it.
+       */
+      const half = Math.hypot(W, H) / 2;
       for (const [a, b, c] of traceLines(data)) {
         const x0 = -a * c, y0 = -b * c;
-        const px = S / 2 + x0 * k, py = S / 2 - y0 * k;
+        const px = W / 2 + x0 * k, py = H / 2 - y0 * k;
+        const R = Math.hypot(px - W / 2, py - H / 2) + half;
         const dx = -b, dy = a;
         out.push(`    <path d="M${fmt(px - dx * R)},${fmt(py + dy * R)}` +
                  `L${fmt(px + dx * R)},${fmt(py - dy * R)}"/>`);

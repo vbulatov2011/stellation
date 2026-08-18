@@ -781,28 +781,53 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .ex-kinds { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 4px; }
 .ex-kind {
   display: grid; align-items: center; gap: 8px;
-  grid-template-columns: auto 8.5em 1fr 2.4em;
+  grid-template-columns: auto 8.5em 1fr 3.6em;
   margin: 0; font-size: 12.5px;
 }
-.ex-kind > span { color: var(--text); }
+.ex-kind > span { color: var(--text); white-space: nowrap; }
 .ex-kind input[type="range"] { width: 100%; min-width: 60px; }
-.ex-kind > b { font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+.ex-kind > b { font-weight: 500; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ex-kind > b.dim { color: var(--dim); }
 .ex-kind input:disabled { opacity: 0.4; }
 .ex-kind-sel { grid-column: 3 / span 2; width: 100%; }
 
-/* the preview is the file, so it sits on the background it will be saved on */
-.ex-preview { margin-top: 12px; }
-.ex-preview-box {
-  width: 100%; max-width: 240px; margin: 0 auto;
-  aspect-ratio: 1; background: #fff;
-  border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+/*
+ * One card per kind of face: the picture that would be written, and the tick
+ * that says whether to write it. Each card is the file, so the art sits on the
+ * background it will be saved on rather than on the panel's.
+ */
+.ex-picks-head { display: flex; align-items: baseline; gap: 8px; }
+.ex-picks-head #exPicksCount { flex: 1; }
+.ex-picks-head button { padding: 2px 7px; font-size: 11px; }
+.ex-picks {
+  display: grid; gap: 10px; margin: 8px 0 2px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
 }
-.ex-preview-box svg { width: 100%; height: 100%; display: block; }
-#exPreviewNote { text-align: center; margin: 5px 0 0; }
+/* one diagram is not a grid — give it the room the old single preview had */
+.ex-picks.one { grid-template-columns: minmax(0, 240px); justify-content: center; }
+/* .ex-section label is a flex row; a card is a column, so it must say so louder */
+.ex-picks .ex-pick { display: block; margin: 0; cursor: pointer; }
+.ex-pick-art {
+  display: block; background: #fff; aspect-ratio: 1;
+  border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+}
+.ex-pick-art svg { width: 100%; height: 100%; display: block; }
+.ex-pick-cap {
+  display: flex; align-items: center; gap: 5px; justify-content: center;
+  margin-top: 4px; font-size: 11.5px;
+}
+.ex-pick-cap b { font-weight: 550; }
+.ex-pick-sub {
+  display: block; text-align: center; font-size: 10px; color: var(--dim);
+  line-height: 1.35;
+}
+/* a face the figure never reaches: shown, but plainly not a file */
+.ex-pick.blank .ex-pick-art { background: repeating-linear-gradient(
+  45deg, transparent, transparent 6px, var(--line) 6px, var(--line) 7px); opacity: 0.5; }
+.ex-pick.blank .ex-pick-cap { opacity: 0.55; }
 #exWhere { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .ex-body .note.warn { color: var(--accent); }
-#exPngSize { width: 78px; }
+#exScale, #exWidth, #exHeight { width: 68px; }
 #exName { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
 .ex-body select:disabled, .ex-body input:disabled { opacity: 0.45; }
 /*
