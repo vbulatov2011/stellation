@@ -78,6 +78,15 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
    * weight. Kept as a table because everything below wants to walk them:
    * reading the options, writing the readouts, and deciding whether the
    * drawing would come out blank.
+   *
+   * The weights are in pixels of the finished picture and their sliders run a
+   * FIXED tenth of a pixel to ten pixels, whatever the resolution is. Making
+   * that ceiling follow the resolution — so a big plate could be given a
+   * heavier cut line without the slider losing its fine end — cost far more
+   * than it bought: a range input silently drops a value that no longer fits,
+   * and every keystroke of a typed resolution is read as a resolution, so
+   * typing 4000 into the width field passes through 4, and the browser threw
+   * away the weights on the way. A fixed range cannot lose anything.
    */
   const KINDS = [
     { key: 'diagram', on: el('#exDiagram'), w: el('#exDiagramW'), out: el('#exDiagramOut') },
@@ -177,21 +186,6 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     // the document moved under us — unless asking already failed for this one
     if (staleSince() && scanFailedFor !== signature()) scanFaces();
     const asked = facesToExport();
-    /*
-     * The weight sliders cover a range that follows the resolution: a tenth of
-     * a pixel per step at the default 1000, proportionally more on a bigger
-     * picture. The weights themselves stay absolute pixels — this only decides
-     * how far the slider can be pushed, so that dragging feels the same at any
-     * resolution and a 4000-pixel plate can still be given a heavy cut line.
-     * Done before the options are read, or a clamp here would not reach the
-     * preview until the next event.
-     */
-    const wMax = Math.max(10, Math.round(40 * Math.min(outW(), outH()) / 1000));
-    for (const k of KINDS) {
-      if (!k.w || Number(k.w.max) === wMax) continue;
-      k.w.max = wMax;
-      if (Number(k.w.value) > wMax) k.w.value = wMax;
-    }
     const o = options();
     const ext = fmtPng.checked ? 'png' : 'svg';
     /*

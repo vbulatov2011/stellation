@@ -479,7 +479,7 @@ export class DiagramView {
     return diagramSVG(this.data, {
       colorMode: this.colorMode,
       traces: this.lineOnly ? 'full' : 'facets',
-      shading: this.lineOnly ? 'outline' : 'fill',
+      fill: !this.lineOnly,       // was `shading`, an option diagramSVG never read
       ...options,
     });
   }

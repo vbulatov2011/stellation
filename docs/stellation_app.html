@@ -476,8 +476,8 @@
     </div>
     <!-- width and height stay on one row: split across two they read as separate settings -->
     <div class="row" title="The picture's resolution in pixels — for the PNG, and for the SVG's viewBox, which is what makes a line weight mean pixels.">
-      <label class="dim">width <input type="number" id="exWidth" value="1000" min="16" max="8192" step="100"></label>
-      <label class="dim">height <input type="number" id="exHeight" value="1000" min="16" max="8192" step="100"></label>
+      <label class="dim">width <input type="number" id="exWidth" value="1000" min="16" max="8192" step="1"></label>
+      <label class="dim">height <input type="number" id="exHeight" value="1000" min="16" max="8192" step="1"></label>
       <span class="dim">px</span>
     </div>
     <p id="exScaleOut" class="note dim"></p>
@@ -495,19 +495,19 @@
       <label class="ex-kind" title="Every plane's trace across the face — the web the stellation was chosen out of">
         <input type="checkbox" id="exDiagram" checked>
         <span>Diagram lines</span>
-        <input type="range" id="exDiagramW" min="1" max="40" value="7">
+        <input type="range" id="exDiagramW" min="1" max="100" value="7">
         <b id="exDiagramOut">0.7</b>
       </label>
       <label class="ex-kind" title="The outline of the figure — an edge with the figure on one side and nothing on the other. The cut line.">
         <input type="checkbox" id="exFace" checked>
         <span>Faces outline</span>
-        <input type="range" id="exFaceW" min="1" max="40" value="12">
+        <input type="range" id="exFaceW" min="1" max="100" value="12">
         <b id="exFaceOut">1.2</b>
       </label>
       <label class="ex-kind" title="The divisions inside the figure — where two chosen facets meet">
         <input type="checkbox" id="exFacet" checked>
         <span>Facets outline</span>
-        <input type="range" id="exFacetW" min="1" max="40" value="7">
+        <input type="range" id="exFacetW" min="1" max="100" value="7">
         <b id="exFacetOut">0.7</b>
       </label>
       <label class="ex-kind" title="The regions the figure takes, shaded">
