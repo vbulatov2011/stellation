@@ -12,7 +12,7 @@ a desktop app.  Both are described below, after the original README.
 
 This is source code of the stellation applet. 
 The applet and the source web site is: 
-http://www.physics.orst.edu/~bulatov/polyhedra/stellation_applet/
+[www.bulatov.org/polyhedra/stellation_applet/index.html](https://www.bulatov.org/polyhedra/stellation_applet/index.html)
 
 The source code is indented for people, who wish to modify or extend the applet 
 functionality. It is not needed to run the applet. 
