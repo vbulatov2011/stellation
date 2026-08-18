@@ -1979,30 +1979,49 @@ const VIEW_SPECS = [
   ['-y', [0, -1, 0], 'from below — x to the right, z up'],
   ['+z', [0, 0, 1], 'from +z — x to the right, y up (the canonical frame)'],
   ['-z', [0, 0, -1], 'from behind — y up, x to the left'],
+
   /*
-   * The two exceptions, and they earn it: isometric is a pose, not just a
-   * direction. Rolled so that y stands upright — which the shortest turn
-   * misses by 1.9° — the three axes come off the origin at 120° to one
-   * another with one of them vertical, and that picture is the whole point
-   * of an isometric view. The classic construction: -45° about y, then the
-   * 35.264° about x that lands (1,1,1) exactly on the line of sight,
-   * atan(1/√2).
+   * The symmetry axes, named for the axis and its order: i for the
+   * icosahedron, o for the cube and octahedron. Down these the solids look
+   * like what they are — an icosahedral stellation seen down its 5-fold axis
+   * is five-fold on the screen — and each name matches the frame tag on the
+   * groups that turn about it, so choosing D5 and pressing +i5 puts that
+   * group's own axis on the line of sight.
+   *
+   * i2 and o4 are the z axis under two other names. z is a 2-fold of the
+   * icosahedron and a 4-fold of the cube, and while the direction is the same
+   * one either way, being able to ask for it by what it IS saves working that
+   * out — the whole point of naming a direction after its symmetry.
    */
-  ['+iso', [1, 1, 1],
-   'down the body diagonal, the o3 axis — the axes 120° apart, y upright', ISO_Q],
+  ['+i2', [0, 0, 1], 'down an icosahedral 2-fold axis — the z axis, named for what it is'],
+  ['-i2', [0, 0, -1], 'the opposite 2-fold'],
+  ['+i3', [0, 1 / TAU, TAU], 'down an icosahedral 3-fold axis, (0, 1/τ, τ) — a face centre'],
+  ['-i3', [0, -1 / TAU, -TAU], 'the opposite 3-fold face'],
+  ['+i5', [1, 0, TAU], 'down an icosahedral 5-fold axis, (1, 0, τ) — a vertex'],
+  ['-i5', [-1, 0, -TAU], 'the opposite 5-fold vertex'],
+  ['+o2', [0, 1, 1], 'down a cubic 2-fold axis, (0, 1, 1) — an edge, a 45° tip about x'],
+  ['-o2', [0, -1, -1], 'the opposite 2-fold edge'],
+  /*
+   * o3 is the body diagonal, and it is a pose rather than just a direction —
+   * which is why it carries its own quaternion. Rolled so that y stands
+   * upright, which the shortest turn misses by 1.9°, the three axes come off
+   * the origin at 120° to one another with one of them vertical: the isometric
+   * picture, and the whole point of looking down this axis. The classic
+   * construction is -45° about y, then the atan(1/√2) = 35.264° about x that
+   * lands (1,1,1) exactly on the line of sight.
+   */
+  ['+o3', [1, 1, 1],
+   'down the body diagonal, a cubic 3-fold — isometric: the axes 120° apart, y upright',
+   ISO_Q],
   /*
    * The far corner is the near one turned around, not a different tilt: a
    * half turn about the screen's own vertical, which swaps the direction it
    * looks down and leaves y standing.
    */
-  ['-iso', [-1, -1, -1], 'the opposite corner',
+  ['-o3', [-1, -1, -1], 'the opposite corner',
    quatMul(quatFromAxis([0, 1, 0], Math.PI), ISO_Q)],
-  ['+i5', [1, 0, TAU], 'down an icosahedral 5-fold axis, (1, 0, τ)'],
-  ['-i5', [-1, 0, -TAU], 'the opposite 5-fold vertex'],
-  ['+i3', [0, 1 / TAU, TAU], 'down an icosahedral 3-fold axis, (0, 1/τ, τ)'],
-  ['-i3', [0, -1 / TAU, -TAU], 'the opposite 3-fold face'],
-  ['+o2', [0, 1, 1], 'down a cubic 2-fold axis, (0, 1, 1) — a 45° tip about x'],
-  ['-o2', [0, -1, -1], 'the opposite 2-fold edge'],
+  ['+o4', [0, 0, 1], 'down a cubic 4-fold axis — the z axis again, named for what it is'],
+  ['-o4', [0, 0, -1], 'the opposite 4-fold'],
 ];
 
 // the shortest turn, unless a spec names the pose it wants instead

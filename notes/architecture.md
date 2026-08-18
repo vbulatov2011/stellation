@@ -367,7 +367,7 @@ one, in both cases the axis the identically-named view looks down:
 
 | axis | direction | groups |
 |---|---|---|
-| `o3` (the `iso` view) | (1, 1, 1) | C3(O) C3v(O) D3(O) D3d(O) S6(O) |
+| `o3` (isometric) | (1, 1, 1) | C3(O) C3v(O) D3(O) D3d(O) S6(O) |
 | `o2` | (0, 1, 1) | C2(O) D2(O) D2h(O) |
 | `i5` | (1, 0, τ) | C5(I) C5v(I) D5(I) D5d(I) S10(I) |
 | `i3` | (0, 1/τ, τ) | C3v(I) D3(I) D3d(I) |

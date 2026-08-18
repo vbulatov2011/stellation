@@ -279,11 +279,20 @@ console.log('\n5. the viewpoints named after symmetry axes really are axes');
     return [2*(x*z - y*w), 2*(y*z + x*w), 1 - 2*(x*x + y*y)];
   };
   const TAU = (1 + Math.sqrt(5)) / 2;
+  /*
+   * Each named view against the group it is named for: i for the icosahedron,
+   * o for the cube. The order in the name has to be the order the group
+   * actually turns by about that direction, or the name is a fiction. i2 and
+   * o4 are both the z axis — a 2-fold of the icosahedron and a 4-fold of the
+   * cube — which is exactly why they are worth naming separately.
+   */
   for (const [name, group, order, ideal] of [
-    ['+i5', 'Ih', 5, [1, 0, TAU]],
+    ['+i2', 'Ih', 2, [0, 0, 1]],
     ['+i3', 'Ih', 3, [0, 1 / TAU, TAU]],
+    ['+i5', 'Ih', 5, [1, 0, TAU]],
     ['+o2', 'Oh', 2, [0, 1, 1]],
-    ['+iso', 'Oh', 3, [1, 1, 1]],
+    ['+o3', 'Oh', 3, [1, 1, 1]],
+    ['+o4', 'Oh', 4, [0, 0, 1]],
     ['+z', 'Oh', 4, [0, 0, 1]],
   ]) {
     const n = axisOrder(group, ideal);
@@ -294,7 +303,8 @@ console.log('\n5. the viewpoints named after symmetry axes really are axes');
     ok(Math.abs(dot - 1) < 1e-9, `${name} looks down it`);
   }
   // the signed pairs are opposite views of the same axis
-  for (const [p, m] of [['+i5', '-i5'], ['+i3', '-i3'], ['+o2', '-o2'], ['+iso', '-iso']]) {
+  for (const [p, m] of [['+i2', '-i2'], ['+i3', '-i3'], ['+i5', '-i5'],
+                        ['+o2', '-o2'], ['+o3', '-o3'], ['+o4', '-o4']]) {
     const a = viewDir(p), b = viewDir(m);
     ok(Math.abs(a[0]+b[0]) + Math.abs(a[1]+b[1]) + Math.abs(a[2]+b[2]) < 1e-9,
        `${m} is ${p} from the other side`);
@@ -329,7 +339,7 @@ console.log('\n5. the viewpoints named after symmetry axes really are axes');
    * The isometrics are the other exception, and a deliberate one — they are
    * a pose rather than a direction, checked below on what makes them right.
    */
-  const POSED = new Set(['+iso', '-iso']);
+  const POSED = new Set(['+o3', '-o3']);
   for (const v of Renderer3D.STANDARD_VIEWS) {
     if (POSED.has(v.name)) continue;
     const d = viewDir(v.name);
@@ -349,7 +359,7 @@ console.log('\n5. the viewpoints named after symmetry axes really are axes');
    * first two follow from looking down the body diagonal; the upright is
    * the roll, and is why these two are posed rather than derived.
    */
-  for (const name of ['+iso', '-iso']) {
+  for (const name of ['+o3', '-o3']) {
     const q = views.get(name).q;
     const R = (v) => {
       const [x, y, z, w] = q;
