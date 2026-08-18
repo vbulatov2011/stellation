@@ -1972,37 +1972,36 @@ const ISO_Q = quatMul(quatFromAxis([1, 0, 0], Math.atan(Math.SQRT1_2)),
  * data/symmetry.json has to move with it — docs/test/symmetry.mjs fails if the
  * two ever disagree.
  */
+/*
+ * Every direction you can face the solid from, in the order the menu lists
+ * them: the coordinate axes, then the cube's symmetry axes, then the
+ * icosahedron's — and all of the near sides before any of the far ones. Nine
+ * directions, each from both ends.
+ *
+ * The symmetry views are named for the axis and its order, i for the
+ * icosahedron and o for the cube and octahedron, and each name is also the
+ * axis the frame-tagged groups of that name turn about: choose D5, press +i5,
+ * and you are looking straight down that group's own axis. Down these a solid
+ * looks like what it is — an icosahedral stellation seen down its 5-fold axis
+ * is five-fold on the screen.
+ *
+ * i2 and o4 are the z axis under two more names. z is a 2-fold of the
+ * icosahedron and a 4-fold of the cube, and though the direction is the same
+ * one either way, being able to ask for it by what it IS saves working that
+ * out — which is the whole point of naming a direction after its symmetry.
+ *
+ * Nothing keys off position in this list. The default view is found by name,
+ * a document stores its camera as a quaternion, and the tests pair the signs
+ * by name — so the order here is the menu's business alone.
+ */
 const VIEW_SPECS = [
+  // ---- the near side ----
   ['+x', [1, 0, 0], 'from +x — y up, z to the left'],
-  ['-x', [-1, 0, 0], 'from -x — y up, z to the right'],
   ['+y', [0, 1, 0], 'from above — x to the right, z down'],
-  ['-y', [0, -1, 0], 'from below — x to the right, z up'],
   ['+z', [0, 0, 1], 'from +z — x to the right, y up (the canonical frame)'],
-  ['-z', [0, 0, -1], 'from behind — y up, x to the left'],
-
-  /*
-   * The symmetry axes, named for the axis and its order: i for the
-   * icosahedron, o for the cube and octahedron. Down these the solids look
-   * like what they are — an icosahedral stellation seen down its 5-fold axis
-   * is five-fold on the screen — and each name matches the frame tag on the
-   * groups that turn about it, so choosing D5 and pressing +i5 puts that
-   * group's own axis on the line of sight.
-   *
-   * i2 and o4 are the z axis under two other names. z is a 2-fold of the
-   * icosahedron and a 4-fold of the cube, and while the direction is the same
-   * one either way, being able to ask for it by what it IS saves working that
-   * out — the whole point of naming a direction after its symmetry.
-   */
-  ['+i2', [0, 0, 1], 'down an icosahedral 2-fold axis — the z axis, named for what it is'],
-  ['-i2', [0, 0, -1], 'the opposite 2-fold'],
-  ['+i3', [0, 1 / TAU, TAU], 'down an icosahedral 3-fold axis, (0, 1/τ, τ) — a face centre'],
-  ['-i3', [0, -1 / TAU, -TAU], 'the opposite 3-fold face'],
-  ['+i5', [1, 0, TAU], 'down an icosahedral 5-fold axis, (1, 0, τ) — a vertex'],
-  ['-i5', [-1, 0, -TAU], 'the opposite 5-fold vertex'],
   ['+o2', [0, 1, 1], 'down a cubic 2-fold axis, (0, 1, 1) — an edge, a 45° tip about x'],
-  ['-o2', [0, -1, -1], 'the opposite 2-fold edge'],
   /*
-   * o3 is the body diagonal, and it is a pose rather than just a direction —
+   * o3 is the body diagonal, and it is a pose rather than merely a direction —
    * which is why it carries its own quaternion. Rolled so that y stands
    * upright, which the shortest turn misses by 1.9°, the three axes come off
    * the origin at 120° to one another with one of them vertical: the isometric
@@ -2013,6 +2012,16 @@ const VIEW_SPECS = [
   ['+o3', [1, 1, 1],
    'down the body diagonal, a cubic 3-fold — isometric: the axes 120° apart, y upright',
    ISO_Q],
+  ['+o4', [0, 0, 1], 'down a cubic 4-fold axis — the z axis, named for what it is'],
+  ['+i2', [0, 0, 1], 'down an icosahedral 2-fold axis — the z axis, named for what it is'],
+  ['+i3', [0, 1 / TAU, TAU], 'down an icosahedral 3-fold axis, (0, 1/τ, τ) — a face centre'],
+  ['+i5', [1, 0, TAU], 'down an icosahedral 5-fold axis, (1, 0, τ) — a vertex'],
+
+  // ---- and the same nine from the far side ----
+  ['-x', [-1, 0, 0], 'from -x — y up, z to the right'],
+  ['-y', [0, -1, 0], 'from below — x to the right, z up'],
+  ['-z', [0, 0, -1], 'from behind — y up, x to the left'],
+  ['-o2', [0, -1, -1], 'the opposite 2-fold edge'],
   /*
    * The far corner is the near one turned around, not a different tilt: a
    * half turn about the screen's own vertical, which swaps the direction it
@@ -2020,8 +2029,10 @@ const VIEW_SPECS = [
    */
   ['-o3', [-1, -1, -1], 'the opposite corner',
    quatMul(quatFromAxis([0, 1, 0], Math.PI), ISO_Q)],
-  ['+o4', [0, 0, 1], 'down a cubic 4-fold axis — the z axis again, named for what it is'],
   ['-o4', [0, 0, -1], 'the opposite 4-fold'],
+  ['-i2', [0, 0, -1], 'the opposite 2-fold'],
+  ['-i3', [0, -1 / TAU, -TAU], 'the opposite 3-fold face'],
+  ['-i5', [-1, 0, -TAU], 'the opposite 5-fold vertex'],
 ];
 
 // the shortest turn, unless a spec names the pose it wants instead
