@@ -460,50 +460,49 @@
 
   <div class="ex-section">
     <b>Appearance</b>
-    <div class="ex-grid">
-      <label>Preset
-        <select id="exPreset">
-          <option value="plate">Plate — black on white</option>
-          <option value="screen">As shown on screen</option>
-          <option value="figure">The figure alone — no traces</option>
-          <option value="custom">Custom</option>
-        </select></label>
-      <label>Shading
-        <select id="exShading">
-          <option value="fill">Chosen cells filled</option>
-          <option value="outline">Outline only</option>
-        </select></label>
-      <label>Colour by
-        <select id="exColor">
-          <option value="layer">Shell</option>
-          <option value="class">Face class</option>
-          <option value="stellClass">Stellation face class</option>
-          <option value="none">None — plain</option>
-        </select></label>
-      <label>Traces
-        <select id="exTraces">
-          <option value="facets">Facets of the arrangement</option>
-          <option value="full">Full plane traces</option>
-        </select></label>
-    </div>
     <!--
-      Two weights, because there are two kinds of line: the arrangement the
-      figure was chosen from, and the edges of the figure itself. Either can
-      go to nothing — the traces at zero leave the chosen facets alone on the
-      page, which is the picture for a net or a cut file.
+      Four kinds of ink, each on its own switch and weight. A plate for reading
+      wants the arrangement and no outline; a net wants the outline heavy and
+      the arrangement gone. The preview is the picture that will be saved.
     -->
-    <div class="ex-line-row">
-      <label class="ex-line" title="Every plane's trace across the face — the web the stellation is chosen from">
-        Diagram lines
-        <input type="range" id="exLine" min="0" max="30" value="7">
-        <span id="exLineOut" class="dim">0.7</span></label>
-      <label class="ex-line" title="The outline of the facets this stellation takes">
-        Facet lines
-        <input type="range" id="exFacetLine" min="0" max="30" value="7">
-        <span id="exFacetLineOut" class="dim">0.7</span></label>
+    <div class="ex-kinds">
+      <label class="ex-kind" title="Every plane's trace across the face — the web the stellation was chosen out of">
+        <input type="checkbox" id="exDiagram" checked>
+        <span>Diagram lines</span>
+        <input type="range" id="exDiagramW" min="1" max="40" value="7">
+        <b id="exDiagramOut">0.7</b>
+      </label>
+      <label class="ex-kind" title="The outline of the figure — an edge with the figure on one side and nothing on the other. The cut line.">
+        <input type="checkbox" id="exFace" checked>
+        <span>Faces outline</span>
+        <input type="range" id="exFaceW" min="1" max="40" value="12">
+        <b id="exFaceOut">1.2</b>
+      </label>
+      <label class="ex-kind" title="The divisions inside the figure — where two chosen facets meet">
+        <input type="checkbox" id="exFacet" checked>
+        <span>Facets outline</span>
+        <input type="range" id="exFacetW" min="1" max="40" value="7">
+        <b id="exFacetOut">0.7</b>
+      </label>
+      <label class="ex-kind" title="The regions the figure takes, shaded">
+        <input type="checkbox" id="exFill" checked>
+        <span>Faces fill</span>
+        <select id="exColor" class="ex-kind-sel">
+          <option value="layer">by shell</option>
+          <option value="class">by face class</option>
+          <option value="stellClass">by stellation class</option>
+          <option value="none">plain</option>
+        </select>
+      </label>
     </div>
     <div class="row">
       <label><input type="checkbox" id="exTransparent"> Transparent background</label>
+      <label><input type="checkbox" id="exFullTraces"> Traces right across the plane</label>
+    </div>
+
+    <div class="ex-preview">
+      <div id="exPreview" class="ex-preview-box"></div>
+      <p id="exPreviewNote" class="note"></p>
     </div>
     <p id="exEmpty" class="note warn" hidden></p>
   </div>

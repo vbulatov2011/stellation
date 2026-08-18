@@ -38,33 +38,6 @@ const FOLDER_KEY = 'stell.exportDiagrams.folder';
 
 const $ = (q) => document.querySelector(q);
 
-/*
- * Two ways a diagram is usually wanted. "Plate" is the printed look — the
- * plane's traces drawn right across the figure, no fills, black on white, as
- * Brückner and Hess and Coxeter's book all draw them. "As shown" reproduces
- * what is on screen, chosen cells filled in the colours the app is using.
- */
-const PRESETS = {
-  /*
-   * The printed plate: the arrangement and nothing else. Its facet weight is
-   * 0 because a chosen facet's edges lie along the traces already, so drawing
-   * them again would ink the same lines twice — raise it and the figure is
-   * picked out of the web, which is the reason the two weights are separate.
-   */
-  plate: { shading: 'outline', traces: 'full', colorMode: 'none',
-           background: 'white', traceWidth: 0.7, facetWidth: 0 },
-  screen: { shading: 'fill', traces: 'facets', background: 'white',
-            traceWidth: 0.7, facetWidth: 0.7 },
-  /*
-   * The figure by itself: the arrangement turned off, so only the facets the
-   * stellation actually takes are drawn — filled, with their own outline. It
-   * is the picture for a net or a cut file, where the web of construction
-   * lines is not wanted and would be cut.
-   */
-  figure: { shading: 'fill', traces: 'facets', background: 'white',
-            traceWidth: 0, facetWidth: 1.2 },
-};
-
 export function initExportDialog({ state, call, diagram, currentName, download, setStatus }) {
   const template = $('#exportBody');
   if (!template) return null;
@@ -95,11 +68,23 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   const close = () => win.setVisible(false);
   const scopeAll = el('#exAll'), scopeOne = el('#exOne');
   const fmtSvg = el('#exSvg'), fmtPng = el('#exPng'), pngSize = el('#exPngSize');
-  const preset = el('#exPreset'), shading = el('#exShading'), colorBy = el('#exColor');
-  const traces = el('#exTraces'), lineW = el('#exLine'), lineOut = el('#exLineOut');
-  const facetW = el('#exFacetLine'), facetOut = el('#exFacetLineOut');
-  const transparent = el('#exTransparent');
+  const colorBy = el('#exColor');
+  const transparent = el('#exTransparent'), fullTraces = el('#exFullTraces');
   const nameOut = el('#exName'), info = el('#exInfo'), go = el('#exGo');
+
+  /*
+   * The four kinds of ink, each a switch and (for the three line kinds) a
+   * weight. Kept as a table because everything below wants to walk them:
+   * reading the options, writing the readouts, and deciding whether the
+   * drawing would come out blank.
+   */
+  const KINDS = [
+    { key: 'diagram', on: el('#exDiagram'), w: el('#exDiagramW'), out: el('#exDiagramOut') },
+    { key: 'face', on: el('#exFace'), w: el('#exFaceW'), out: el('#exFaceOut') },
+    { key: 'facet', on: el('#exFacet'), w: el('#exFacetW'), out: el('#exFacetOut') },
+    { key: 'fill', on: el('#exFill') },
+  ];
+  const kind = (k) => KINDS.find(x => x.key === k);
 
   /** the distinct diagrams: one plane per class of face */
   const classes = () => (state.faces?.length ? state.faces : [{ index: 0, sides: 0, count: 1 }]);
@@ -118,20 +103,22 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     : [classes().find(f => f.index === state.planeIndex) || classes()[0]];
 
   /*
-   * Every control is read from the controls, not from the preset. The preset
-   * fills them in (applyPreset) and then has no further say — otherwise a
-   * dropdown can show one thing while the export uses another, which is what
-   * happened when two of the presets carried no colour mode and the export
-   * quietly fell back to the default while the disabled dropdown displayed
-   * whatever the app was using.
+   * Every option is read from the control that shows it, so what the dialog
+   * displays and what the export draws cannot disagree. There is no preset
+   * layer in between: with four switches the combinations that matter are a
+   * click each, and the preview says what they do better than a name could.
    */
   const options = () => ({
     ...DIAGRAM_DEFAULTS,
-    shading: shading.value,
+    diagramLines: kind('diagram').on.checked,
+    diagramWidth: Number(kind('diagram').w.value) / 10,
+    faceLines: kind('face').on.checked,
+    faceWidth: Number(kind('face').w.value) / 10,
+    facetLines: kind('facet').on.checked,
+    facetWidth: Number(kind('facet').w.value) / 10,
+    fill: kind('fill').on.checked,
     colorMode: colorBy.value,
-    traces: traces.value,
-    traceWidth: Number(lineW.value) / 10,
-    facetWidth: Number(facetW.value) / 10,
+    traces: fullTraces.checked ? 'full' : 'facets',
     background: transparent.checked ? null : 'white',
   });
 
@@ -157,9 +144,14 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     const o = options();
     const ext = fmtPng.checked ? 'png' : 'svg';
     pngSize.disabled = !fmtPng.checked;
-    for (const c of [shading, colorBy, traces]) c.disabled = preset.value !== 'custom';
-    lineOut.textContent = o.traceWidth === 0 ? 'off' : o.traceWidth.toFixed(1);
-    facetOut.textContent = o.facetWidth === 0 ? 'off' : o.facetWidth.toFixed(1);
+    // a kind that is switched off greys its own weight rather than hiding it
+    for (const k of KINDS) {
+      if (!k.w) continue;
+      k.w.disabled = !k.on.checked;
+      k.out.textContent = (Number(k.w.value) / 10).toFixed(1);
+      k.out.classList.toggle('dim', !k.on.checked);
+    }
+    colorBy.disabled = !kind('fill').on.checked;
 
     /*
      * What will actually be written, decided by the SAME predicate the export
@@ -179,7 +171,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
      * weights at zero with no fill — or the settings are fine and the figure
      * simply does not reach that face.
      */
-    const drawsNothing = o.traceWidth === 0 && o.facetWidth === 0 && o.shading !== 'fill';
+    const drawsNothing = !KINDS.some(k => k.on.checked && (!k.w || Number(k.w.value) > 0));
     el('#exEmpty').hidden = !blank.length;
     el('#exEmpty').textContent = !blank.length ? ''
       : drawsNothing
@@ -197,32 +189,39 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
       : '';
     go.textContent = `Export ${willWrite} diagram${willWrite === 1 ? '' : 's'}`;
     go.disabled = willWrite === 0 || busy;
+    preview(asked, o, blank);
   }
 
   /*
-   * A preset is a starting point, not a constraint: choosing one sets every
-   * control it speaks for — including both line weights, which is what makes
-   * "the figure alone" actually turn the traces off — and moving any control
-   * afterwards drops the dropdown to Custom rather than leaving it claiming a
-   * preset whose values are no longer on screen.
+   * The preview is the export.
+   *
+   * It calls diagramSVG with exactly the options the export will use, on
+   * exactly the geometry the export will draw, so what you are looking at is
+   * the file — not an impression of it. That is worth more than it sounds:
+   * four switches and three weights make a lot of combinations, and several of
+   * them differ only in ways you would never predict from the words.
+   *
+   * The one difference is size: the preview asks for a small viewBox so the
+   * strokes are in proportion to what you see. Everything else, including the
+   * background, is what will be written.
    */
-  function applyPreset() {
-    const o = PRESETS[preset.value];
-    if (!o) return;
-    shading.value = o.shading;
-    traces.value = o.traces;
-    colorBy.value = o.colorMode ?? diagram.colorMode;
-    lineW.value = Math.round((o.traceWidth ?? 0.7) * 10);
-    facetW.value = Math.round((o.facetWidth ?? 0.7) * 10);
-    // options() reads the checkbox, so a preset that names a background has to
-    // set it here or the field is decoration and the label can contradict it
-    transparent.checked = o.background === null;
-  }
-  preset.addEventListener('change', () => { applyPreset(); sync(); });
-
-  const toCustom = () => { if (preset.value !== 'custom') preset.value = 'custom'; };
-  for (const c of [lineW, facetW, transparent]) {
-    c.addEventListener('input', () => { toCustom(); sync(); });
+  function preview(asked, o, blank) {
+    const box = el('#exPreview');
+    const note = el('#exPreviewNote');
+    if (!box) return;
+    const face = asked.find(f => !blank.includes(f)) || asked[0];
+    const data = face && scanned.get(face.index);
+    if (!data) {
+      box.innerHTML = '';
+      note.textContent = scanning ? 'reading the diagram…' : '';
+      return;
+    }
+    box.innerHTML = diagramSVG(data, { ...o, size: 240, metadata: null });
+    const chosen = data.facets.filter(f => f.selected).length;
+    note.textContent = asked.length > 1
+      ? `plane ${face.index}, the first of ${asked.length} — ${data.facets.length} regions, ` +
+        `${chosen} on the surface`
+      : `${data.facets.length} regions, ${chosen} on the surface`;
   }
 
   /*
@@ -232,7 +231,10 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
    * and it is exactly when a stale count would be believed.
    */
   win.wnd.addEventListener('pointerdown', () => sync(), true);
-  for (const c of [scopeAll, scopeOne, fmtSvg, fmtPng, shading, colorBy, traces]) {
+
+  // every control redraws the preview, which is the whole point of having one
+  for (const c of [scopeAll, scopeOne, fmtSvg, fmtPng, colorBy, transparent, fullTraces,
+                   ...KINDS.flatMap(k => [k.on, k.w].filter(Boolean))]) {
     c.addEventListener('input', sync);
   }
   el('#exChangeFolder').onclick = async () => {
@@ -585,7 +587,6 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
       scopeAll.checked = n >= 2;
       scopeOne.checked = n < 2;
       info.textContent = '';
-      applyPreset();
       sync();
       win.setVisible(true);
       showFolder();
