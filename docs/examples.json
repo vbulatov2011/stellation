@@ -64,6 +64,12 @@
             "name": "Truncated cuboctahedron under D3d",
             "tags": ["subgroup", "octahedral"],
             "note": "The twenty-six planes have the full symmetry of the cube, but the cells were picked under D3d on a body diagonal — twelve operations out of forty-eight. So the figure keeps one three-fold axis and loses the other three: 473 pieces that a full-symmetry selection could not have produced. Switch the stellation symmetry to Oh and the panel shows the cost, most boxes only partly filled."
+        },
+        {
+            "file": "examples/icosahedron-under-d5.json",
+            "name": "Icosahedron under D5",
+            "tags": ["subgroup", "icosahedral"],
+            "note": "Ten operations out of the icosahedron's hundred and twenty: one five-fold axis kept and everything else let go. Not one of the eight cell orbits it touches is taken whole — thirty of f₁'s hundred and twenty, ten of e₁'s twenty — which is what a genuinely five-fold figure looks like from the inside. The core cell is not among them, so it is pierced: look down the axis and you see through it."
         }
     ]
 }
