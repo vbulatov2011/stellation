@@ -1963,6 +1963,14 @@ const ISO_Q = quatMul(quatFromAxis([1, 0, 0], Math.atan(Math.SQRT1_2)),
  * midpoint and so a 2-fold. Down those last the solids look like what they
  * are — an icosahedral stellation seen down its 5-fold axis is five-fold on
  * the screen.
+ *
+ * These four are not just directions, they are where the symmetry data puts
+ * the groups named for them: D5(I) and its family turn about (1, 0, τ), the
+ * (I) 3-folds about (0, 1/τ, τ), the (O) 3-folds about the body diagonal and
+ * the (O) 2-folds about (0, 1, 1). So choosing D5 and pressing +i5 looks
+ * straight down the axis that group turns about. Change a direction here and
+ * data/symmetry.json has to move with it — docs/test/symmetry.mjs fails if the
+ * two ever disagree.
  */
 const VIEW_SPECS = [
   ['+x', [1, 0, 0], 'from +x — y up, z to the left'],
@@ -1980,7 +1988,8 @@ const VIEW_SPECS = [
    * 35.264° about x that lands (1,1,1) exactly on the line of sight,
    * atan(1/√2).
    */
-  ['+iso', [1, 1, 1], 'down the body diagonal — the axes 120° apart, y upright', ISO_Q],
+  ['+iso', [1, 1, 1],
+   'down the body diagonal, the o3 axis — the axes 120° apart, y upright', ISO_Q],
   /*
    * The far corner is the near one turned around, not a different tilt: a
    * half turn about the screen's own vertical, which swaps the direction it

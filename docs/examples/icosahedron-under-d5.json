@@ -1,60 +1,60 @@
 {
- "name": "Icosahedron under D5",
- "appInfo": {
-  "appName": "Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1",
-  "fileFormatRelease": 1
- },
- "params": {
-  "polyhedron": {
-   "name": "icosahedron",
-   "file": "u27"
-  },
-  "symmetry": {
-   "polyhedron": "Ih",
-   "stellation": "D5(I)"
-  },
-  "arrangement": {
-   "planeDepth": 60
-  },
-  "cells": {
-   "selection": "{1(0[0])2(0[0,1,3])3(0[1,2,3,4,5])4(0[0]1[1,2,3,4,5])5(0[1]1[0,2,4])6(1[1])}"
-  },
-  "display": {
-   "diagramFace": 5,
-   "showEdges": true,
-   "showAllFacets": true,
-   "spin": false,
-   "colorMode": "stellClass",
-   "faceOpacity": 0.81,
-   "edges": {
-    "face": {
-     "show": true,
-     "color": "#3d2c6d",
-     "width": 2.9,
-     "tubes": true
+    "name": "icosahedron-under-d5",
+    "appInfo": {
+        "appName": "Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1",
+        "fileFormatRelease": 1
     },
-    "facet": {
-     "show": true,
-     "color": "#6b7080",
-     "width": 1,
-     "tubes": false
+    "params": {
+        "polyhedron": {
+            "name": "icosahedron",
+            "file": "u27"
+        },
+        "symmetry": {
+            "polyhedron": "Ih",
+            "stellation": "D5(I)"
+        },
+        "arrangement": {
+            "planeDepth": 60
+        },
+        "cells": {
+            "selection": "{0,1,2,3(0[1,2,3,4,5])4(0[1]1[1,2,3,4,5])5(0[1]1[2,3])6(1[5])}"
+        },
+        "display": {
+            "diagramFace": 0,
+            "showEdges": true,
+            "showAllFacets": true,
+            "spin": false,
+            "colorMode": "stellClass",
+            "faceOpacity": 0.81,
+            "edges": {
+                "face": {
+                    "show": true,
+                    "color": "#3d2c6d",
+                    "width": 2.9,
+                    "tubes": true
+                },
+                "facet": {
+                    "show": true,
+                    "color": "#6b7080",
+                    "width": 1,
+                    "tubes": false
+                }
+            }
+        },
+        "camera": {
+            "view": [
+                0,
+                -0.273267,
+                0,
+                0.961938,
+                1.461806,
+                0,
+                0,
+                0.41947
+            ]
+        },
+        "export": {
+            "lengthUnit": 0.01
+        }
     }
-   }
-  },
-  "camera": {
-   "view": [
-    0.405254,
-    -0.279624,
-    -0.514894,
-    0.701758,
-    1.461806,
-    0,
-    0,
-    0.41947
-   ]
-  },
-  "export": {
-   "lengthUnit": 0.01
-  }
- }
 }

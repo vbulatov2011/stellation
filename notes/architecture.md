@@ -359,6 +359,27 @@ so an off-canonical frame draws in the right place. `docs/test/symmetry.mjs`
 enumerates the full subgroup lattice of every symmetry the catalog uses and
 fails if any subgroup type has no name that reaches it.
 
+**Which copy is stored is chosen to match the camera.** Every conjugate copy of
+a group inside a parent is an equally good subgroup, so the orientation is free
+— and it is spent on making the named views mean something. A group tagged
+`(O)` sits on an octahedral axis and a group tagged `(I)` on an icosahedral
+one, in both cases the axis the identically-named view looks down:
+
+| axis | direction | groups |
+|---|---|---|
+| `o3` (the `iso` view) | (1, 1, 1) | C3(O) C3v(O) D3(O) D3d(O) S6(O) |
+| `o2` | (0, 1, 1) | C2(O) D2(O) D2h(O) |
+| `i5` | (1, 0, τ) | C5(I) C5v(I) D5(I) D5d(I) S10(I) |
+| `i3` | (0, 1/τ, τ) | C3v(I) D3(I) D3d(I) |
+
+Choose D5 and press `+i5` and you are looking straight down the axis the group
+turns about, which is the only thing that makes either name worth having. The
+cube diagonal is a 3-fold axis of the icosahedron as well — that is why the
+cubic-frame C3 and S6 fit inside Ih at all — but it is the `o3` axis, so the
+icosahedral-frame 3-folds are not the ones that live there. The test checks
+every row of that table, and that nothing frame-tagged sits on an axis with no
+name.
+
 ---
 
 ## Tests

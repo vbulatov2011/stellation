@@ -69,7 +69,7 @@
             "file": "examples/icosahedron-under-d5.json",
             "name": "Icosahedron under D5",
             "tags": ["subgroup", "icosahedral"],
-            "note": "Ten operations out of the icosahedron's hundred and twenty: one five-fold axis kept and everything else let go. Not one of the eight cell orbits it touches is taken whole — thirty of f₁'s hundred and twenty, ten of e₁'s twenty — which is what a genuinely five-fold figure looks like from the inside. The core cell is not among them, so it is pierced: look down the axis and you see through it."
+            "note": "Ten operations out of the icosahedron's hundred and twenty: one five-fold axis kept and everything else let go. Six of the nine cell orbits it touches are taken only in part — twenty of f₁'s hundred and twenty, ten of e₁'s twenty, fifty of e₂'s sixty — which is what a genuinely five-fold figure looks like from the inside, as against a symmetric one that merely happened to be built under a subgroup. 201 of the 473 pieces. It is saved looking straight down that axis, which is what the +i5 view now means."
         }
     ]
 }

@@ -169,6 +169,21 @@ console.log('\n3. the antiprism inside the icosahedron');
  */
 console.log('\n4. the icosahedral frames line up with the cubic ones');
 {
+  /*
+   * The axis of a rotation. The antisymmetric part gives it directly, except
+   * at half a turn where that part is identically zero — which is every
+   * 2-fold axis, so it cannot be skipped. There R = 2nnᵀ − I, so (R + I)/2 is
+   * nnᵀ and its largest column points along n.
+   */
+  const axisOf = (m, ang) => {
+    if (Math.abs(ang - Math.PI) > 1e-6) return [m[7] - m[5], m[2] - m[6], m[3] - m[1]];
+    const d = [(m[0] + 1) / 2, (m[4] + 1) / 2, (m[8] + 1) / 2];
+    const k = d.indexOf(Math.max(...d));
+    return [m[k * 3] / 2 + (k === 0 ? 0.5 : 0),
+            m[k * 3 + 1] / 2 + (k === 1 ? 0.5 : 0),
+            m[k * 3 + 2] / 2 + (k === 2 ? 0.5 : 0)];
+  };
+
   /** the axis of the highest-order proper rotation, sign-canonicalised */
   const principal = (ms) => {
     let best = null, bo = 0;
@@ -177,8 +192,9 @@ console.log('\n4. the icosahedral frames line up with the cubic ones');
       const ang = Math.acos(Math.max(-1, Math.min(1, (trace(m) - 1) / 2)));
       if (ang < 1e-6) continue;
       const k = Math.round(2 * Math.PI / ang);
-      if (k > bo) { bo = k; best = [m[7] - m[5], m[2] - m[6], m[3] - m[1]]; }
+      if (k > bo) { bo = k; best = axisOf(m, ang); }
     }
+    if (!best) return null;              // a group of mirrors only, e.g. Cs(O)
     const L = Math.hypot(...best) || 1;
     let v = best.map(x => x / L);
     if (v[0] < -1e-9 || (Math.abs(v[0]) < 1e-9 && (v[1] < -1e-9 ||
@@ -186,18 +202,48 @@ console.log('\n4. the icosahedral frames line up with the cubic ones');
     return v;
   };
   const along = (a, b) => Math.abs(Math.abs(a[0]*b[0] + a[1]*b[1] + a[2]*b[2]) - 1) < 1e-6;
-  const diag = [1, 1, 1].map(v => v / Math.sqrt(3));
+  const unit = (v) => { const l = Math.hypot(...v); return v.map(x => x / l); };
+  const PHI = (1 + Math.sqrt(5)) / 2;
 
-  // the cube diagonal IS a 3-fold axis of the icosahedron — which is why the
-  // cubic-frame C3 and S6 fit inside Ih at all
-  for (const n of ['C3(O)', 'S6(O)', 'D3d(O)', 'D3d(I)', 'D3(I)', 'C3v(I)']) {
-    ok(along(principal(S[n].matrices), diag), `${n} turns about the cube diagonal`);
+  /*
+   * The rule: a group tagged with a frame sits on the axis the camera of the
+   * same name looks down. The (O) groups take octahedral axes — o3, the cube
+   * diagonal, and o2, an edge midpoint — and the (I) groups take icosahedral
+   * ones: i5 a vertex, i3 a face centre. Choose D5, press +i5, and you are
+   * looking straight down the axis the group turns about, which is the only
+   * thing that makes either name worth having.
+   *
+   * The cube diagonal is a 3-fold axis of the icosahedron as well — that is
+   * why the cubic-frame C3 and S6 fit inside Ih at all — but it is the o3
+   * axis, so the icosahedral-frame 3-folds are not the ones that live there.
+   */
+  const AXES = {
+    o3: unit([1, 1, 1]), o2: unit([0, 1, 1]),
+    i5: unit([1, 0, PHI]), i3: unit([0, 1 / PHI, PHI]),
+  };
+  const ON = {
+    o3: ['C3(O)', 'C3v(O)', 'D3(O)', 'D3d(O)', 'S6(O)'],
+    o2: ['C2(O)', 'D2(O)', 'D2h(O)'],
+    i5: ['C5(I)', 'C5v(I)', 'D5(I)', 'D5d(I)', 'S10(I)'],
+    i3: ['C3v(I)', 'D3(I)', 'D3d(I)'],
+  };
+  for (const [view, names] of Object.entries(ON)) {
+    for (const n of names) {
+      ok(along(principal(S[n].matrices), AXES[view]),
+         `${n} turns about the ${view} axis — what the +${view} view looks down`);
+    }
   }
-  // and the five-fold family shares one icosahedral axis between them
-  const five = ['C5(I)', 'D5(I)', 'D5d(I)', 'C5v(I)', 'S10(I)'];
-  const ax = principal(S[five[0]].matrices);
-  ok(five.every(n => along(principal(S[n].matrices), ax)),
-     `the five-fold groups share one axis (${ax.map(v => +v.toFixed(4))})`);
+  // and nothing frame-tagged is left sitting on an axis with no name
+  {
+    const placed = new Set(Object.values(ON).flat());
+    const adrift = Object.keys(S)
+      .filter(n => /\((I|O)\)$/.test(n) && !placed.has(n))
+      .filter(n => principal(S[n].matrices)
+                && !Object.values(AXES).some(a => along(principal(S[n].matrices), a))
+                && !along(principal(S[n].matrices), [1, 0, 0]));
+    ok(adrift.length === 0, 'every frame-tagged group sits on a named axis' +
+       (adrift.length ? ` — adrift: ${adrift}` : ''));
+  }
 }
 
 /*
