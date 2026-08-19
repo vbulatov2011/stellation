@@ -30,11 +30,8 @@
 
 import { diagramSVG, diagramHasInk, DIAGRAM_DEFAULTS } from '../../lib/diagramsvg.js';
 import { makeZip } from '../../lib/uilib/zip.js';
-import { hasFSAccess, restoreHandle, setHandle, writeFile } from '../../lib/uilib/files.js';
+import { hasFSAccess, writeFile, createFolderChooser } from '../../lib/uilib/files.js';
 import { createInternalWindow } from '../../lib/uilib/modules.js';
-
-/* where the last export went — asked for once, then remembered */
-const FOLDER_KEY = 'stell.exportDiagrams.folder';
 
 const $ = (q) => document.querySelector(q);
 
@@ -382,50 +379,23 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   };
 
   /*
-   * The folder to write into.
-   *
-   * Remembered between exports, the way the app remembers where documents are
-   * saved: the handle is kept in IndexedDB and restoreHandle re-checks the
-   * permission, asking again only if the browser has forgotten it or the
-   * folder has gone. So the second export and every one after it writes
-   * straight out with no picker at all — which is the point of remembering,
-   * and what makes exporting five diagrams a single click.
-   *
-   * `force` is the "change…" button: ask even though we have one.
+   * The folder to write into — asked for once and then remembered, which is
+   * what makes exporting five diagrams a single click. The mechanism moved
+   * into uilib/files.js when the Export solid dialog turned out to want
+   * exactly the same thing; the reasoning is there.
    */
-  let folder = null;
+  const folders = createFolderChooser({
+    key: 'stell.exportDiagrams.folder', pickerId: 'stellation-diagrams',
+  });
   async function chooseFolder(force = false) {
-    if (!force) {
-      // re-check after the await: the user may have picked one meanwhile
-      if (!folder) {
-        const restored = await restoreHandle(FOLDER_KEY, 'readwrite');
-        folder ||= restored;
-      }
-      if (folder) return folder;
-    }
-    let picked;
-    try {
-      picked = await showDirectoryPicker({ id: 'stellation-diagrams', mode: 'readwrite' });
-    } catch (err) {
-      /*
-       * A dismissed picker is an AbortError and means "never mind". Anything
-       * else is a real failure — no permission, a browser that refuses because
-       * the click that started this has gone stale — and swallowing it made
-       * pressing Export do nothing at all, with no message and the drawn files
-       * thrown away.
-       */
-      if (err && err.name === 'AbortError') return null;
-      throw err;
-    }
-    folder = picked;
-    await setHandle(FOLDER_KEY, folder);
-    showFolder();
-    return folder;
+    const picked = await folders.choose(force);
+    if (picked) showFolder();
+    return picked;
   }
 
   async function showFolder() {
     if (!hasFSAccess()) return;
-    folder ||= await restoreHandle(FOLDER_KEY, 'readwrite');
+    const folder = await folders.current();
     const where = el('#exWhere');
     if (where) {
       where.textContent = folder ? folder.name : 'you will be asked once';

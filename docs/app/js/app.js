@@ -5,7 +5,7 @@
 
 import {
   Renderer3D, DiagramView, CellsPanel, labelKeys,
-  toOFF, toOBJ, toSTL, writeStel, facePlanes, suggestDepth,
+  writeStel, facePlanes, suggestDepth,
 } from '../../lib/modules.js';
 import { writePreset, readDocument, newDocumentName, normalizePlaneRows,
          expandPlaneRows } from './preset.js';
@@ -15,6 +15,7 @@ import { initPresets } from './presets.js';
 import { initDocManager } from './docmanager.js';
 import { initPlanesDialog } from './planesdialog.js';
 import { initExportDialog } from './exportdialog.js';
+import { initExportSolid } from './exportsolid.js';
 
 const $ = sel => document.querySelector(sel);
 const $$ = sel => [...document.querySelectorAll(sel)];
@@ -564,8 +565,6 @@ async function select(item, opts = {}) {
   state.stellSym = opts.stellSym || defaultStellSym(state.polySym);
 
   $$('.poly').forEach(b => b.classList.toggle('active', b.dataset.file === item.file));
-  $('#pickName').textContent = item.name;
-  $('#pickThumb').src = `img/poly/${item.file}_tmb.gif`;
 
   if (opts.depth != null) {
     setDepth(opts.depth, false);           // an opened document or a link fixes it
@@ -1186,14 +1185,20 @@ function renderLegend() {
 
 // ------------------------------------------------------------------ controls
 
+/*
+ * The catalog: where a new document starts. It used to be the header's own
+ * picker button, which showed the current solid and opened this; the header
+ * carries the document now, and the way in is New... in the Files panel.
+ */
+function openCatalog() {
+  ensureCatalog();
+  $('#catalogDialog').showModal();
+  showFoot(state.current, state.current?.category);
+  $('#search').focus();
+  document.querySelector('.poly.active')?.scrollIntoView({ block: 'center' });
+}
+
 function wireControls() {
-  $('#pickPoly').onclick = () => {
-    ensureCatalog();
-    $('#catalogDialog').showModal();
-    showFoot(state.current, state.current?.category);
-    $('#search').focus();
-    document.querySelector('.poly.active')?.scrollIntoView({ block: 'center' });
-  };
   $('#catalogClose').onclick = () => $('#catalogDialog').close();
 
   /*
@@ -1381,9 +1386,6 @@ function wireControls() {
     } catch (err) { setStatus('could not read that cell string: ' + err.message, false); }
   };
 
-  $('#exportOff').onclick = () => download(`${name()}.off`, toOFF(state.mesh));
-  $('#exportObj').onclick = () => download(`${name()}.obj`, toOBJ(state.mesh));
-  $('#exportStl').onclick = () => download(`${name()}.stl`, toSTL(state.mesh, name()));
   /*
    * Save routes through the document manager: over the origin file when the
    * document came from a local folder, through Save As when it did not, and
@@ -1399,7 +1401,7 @@ function wireControls() {
   // the same dialog, opened on a generated name rather than this document's
   $('#saveNewBtn').onclick = () => docs.saveAs({ fresh: true });
   // New… is the solid picker, which is where every new document starts
-  $('#newBtn').onclick = () => $('#pickPoly').click();
+  $('#newBtn').onclick = () => openCatalog();
   /*
    * One button for "open a document", whatever the browser can do. Given the
    * File System Access API it is the folder browser, with previews and a
@@ -1421,19 +1423,26 @@ function wireControls() {
    * as E sub-cells it IS whole orbits, and a legacy reader running with
    * stellation symmetry E reproduces it exactly.
    */
-  $('#exportStel').onclick = async () => {
+  /*
+   * .stel is the original program's format and cannot say "member indices", so
+   * a selection that does not line up with whole sub-cells of its own group has
+   * to be re-expressed under E — every cell named individually — before it can
+   * be written at all. That is a worker round trip, which is why this is async
+   * and why it can answer "no".
+   */
+  const writeStelText = async () => {
     let cellsText = state.cellsString, stellSym = state.stellSym;
     if (state.cellsAligned === false) {
       const { cells: eText } = await call('formatUnder', {
         selected: [...state.selected], subMatrices: state.symmetry.E.matrices,
       });
-      if (!eText) { setStatus('could not express this selection for .stel', false); return; }
+      if (!eText) { setStatus('could not express this selection for .stel', false); return null; }
       cellsText = eText; stellSym = 'E';
     }
-    download(`${name()}.stel`, writeStel({
+    return writeStel({
       polyhedron: state.current.name, polySymmetry: state.polySym,
       stellSymmetry: stellSym, cells: cellsText,
-    }));
+    });
   };
   /*
    * The diagrams go through a dialog now. A solid has one diagram per kind
@@ -1445,12 +1454,17 @@ function wireControls() {
     currentName: currentDocName,
   });
   $('#exportSvg').onclick = () => exportDialog?.open();
-  $('#exportPng').onclick = () => {
-    const a = document.createElement('a');
-    a.download = `${name()}.png`;
-    a.href = renderer.snapshot();
-    a.click();
-  };
+  /*
+   * And the solid goes through one of its own. Six formats were already too
+   * many buttons and the three that were missing would have made nine — and
+   * every one of them wrote straight to the downloads folder under a name
+   * nobody chose.
+   */
+  const solidDialog = initExportSolid({
+    state, renderer, download, setStatus, writeStelText,
+    currentName: currentDocName,
+  });
+  $('#exportSolidBtn').onclick = () => solidDialog?.open();
 
   $('#loadDoc').onchange = async (e) => {
     const file = e.target.files?.[0];
@@ -1545,8 +1559,6 @@ async function buildCustomPlanes(planeRows) {
   state.planeRows = rows;
   state.customPlanes = expanded;
   state.current = { file: 'custom', name: `custom planes (${rows.length} rows → ${expanded.length})`, symmetry: null };
-  $('#pickName').textContent = 'custom planes';
-  $('#pickThumb').removeAttribute('src');
   syncSymmetrySelects();
   const ok = await build();
   if (!ok) {
@@ -1554,10 +1566,6 @@ async function buildCustomPlanes(planeRows) {
     // keep the dialog open with the reason, and put the state back
     info.textContent = $('#status').textContent;
     Object.assign(state, prev);
-    if (state.current) {
-      $('#pickName').textContent = state.current.name;
-      if (state.current.file !== 'custom') $('#pickThumb').src = `img/poly/${state.current.file}_tmb.gif`;
-    }
     syncSymmetrySelects();
   }
   return ok;

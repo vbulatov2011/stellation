@@ -34,12 +34,6 @@
     <span id="docMeta" class="dim"></span>
   </div>
 
-  <button id="pickPoly" class="picker" title="New — start from a polyhedron, a preset, a file, or your own plane set">
-    <img id="pickThumb" src="img/poly/u27_tmb.gif" alt="" width="26" height="26">
-    <span id="pickName">icosahedron</span>
-    <b>▾</b>
-  </button>
-
   <div class="spacer"></div>
 
   <!-- windowed mode: the panels as floating windows instead of the docked grid -->
@@ -55,9 +49,11 @@
   </button>
   <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
   <button id="help" class="ghost">?</button>
-  <!-- the way out, at the end of the row: the walkthrough, the history and
-       Brückner's plates are all one click further, on that page -->
-  <h1><a href="index.html" title="Everything else in the project">Stellation</a></h1>
+  <!-- the way out, at the end of the row, wearing the mark the title wore:
+       the walkthrough, the history and Brückner's plates are all one click
+       further, on that page -->
+  <a id="homeLink" class="ghost icon" href="index.html"
+     title="Stellation — everything else in the project" aria-label="Stellation">✦</a>
 </header>
 
 <main>
@@ -333,36 +329,30 @@
     </details>
 
     <details class="group">
-      <summary><h2>Save &amp; export</h2></summary>
+      <summary><h2>Files</h2></summary>
       <!-- Save As and Save New need the File System Access API; boot un-hides
            them when the browser has it, so no dead buttons anywhere else.
            Files… is always here: with the API it browses a folder, and without
            one it falls back to the plain file picker, which is the only way
            into a document there. The input behind it stays in the page. -->
-      <div class="row buttons tight">
+      <div class="row buttons tight files">
         <button id="newBtn" title="Start a new document — from a polyhedron, a preset, a file, or your own plane set">New…</button>
         <button id="browseBtn" title="Open a document — browsing a folder with previews where the browser allows it">Files…</button>
         <button id="saveJson" class="primary" title="Save the document — over its file when it has one, else as a download">Save</button>
         <button id="saveAsBtn" title="Save as a json + thumbnail pair, under a name and into a folder you choose" hidden>Save As</button>
         <button id="saveNewBtn" title="Save as a new document — the same dialog, offering a fresh generated name instead of this document's" hidden>Save New</button>
+        <button id="showPresets" title="Ready-made stellations from this site, with previews">Presets…</button>
       </div>
       <input id="loadDoc" type="file" accept=".json,.stel,.txt" hidden>
       <p class="note">
         Saves in the SymmHub preset shape. <code>.stel</code> files from the
         original Java program still open.
       </p>
+      <!-- two dialogs, because both ask the same three questions: which
+           format, what the file is called, and which folder it goes in -->
       <div class="row buttons">
-        <button id="exportStl" title="Mesh for 3D printing">STL</button>
-        <button id="exportObj">OBJ</button>
-        <button id="exportOff">OFF</button>
-      </div>
-      <div class="row buttons">
-        <button id="exportSvg" title="The stellation diagrams as vector art, for printing or cutting">diagrams…</button>
-        <button id="exportPng">view PNG</button>
-        <button id="exportStel" title="For the original Java program">.stel</button>
-      </div>
-      <div class="row buttons">
-        <button id="showPresets" title="Ready-made stellations from this site, with previews">Presets…</button>
+        <button id="exportSolidBtn" title="The solid as a mesh or a picture — STL, OBJ, OFF, 3MF, glTF, GLB, PNG, or the original program's .stel">Export Solid…</button>
+        <button id="exportSvg" title="The stellation diagrams as vector art, for printing or cutting">Export Diagram…</button>
       </div>
     </details>
 
@@ -437,6 +427,48 @@
     <button id="planesCancel">Cancel</button>
   </div>
 </dialog>
+
+<template id="exportSolidBody">
+  <div class="ex-body">
+  <h2>Export solid</h2>
+  <p class="note">
+    The figure itself, in whichever format the thing you are taking it to
+    wants. Every mesh format carries the same geometry: only the colours,
+    which belong to the arrangement rather than to the solid, are left behind.
+  </p>
+
+  <div class="ex-section">
+    <b>Format</b>
+    <div class="row">
+      <select id="esFormat" class="grow" aria-label="Format"></select>
+    </div>
+    <p id="esNote" class="note"></p>
+  </div>
+
+  <div class="ex-section">
+    <b>Name</b>
+    <div class="row">
+      <input type="text" id="esName" class="grow" spellcheck="false" aria-label="File name">
+    </div>
+    <p id="esFile" class="note mono"></p>
+  </div>
+
+  <div class="ex-section" id="esWhereRow">
+    <b>Where</b>
+    <div class="row">
+      <span class="dim">folder:</span>
+      <span id="esWhere" class="dim">you will be asked once</span>
+      <button id="esChangeFolder" type="button">change…</button>
+    </div>
+  </div>
+
+  <p id="esInfo" class="note"></p>
+  <div class="row buttons">
+    <button id="esGo" class="primary">Export</button>
+    <button id="esCancel">Cancel</button>
+  </div>
+  </div>
+</template>
 
 <template id="exportBody">
   <div class="ex-body">

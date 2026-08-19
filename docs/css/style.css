@@ -1014,3 +1014,13 @@ button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--
   .picker { min-width: 0; }
   #pickName { overflow: hidden; text-overflow: ellipsis; }
 }
+
+/*
+ * The six document buttons on one line. They come to 26px more than the docked
+ * panel gives them at its usual width, so this row alone trims its padding and
+ * its gap rather than letting Presets… drop to a line of its own — six related
+ * verbs read as a row, and one of them stranded underneath reads as something
+ * else. Anywhere narrower they still wrap, which is what should happen.
+ */
+.row.buttons.files { gap: 4px; }
+.row.buttons.files button { padding: 3px 4px; }
