@@ -198,9 +198,19 @@ export function createInternalWindow(params = {}) {
       if (saved) {
         wnd.style.left = Math.max(0, parseInt(saved.left) || 0) + 'px';
         wnd.style.top = Math.max(0, parseInt(saved.top) || 0) + 'px';
+        /*
+         * A stored size below the resize minimums is not a size anyone chose:
+         * it is a window that was measured before it had any content, and
+         * restoring it hides the window in plain sight — visible, correct, two
+         * pixels tall, with nothing on screen and nothing in the console. The
+         * geometry a window is built with is a better answer than that, so a
+         * degenerate entry is ignored rather than obeyed. This also heals an
+         * entry already written, which matters: it is the stored value that
+         * hurts, and it outlives the fix that stopped it being written.
+         */
         if (canResize) {
-          if (saved.width) wnd.style.width = saved.width;
-          if (saved.height) wnd.style.height = saved.height;
+          if (parseInt(saved.width) >= MIN_W) wnd.style.width = saved.width;
+          if (parseInt(saved.height) >= MIN_H) wnd.style.height = saved.height;
         }
       }
     } catch { /* corrupted entry: fall back to the given geometry */ }
@@ -244,9 +254,29 @@ export function createInternalWindow(params = {}) {
       left: Math.max(0, wnd.offsetLeft) + 'px',
       top: Math.max(0, wnd.offsetTop) + 'px',
     };
+    /*
+     * Record a size only when there is a real one to record. A window measured
+     * before its content exists reports its borders and nothing else, and
+     * writing that down is how a window comes back two pixels tall. A size the
+     * user actually dragged is always at least the minimums, since the resize
+     * gesture clamps to them — so nothing anyone chose is ever refused here.
+     * When there is nothing to record, whatever was stored before is kept:
+     * being measured at an awkward moment should not cost a window the size
+     * its owner gave it.
+     */
     if (canResize) {
-      entry.width = wnd.offsetWidth + 'px';
-      entry.height = wnd.offsetHeight + 'px';
+      if (wnd.offsetWidth >= MIN_W && wnd.offsetHeight >= MIN_H) {
+        entry.width = wnd.offsetWidth + 'px';
+        entry.height = wnd.offsetHeight + 'px';
+      } else {
+        try {
+          const prev = JSON.parse(localStorage.getItem(geomKey) || 'null');
+          if (prev && parseInt(prev.width) >= MIN_W && parseInt(prev.height) >= MIN_H) {
+            entry.width = prev.width;
+            entry.height = prev.height;
+          }
+        } catch { /* nothing worth keeping */ }
+      }
     }
     try { localStorage.setItem(geomKey, JSON.stringify(entry)); }
     catch { /* storage full or blocked: geometry just won't persist */ }

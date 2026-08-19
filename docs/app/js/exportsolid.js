@@ -53,7 +53,15 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
 
   const win = createInternalWindow({
     title: 'Export solid',
-    width: '380px', height: 'auto',
+    /*
+     * A real height, not `auto`. A resizable window persists the size it
+     * measures, and this one is built empty and hidden — so `auto` measured
+     * two pixels of border, saved that, and every later session restored a
+     * two-pixel sliver: the dialog opened, correctly, and there was nothing to
+     * see. internalWindow now refuses a size that small at both ends, but a
+     * window that says what size it is never gets into the argument.
+     */
+    width: '380px', height: '460px',
     left: 'calc(50% - 190px)', top: '12%',
     canClose: true, canResize: true, modal: true, role: 'dialog',
     storageId: 'stell.exportSolid',
