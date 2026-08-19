@@ -1087,10 +1087,6 @@ async function refresh() {
   refreshDiagramOverlay();
   cells.setSelected(state.selected);
 
-  $('#stats').innerHTML =
-    `<b>${mesh.stats.vertices}</b> v · <b>${mesh.stats.faces}</b> f · ` +
-    `<b>${mesh.stats.cells}</b> cells · vol <b>${mesh.stats.volume.toFixed(4)}</b>`;
-
   const { cells: str, aligned } = await call('formatCells', { selected });
   state.cellsString = str;
   // aligned = the selection is whole orbits of the current editing symmetry,
@@ -1099,13 +1095,13 @@ async function refresh() {
   $('#cellsString').value = str;
   syncHash();
   /*
-   * A document with no file of its own is named after what it is made of, so
-   * its name moves when the solid or either group does. Those do not pass
-   * through the document manager — picking a solid clears the origin BEFORE
-   * the new state is in place — so the title is settled here, where the state
+   * The header's corner moves with the solid and with either group, and a
+   * document with no file of its own is named after exactly those. None of it
+   * passes through the document manager — picking a solid clears the origin
+   * BEFORE the new state is in place — so it is settled here, where the state
    * is finally true, as well as there.
    */
-  syncDocTitle();
+  syncDocBar();
 }
 
 /*
@@ -1396,19 +1392,29 @@ function wireControls() {
    */
   docs = initDocManager({
     currentPresetText, makeThumbnail, openDocument, newDocumentName, download, setStatus,
-    onNameChange: syncDocTitle,
+    onNameChange: syncDocBar,
   });
   $('#saveJson').onclick = () => docs.save();
   $('#saveAsBtn').onclick = () => docs.saveAs();
   // the same dialog, opened on a generated name rather than this document's
   $('#saveNewBtn').onclick = () => docs.saveAs({ fresh: true });
-  $('#browseBtn').onclick = () => docs.browse();
+  // New… is the solid picker, which is where every new document starts
+  $('#newBtn').onclick = () => $('#pickPoly').click();
+  /*
+   * One button for "open a document", whatever the browser can do. Given the
+   * File System Access API it is the folder browser, with previews and a
+   * remembered folder; without it, it falls back to the plain file picker,
+   * which is the only way in there. Before this the folder button was simply
+   * hidden on those browsers and opening lived under a different label.
+   */
+  $('#browseBtn').onclick = () => {
+    if (docs.canFolders) docs.browse(); else $('#loadDoc').click();
+  };
   if (docs.canFolders) {
     $('#saveAsBtn').hidden = false;
     $('#saveNewBtn').hidden = false;
-    $('#browseBtn').hidden = false;
   }
-  syncDocTitle();
+  syncDocBar();
   /*
    * .stel is the original program's format and cannot say "member indices".
    * An unaligned selection exports under the trivial group instead: written
@@ -1586,16 +1592,29 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
 
 // ------------------------------------------------------------------ misc
 
-const name = () => `${state.current.file}-${state.polySym}-${state.stellSym}`;
+const name = () => `${state.current?.file || 'custom'}-${state.polySym}-${state.stellSym}`;
 
 /*
  * What this document is called: the file or preset it came from if it has one,
  * and otherwise what it is made of. The same answer the export dialog names
- * its files after and the settings window wears in its title bar, because they
- * are the same question.
+ * its files after and the header shows, because they are the same question.
  */
 const currentDocName = () => docs?.current()?.name || name();
-const syncDocTitle = () => workspace?.setDocName(currentDocName());
+
+/*
+ * The header's corner: the document's name, and under it the three things that
+ * decide what it can be — the solid, the symmetry its planes were laid out
+ * with, and the symmetry its cells are chosen under. The last two are separate
+ * facts and a figure means nothing without both: the same twenty planes under
+ * Ih and under T are different documents.
+ */
+function syncDocBar() {
+  const nameEl = $('#docName'), metaEl = $('#docMeta');
+  if (!nameEl) return;
+  nameEl.textContent = currentDocName();
+  const solid = state.current?.name || (state.customPlanes ? 'custom planes' : '');
+  metaEl.textContent = [solid, state.polySym, state.stellSym].filter(Boolean).join(' · ');
+}
 
 /*
  * Everything on screen, serialized — the one producer of document text.

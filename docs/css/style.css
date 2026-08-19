@@ -83,8 +83,25 @@ header a.ghost { text-decoration: none; display: inline-block; }
 .spacer { flex: 1; }
 .dim { color: var(--dim); }
 
-#stats { font-size: 12px; white-space: nowrap; }
-#stats b { color: var(--text); font-weight: 600; }
+/*
+ * The document, in the corner where the title used to be: its name over what
+ * it is made of. Two short lines rather than one long one, so a document with
+ * a real name — "13. e₁f₁g₁" — is not pushed off the end by its own solid and
+ * groups; both truncate rather than widen, because everything to their right
+ * is a control and must keep its place.
+ */
+#docBar {
+  display: flex; flex-direction: column; justify-content: center;
+  min-width: 0; max-width: 30ch; line-height: 1.25;
+}
+#docName {
+  font-size: 13px; font-weight: 650;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#docMeta {
+  font-size: 10.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 .picker {
   display: flex;
@@ -984,5 +1001,16 @@ button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--
    */
   .views { grid-template-rows: 40dvh 40dvh; }
   .panel.right { max-height: none; }
-  #stats, #modeBtn { display: none; }
+  /*
+   * The name stays; what it is made of is the first thing to go — the picker
+   * beside it still names the solid. On a phone the header has no slack, and
+   * left to itself flex takes the whole squeeze out of the document name,
+   * which is the one thing here that cannot be read anywhere else. So the name
+   * keeps a floor and the picker gives up the room, ellipsis first, thumbnail
+   * last.
+   */
+  #docMeta, #modeBtn { display: none; }
+  #docBar { min-width: 7ch; }
+  .picker { min-width: 0; }
+  #pickName { overflow: hidden; text-overflow: ellipsis; }
 }

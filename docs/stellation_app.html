@@ -22,7 +22,17 @@
 <body>
 
 <header>
-  <h1><a href="index.html" title="Everything else in the project">Stellation</a></h1>
+  <!--
+    The document, in the corner the eye starts from: what it is called, and
+    under it what it is made of — the solid, the symmetry the planes were laid
+    out with, and the symmetry the cells are chosen under. It lives here rather
+    than on a window title because a window can be closed, and docked there are
+    no window titles at all.
+  -->
+  <div id="docBar" title="The document: its name, and the solid and two groups it is built from">
+    <b id="docName"></b>
+    <span id="docMeta" class="dim"></span>
+  </div>
 
   <button id="pickPoly" class="picker" title="New — start from a polyhedron, a preset, a file, or your own plane set">
     <img id="pickThumb" src="img/poly/u27_tmb.gif" alt="" width="26" height="26">
@@ -30,13 +40,8 @@
     <b>▾</b>
   </button>
 
-  <span id="stats" class="dim"></span>
-
   <div class="spacer"></div>
 
-  <a class="ghost optional" href="walkthrough.html" title="How the Cells table works">Walkthrough</a>
-  <a class="ghost optional" href="historical.html" title="A chronological tour">History</a>
-  <a class="ghost optional" href="bruckner.html" title="Brückner's 1900 plates, interactive">Brückner 1900</a>
   <!-- windowed mode: the panels as floating windows instead of the docked grid -->
   <button id="winMenu" class="ghost icon win-btn" title="Show / hide windows" aria-label="Windows menu">
     <svg class="ic" viewBox="0 0 16 16" aria-hidden="true">
@@ -50,6 +55,9 @@
   </button>
   <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
   <button id="help" class="ghost">?</button>
+  <!-- the way out, at the end of the row: the walkthrough, the history and
+       Brückner's plates are all one click further, on that page -->
+  <h1><a href="index.html" title="Everything else in the project">Stellation</a></h1>
 </header>
 
 <main>
@@ -326,22 +334,19 @@
 
     <details class="group">
       <summary><h2>Save &amp; export</h2></summary>
-      <!-- Files…, Save As and Save New need the File System Access API; boot
-           un-hides them when the browser has it, so no dead buttons anywhere
-           else. Open… stays a plain file input: it is the only way in on a
-           browser without the API, and it must not be hidden with the rest. -->
+      <!-- Save As and Save New need the File System Access API; boot un-hides
+           them when the browser has it, so no dead buttons anywhere else.
+           Files… is always here: with the API it browses a folder, and without
+           one it falls back to the plain file picker, which is the only way
+           into a document there. The input behind it stays in the page. -->
       <div class="row buttons tight">
-        <button id="browseBtn" title="Browse a folder of documents, with previews" hidden>Files…</button>
+        <button id="newBtn" title="Start a new document — from a polyhedron, a preset, a file, or your own plane set">New…</button>
+        <button id="browseBtn" title="Open a document — browsing a folder with previews where the browser allows it">Files…</button>
         <button id="saveJson" class="primary" title="Save the document — over its file when it has one, else as a download">Save</button>
         <button id="saveAsBtn" title="Save as a json + thumbnail pair, under a name and into a folder you choose" hidden>Save As</button>
         <button id="saveNewBtn" title="Save as a new document — the same dialog, offering a fresh generated name instead of this document's" hidden>Save New</button>
       </div>
-      <div class="row buttons">
-        <label class="filebtn inline" title="Opens our .json documents and the original program's .stel files">
-          Open…
-          <input id="loadDoc" type="file" accept=".json,.stel,.txt">
-        </label>
-      </div>
+      <input id="loadDoc" type="file" accept=".json,.stel,.txt" hidden>
       <p class="note">
         Saves in the SymmHub preset shape. <code>.stel</code> files from the
         original Java program still open.
