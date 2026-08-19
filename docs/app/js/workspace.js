@@ -87,11 +87,32 @@ export function initWorkspace({ redraw } = {}) {
 
   // ---- adoption ---------------------------------------------------------
 
+  /*
+   * The settings window wears the document's name.
+   *
+   * It is the window the document is edited through, and a floating panel
+   * with no name on it is the one thing a windowed layout takes away from a
+   * docked one — the footer says which document you are in, and a window can
+   * be dragged clear of it. Kept here rather than pushed in from outside, so
+   * the name survives the window being created, destroyed and recreated as
+   * the layout changes; app.js only ever says what the name is.
+   */
+  let docName = '';
+  const titleOf = (r) => (r.id === 'stell.win.settings' && docName)
+    ? `${docName} - ${r.title.toLowerCase()}` : r.title;
+
+  function setDocName(text) {
+    const next = text || '';
+    if (next === docName) return;
+    docName = next;
+    for (const r of regions) if (r.win) r.win.setTitle(titleOf(r));
+  }
+
   function ensureWindow(r) {
     if (r.win) return r.win;
     r.win = createInternalWindow({
       ...r.geo,
-      title: r.title,
+      title: titleOf(r),
       canClose: true,
       canResize: true,
       storageId: r.id,
@@ -225,5 +246,6 @@ export function initWorkspace({ redraw } = {}) {
     setMode: (m) => { stored = m; try { localStorage.setItem(MODE_KEY, m); } catch { } apply(); },
     /** register a free-floating window: { title, isOpen(), setOpen(v) } */
     register: (entry) => { extras.push(entry); },
+    setDocName,
   };
 }

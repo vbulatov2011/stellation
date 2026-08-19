@@ -326,18 +326,21 @@
 
     <details class="group">
       <summary><h2>Save &amp; export</h2></summary>
-      <!-- Save As… and Browse… need the File System Access API; boot un-hides
-           them when the browser has it, so no dead buttons anywhere else -->
-      <div class="row buttons">
+      <!-- Files…, Save As and Save New need the File System Access API; boot
+           un-hides them when the browser has it, so no dead buttons anywhere
+           else. Open… stays a plain file input: it is the only way in on a
+           browser without the API, and it must not be hidden with the rest. -->
+      <div class="row buttons tight">
+        <button id="browseBtn" title="Browse a folder of documents, with previews" hidden>Files…</button>
         <button id="saveJson" class="primary" title="Save the document — over its file when it has one, else as a download">Save</button>
-        <button id="saveAsBtn" title="Save as a json + thumbnail pair into a folder you choose" hidden>Save As…</button>
+        <button id="saveAsBtn" title="Save as a json + thumbnail pair, under a name and into a folder you choose" hidden>Save As</button>
+        <button id="saveNewBtn" title="Save as a new document — the same dialog, offering a fresh generated name instead of this document's" hidden>Save New</button>
       </div>
       <div class="row buttons">
         <label class="filebtn inline" title="Opens our .json documents and the original program's .stel files">
           Open…
           <input id="loadDoc" type="file" accept=".json,.stel,.txt">
         </label>
-        <button id="browseBtn" title="Browse a local folder of documents, with previews" hidden>Browse…</button>
       </div>
       <p class="note">
         Saves in the SymmHub preset shape. <code>.stel</code> files from the

@@ -31,6 +31,7 @@ export function initDocManager({
   newDocumentName,       // () -> 'par-YY-MM-DD-…'
   download,              // (fname, text, mime) — the universal fallback
   setStatus,
+  onNameChange,          // () -> void, whenever the document's identity moves
 }) {
   const currentDoc = { name: null, folderHandle: null, fileName: null };
   let fileDialog = null;
@@ -38,10 +39,16 @@ export function initDocManager({
 
   const canFolders = hasFSAccess();
 
+  /*
+   * The one place the document's identity changes — opened, saved under a new
+   * name, or cleared by starting something else — so it is also the one place
+   * that has to tell anyone displaying that identity.
+   */
   function setOrigin(name, folderHandle, fileName) {
     currentDoc.name = name;
     currentDoc.folderHandle = folderHandle || null;
     currentDoc.fileName = fileName || null;
+    onNameChange?.();
   }
 
   // ---- writing ------------------------------------------------------------
@@ -66,11 +73,20 @@ export function initDocManager({
     }
   }
 
-  async function saveAs() {
+  /**
+   * Save As, and Save New.
+   *
+   * They are one dialog and differ in a single respect: the name it opens
+   * with. Save As offers the document's own — you are renaming or relocating
+   * THIS document — while Save New offers a freshly generated one, so the
+   * next Save writes the copy and leaves the original where it was. That is
+   * the whole of "save a new document" and it does not need a second dialog.
+   */
+  async function saveAs({ fresh = false } = {}) {
+    const offered = (!fresh && currentDoc.name) || newDocumentName();
     if (!canFolders) {
       // the download path IS save-as on browsers without the API
-      const docName = currentDoc.name || newDocumentName();
-      download(`${docName}.json`, currentPresetText(docName), 'application/json');
+      download(`${offered}.json`, currentPresetText(offered), 'application/json');
       return;
     }
     /*
@@ -85,13 +101,13 @@ export function initDocManager({
     saveAsDialog ||= createSaveAsDialog({ storageId: 'stell.saveAs' });
     saveAsDialog.show({
       /*
-       * One rule for the offered name: the document's own if it has one —
-       * the file it came from, or the preset it came from — and otherwise a
-       * fresh generated one. Starting something new (picking a solid from
-       * the catalog) drops the name, so a new document never arrives
-       * wearing the last one's.
+       * The offered name: the document's own if it has one — the file it came
+       * from, or the preset it came from — and otherwise a fresh generated
+       * one. Starting something new (picking a solid from the catalog) drops
+       * the name, so a new document never arrives wearing the last one's; and
+       * Save New asks for a generated name outright.
        */
-      suggestedName: currentDoc.name || newDocumentName(),
+      suggestedName: offered,
       suggestedHandle: currentDoc.folderHandle,
       rootHandle: root,
       // the dialog asks before landing on a name already in that folder

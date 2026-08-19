@@ -73,7 +73,7 @@ function call(type, payload, onProgress) {
 
 // ------------------------------------------------------------------ boot
 
-let renderer, diagram, cells, docs, presets;
+let renderer, diagram, cells, docs, presets, workspace;
 
 /*
  * How the facets are coloured. `class` groups the original faces under the
@@ -170,7 +170,7 @@ async function boot() {
    * nodes the wiring grabbed by id, and adoption of live DOM only works if
    * everything was found in its docked place first.
    */
-  const workspace = initWorkspace({ redraw: () => { renderer?.resize(); diagram?.draw(); cells?.draw(); } });
+  workspace = initWorkspace({ redraw: () => { renderer?.resize(); diagram?.draw(); cells?.draw(); } });
   /*
    * The preset and file browsers join the same windows menu as the panels, so
    * there is one list of every window rather than two ways to find one. Both
@@ -1098,6 +1098,14 @@ async function refresh() {
   state.cellsAligned = aligned !== false;
   $('#cellsString').value = str;
   syncHash();
+  /*
+   * A document with no file of its own is named after what it is made of, so
+   * its name moves when the solid or either group does. Those do not pass
+   * through the document manager — picking a solid clears the origin BEFORE
+   * the new state is in place — so the title is settled here, where the state
+   * is finally true, as well as there.
+   */
+  syncDocTitle();
 }
 
 /*
@@ -1388,14 +1396,19 @@ function wireControls() {
    */
   docs = initDocManager({
     currentPresetText, makeThumbnail, openDocument, newDocumentName, download, setStatus,
+    onNameChange: syncDocTitle,
   });
   $('#saveJson').onclick = () => docs.save();
   $('#saveAsBtn').onclick = () => docs.saveAs();
+  // the same dialog, opened on a generated name rather than this document's
+  $('#saveNewBtn').onclick = () => docs.saveAs({ fresh: true });
   $('#browseBtn').onclick = () => docs.browse();
   if (docs.canFolders) {
     $('#saveAsBtn').hidden = false;
+    $('#saveNewBtn').hidden = false;
     $('#browseBtn').hidden = false;
   }
+  syncDocTitle();
   /*
    * .stel is the original program's format and cannot say "member indices".
    * An unaligned selection exports under the trivial group instead: written
@@ -1423,7 +1436,7 @@ function wireControls() {
    */
   const exportDialog = initExportDialog({
     state, call, diagram, download, setStatus,
-    currentName: () => docs?.current()?.name || name(),
+    currentName: currentDocName,
   });
   $('#exportSvg').onclick = () => exportDialog?.open();
   $('#exportPng').onclick = () => {
@@ -1574,6 +1587,15 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
 // ------------------------------------------------------------------ misc
 
 const name = () => `${state.current.file}-${state.polySym}-${state.stellSym}`;
+
+/*
+ * What this document is called: the file or preset it came from if it has one,
+ * and otherwise what it is made of. The same answer the export dialog names
+ * its files after and the settings window wears in its title bar, because they
+ * are the same question.
+ */
+const currentDocName = () => docs?.current()?.name || name();
+const syncDocTitle = () => workspace?.setDocName(currentDocName());
 
 /*
  * Everything on screen, serialized — the one producer of document text.
