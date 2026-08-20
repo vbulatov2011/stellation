@@ -374,6 +374,13 @@
         <span>speed</span>
         <input id="animSpeed" type="number" value="0.1" step="0.02" min="-2" max="2"> turns/s
       </label>
+      <label class="field" title="What the video is encoded as. WebM plays everywhere a browser is; MP4 is what everything else expects — an option only where this browser can encode it.">
+        <span>format</span>
+        <select id="animFormat">
+          <option value="webm">WebM</option>
+          <option value="mp4">MP4</option>
+        </select>
+      </label>
       <div class="row buttons">
         <button id="animVideo" title="Record exactly one full turn from the current angle, as a video file">Save to video…</button>
       </div>

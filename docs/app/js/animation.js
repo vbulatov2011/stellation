@@ -39,10 +39,31 @@ const aboutAxis = (a, angle) => {
   return [a[0] * s, a[1] * s, a[2] * s, Math.cos(angle / 2)];
 };
 
+/*
+ * The candidate encodings per container, best first. Which of them exist is
+ * the browser's business: Chromium encodes both, Firefox only WebM, and the
+ * answer comes from isTypeSupported rather than from guessing at versions.
+ */
+const VIDEO_MIMES = {
+  webm: ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'],
+  mp4: ['video/mp4;codecs=avc1.42E01E', 'video/mp4;codecs=avc1', 'video/mp4'],
+};
+const mimeFor = (fmt) => typeof MediaRecorder === 'undefined' ? null
+  : (VIDEO_MIMES[fmt] || []).find(m => MediaRecorder.isTypeSupported(m)) || null;
+
 export function initAnimation({ renderer, currentName, setStatus }) {
   const on = $('#animOn'), axisIn = $('#animAxis'), speedIn = $('#animSpeed');
-  const videoBtn = $('#animVideo'), info = $('#animInfo');
+  const fmtSel = $('#animFormat'), videoBtn = $('#animVideo'), info = $('#animInfo');
   if (!on || !renderer) return null;
+
+  /*
+   * An option the browser cannot encode is disabled rather than removed: a
+   * menu that silently loses an entry looks broken, where a greyed MP4 with
+   * the tooltip above it says whose limitation it is.
+   */
+  for (const o of fmtSel.options) {
+    if (!mimeFor(o.value)) { o.disabled = true; o.textContent += ' — not in this browser'; }
+  }
 
   /*
    * The axis, from whatever was typed. Any three numbers separated by
@@ -96,9 +117,8 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     if (!axis) { info.textContent = 'the axis needs three numbers, e.g. 0 1 0'; return; }
     if (!speed) { info.textContent = 'a turn at speed 0 never ends — set a speed first'; return; }
 
-    const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
-      .find(m => MediaRecorder.isTypeSupported(m));
-    if (!mime) { info.textContent = 'this browser cannot encode video'; return; }
+    const mime = mimeFor(fmtSel.value);
+    if (!mime) { info.textContent = `this browser cannot encode ${fmtSel.value}`; return; }
 
     recording = true;
     videoBtn.disabled = true;
@@ -127,17 +147,31 @@ export function initAnimation({ renderer, currentName, setStatus }) {
      * machine drops frames rather than stretching the turn: the video is one
      * turn long at the speed asked for, whatever the frame rate managed.
      */
+    /*
+     * Each step is a rAF raced against a timer. rAF alone stops the moment
+     * the tab is hidden — cover the window mid-recording and the loop hangs
+     * for ever with the button dead — while drawing and requestFrame() both
+     * keep working without the compositor. So a covered tab degrades to four
+     * frames a second instead of freezing, and the file still comes out one
+     * turn long, because the angle is the clock's, not the frame count's.
+     */
+    const step = (fn) => {
+      let called = false;
+      const once = () => { if (!called) { called = true; fn(); } };
+      requestAnimationFrame(once);
+      setTimeout(once, 250);
+    };
     const t0 = performance.now();
     await new Promise((resolve) => {
-      const step = (t) => {
-        const frac = Math.min(1, (t - t0) / 1000 / T);
+      const frame = () => {
+        const frac = Math.min(1, (performance.now() - t0) / 1000 / T);
         renderer.rotation = qnorm(qmul(q0, aboutAxis(axis, TAU * frac * Math.sign(speed))));
         renderer.draw();
         pushFrame();               // hand this exact frame to the encoder
         info.textContent = `recording — ${(frac * T).toFixed(1)} of ${T.toFixed(1)} s`;
-        if (frac < 1) requestAnimationFrame(step); else resolve();
+        if (frac < 1) step(frame); else resolve();
       };
-      requestAnimationFrame(step);
+      step(frame);
     });
     // a beat for the encoder to take the closing frame, then stop
     await new Promise(r => setTimeout(r, 120));
@@ -173,16 +207,17 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     const axis = parseAxis(), speed = speedOf();
     axisIn.classList.toggle('invalid', !axis);
     if (recording) return;                       // the recorder owns the line
+    const encodable = canRecord && !!mimeFor(fmtSel.value);
     info.textContent = !axis
       ? 'the axis needs three numbers, e.g. 0 1 0'
       : !speed
         ? ''
         : `one turn = ${(1 / Math.abs(speed)).toFixed(1)} s` +
-          (canRecord ? '' : ' — this browser cannot record video');
-    videoBtn.disabled = !canRecord || recording || !axis || !speed;
+          (encodable ? '' : ` — this browser cannot record ${fmtSel.value}`);
+    videoBtn.disabled = !encodable || recording || !axis || !speed;
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({
-        axis: axisIn.value, speed: speedIn.value,
+        axis: axisIn.value, speed: speedIn.value, format: fmtSel.value,
       }));
     } catch { }
     if (on.checked) start();
@@ -194,10 +229,13 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     if (saved) {
       if (typeof saved.axis === 'string') axisIn.value = saved.axis;
       if (saved.speed !== undefined) speedIn.value = saved.speed;
+      // a remembered format this browser cannot encode falls back silently
+      if (saved.format && mimeFor(saved.format)) fmtSel.value = saved.format;
     }
   } catch { }
+  if (!mimeFor(fmtSel.value) && mimeFor('webm')) fmtSel.value = 'webm';
 
-  for (const c of [on, axisIn, speedIn]) c.addEventListener('input', sync);
+  for (const c of [on, axisIn, speedIn, fmtSel]) c.addEventListener('input', sync);
   videoBtn.onclick = () => { recordTurn().catch(err => {
     recording = false; videoBtn.disabled = false;
     info.textContent = err && err.message ? err.message : String(err);
