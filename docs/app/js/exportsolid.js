@@ -20,7 +20,8 @@
  */
 
 import { toOFF, toOBJ, toSTL } from '../../lib/core.js';
-import { to3MF, toGLTF, toGLB } from '../../lib/exportmesh.js';
+import { to3MF, toGLTF, toGLB, toVRML, toX3D,
+         faceColors, tubesToMesh, mergeMeshes } from '../../lib/exportmesh.js';
 import { hasFSAccess, writeFile, createFolderChooser } from '../../lib/uilib/files.js';
 import { createInternalWindow } from '../../lib/uilib/modules.js';
 
@@ -28,21 +29,27 @@ const $ = (q) => document.querySelector(q);
 
 /*
  * Every format in one table: what it is called, what it writes, and whether it
- * comes out as text or as bytes. `make` is given the mesh and the file's stem
- * and returns a string, a Blob, or a Uint8Array — the writing code below cares
- * only which of those, not which format produced it.
+ * can carry colour. `make` is given the mesh, the file's stem and the face
+ * colours — null when the format cannot take them or the user does not want
+ * them — and returns a string, a Blob, or a Uint8Array; the writing code below
+ * cares only which of those, not which format produced it.
  */
 const FORMATS = [
   { id: 'stl', label: 'STL — mesh for 3D printing', ext: 'stl',
     make: (mesh, stem) => toSTL(mesh, stem) },
   { id: 'obj', label: 'OBJ — Wavefront', ext: 'obj', make: (mesh) => toOBJ(mesh) },
-  { id: 'off', label: 'OFF — Object File Format', ext: 'off', make: (mesh) => toOFF(mesh) },
-  { id: '3mf', label: '3MF — for a modern slicer', ext: '3mf',
-    make: (mesh, stem) => to3MF(mesh, stem) },
-  { id: 'gltf', label: 'glTF — one JSON file', ext: 'gltf',
-    make: (mesh, stem) => toGLTF(mesh, stem) },
-  { id: 'glb', label: 'GLB — glTF, binary', ext: 'glb',
-    make: (mesh, stem) => toGLB(mesh, stem) },
+  { id: 'off', label: 'OFF — Object File Format', ext: 'off', color: true,
+    make: (mesh, stem, colors) => toOFF(mesh, colors) },
+  { id: '3mf', label: '3MF — for a modern slicer', ext: '3mf', color: true,
+    make: (mesh, stem, colors) => to3MF(mesh, stem, colors) },
+  { id: 'gltf', label: 'glTF — one JSON file', ext: 'gltf', color: true,
+    make: (mesh, stem, colors) => toGLTF(mesh, stem, colors) },
+  { id: 'glb', label: 'GLB — glTF, binary', ext: 'glb', color: true,
+    make: (mesh, stem, colors) => toGLB(mesh, stem, colors) },
+  { id: 'wrl', label: 'VRML 2 — scene graph', ext: 'wrl', color: true,
+    make: (mesh, stem, colors) => toVRML(mesh, stem, colors) },
+  { id: 'x3d', label: 'X3D — scene graph, XML', ext: 'x3d', color: true,
+    make: (mesh, stem, colors) => toX3D(mesh, stem, colors) },
   { id: 'png', label: 'PNG — a picture of the view', ext: 'png', view: true },
   { id: 'stel', label: '.stel — for the original Java program', ext: 'stel', doc: true },
 ];
@@ -73,6 +80,7 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
   const dlg = win.interior;
   const el = (id) => dlg.querySelector(id);
   const fmtSel = el('#esFormat'), nameIn = el('#esName');
+  const wantColor = el('#esColor'), wantTubes = el('#esTubes');
   const info = el('#esInfo'), go = el('#esGo');
   let busy = false;
   /*
@@ -116,26 +124,74 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
     }
   }
 
+  /** the edge tubes the view is drawing, if it is drawing any */
+  const tubeSpec = () => (renderer?.edgeTubeSpec?.() || []);
+
+  /**
+   * What actually goes into the file: the solid, plus the edge tubes when the
+   * view is drawing them and they are wanted, plus a colour per face when the
+   * format can hold one. Built here rather than in each writer so that every
+   * format is given the same figure.
+   */
+  function content() {
+    const f = format();
+    const colored = f.color && wantColor.checked;
+    let mesh = state.mesh;
+    let colors = colored ? faceColors(mesh, state.colorMode || 'layer') : null;
+
+    const specs = wantTubes.checked ? tubeSpec() : [];
+    if (specs.length) {
+      const tubes = tubesToMesh(specs);
+      const merged = mergeMeshes(mesh, colors, tubes, tubes.colors);
+      mesh = merged.mesh;
+      colors = colored ? merged.colors : null;
+    }
+    return { mesh, colors, tubes: specs.length };
+  }
+
   function sync() {
     const f = format();
     el('#esFile').textContent = `${stem()}.${f.ext}`;
     el('#esWhereRow').hidden = !hasFSAccess();
+
+    /*
+     * Both switches say what they can do rather than vanishing when they
+     * cannot: a greyed box with a reason beside it answers "why is this file
+     * grey" before it is asked, where a missing one leaves the question.
+     */
+    const drawn = tubeSpec();
+    wantColor.disabled = !f.color;
+    el('#esColorWhy').textContent = f.color ? ''
+      : f.id === 'stl' ? 'STL has nowhere to put it'
+      : f.id === 'obj' ? 'OBJ would need a second file beside it'
+      : 'not for this format';
+    wantTubes.disabled = !drawn.length;
+    el('#esTubesWhy').textContent = drawn.length
+      ? `${drawn.map(d => d.kind).join(' and ')} edges, as the view draws them`
+      : 'the view is drawing edges as lines, which have no thickness';
     /*
      * What each format actually gets. A PNG is the view as it stands — its
      * angle, its colours, its zoom — where every other format is the mesh,
      * which carries none of that; and .stel is the document rather than the
      * solid. Saying so here saves exporting one to find out.
      */
-    el('#esNote').textContent = f.view
-      ? 'the 3-D view exactly as it stands — angle, colours and all'
-      : f.doc
-        ? 'the document in the original Java program’s format, not a mesh'
-        : `the mesh: ${state.mesh ? state.mesh.stats.vertices : 0} vertices, ` +
-          `${state.mesh ? state.mesh.stats.faces : 0} faces`;
+    if (f.view || f.doc || !state.mesh) {
+      el('#esNote').textContent = f.view
+        ? 'the 3-D view exactly as it stands — angle, colours and all'
+        : f.doc
+          ? 'the document in the original Java program’s format, not a mesh'
+          : 'there is no mesh to write';
+    } else {
+      // the real count, tubes included, because that is what will be written
+      const { mesh, tubes } = content();
+      el('#esNote').textContent =
+        `${mesh.vertices.length} vertices, ${mesh.faces.length} faces` +
+        (tubes ? ', the edge tubes among them' : '');
+    }
     go.disabled = busy || (!f.view && !f.doc && !state.mesh);
   }
 
-  for (const c of [fmtSel, nameIn]) c.addEventListener('input', sync);
+  for (const c of [fmtSel, nameIn, wantColor, wantTubes]) c.addEventListener('input', sync);
 
   el('#esChangeFolder').onclick = async () => {
     try { await folders.choose(true); }
@@ -174,7 +230,8 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
       if (!data) return;                  // the caller has already said why
     } else {
       if (!state.mesh) { info.textContent = 'there is no mesh to write'; return; }
-      data = await f.make(state.mesh, stem());
+      const { mesh, colors } = content();
+      data = await f.make(mesh, stem(), colors);
     }
 
     if (dir) {

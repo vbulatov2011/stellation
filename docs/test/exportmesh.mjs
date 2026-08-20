@@ -20,8 +20,10 @@ import { inflateRawSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { buildStellation, facePlanes, suggestDepth, parseCellsAny,
-         selectedCells, extractMesh } from '../lib/core.js';
-import { triangulate, to3MF, model3MF, toGLTF, toGLB } from '../lib/exportmesh.js';
+         selectedCells, extractMesh, toOFF } from '../lib/core.js';
+import { triangulate, to3MF, model3MF, toGLTF, toGLB, toVRML, toX3D,
+         faceColors, tubesToMesh, mergeMeshes } from '../lib/exportmesh.js';
+import { layerColor } from '../lib/palette.js';
 
 let passed = 0, failed = 0;
 const ok = (cond, label) => {
@@ -42,7 +44,18 @@ const stel = buildStellation(poly, symmetry.Ih.matrices,
   { subMatrices: symmetry.Ih.matrices, maxIntersection: suggestDepth(facePlanes(poly)) });
 const doc = JSON.parse(readFileSync(join(DOCS, 'icosahedra', '13-e1f1g1.json'), 'utf8'));
 const cells = selectedCells(stel, parseCellsAny(stel, doc.params.cells.selection));
-const mesh = extractMesh([{ cells }], stel.pool);
+const raw = extractMesh([{ cells }], stel.pool);
+/*
+ * The worker decorates the bare mesh with the per-face readings the colouring
+ * needs before it reaches the app; the same decoration here, so what the tests
+ * colour is the mesh the dialog actually holds.
+ */
+const mesh = {
+  ...raw,
+  faceLayers: raw.facetRefs.map(f => f.layer),
+  faceClasses: raw.facetRefs.map(() => 0),
+  faceTop: raw.facetTop,
+};
 
 console.log(`\n   the mesh: ${mesh.vertices.length} vertices, ${mesh.faces.length} faces`);
 
@@ -204,6 +217,152 @@ ok(indices.BYTES_PER_ELEMENT === 4, 'indices are 32-bit, so a deep stellation ca
   ok(glb.length % 4 === 0 && Buffer.from(glb.buffer, glb.byteOffset, glb.length)
        .readUInt32LE(0) === 0x46546C67,
      'and the GLB it makes is still a GLB');
+}
+
+// ------------------------------------------------------------- colour
+
+const colors = faceColors(mesh, 'layer');
+{
+  ok(colors.length === mesh.faces.length, 'every face gets a colour');
+  ok(colors.every(c => c.length >= 3 && c.every(v => v >= 0 && v <= 1)),
+     'each of them three numbers in 0..1');
+  // the mesh is coloured by shell, so a face in shell n wears the shell colour
+  const want = layerColor(mesh.faceLayers[0]);
+  ok(colors[0].every((v, i) => v === want[i]), 'and it is the shell palette the view uses');
+  const distinct = new Set(colors.map(c => c.join()));
+  ok(distinct.size > 1 && distinct.size <= 10,
+     `${distinct.size} distinct colours, one per shell reached — not one per face`);
+
+  // coloured, the triangulation cannot share vertices
+  const t = triangulate(mesh, colors);
+  ok(t.triangles === expectTris, 'colouring does not change the triangle count');
+  ok(t.positions.length === expectTris * 9,
+     'but every triangle gets its own three vertices, since a corner has three colours');
+  ok(t.colors.length === t.positions.length, 'one colour per vertex');
+  {
+    // the three corners of one triangle must share a colour: it came from one face
+    const same = (i) => [0, 1, 2].every(k => t.colors[i * 9 + k] === t.colors[i * 9 + 3 + k] &&
+                                             t.colors[i * 9 + k] === t.colors[i * 9 + 6 + k]);
+    ok([0, 1, 2, 50, 100].every(same), 'and a triangle is one colour across');
+  }
+
+  // OFF puts it after the vertex list, as 0..255
+  const off = toOFF(mesh, colors).split('\n');
+  const faceLine = off[1 + mesh.vertices.length + 1].trim().split(/\s+/);
+  ok(faceLine.length === 1 + Number(faceLine[0]) + 3,
+     'OFF appends three numbers to each face');
+  ok(faceLine.slice(-3).every(v => Number.isInteger(+v) && +v >= 0 && +v <= 255),
+     'as bytes, which is the reading every viewer agrees on');
+  ok(toOFF(mesh).split('\n')[1 + mesh.vertices.length + 1].trim().split(/\s+/).length ===
+     1 + mesh.faces[0].length, 'and leaves them off when there are none');
+
+  // 3MF says it with base materials
+  const model = model3MF(mesh, 'coloured', colors);
+  const bases = (model.match(/<base /g) || []).length;
+  ok(bases === distinct.size, `3MF writes ${distinct.size} base materials, one per colour`);
+  ok(/<object id="1" type="model" pid="2" pindex="0">/.test(model),
+     'and points the object at them');
+  const pids = [...model.matchAll(/<triangle [^>]*p1="(\d+)"/g)].map(m => +m[1]);
+  ok(pids.length === expectTris, 'every triangle names a material');
+  ok(Math.max(...pids) < bases, 'and none names one that is not there');
+  ok(!/pid=/.test(model3MF(mesh, 'plain')), 'an uncoloured 3MF has no materials at all');
+
+  // glTF carries it on the vertices
+  const doc = JSON.parse(toGLTF(mesh, 'coloured', colors));
+  ok(doc.meshes[0].primitives[0].attributes.COLOR_0 === 2, 'glTF adds a COLOR_0 attribute');
+  const ca = doc.accessors[2];
+  ok(ca.type === 'VEC3' && ca.componentType === 5126 && ca.count === expectTris * 3,
+     'one float triple per vertex');
+  ok(doc.bufferViews[2].byteOffset % 4 === 0, 'its view starts on a four-byte boundary');
+  ok(doc.materials[0].pbrMetallicRoughness.baseColorFactor.every(v => v === 1),
+     'and the material turns white, since the two multiply');
+  ok(!JSON.parse(toGLTF(mesh, 'plain')).meshes[0].primitives[0].attributes.COLOR_0,
+     'an uncoloured glTF has no COLOR_0');
+  ok(JSON.parse(toGLTF(mesh, 'plain')).materials[0].pbrMetallicRoughness
+       .baseColorFactor[0] < 1, 'and keeps a neutral grey instead');
+}
+
+// ------------------------------------------------------ VRML 2 and X3D
+
+{
+  const wrl = toVRML(mesh, 'test figure', colors);
+  ok(wrl.startsWith('#VRML V2.0 utf8'), 'VRML starts with the header that identifies it');
+  ok((wrl.match(/-1,/g) || []).length === mesh.faces.length,
+     `${mesh.faces.length} faces, each closed with -1 — no triangulation`);
+  ok(/colorPerVertex FALSE/.test(wrl), 'colour is per face');
+  {
+    // the point list, counted between its own brackets rather than by shape:
+    // a coordinate can come out in exponent form and still be a coordinate
+    const body = wrl.slice(wrl.indexOf('point ['), wrl.indexOf(']', wrl.indexOf('point [')));
+    const pts = body.split('\n').slice(1).filter(l => l.trim());
+    ok(pts.length === mesh.vertices.length, 'every vertex is listed');
+    ok(pts.every(l => l.trim().replace(/,$/, '').split(/\s+/).length === 3),
+       'each as three numbers');
+  }
+  ok(/solid FALSE/.test(wrl), 'and the surface is two-sided, which a stellation needs');
+  ok(!/color Color/.test(toVRML(mesh, 'plain')), 'an uncoloured VRML has no Color node');
+
+  const x3d = toX3D(mesh, 'test figure', colors);
+  ok(x3d.startsWith('<?xml'), 'X3D is XML');
+  ok(/<X3D profile="Interchange" version="3.3">/.test(x3d), 'declaring a profile and version');
+  const ci = /coordIndex="([^"]*)"/.exec(x3d)[1].trim().split(/\s+/);
+  ok(ci.filter(v => v === '-1').length === mesh.faces.length,
+     'with one -1 per face in coordIndex');
+  ok(Math.max(...ci.filter(v => v !== '-1').map(Number)) < mesh.vertices.length,
+     'and no index past the last vertex');
+  const pts = /point="([^"]*)"/.exec(x3d)[1].trim().split(/\s+/);
+  ok(pts.length === mesh.vertices.length * 3, 'every vertex in the point list');
+  const cidx = /colorIndex="([^"]*)"/.exec(x3d)[1].trim().split(/\s+/).map(Number);
+  const ncol = /<Color color="([^"]*)"/.exec(x3d)[1].trim().split(/\s+/).length / 3;
+  ok(cidx.length === mesh.faces.length, 'one colour index per face');
+  ok(Math.max(...cidx) < ncol, 'and none past the end of the palette');
+  ok(!/<Color /.test(toX3D(mesh, 'plain')), 'an uncoloured X3D has no Color node');
+}
+
+// ---------------------------------------------------------- edge tubes
+
+{
+  // two segments meeting at a corner, as the renderer would hand them over
+  const specs = [{ kind: 'face', color: [1, 0, 0], radius: 0.1,
+                   segs: [[0, 0, 0], [1, 0, 0], [1, 0, 0], [1, 1, 0]] }];
+  const t = tubesToMesh(specs, 8);
+  ok(t.vertices.length === 2 * 2 * 8, 'a tube per segment, two rings of eight');
+  ok(t.faces.length === 2 * (8 + 2), 'eight sides and two caps each');
+  ok(t.colors.length === t.faces.length, 'every one of them coloured');
+  ok(t.colors.every(c => c[0] === 1 && c[1] === 0 && c[2] === 0),
+     'in the colour the view draws that kind of edge');
+  ok(t.faces.every(f => f.every(i => i >= 0 && i < t.vertices.length)),
+     'and no face points outside the tube');
+  {
+    // the ring really is a ring of the stated radius about the segment
+    const r = t.vertices.slice(0, 8).map(v => Math.hypot(v.y, v.z));
+    ok(r.every(d => Math.abs(d - 0.1) < 1e-9), 'the ring sits at the radius asked for');
+    ok(t.vertices.slice(0, 8).every(v => Math.abs(v.x) < 1e-9),
+       'in the plane through the segment end');
+  }
+  ok(tubesToMesh([]).faces.length === 0, 'no specs, no tubes');
+  ok(tubesToMesh([{ color: [0, 0, 1], radius: 1, segs: [[0, 0, 0], [0, 0, 0]] }]).faces.length === 0,
+     'and a segment of no length makes none');
+
+  // merged into the solid, the tubes keep their own colours and land in the file
+  const merged = mergeMeshes(mesh, colors, t, t.colors);
+  ok(merged.mesh.vertices.length === mesh.vertices.length + t.vertices.length,
+     'merging keeps every vertex of both');
+  ok(merged.mesh.faces.length === mesh.faces.length + t.faces.length, 'and every face');
+  ok(merged.colors.length === merged.mesh.faces.length, 'with a colour each');
+  const shifted = merged.mesh.faces.slice(mesh.faces.length);
+  ok(shifted.every(f => f.every(i => i >= mesh.vertices.length &&
+                                     i < merged.mesh.vertices.length)),
+     'and the tube faces point at the tube vertices, shifted past the solid');
+  ok(merged.colors[mesh.faces.length][0] === 1,
+     'the first tube face still wears the tube colour');
+  {
+    // and it survives into a real file
+    const x3d = toX3D(merged.mesh, 'with tubes', merged.colors);
+    const ci = /coordIndex="([^"]*)"/.exec(x3d)[1].trim().split(/\s+/);
+    ok(ci.filter(v => v === '-1').length === merged.mesh.faces.length,
+       'X3D writes the merged figure, tubes and all');
+  }
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

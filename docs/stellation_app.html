@@ -433,8 +433,8 @@
   <h2>Export solid</h2>
   <p class="note">
     The figure itself, in whichever format the thing you are taking it to
-    wants. Every mesh format carries the same geometry: only the colours,
-    which belong to the arrangement rather than to the solid, are left behind.
+    wants. Every mesh format carries the same geometry, and every one that has
+    somewhere to put a colour carries the colouring you are looking at.
   </p>
 
   <div class="ex-section">
@@ -443,6 +443,14 @@
       <select id="esFormat" class="grow" aria-label="Format"></select>
     </div>
     <p id="esNote" class="note"></p>
+    <label class="check" title="A colour on every face, in whichever reading the view is using — by shell, or by which face of the original solid it lies in">
+      <input type="checkbox" id="esColor" checked> Colours
+      <span id="esColorWhy" class="dim"></span>
+    </label>
+    <label class="check" title="The edges as the cylinders the view is drawing, at the same radius, as part of the same object">
+      <input type="checkbox" id="esTubes" checked> Edge tubes
+      <span id="esTubesWhy" class="dim"></span>
+    </label>
   </div>
 
   <div class="ex-section">

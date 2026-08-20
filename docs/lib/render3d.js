@@ -476,6 +476,29 @@ export class Renderer3D {
   }
 
   /**
+   * The edge tubes as data, for anything that is not the GPU.
+   *
+   * Returns one entry per edge kind currently drawn as cylinders — its
+   * segments, the world radius the sliders came to, and its colour — or an
+   * empty list when the view is drawing lines, which have no geometry to
+   * give. Deliberately data rather than triangles: the export builds its own
+   * cylinders, indexed and per-face-coloured, where _ensureTubes builds a
+   * flat soup with baked normals because that is what a vertex buffer wants.
+   */
+  edgeTubeSpec() {
+    if (!this.showEdges) return [];
+    const st = this._tubeStyle();
+    const out = [];
+    if (this.faceEdges.show && this.faceEdges.tubes && this._faceSegs?.length) {
+      out.push({ kind: 'face', segs: this._faceSegs, radius: st.radF, color: st.cF });
+    }
+    if (this.facetEdges.show && this.facetEdges.tubes && this._facetSegs?.length) {
+      out.push({ kind: 'facet', segs: this._facetSegs, radius: st.radT, color: st.cT });
+    }
+    return out;
+  }
+
+  /**
    * Build (or reuse) the cylinder geometry for both edge kinds. Cached
    * against a key of everything baked into the vertices — widths, colours,
    * the mesh scale — so dragging a style slider rebuilds and everything

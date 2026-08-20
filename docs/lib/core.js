@@ -1556,10 +1556,23 @@ export function mat3mul(a, b) {
 
 // ---------------------------------------------------------------- export formats
 
-export function toOFF(mesh) {
+/**
+ * OFF, optionally with a colour on each face.
+ *
+ * The format allows three or four numbers after a face's vertex list, read as
+ * its colour; readers that do not want them ignore the tail. Written as 0–255
+ * integers, which is the reading every viewer agrees on — floats are also
+ * legal and are guessed at differently from one program to the next.
+ */
+export function toOFF(mesh, colors = null) {
   const L = ['OFF', `${mesh.vertices.length} ${mesh.faces.length} 0`];
   for (const v of mesh.vertices) L.push(`${v.x} ${v.y} ${v.z}`);
-  for (const f of mesh.faces) L.push(`${f.length} ${f.join(' ')}`);
+  const b = (c) => Math.max(0, Math.min(255, Math.round(c * 255)));
+  mesh.faces.forEach((f, i) => {
+    const c = colors && colors[i];
+    L.push(`${f.length} ${f.join(' ')}` +
+           (c ? ` ${b(c[0])} ${b(c[1])} ${b(c[2])}` : ''));
+  });
   return L.join('\n') + '\n';
 }
 

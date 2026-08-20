@@ -163,9 +163,22 @@
       asks: which format, what the file is called, and — where the browser
       allows it — which folder, once, remembered. Three formats join them:
       <b>3MF</b>, which is what a modern slicer would rather have than an STL;
-      and <b>glTF</b> and <b>GLB</b>, for anything that displays models. The
-      mesh is the same in all of them; the colours are not carried, because
-      they belong to the arrangement rather than to the solid.
+      and <b>glTF</b>, <b>GLB</b>, <b>VRML 2</b> and <b>X3D</b>, for anything
+      that displays models.
+    </div></li>
+    <li><div>
+      <b>And it takes the colours and the edges with it.</b> Every format that
+      has somewhere to put a colour now carries the one you are looking at —
+      by shell, or by which face of the original solid a facet lies in,
+      whichever the view is using. OFF puts it after each face, 3MF as base
+      materials a slicer reads, glTF and GLB on the vertices, VRML and X3D in a
+      <code>Color</code> node indexed per face. STL has nowhere to put it and
+      OBJ would need a second file beside it, so those two are the shape alone,
+      and the dialog says so rather than greying a box without a reason. And
+      when the view is drawing the edges as <em>cylinders</em> rather than
+      lines, those cylinders go into the file too, at the radius and in the
+      colour they are drawn in: if you are looking at tubes then they are part
+      of the figure, not an annotation on it.
     </div></li>
     <li><div>
       <b>One row of file buttons.</b> <b>New…</b> is the solid picker, where
