@@ -39,6 +39,10 @@ export function faceColors(mesh, colorMode = 'layer') {
     return mesh.faces.map((_, i) =>
       cosetColor(mesh.faceCosets[i] ?? -1, mesh.faceTop ? mesh.faceTop[i] !== false : true));
   }
+  if (colorMode === 'cosetL' && mesh.faceCosetsL) {
+    return mesh.faces.map((_, i) =>
+      cosetColor(mesh.faceCosetsL[i] ?? -1, mesh.faceTop ? mesh.faceTop[i] !== false : true));
+  }
   const classes = colorMode === 'class' ? mesh.faceClasses
                 : colorMode === 'stellClass' ? mesh.faceClassesStell
                 : null;

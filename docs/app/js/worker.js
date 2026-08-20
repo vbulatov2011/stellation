@@ -10,7 +10,7 @@
 import {
   buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
   atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
-  formatCellsUnder, regroupSubCells, cosetClasses,
+  formatCellsUnder, regroupSubCells, cosetClasses, leftCosetClasses,
 } from '../../lib/core.js';
 
 let stel = null;
@@ -38,6 +38,11 @@ let faceClassStell = null;
  * cosets of T in I, drawn on a solid whose full symmetry is Ih.
  */
 let cosets = null;
+/*
+ * And the LEFT cosets: cell -> H-orbit, which needs no ambient group at all.
+ * Same subgroup, same message, same independence from the editing symmetry.
+ */
+let cosetsL = null;
 let cosetGroup = null;
 
 const properOf = (mats) => {
@@ -128,6 +133,11 @@ function meshFor(selected) {
     // plane-partitions (five tetrahedra = five sets of four planes), and a
     // spike is one colour because its whole surface lies in one set's planes
     faceCosets: mesh.facetRefs.map(f => (cosets ? cosets.planes[f.plane] : -1)),
+    // and by LEFT coset: the H-orbit of the face's own cell
+    faceCosetsL: mesh.faces.map((_, i) => {
+      const c = across(i).inside;
+      return (cosetsL && c) ? (cosetsL.of.get(c) ?? -1) : -1;
+    }),
     faceInside: mesh.faces.map((_, i) => akey(across(i).inside) || null),
     faceOutside: mesh.faces.map((_, i) => akey(across(i).outside) || null),
     stats: {
@@ -174,6 +184,8 @@ function diagramFor(planeIndex, selected) {
         selected: f.selected,
         // the diagram is one plane, so its regions share that plane's coset
         coset: cosets ? cosets.planes[d.planeIndex] : -1,
+        // by LEFT coset each region wears the H-orbit of the cell it caps
+        cosetL: (cosetsL && (below || above)) ? (cosetsL.of.get(below || above) ?? -1) : -1,
         facing: f.facing,          // 1 outward, 0 inward (lines a cavity)
         ref: key(below || above),
         refBelow: key(below),
@@ -215,9 +227,11 @@ self.onmessage = (e) => {
           ? planeClasses(stel, subMatrices || matrices).group : null;
         cosetGroup = matrices;
         // the default colouring is the polyhedron group over itself — one
-        // colour — until the app names a proper subgroup of it
+        // colour, and one class per orbit — until the app names a subgroup
         cosets = stel.planes.length
           ? cosetClasses(stel, cosetGroup, cosetGroup) : null;
+        cosetsL = stel.planes.length
+          ? leftCosetClasses(stel, cosetGroup) : null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
@@ -329,7 +343,10 @@ self.onmessage = (e) => {
         }
         cosets = (stel.planes.length && G && payload.subMatrices)
           ? cosetClasses(stel, G, payload.subMatrices, prefer) : null;
-        reply({ count: cosets ? cosets.count : 0 });
+        cosetsL = (stel.planes.length && payload.subMatrices)
+          ? leftCosetClasses(stel, payload.subMatrices) : null;
+        reply({ count: cosets ? cosets.count : 0,
+                countL: cosetsL ? cosetsL.count : 0 });
         break;
       }
 

@@ -821,8 +821,11 @@ export class Renderer3D {
                   : null;
     const byClass = !!classes;
     // coset colouring reads its own map and its own palette — golden-angle
-    // hues, one per coset, gray for a cell the cosets cannot label
-    const cosets = this.colorMode === 'coset' ? faceClass?.cosets : null;
+    // hues, one per class, gray where the cosets cannot label. Right cosets
+    // ride on the planes, left cosets on the cells' H-orbits.
+    const cosets = this.colorMode === 'coset' ? faceClass?.cosets
+                 : this.colorMode === 'cosetL' ? faceClass?.cosetsL
+                 : null;
     /*
      * key -> {a, b, plane, uses, crease}. A Set of seen keys was enough when
      * every edge was drawn the same; telling the two kinds apart needs to know

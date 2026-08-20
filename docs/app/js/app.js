@@ -1115,7 +1115,8 @@ async function refresh() {
   state.mesh = mesh;
   renderer?.setMesh(mesh, mesh.faceLayers,
     { classes: mesh.faceClasses, classesStell: mesh.faceClassesStell,
-      cosets: mesh.faceCosets, top: mesh.faceTop, planes: mesh.facePlanes });
+      cosets: mesh.faceCosets, cosetsL: mesh.faceCosetsL,
+      top: mesh.faceTop, planes: mesh.facePlanes });
   diagram.setData(dia);
   state.diagramFrame = dia?.frame || null;
   refreshDiagramOverlay();
@@ -1311,9 +1312,9 @@ function wireControls() {
     localStorage.setItem('colorMode', e.target.value);
     renderer?.setColorMode(e.target.value);
     diagram?.setColorMode(e.target.value);
-    $('#cosetSubRow').hidden = e.target.value !== 'coset';
+    $('#cosetSubRow').hidden = !e.target.value.startsWith('coset');
   };
-  $('#cosetSubRow').hidden = $('#colorMode').value !== 'coset';
+  $('#cosetSubRow').hidden = !$('#colorMode').value.startsWith('coset');
   $('#cosetSub').onchange = async () => {
     if (state.building) return;
     const name = $('#cosetSub').value;

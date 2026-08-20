@@ -189,8 +189,9 @@ export class DiagramView {
   _color(facet, outward = true) {
     if (this.colorMode === 'class') return classColor(this.data?.faceClass || 0, outward);
     if (this.colorMode === 'stellClass') return classColor(this.data?.faceClassStell || 0, outward);
-    // by coset: the region wears the coset of the cell it caps; gray when none
+    // by coset: right cosets ride the plane, left the cell this region caps
     if (this.colorMode === 'coset') return cosetColor(facet.coset ?? -1, outward);
+    if (this.colorMode === 'cosetL') return cosetColor(facet.cosetL ?? -1, outward);
     return layerColor(facet.layer);
   }
 

@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { buildStellation, facePlanes, suggestDepth, cosetClasses,
-         parseCellsAny, selectedCells } from '../lib/core.js';
+         leftCosetClasses, parseCellsAny, selectedCells } from '../lib/core.js';
 
 let passed = 0, failed = 0;
 const ok = (cond, label) => {
@@ -192,6 +192,58 @@ const groupsOf = (stel, res) => {
   } else {
     ok(true, 'the unguided pick happened to land on the right hand this time');
   }
+}
+
+// ------------------------- left cosets: cells of one H-orbit, one colour each
+
+{
+  /*
+   * Left cosets are H-orbits: two elements carry the representative to the
+   * same cell exactly when they share a left coset, so the partition is
+   * intrinsic — no ambient group, no representative, no hand. Under T the
+   * icosahedron's twenty first-shell cells fall 4 + 4 + 12: the T-invariant
+   * tetrahedron, its counter-tetrahedron, and the rest in one orbit.
+   */
+  const stel = build('Ih', 'I');
+  const res = leftCosetClasses(stel, symmetry.T.matrices);
+  const shellIdx = stel.cellLayers.findIndex(l =>
+    l.reduce((n, o) => n + o.cells.length, 0) === 20);
+  const sizes = new Map();
+  for (const o of stel.cellLayers[shellIdx]) {
+    for (const c of o.cells) {
+      const k = res.of.get(c);
+      sizes.set(k, (sizes.get(k) || 0) + 1);
+    }
+  }
+  const dist = [...sizes.values()].sort((a, b) => a - b).join('+');
+  ok(dist === '4+4+12', `the twenty first-shell cells split 4+4+12 under T (got ${dist})`);
+  ok(![...sizes.keys()].includes(-1), 'none of them is fixed by T, so none is gray');
+
+  // the core: one cell, fixed by everything — gray by instruction
+  const core = stel.cellLayers[0];
+  const coreCells = core.flatMap(o => o.cells);
+  ok(coreCells.length === 1 && res.of.get(coreCells[0]) === -1,
+     'the core cell, fixed by the whole subgroup, is gray');
+
+  // every cell in the arrangement is labelled or gray, and classes are whole
+  let total = 0, covered = 0;
+  for (const layer of stel.cellLayers) {
+    for (const o of layer) for (const c of o.cells) {
+      total++;
+      const k = res.of.get(c);
+      if (k === -1 || (k >= 0 && k < res.count)) covered++;
+    }
+  }
+  ok(covered === total, `every one of the ${total} cells is labelled or gray`);
+
+  // under C5(I) the twenty split into four orbits of five, no fixed cells
+  const res5 = leftCosetClasses(stel, symmetry['C5(I)'].matrices);
+  const sizes5 = new Map();
+  for (const o of stel.cellLayers[shellIdx]) {
+    for (const c of o.cells) sizes5.set(res5.of.get(c), (sizes5.get(res5.of.get(c)) || 0) + 1);
+  }
+  ok([...sizes5.values()].sort().join('+') === '5+5+5+5',
+     'under C5(I) the same shell splits into four orbits of five');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -88,6 +88,7 @@ function facetColor(f, data, mode) {
   if (mode === 'class') return classColor(data.faceClass || 0, outward);
   if (mode === 'stellClass') return classColor(data.faceClassStell || 0, outward);
   if (mode === 'coset') return cosetColor(f.coset ?? -1, outward);
+  if (mode === 'cosetL') return cosetColor(f.cosetL ?? -1, outward);
   if (mode === 'none') return outward ? [1, 1, 1] : [0.82, 0.82, 0.82];
   return layerColor(f.layer);
 }

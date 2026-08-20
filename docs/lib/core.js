@@ -1590,6 +1590,55 @@ export function mat3mul(a, b) {
  * whole subgroup fixes is gray by instruction: it sits on the symmetry rather
  * than being carried by it.
  */
+/*
+ * Partition the CELLS by the left cosets of a subgroup H — which is to say,
+ * by their H-orbits: two group elements carry the representative to the same
+ * cell exactly when they lie in the same left coset, so "cells of one left
+ * coset" and "cells of one H-orbit" are the same partition. Unlike the
+ * right-coset colouring above, this needs no ambient group, no representative
+ * and no hand: the H-orbit of a cell is intrinsic, so the partition is total
+ * and canonical. On a regular orbit the classes are exactly the [G:H] cosets,
+ * each of |H| cells; on smaller orbits they merge along the double cosets,
+ * which is what the geometry actually does.
+ *
+ * With H the editing symmetry this paints the Cells panel's own boxes onto
+ * the solid; with any other subgroup it shows what the boxes WOULD be. A cell
+ * the whole subgroup fixes is gray, by the same instruction as the other
+ * colouring: it sits on the symmetry rather than being carried by it.
+ *
+ * Returns { of: Map(cell -> class, -1 for fixed cells), count }.
+ */
+export function leftCosetClasses(stel, subMatrices) {
+  const pool = new VertexPool(1e-6);
+  const byCenter = new Map();
+  for (const layer of stel.cellLayers) {
+    for (const o of layer) for (const c of o.cells) byCenter.set(pool.intern(c.center), c);
+  }
+  const map = (h, c) => byCenter.get(pool.intern(matMul(h, c.center)));
+
+  const of = new Map();
+  let count = 0;
+  for (const layer of stel.cellLayers) {
+    for (const o of layer) {
+      for (const seed of o.cells) {
+        if (of.has(seed)) continue;
+        const members = [];
+        for (const h of subMatrices) {
+          const c = map(h, seed);
+          if (c && !of.has(c) && !members.includes(c)) members.push(c);
+        }
+        if (members.length === 1 && subMatrices.length > 1) {
+          of.set(seed, -1);            // fixed by the whole subgroup
+        } else {
+          for (const c of members) of.set(c, count);
+          count++;
+        }
+      }
+    }
+  }
+  return { of, count };
+}
+
 export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
   const sameMat = (a, b) => {
     for (let i = 0; i < 9; i++) if (Math.abs(a[i] - b[i]) > 1e-6) return false;
