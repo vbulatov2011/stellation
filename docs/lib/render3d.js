@@ -97,7 +97,7 @@ void main() { fragColor = uColor; }`;
  * every caller has always imported them from.
  */
 export { LAYER_COLORS, layerColor, CLASS_COLORS, UNDERSIDE, classColor } from './palette.js';
-import { layerColor, classColor } from './palette.js';
+import { layerColor, classColor, cosetColor } from './palette.js';
 
 /*
  * When a new selection is allowed to re-fit the frame — see setMesh().
@@ -820,6 +820,9 @@ export class Renderer3D {
                   : this.colorMode === 'stellClass' ? faceClass?.classesStell
                   : null;
     const byClass = !!classes;
+    // coset colouring reads its own map and its own palette — golden-angle
+    // hues, one per coset, gray for a cell the cosets cannot label
+    const cosets = this.colorMode === 'coset' ? faceClass?.cosets : null;
     /*
      * key -> {a, b, plane, uses, crease}. A Set of seen keys was enough when
      * every edge was drawn the same; telling the two kinds apart needs to know
@@ -887,8 +890,9 @@ export class Renderer3D {
     const s = this.modelScale;
 
     mesh.faces.forEach((face, fi) => {
-      const c = byClass
-        ? classColor(classes[fi] || 0, faceClass.top ? faceClass.top[fi] !== false : true)
+      const top = faceClass?.top ? faceClass.top[fi] !== false : true;
+      const c = cosets ? cosetColor(cosets[fi] ?? -1, top)
+        : byClass ? classColor(classes[fi] || 0, top)
         : layerColor(faceLayers ? faceLayers[fi] : 0);
       const p = face.map(i => mesh.vertices[i]);
       // flat normal from the first non-degenerate corner

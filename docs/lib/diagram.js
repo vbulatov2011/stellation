@@ -6,7 +6,7 @@
  */
 
 import { ACTION } from './render3d.js';
-import { layerColor, classColor } from './palette.js';
+import { layerColor, classColor, cosetColor } from './palette.js';
 import { diagramSVG } from './diagramsvg.js';
 
 export class DiagramView {
@@ -189,6 +189,8 @@ export class DiagramView {
   _color(facet, outward = true) {
     if (this.colorMode === 'class') return classColor(this.data?.faceClass || 0, outward);
     if (this.colorMode === 'stellClass') return classColor(this.data?.faceClassStell || 0, outward);
+    // by coset: the region wears the coset of the cell it caps; gray when none
+    if (this.colorMode === 'coset') return cosetColor(facet.coset ?? -1, outward);
     return layerColor(facet.layer);
   }
 

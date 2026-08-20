@@ -1081,7 +1081,7 @@ async function refresh() {
   state.mesh = mesh;
   renderer?.setMesh(mesh, mesh.faceLayers,
     { classes: mesh.faceClasses, classesStell: mesh.faceClassesStell,
-      top: mesh.faceTop, planes: mesh.facePlanes });
+      cosets: mesh.faceCosets, top: mesh.faceTop, planes: mesh.facePlanes });
   diagram.setData(dia);
   state.diagramFrame = dia?.frame || null;
   refreshDiagramOverlay();

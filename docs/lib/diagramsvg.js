@@ -17,7 +17,7 @@
  * for every plane in an export, not wherever the view happened to be left.
  */
 
-import { layerColor, classColor } from './palette.js';
+import { layerColor, classColor, cosetColor } from './palette.js';
 
 /*
  * Four kinds of ink, each switched and weighted on its own.
@@ -87,6 +87,7 @@ function facetColor(f, data, mode) {
   const outward = f.facing !== 0;
   if (mode === 'class') return classColor(data.faceClass || 0, outward);
   if (mode === 'stellClass') return classColor(data.faceClassStell || 0, outward);
+  if (mode === 'coset') return cosetColor(f.coset ?? -1, outward);
   if (mode === 'none') return outward ? [1, 1, 1] : [0.82, 0.82, 0.82];
   return layerColor(f.layer);
 }

@@ -10,7 +10,7 @@
 import {
   buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
   atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
-  formatCellsUnder, regroupSubCells,
+  formatCellsUnder, regroupSubCells, cosetClasses,
 } from '../../lib/core.js';
 
 let stel = null;
@@ -26,6 +26,13 @@ let meta = null;
  */
 let faceClass = null;
 let faceClassStell = null;
+/*
+ * Cell -> coset of the stellation subgroup in the polyhedron group, for the
+ * coset colouring; -1 is gray. Recomputed whenever either group moves: on
+ * build, and on regroup, which changes the subgroup without a rebuild.
+ */
+let cosets = null;
+let groupMats = null;
 
 function toPoly(g) {
   const vertices = [];
@@ -103,6 +110,11 @@ function meshFor(selected) {
     // gestures act on. The top/bottom orientation mirrors cellsAcrossFace;
     // reading cellBelow / cellAbove the same way round everywhere instead made
     // shift and ctrl both silent no-ops on every downward-facing face.
+    // which coset of the stellation subgroup the face's own cell belongs to
+    faceCosets: mesh.faces.map((_, i) => {
+      const c = across(i).inside;
+      return (cosets && c) ? (cosets.of.get(c) ?? -1) : -1;
+    }),
     faceInside: mesh.faces.map((_, i) => akey(across(i).inside) || null),
     faceOutside: mesh.faces.map((_, i) => akey(across(i).outside) || null),
     stats: {
@@ -147,6 +159,8 @@ function diagramFor(planeIndex, selected) {
         poly: f.poly,
         layer: f.layer,
         selected: f.selected,
+        // the coset of the cell this region caps, for the coset colouring
+        coset: (cosets && (below || above)) ? (cosets.of.get(below || above) ?? -1) : -1,
         facing: f.facing,          // 1 outward, 0 inward (lines a cavity)
         ref: key(below || above),
         refBelow: key(below),
@@ -186,6 +200,9 @@ self.onmessage = (e) => {
         faceClass = stel.planes.length ? planeClasses(stel, matrices).group : null;
         faceClassStell = stel.planes.length
           ? planeClasses(stel, subMatrices || matrices).group : null;
+        groupMats = matrices;
+        cosets = stel.planes.length
+          ? cosetClasses(stel, matrices, subMatrices || matrices) : null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
@@ -264,6 +281,8 @@ self.onmessage = (e) => {
         // the stellation group decides this classification, so it moves too
         faceClassStell = stel.planes.length
           ? planeClasses(stel, payload.subMatrices || payload.matrices || null).group : null;
+        cosets = (stel.planes.length && groupMats)
+          ? cosetClasses(stel, groupMats, payload.subMatrices || groupMats) : null;
         reply({
           outline: outline(),
           faces: diagramFaces(stel, payload.subMatrices || payload.matrices || null),

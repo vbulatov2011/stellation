@@ -57,3 +57,33 @@ export const classColor = (i, top = true) => {
   const c = CLASS_COLORS[i % CLASS_COLORS.length];
   return top ? c : [c[0] * UNDERSIDE, c[1] * UNDERSIDE, c[2] * UNDERSIDE];
 };
+
+/*
+ * Coset colouring needs as many colours as the subgroup has cosets — two for
+ * an index-2 subgroup, five for the five-tetrahedra colouring, ten, sixty —
+ * so a fixed list cannot serve. The golden angle can: each hue lands 137.5°
+ * past the last, which never repeats and keeps neighbours far apart, however
+ * many are asked for. Gray is the non-answer: a cell the subgroup holds
+ * invariant, or an orbit the cosets cannot label at all.
+ */
+export const COSET_GRAY = 0.62;
+
+/** hsl in [0,360),[0,1],[0,1] to rgb triple — the small standard formula */
+function hslRgb(h, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x]
+                  : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return [r + m, g + m, b + m];
+}
+
+/** the colour of coset i — or gray for -1/null, the cells outside the story */
+export function cosetColor(i, top = true) {
+  if (i == null || i < 0) {
+    const g = top ? COSET_GRAY : COSET_GRAY * UNDERSIDE;
+    return [g, g, g];
+  }
+  const rgb = hslRgb((i * 137.508) % 360, 0.60, 0.55);
+  return top ? rgb : rgb.map(v => v * UNDERSIDE);
+}

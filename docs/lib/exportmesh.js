@@ -24,7 +24,7 @@
  */
 
 import { makeZip } from './uilib/zip.js';
-import { layerColor, classColor } from './palette.js';
+import { layerColor, classColor, cosetColor } from './palette.js';
 
 /**
  * What colour each face is, by the same rule the 3-D view and the diagram use.
@@ -35,6 +35,10 @@ import { layerColor, classColor } from './palette.js';
  * thing that has to be passed is which of those readings is wanted.
  */
 export function faceColors(mesh, colorMode = 'layer') {
+  if (colorMode === 'coset' && mesh.faceCosets) {
+    return mesh.faces.map((_, i) =>
+      cosetColor(mesh.faceCosets[i] ?? -1, mesh.faceTop ? mesh.faceTop[i] !== false : true));
+  }
   const classes = colorMode === 'class' ? mesh.faceClasses
                 : colorMode === 'stellClass' ? mesh.faceClassesStell
                 : null;
