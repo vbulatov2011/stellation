@@ -3,20 +3,21 @@
  *
  *   node docs/test/cosets.mjs
  *
- * The decisive case is the one the construction generalises: the tetrahedral
- * subgroup T inside the icosahedral rotation group I has index 5, and the
- * icosahedron's twenty first-shell cells must fall into five classes of four —
- * the five inscribed tetrahedra. That is checkable geometrically, not just by
- * counting: the four cell centres of one class must be mutually equidistant,
- * because they sit over the faces of a regular tetrahedron. If the classes
- * come out as anything else — five arbitrary quadruples would pass a counting
- * test — the geometry fails.
+ * The colouring labels PLANES: the compound of five tetrahedra is a partition
+ * of the icosahedron's twenty face planes into five sets of four, and the
+ * classical five-colouring paints each face by which tetrahedron its plane
+ * belongs to. The decisive check is geometric, not a count: the four planes
+ * of one label must be the faces of a REGULAR tetrahedron, which means every
+ * pair of their normals meets at the tetrahedral angle — dot product exactly
+ * -1/3 (or +1/3 where the arrangement orients a normal the other way). Five
+ * arbitrary quadruples would pass a counting test; they cannot pass that.
  */
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { buildStellation, facePlanes, suggestDepth, cosetClasses } from '../lib/core.js';
+import { buildStellation, facePlanes, suggestDepth, cosetClasses,
+         parseCellsAny, selectedCells } from '../lib/core.js';
 
 let passed = 0, failed = 0;
 const ok = (cond, label) => {
@@ -36,15 +37,12 @@ const DEPTH = suggestDepth(facePlanes(poly));
 const build = (G, H) => buildStellation(poly, symmetry[G].matrices,
   { subMatrices: symmetry[H].matrices, maxIntersection: DEPTH });
 
-const classesOf = (stel, res, layer) => {
+const groupsOf = (stel, res) => {
   const by = new Map();
-  for (const o of stel.cellLayers[layer]) {
-    for (const c of o.cells) {
-      const k = res.of.get(c);
-      if (!by.has(k)) by.set(k, []);
-      by.get(k).push(c);
-    }
-  }
+  res.planes.forEach((k, i) => {
+    if (!by.has(k)) by.set(k, []);
+    by.get(k).push(stel.planes[i]);
+  });
   return by;
 };
 
@@ -53,64 +51,56 @@ const classesOf = (stel, res, layer) => {
 {
   const stel = build('I', 'T');
   const res = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
-  ok(res.count === 5, `[I : T] = 5 — the colouring uses five colours (got ${res.count})`);
-
-  // the shell of twenty cells, one over each face
-  const shell = stel.cellLayers.find(l =>
-    l.reduce((n, o) => n + o.cells.length, 0) === 20);
-  ok(!!shell, 'there is a shell of twenty cells');
-  const layerIdx = stel.cellLayers.indexOf(shell);
-  const by = classesOf(stel, res, layerIdx);
-
+  ok(res.count === 5, `[I : T] = 5 — five colours (got ${res.count})`);
+  ok(res.planes.length === 20, `twenty planes (got ${res.planes.length})`);
+  const by = groupsOf(stel, res);
   ok(!by.has(-1), 'none of the twenty is gray');
-  ok(by.size === 5, `they take five classes (got ${by.size})`);
-  ok([...by.values()].every(cells => cells.length === 4), 'four cells each');
+  ok(by.size === 5, `five labels (got ${by.size})`);
+  ok([...by.values()].every(ps => ps.length === 4), 'four planes each');
 
   /*
-   * The geometry: each class's four centres are the face centres of one
-   * inscribed tetrahedron, so all six pairwise distances within a class are
-   * equal — and that common distance is the same for every class.
+   * Each label's four normals pairwise at the tetrahedral angle. The
+   * arrangement orients its normals away from the origin, so a regular
+   * tetrahedron's four face normals give |dot| = 1/3 for every pair.
    */
-  const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
-  let regular = true, common = null;
-  for (const cells of by.values()) {
-    const dist = [];
-    for (let i = 0; i < 4; i++)
-      for (let j = i + 1; j < 4; j++) dist.push(d(cells[i].center, cells[j].center));
-    const ref = dist[0];
-    if (!dist.every(v => Math.abs(v - ref) < 1e-6)) regular = false;
-    if (common === null) common = ref;
-    else if (Math.abs(ref - common) > 1e-6) regular = false;
-  }
-  ok(regular, 'each class is a regular tetrahedron of cell centres — the five-tetrahedra colouring');
-
-  // every cell everywhere is either labelled in range or gray
-  for (const layer of stel.cellLayers) {
-    for (const o of layer) for (const c of o.cells) {
-      const k = res.of.get(c);
-      if (!(k === -1 || (k >= 0 && k < res.count))) {
-        ok(false, 'a cell escaped the labelling'); regular = null; break;
+  let tetra = true;
+  for (const ps of by.values()) {
+    for (let i = 0; i < 4; i++) {
+      for (let j = i + 1; j < 4; j++) {
+        const d = ps[i].n.x * ps[j].n.x + ps[i].n.y * ps[j].n.y + ps[i].n.z * ps[j].n.z;
+        if (Math.abs(Math.abs(d) - 1 / 3) > 1e-6) tetra = false;
       }
     }
   }
-  if (regular !== null) ok(true, 'every cell in the arrangement is labelled or gray');
+  ok(tetra, 'each label is a regular tetrahedron of planes — the five-tetrahedra partition');
 }
 
-// -------------------------------------- I / C5: stabilisers the cosets cannot hold
+// ------------------------------- I / C5(I): stabilisers the cosets cannot hold
 
 {
   const stel = build('I', 'C5(I)');
   const res = cosetClasses(stel, symmetry.I.matrices, symmetry['C5(I)'].matrices);
   ok(res.count === 12, `[I : C5(I)] = 12 (got ${res.count})`);
-  const shell = stel.cellLayers.find(l =>
-    l.reduce((n, o) => n + o.cells.length, 0) === 20);
-  const by = classesOf(stel, res, stel.cellLayers.indexOf(shell));
   /*
-   * A first-shell cell's stabiliser is the C3 about its own axis, and no
-   * conjugate of C3 fits inside C5 — so no representative exists and the
-   * whole shell is honestly gray, rather than wrongly coloured.
+   * A face plane's stabiliser in I is the C3 about its own axis, and no
+   * conjugate of C3 fits inside C5 — no representative exists, so the whole
+   * orbit is honestly gray rather than wrongly coloured.
    */
-  ok(by.size === 1 && by.has(-1), 'the twenty-cell shell is gray under C5(I) — its C3 stabilisers fit no coset');
+  ok(res.planes.every(k => k === -1), 'every plane is gray under C5(I)');
+}
+
+// -------------------------------------------- Ih / T: reflections in the way
+
+{
+  const stel = build('Ih', 'T');
+  const res = cosetClasses(stel, symmetry.Ih.matrices, symmetry.T.matrices);
+  ok(res.count === 10, `[Ih : T] = 10 (got ${res.count})`);
+  /*
+   * Inside the FULL group a face plane's stabiliser is C3v, and T holds no
+   * mirror — the tetrahedral colouring cannot exist there, which is why it
+   * needs the chiral groups.
+   */
+  ok(res.planes.every(k => k === -1), 'inside Ih, T greys every plane — the mirrors do not fit');
 }
 
 // ------------------------------------------- Ih / Ih: the degenerate index 1
@@ -119,50 +109,89 @@ const classesOf = (stel, res, layer) => {
   const stel = build('Ih', 'Ih');
   const res = cosetClasses(stel, symmetry.Ih.matrices, symmetry.Ih.matrices);
   ok(res.count === 1, '[Ih : Ih] = 1');
-  let colours = new Set();
-  for (const layer of stel.cellLayers) {
-    for (const o of layer) for (const c of o.cells) colours.add(res.of.get(c));
-  }
-  ok([...colours].every(k => k === 0 || k === -1),
-     'under the whole group everything is the one colour, or invariant-gray');
+  ok(res.planes.every(k => k === 0),
+     'the whole group over itself paints everything the one colour');
 }
 
-// -------------------------------------------------- Ih / T: reflections in the way
-
-{
-  const stel = build('Ih', 'T');
-  const res = cosetClasses(stel, symmetry.Ih.matrices, symmetry.T.matrices);
-  ok(res.count === 10, `[Ih : T] = 10 (got ${res.count})`);
-  const shell = stel.cellLayers.find(l =>
-    l.reduce((n, o) => n + o.cells.length, 0) === 20);
-  const by = classesOf(stel, res, stel.cellLayers.indexOf(shell));
-  /*
-   * Under the FULL group each first-shell cell is stabilised by C3v — three
-   * rotations and three mirrors — and T holds no mirror, so the colouring
-   * cannot exist. Under I it does (above); the difference is the whole point
-   * of choosing the polyhedron group deliberately.
-   */
-  ok(by.size === 1 && by.has(-1), 'under Ih with mirrors in the stabiliser, T leaves the shell gray');
-}
-
-// ------------------- built under one group, coloured inside another (the UI's shape)
+// ------------- built under one group, coloured inside another (the UI's shape)
 
 {
   /*
    * The app builds the arrangement under the POLYHEDRON group and colours by
-   * cosets inside the STELLATION group — so the colouring's orbits are not
-   * the arrangement's orbits, and cosetClasses must compute its own. Built
-   * under Ih, coloured by T inside I: the five tetrahedra again, from an
-   * arrangement whose own orbit structure never mentions I.
+   * cosets inside the STELLATION group. Built under Ih, coloured by T inside
+   * I: the same five tetrahedra, from an arrangement whose own orbit
+   * structure never mentions I.
    */
   const stel = build('Ih', 'I');
   const res = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
   ok(res.count === 5, 'built under Ih, [I : T] still counts 5 cosets');
-  const shell = stel.cellLayers.find(l =>
-    l.reduce((n, o) => n + o.cells.length, 0) === 20);
-  const by = classesOf(stel, res, stel.cellLayers.indexOf(shell));
-  ok(by.size === 5 && [...by.values()].every(c => c.length === 4),
-     'and the twenty cells still fall into five tetrahedra of four');
+  const by = groupsOf(stel, res);
+  ok(by.size === 5 && [...by.values()].every(ps => ps.length === 4),
+     'and the twenty planes still fall into five tetrahedra of four');
+}
+
+// ---------------- coherence: the labels are one partition, not one per shell
+
+{
+  /*
+   * The bug this construction replaced: colouring cells orbit by orbit, each
+   * orbit choosing its own representative, so the five colours shuffled
+   * between shells. Plane labels cannot shuffle — every facet at every depth
+   * lies in one of the twenty planes — but pin it anyway: the label map is a
+   * single global function of the plane, so two runs agree exactly, and the
+   * four planes of label 0 stay the four planes of label 0.
+   */
+  const stel = build('I', 'T');
+  const a = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
+  const b = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
+  ok(a.planes.every((k, i) => k === b.planes[i]), 'deterministic across runs');
+}
+
+// -------------------- the hand: the selection decides between enantiomorphs
+
+{
+  /*
+   * The twenty planes carry the five-tetrahedra partition TWICE — the two
+   * chiral compounds of five tetrahedra share them — and which hand a
+   * colouring should use is the figure's property, not the group's. The
+   * compound document (Crennell 47, Ef₁) is one specific hand: with its cells
+   * passed in, every selected spike cell must have all its upper facets in
+   * planes of ONE label — its own tetrahedron — where the wrong hand gives
+   * every spike three labels.
+   */
+  const stel = build('Ih', 'I');
+  const doc = JSON.parse(readFileSync(join(DOCS, 'icosahedra', '47-ef1-chiral.json'), 'utf8'));
+  const cells = selectedCells(stel, parseCellsAny(stel, doc.params.cells.selection));
+  const res = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices, cells);
+
+  const outermost = Math.max(...cells.map(c => c.layer));
+  const spikes = cells.filter(c => c.layer === outermost);
+  ok(spikes.length === 60, `sixty outermost cells — three to a visual spike (got ${spikes.length})`);
+  let clean = 0;
+  for (const c of spikes) {
+    const labels = new Set();
+    for (const f of c.top || []) {
+      const k = res.planes[f.plane];
+      if (k !== undefined) labels.add(k);
+    }
+    if (labels.size === 1) clean++;
+  }
+  ok(clean === 60, `every one of them wears one colour (got ${clean} of 60)`);
+
+  // the other hand really is different, and really is worse
+  const blind = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices, null);
+  const flipped = !blind.planes.every((k, i) => k === res.planes[i]);
+  if (flipped) {
+    let cleanBlind = 0;
+    for (const c of spikes) {
+      const labels = new Set();
+      for (const f of c.top || []) labels.add(blind.planes[f.plane]);
+      if (labels.size === 1) cleanBlind++;
+    }
+    ok(cleanBlind < 60, `the unguided hand mixes (only ${cleanBlind} clean) — the selection was needed`);
+  } else {
+    ok(true, 'the unguided pick happened to land on the right hand this time');
+  }
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -310,10 +310,11 @@
           <option value="coset">by coset of a subgroup</option>
         </select>
       </label>
-      <!-- shown only in coset mode: the subgroup of the STELLATION group whose
-           cosets do the colouring, chosen here beside the colour menu -->
+      <!-- shown only in coset mode: the subgroup of the POLYHEDRON group whose
+           cosets do the colouring — a property of the figure, not of the
+           editing symmetry -->
       <label class="field" id="cosetSubRow" hidden
-             title="The subgroup whose cosets colour the cells — a subgroup of the stellation symmetry, with as many colours as it has cosets there; cells it cannot label are gray. For the five-tetrahedra colouring: stellation symmetry I, coset subgroup T.">
+             title="The subgroup whose cosets colour the figure — a subgroup of the polyhedron symmetry, independent of the editing symmetry, so regrouping never repaints. A mirror-free subgroup counts its cosets among the rotations. Faces the cosets cannot label are gray. The five tetrahedra: coset subgroup T on the icosahedron.">
         <span>coset subgroup</span>
         <select id="cosetSub"></select>
       </label>

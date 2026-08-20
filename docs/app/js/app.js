@@ -693,28 +693,30 @@ function syncSymmetrySelects() {
 
 /*
  * The coset colouring's own subgroup, offered beside the colour menu. Its
- * candidates are the subgroups of the STELLATION group — the colouring lives
- * inside the symmetry the figure is being built under, and its index there is
- * how many colours it uses. The choice survives a stellation-symmetry change
- * when it still fits, and falls back to the whole group (one colour) when not.
+ * candidates are the subgroups of the POLYHEDRON symmetry: the colouring is a
+ * property of the whole arrangement, and deliberately not of the stellation
+ * symmetry, which is the editing symmetry — switching how you edit must not
+ * repaint what you made. The choice survives everything but a change of
+ * polyhedron group it no longer fits.
  */
 function fillCosetSub() {
-  const names = subgroupsOf(state.stellSym);
+  const names = subgroupsOf(state.polySym);
   const kept = $('#cosetSub').value;
-  fillSelect('#cosetSub', names, names.includes(kept) ? kept : state.stellSym);
+  fillSelect('#cosetSub', names, names.includes(kept) ? kept : state.polySym);
 }
 
 /**
  * Tell the worker which subgroup colours the cosets. The worker defaults to
- * the whole stellation group on every build and regroup, so this only needs
- * sending when the menu says otherwise — and after it, the next refresh()
- * carries the new colouring.
+ * the whole polyhedron group on every build, so this only needs sending when
+ * the menu says otherwise — and after it, the next refresh() carries the new
+ * colouring.
  */
 async function applyCosetSub() {
   const name = $('#cosetSub').value;
-  if (!name || name === state.stellSym) return;
+  if (!name || name === state.polySym) return;
   const g = state.symmetry[name];
-  if (g) await call('cosets', { subMatrices: g.matrices });
+  // the selection goes too: it decides between enantiomorphic labellings
+  if (g) await call('cosets', { subMatrices: g.matrices, selected: [...state.selected] });
 }
 
 
@@ -1094,8 +1096,8 @@ async function changeStellSym() {
     refreshElements();
     renderLegend();
     state.building = false;
-    fillCosetSub();             // the candidates are the NEW group's subgroups
-    await applyCosetSub();      // regroup reset the worker's map to the new stellSym
+    // the coset colouring is a property of the polyhedron group, and a
+    // stellation-symmetry change is editing — nothing to recolour here
     await refresh();
     state.builtStellSym = state.stellSym;
     setStatus(`editing symmetry ${state.stellSym} — selection kept`, false);
@@ -1318,7 +1320,7 @@ function wireControls() {
     const g = state.symmetry[name];
     if (!g) return;
     // send unconditionally: unlike applyCosetSub, this IS the change
-    await call('cosets', { subMatrices: g.matrices });
+    await call('cosets', { subMatrices: g.matrices, selected: [...state.selected] });
     await refresh();
   };
   /*

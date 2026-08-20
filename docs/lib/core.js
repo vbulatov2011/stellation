@@ -1557,39 +1557,45 @@ export function mat3mul(a, b) {
 // ---------------------------------------------------------------- coset colouring
 
 /*
- * Partition the cells by the cosets of a subgroup H in a group G — as the app
- * wires it, H is chosen among the subgroups of the STELLATION group and G is
- * that stellation group itself, so the colouring lives inside the symmetry
- * the figure is being built under.
+ * Label the arrangement's PLANES by the cosets of a subgroup H in a group G —
+ * as the app wires it, G is the stellation group and H a chosen subgroup of
+ * it. Returns { planes: Int32Array(plane -> coset, -1 for gray), count }.
  *
- * The classic picture this generalises: take the icosahedron's rotation group
- * I and the tetrahedral subgroup T inside it, index 5. The twenty first-shell
- * cells fall into five sets of four, each set the cells of one of the five
- * inscribed tetrahedra — the famous five-colouring. Group-theoretically each
- * set is g·(H·c₀): a translate of the H-orbit of a well-chosen representative,
- * one translate per coset gH, so the classes number exactly [G:H].
+ * Planes, not cells, because the classical pictures this exists for are
+ * plane-partitions. The compound of five tetrahedra IS a partition of the
+ * icosahedron's twenty face planes into five sets of four; the classical
+ * five-colouring of the icosahedron paints each face by which tetrahedron its
+ * plane belongs to; and a spike of the compound is one colour precisely
+ * because every facet of its surface lies in that one tetrahedron's planes.
+ * Colouring the facets by their planes therefore colours every one of those
+ * pictures correctly at every depth.
  *
- * The labelling is honest about when it exists. A cell c is reached from the
- * representative by the group elements T(c) = g·S, S the representative's
- * stabiliser; the label "coset of g" is well defined exactly when S ⊆ H, so a
- * representative is SOUGHT whose stabiliser the subgroup contains — for I/T
- * on the first shell that is a cell over one of T's own 3-fold axes, and
- * choosing it is what makes the five tetrahedra appear. An orbit with no such
- * representative has no coset colouring, and is gray rather than wrong. And a
- * cell the subgroup holds invariant — H·c = c — names every coset at once, so
- * it is gray by instruction: those cells sit ON the subgroup's symmetry
- * rather than being carried around by it.
+ * It is also what makes the labelling COHERENT. A first version coloured
+ * cells, orbit by orbit, and each orbit independently chose a representative;
+ * the choices did not agree between orbits — each fixes its own conjugate of
+ * H — and the five colours came out shuffled from one shell to the next. The
+ * planes form a single orbit for every solid with one kind of face, so one
+ * representative anchors the entire figure; a solid with several kinds of
+ * face at worst rotates colours between kinds, never within one.
  *
- * Everything is matched the way the orbit machinery matches: cells by their
- * interned centres, group elements by their matrix entries. Returns
- * { of: Map(cell -> coset index, -1 for gray), count: [G:H] }.
+ * The construction, on each plane orbit under G: a representative q₀ is
+ * SOUGHT whose stabiliser sits inside H — the labelling "plane g·q₀ wears the
+ * coset of g" is well defined exactly then. For T inside I that
+ * representative is a plane of one of the two T-invariant tetrahedra, and
+ * choosing it is what makes the five tetrahedra appear; which enantiomorph is
+ * found first decides the compound's handedness, deterministically. An orbit
+ * with no such representative has no coset colouring and is gray rather than
+ * wrong — under the full Ih every face stabiliser holds mirrors that T lacks,
+ * which is why the five-colouring needs the chiral groups. And a plane the
+ * whole subgroup fixes is gray by instruction: it sits on the symmetry rather
+ * than being carried by it.
  */
-export function cosetClasses(stel, matrices, subMatrices) {
+export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
   const sameMat = (a, b) => {
     for (let i = 0; i < 9; i++) if (Math.abs(a[i] - b[i]) > 1e-6) return false;
     return true;
   };
-  const inSub = (m) => subMatrices.some(s => sameMat(m, s));
+  const inSub = (m) => subMatrices.some(x => sameMat(m, x));
   // rᵀ·g — the matrices are orthogonal, so the transpose is the inverse
   const tmul = (r, g) => {
     const o = new Array(9);
@@ -1609,69 +1615,94 @@ export function cosetClasses(stel, matrices, subMatrices) {
     return reps.length - 1;
   });
 
+  // planes matched the way planeClasses matches them: by n·d, interned
+  const { planes } = stel;
   const pool = new VertexPool(1e-6);
-  const byCenter = new Map();
-  for (const layer of stel.cellLayers) {
-    for (const o of layer) for (const c of o.cells) byCenter.set(pool.intern(c.center), c);
-  }
-  const map = (g, c) => byCenter.get(pool.intern(matMul(g, c.center)));
+  const idOf = new Map();
+  planes.forEach((q, i) => {
+    const id = pool.intern(mul(q.n, q.d));
+    if (!idOf.has(id)) idOf.set(id, i);
+  });
+  const mapPlane = (g, i) => {
+    const j = idOf.get(pool.intern(matMul(g, mul(planes[i].n, planes[i].d))));
+    return j == null ? -1 : j;
+  };
 
-  /*
-   * The orbits are computed HERE, under the group that was passed in, rather
-   * than borrowed from stel.cellLayers: the arrangement's own orbit structure
-   * belongs to the polyhedron group, and the colouring's group — the
-   * stellation group — is usually smaller, so one of the arrangement's orbits
-   * is several of these. Borrowing left every cell outside the representative's
-   * own sub-orbit unlabelled.
-   */
-  const of = new Map();
-  const used = new Set();
-  for (const layer of stel.cellLayers) {
-    for (const o of layer) {
-      for (const seed of o.cells) {
-        if (used.has(seed)) continue;
-        const orbit = [];
-        for (const g of matrices) {
-          const c = map(g, seed);
-          if (c && !used.has(c)) { used.add(c); orbit.push(c); }
-        }
-        /*
-         * A representative whose stabiliser sits inside H. When the orbit is
-         * regular — as many cells as group elements — every stabiliser is
-         * trivial and the first cell serves; otherwise each cell is tried
-         * until one fits, and an orbit where none does cannot be coloured.
-         */
-        let rep = null;
-        if (orbit.length === matrices.length) {
-          rep = orbit[0];
-        } else {
-          for (const c of orbit) {
-            let ok = true;
-            for (const g of matrices) {
-              if (map(g, c) === c && !inSub(g)) { ok = false; break; }
-            }
-            if (ok) { rep = c; break; }
+  const label = new Int32Array(planes.length).fill(-2);   // -2: not yet reached
+  for (let i = 0; i < planes.length; i++) {
+    if (label[i] !== -2) continue;
+    const orbit = [];
+    for (const g of matrices) {
+      const j = mapPlane(g, i);
+      if (j >= 0 && label[j] === -2) { label[j] = -3; orbit.push(j); }
+    }
+    // every representative whose stabiliser sits inside H
+    const candidates = [];
+    for (const q of orbit) {
+      let ok = true;
+      for (const g of matrices) {
+        if (mapPlane(g, q) === q && !inSub(g)) { ok = false; break; }
+      }
+      if (ok) candidates.push(q);
+    }
+    if (!candidates.length) {
+      for (const q of orbit) label[q] = -1;
+      continue;
+    }
+    /*
+     * Different representatives can induce genuinely different partitions of
+     * the same planes. The five-tetrahedra case is the sharp example: the
+     * icosahedron's twenty planes carry the partition TWICE, once as the
+     * right-handed compound and once as the left — the two compounds share
+     * the planes — and a T-stabilised representative exists in each. Which
+     * hand is wanted is not a group-theoretic fact at all: it is the figure's,
+     * so when the caller passes its selected cells, each distinct candidate
+     * labelling is scored by how coherently it colours them — a cell bounded
+     * by planes of one tetrahedron counts clean under the right hand and
+     * mixed under the wrong one — and the cleanest wins. No cells, or a tie
+     * (every achiral figure), falls to the first candidate, deterministically.
+     */
+    const tryRep = (rep) => {
+      const out = new Map();
+      for (let gi = 0; gi < matrices.length; gi++) {
+        const j = mapPlane(matrices[gi], rep);
+        if (j >= 0 && !out.has(j)) out.set(j, cosetOf[gi]);
+      }
+      return out;
+    };
+    const distinct = [];
+    for (const rep of candidates) {
+      const lab = tryRep(rep);
+      const sig = orbit.map(q => lab.get(q)).join(',');
+      if (!distinct.some(d => d.sig === sig)) distinct.push({ sig, lab });
+    }
+    let best = distinct[0];
+    if (distinct.length > 1 && preferCells && preferCells.length) {
+      let bestScore = Infinity;
+      for (const cand of distinct) {
+        let score = 0;
+        for (const c of preferCells) {
+          const seen = new Set();
+          for (const f of c.top || []) {
+            const k = cand.lab.get(f.plane);
+            if (k !== undefined) seen.add(k);
           }
+          if (seen.size > 1) score += seen.size - 1;
         }
-        if (!rep) {
-          for (const c of orbit) of.set(c, -1);
-          continue;
-        }
-        // label each cell with the coset of the first element that reaches it
-        for (let gi = 0; gi < matrices.length; gi++) {
-          const c = map(matrices[gi], rep);
-          if (c && !of.has(c)) of.set(c, cosetOf[gi]);
-        }
-        // invariant under the whole subgroup: on the symmetry, not carried by it
-        for (const c of orbit) {
-          let fixed = true;
-          for (const h of subMatrices) if (map(h, c) !== c) { fixed = false; break; }
-          if (fixed) of.set(c, -1);
-        }
+        if (score < bestScore) { bestScore = score; best = cand; }
       }
     }
+    for (const [j, k] of best.lab) {
+      if (label[j] === -3) label[j] = k;
+    }
+    // invariant under the whole subgroup: on the symmetry, not carried by it
+    for (const q of orbit) {
+      let fixed = true;
+      for (const h of subMatrices) if (mapPlane(h, q) !== q) { fixed = false; break; }
+      if (fixed) label[q] = -1;
+    }
   }
-  return { of, count: reps.length };
+  return { planes: label, count: reps.length };
 }
 
 // ---------------------------------------------------------------- export formats

@@ -27,12 +27,26 @@ let meta = null;
 let faceClass = null;
 let faceClassStell = null;
 /*
- * Cell -> coset, for the coset colouring; -1 is gray. The cosets are of a
- * chosen subgroup INSIDE the stellation group ('cosets' message); the default
- * after a build or regroup is the stellation group over itself, one colour.
+ * Plane -> coset, for the coset colouring; -1 is gray. The cosets are of a
+ * chosen subgroup relative to the POLYHEDRON group ('cosets' message) — the
+ * stellation group is the editing symmetry and deliberately has no hand in
+ * the colouring, so regrouping never repaints. A mirror-free subgroup counts
+ * its cosets among the polyhedron group's rotations: cosets of a chiral
+ * subgroup inside an achiral group can never label the planes (every plane
+ * stabiliser then holds mirrors the subgroup lacks), and dropping the
+ * improper half is what the classical pictures do — the five tetrahedra are
+ * cosets of T in I, drawn on a solid whose full symmetry is Ih.
  */
 let cosets = null;
-let stellMats = null;
+let cosetGroup = null;
+
+const properOf = (mats) => {
+  const det = (m) => m[0] * (m[4] * m[8] - m[5] * m[7])
+                   - m[1] * (m[3] * m[8] - m[5] * m[6])
+                   + m[2] * (m[3] * m[7] - m[4] * m[6]);
+  const rotations = mats.filter(m => det(m) > 0);
+  return { rotations, hasImproper: rotations.length !== mats.length };
+};
 
 function toPoly(g) {
   const vertices = [];
@@ -110,11 +124,10 @@ function meshFor(selected) {
     // gestures act on. The top/bottom orientation mirrors cellsAcrossFace;
     // reading cellBelow / cellAbove the same way round everywhere instead made
     // shift and ctrl both silent no-ops on every downward-facing face.
-    // which coset of the stellation subgroup the face's own cell belongs to
-    faceCosets: mesh.faces.map((_, i) => {
-      const c = across(i).inside;
-      return (cosets && c) ? (cosets.of.get(c) ?? -1) : -1;
-    }),
+    // which coset the face's PLANE belongs to — the classical colourings are
+    // plane-partitions (five tetrahedra = five sets of four planes), and a
+    // spike is one colour because its whole surface lies in one set's planes
+    faceCosets: mesh.facetRefs.map(f => (cosets ? cosets.planes[f.plane] : -1)),
     faceInside: mesh.faces.map((_, i) => akey(across(i).inside) || null),
     faceOutside: mesh.faces.map((_, i) => akey(across(i).outside) || null),
     stats: {
@@ -159,8 +172,8 @@ function diagramFor(planeIndex, selected) {
         poly: f.poly,
         layer: f.layer,
         selected: f.selected,
-        // the coset of the cell this region caps, for the coset colouring
-        coset: (cosets && (below || above)) ? (cosets.of.get(below || above) ?? -1) : -1,
+        // the diagram is one plane, so its regions share that plane's coset
+        coset: cosets ? cosets.planes[d.planeIndex] : -1,
         facing: f.facing,          // 1 outward, 0 inward (lines a cavity)
         ref: key(below || above),
         refBelow: key(below),
@@ -200,11 +213,11 @@ self.onmessage = (e) => {
         faceClass = stel.planes.length ? planeClasses(stel, matrices).group : null;
         faceClassStell = stel.planes.length
           ? planeClasses(stel, subMatrices || matrices).group : null;
-        stellMats = subMatrices || matrices;
-        // the default colouring group is the stellation group over itself —
-        // one colour — until the app names a proper subgroup of it
+        cosetGroup = matrices;
+        // the default colouring is the polyhedron group over itself — one
+        // colour — until the app names a proper subgroup of it
         cosets = stel.planes.length
-          ? cosetClasses(stel, stellMats, stellMats) : null;
+          ? cosetClasses(stel, cosetGroup, cosetGroup) : null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
@@ -283,9 +296,8 @@ self.onmessage = (e) => {
         // the stellation group decides this classification, so it moves too
         faceClassStell = stel.planes.length
           ? planeClasses(stel, payload.subMatrices || payload.matrices || null).group : null;
-        stellMats = payload.subMatrices || payload.matrices || stellMats;
-        cosets = (stel.planes.length && stellMats)
-          ? cosetClasses(stel, stellMats, stellMats) : null;
+        // the coset colouring is untouched: the stellation group is the
+        // editing symmetry, and editing must not repaint the figure
         reply({
           outline: outline(),
           faces: diagramFaces(stel, payload.subMatrices || payload.matrices || null),
@@ -301,8 +313,22 @@ self.onmessage = (e) => {
        */
       case 'cosets': {
         if (!stel) { fail('nothing built yet'); break; }
-        cosets = (stel.planes.length && stellMats && payload.subMatrices)
-          ? cosetClasses(stel, stellMats, payload.subMatrices) : null;
+        /*
+         * The selection rides along to break ties the group cannot: the same
+         * planes can carry a partition in two hands — the two compounds of
+         * five tetrahedra share the icosahedron's twenty planes — and which
+         * hand is wanted is a property of the figure on screen.
+         */
+        const prefer = payload.selected
+          ? selectedCells(stel, new Set(payload.selected)) : null;
+        let G = cosetGroup;
+        if (G && payload.subMatrices) {
+          // a mirror-free subgroup counts its cosets among the rotations
+          const sub = properOf(payload.subMatrices), grp = properOf(G);
+          if (!sub.hasImproper && grp.hasImproper) G = grp.rotations;
+        }
+        cosets = (stel.planes.length && G && payload.subMatrices)
+          ? cosetClasses(stel, G, payload.subMatrices, prefer) : null;
         reply({ count: cosets ? cosets.count : 0 });
         break;
       }
