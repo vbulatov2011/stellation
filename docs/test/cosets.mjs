@@ -196,12 +196,12 @@ const groupsOf = (stel, res) => {
 
 
 
-// ------------------------------- the same cosets, one grain finer: facets
+// --------------------------- the same cosets, per facet instead of per plane
 
 {
   /*
-   * Facets are what you are actually looking at, and the only grain that can
-   * separate two hands lying in the same plane. Three claims, on the case the
+   * Facets are what you are actually looking at, and the only piece small
+   * enough to separate two hands lying in the same plane. Three claims, on the case the
    * owner reported: the icosahedron under Ih coloured by cosets of I.
    */
   const stel = build('Ih', 'Ih');
@@ -214,7 +214,7 @@ const groupsOf = (stel, res) => {
   /*
    * The planes cannot say any of that: every face plane's stabiliser in Ih is
    * C₃ᵥ, whose mirrors I lacks, so the whole plane colouring greys. This is
-   * the difference the finer grain buys.
+   * the difference the smaller piece buys.
    */
   const byPlane = cosetClasses(stel, symmetry.Ih.matrices, symmetry.I.matrices);
   ok(byPlane.planes.every(k => k === -1), 'where the plane colouring greys entirely');
@@ -222,14 +222,14 @@ const groupsOf = (stel, res) => {
 
 {
   // and where the planes DO work, the facets agree with them: I / T, five
-  // tetrahedra, no gray at either grain
+  // tetrahedra, no gray either way
   const stel = build('I', 'T');
   const f = facetCosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
-  ok(f.count === 5, `[I : T] = 5 at facet grain (got ${f.count})`);
+  ok(f.count === 5, `[I : T] = 5 per facet (got ${f.count})`);
   ok([...f.of.values()].every(k => k >= 0), 'no facet is gray');
   /*
-   * Every facet of a plane wears that plane's own label — the finer grain
-   * refines the coarser one, it does not contradict it.
+   * Every facet of a plane wears that plane's own label — the smaller piece
+   * refines the larger one, it does not contradict it.
    */
   const byPlane = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
   let agree = true;

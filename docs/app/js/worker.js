@@ -39,7 +39,7 @@ let faceClassStell = null;
  */
 let cosets = null;
 /*
- * And the same cosets one grain finer: facet -> class. Same subgroup, same
+ * And the same cosets per facet: facet -> class. Same subgroup, same
  * message; what differs is what wears the colour, a whole plane or a single
  * piece of surface.
  */
@@ -126,7 +126,7 @@ function meshFor(selected) {
     // plane-partitions (five tetrahedra = five sets of four planes), and a
     // spike is one colour because its whole surface lies in one set's planes
     faceCosets: mesh.facetRefs.map(f => (cosets ? cosets.planes[f.plane] : -1)),
-    // and by coset of the facet itself — the finest grain, and the only one
+    // and by coset of the facet itself — the smallest piece, and the only one
     // that can tell two hands apart when both lie in the same plane
     faceCosetsL: mesh.facetRefs.map(f => (cosetsL ? (cosetsL.of.get(f) ?? -1) : -1)),
     faceInside: mesh.faces.map((_, i) => akey(across(i).inside) || null),

@@ -1559,8 +1559,8 @@ export function mat3mul(a, b) {
 /*
  * Label the arrangement's PLANES by the cosets of a subgroup H in a group G —
  * as the app wires it, G is the POLYHEDRON group and H a subgroup of it chosen
- * beside the colour menu. The facet version above is the same labelling one
- * grain finer; the two differ in grain, not in handedness.
+ * beside the colour menu. The facet version above is the same labelling on
+ * smaller pieces; the two differ in what wears one colour, not in handedness.
  * Returns { planes: Int32Array(plane -> coset, -1 for gray), count }.
  *
  * Planes, not cells, because the classical pictures this exists for are
@@ -1594,7 +1594,7 @@ export function mat3mul(a, b) {
  */
 
 /**
- * The same labelling, one grain finer: the arrangement's FACETS.
+ * The same labelling on smaller pieces: the arrangement's FACETS.
  *
  * A facet is a single flat piece of surface, so "these facets share a colour"
  * says exactly that the subgroup carries one onto the other — which is the
