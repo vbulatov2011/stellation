@@ -251,28 +251,38 @@
         <em>polyhedron</em> symmetry, deliberately independent of the
         stellation symmetry — the stellation symmetry is how you <em>edit</em>,
         and changing it never repaints the figure.
-        <p><em>By right cosets</em> paints every facet by which coset of the
-        subgroup its <em>plane</em> belongs to: the subgroup's own set of
-        planes, and one translate of that set per coset. The classical example
-        is the reason to have it — pick subgroup <b>T</b> on the icosahedron
-        and the twenty face planes fall into five sets of four, each set the
-        faces of one of the five inscribed tetrahedra, so the compound of five
-        tetrahedra (stellation 47) wears its five colours, one per tetrahedron.
-        The colours count cosets among the polyhedron group's rotations when
-        the subgroup has no mirrors, which is what the classical picture does:
-        cosets of <em>T</em> in <em>I</em>, on a solid whose full symmetry is
-        <em>I<sub>h</sub></em>. The twenty planes carry the partition once per
-        hand of the compound, and the figure on screen decides which hand the
-        colours follow. Planes the cosets cannot label — a subgroup whose
-        cosets do not fit the plane stabilisers, such as <em>C<sub>5</sub></em>
-        against three-fold face axes — are gray rather than wrongly coloured.</p>
-        <p><em>By left cosets</em> paints every <em>cell</em> by its orbit
-        under the subgroup — cells of one left coset are cells of one orbit,
-        so this partition always exists and needs no choices at all. Under
-        <b>T</b> the icosahedron's first shell splits 4&#8239;+&#8239;4&#8239;+&#8239;12:
-        the invariant tetrahedron, its counter-tetrahedron, and the rest. A
-        cell the whole subgroup fixes — the core, always — is gray: it sits on
-        the symmetry rather than being carried by it.</p>
+        <p>The two entries differ in <em>grain</em> — what wears one colour —
+        not in anything about the cosets themselves.</p>
+        <p><em>Planes</em> paints every facet by which coset its plane belongs
+        to: the subgroup's own set of planes, and one translate of that set per
+        coset. This is the classical picture and the reason the colouring
+        exists — set the polyhedron symmetry to <b>I</b> and the subgroup to
+        <b>T</b>, and the icosahedron's twenty face planes fall into five sets
+        of four, each set the faces of one inscribed tetrahedron, so the
+        compound of five tetrahedra wears five colours, one per tetrahedron.
+        The chiral group matters: inside the full <em>I<sub>h</sub></em> every
+        face plane is held by mirrors that <b>T</b> does not contain, no coset
+        can name it, and the figure greys — honestly, rather than being given
+        colours it has no right to.</p>
+        <p><em>Facets</em> is the same labelling one grain finer, and it can
+        say things planes cannot. Colour the icosahedron under
+        <em>I<sub>h</sub></em> by cosets of <b>I</b>, index two: the two hands
+        of its chiral facets come out as the two colours, where the plane
+        colouring can only grey, both hands lying in the same planes. Where
+        the plane labelling exists the facets simply inherit it, so the two
+        agree and the finer grain never contradicts the coarser.</p>
+        <p>Gray always means the same thing: no coset can name this piece.
+        Either the subgroup holds it still — the core cell, fixed by
+        everything — or its stabiliser contains symmetries the subgroup lacks,
+        as <em>C<sub>5</sub></em> cannot name a face held by a three-fold
+        axis.</p>
+        <p>One caveat worth knowing. A coset labelling is canonical only
+        within one orbit: swap an orbit's representative for one outside the
+        subgroup and every label in it shifts together. The planes are a
+        single orbit, which is what makes them a shared frame for everything
+        else. Where no plane labelling exists, each facet orbit is labelled on
+        its own, so it still separates the hands but the particular colours
+        need not correspond from one orbit to the next.</p>
         <p>Both colourings follow the figure into the diagram, the diagram
         export and every mesh format that carries colour, and a saved document
         remembers them. The <a href="examples.html">gallery's compound of five

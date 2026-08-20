@@ -1558,8 +1558,10 @@ export function mat3mul(a, b) {
 
 /*
  * Label the arrangement's PLANES by the cosets of a subgroup H in a group G —
- * as the app wires it, G is the stellation group and H a chosen subgroup of
- * it. Returns { planes: Int32Array(plane -> coset, -1 for gray), count }.
+ * as the app wires it, G is the POLYHEDRON group and H a subgroup of it chosen
+ * beside the colour menu. The facet version above is the same labelling one
+ * grain finer; the two differ in grain, not in handedness.
+ * Returns { planes: Int32Array(plane -> coset, -1 for gray), count }.
  *
  * Planes, not cells, because the classical pictures this exists for are
  * plane-partitions. The compound of five tetrahedra IS a partition of the
@@ -1590,53 +1592,120 @@ export function mat3mul(a, b) {
  * whole subgroup fixes is gray by instruction: it sits on the symmetry rather
  * than being carried by it.
  */
-/*
- * Partition the CELLS by the left cosets of a subgroup H — which is to say,
- * by their H-orbits: two group elements carry the representative to the same
- * cell exactly when they lie in the same left coset, so "cells of one left
- * coset" and "cells of one H-orbit" are the same partition. Unlike the
- * right-coset colouring above, this needs no ambient group, no representative
- * and no hand: the H-orbit of a cell is intrinsic, so the partition is total
- * and canonical. On a regular orbit the classes are exactly the [G:H] cosets,
- * each of |H| cells; on smaller orbits they merge along the double cosets,
- * which is what the geometry actually does.
- *
- * With H the editing symmetry this paints the Cells panel's own boxes onto
- * the solid; with any other subgroup it shows what the boxes WOULD be. A cell
- * the whole subgroup fixes is gray, by the same instruction as the other
- * colouring: it sits on the symmetry rather than being carried by it.
- *
- * Returns { of: Map(cell -> class, -1 for fixed cells), count }.
- */
-export function leftCosetClasses(stel, subMatrices) {
-  const pool = new VertexPool(1e-6);
-  const byCenter = new Map();
-  for (const layer of stel.cellLayers) {
-    for (const o of layer) for (const c of o.cells) byCenter.set(pool.intern(c.center), c);
-  }
-  const map = (h, c) => byCenter.get(pool.intern(matMul(h, c.center)));
 
-  const of = new Map();
-  let count = 0;
-  for (const layer of stel.cellLayers) {
-    for (const o of layer) {
-      for (const seed of o.cells) {
-        if (of.has(seed)) continue;
-        const members = [];
-        for (const h of subMatrices) {
-          const c = map(h, seed);
-          if (c && !of.has(c) && !members.includes(c)) members.push(c);
-        }
-        if (members.length === 1 && subMatrices.length > 1) {
-          of.set(seed, -1);            // fixed by the whole subgroup
-        } else {
-          for (const c of members) of.set(c, count);
-          count++;
-        }
-      }
+/**
+ * The same labelling, one grain finer: the arrangement's FACETS.
+ *
+ * A facet is a single flat piece of surface, so "these facets share a colour"
+ * says exactly that the subgroup carries one onto the other — which is the
+ * claim the colouring is making, at the scale you are actually looking at.
+ * Planes are coarser: a whole plane takes one colour, so a figure with facets
+ * of both hands in one plane cannot be told apart, and the icosahedron under
+ * cosets of I comes out entirely gray when the two hands of its chiral cells
+ * are precisely what there is to see.
+ *
+ * This replaced a version that partitioned CELLS by their H-orbits. That one
+ * was wrong in a way worth remembering: H-orbits exist unconditionally, so it
+ * could never gray however badly the subgroup fitted, and orbits smaller than
+ * |H| are not cosets at all — the icosahedron's first shell came out 4+4+12
+ * and was painted as though those were three cosets.
+ *
+ * Returns { of: Map(facet -> class, -1 for gray), count }.
+ */
+export function facetCosetClasses(stel, matrices, subMatrices) {
+  const sameMat = (a, b) => {
+    for (let i = 0; i < 9; i++) if (Math.abs(a[i] - b[i]) > 1e-6) return false;
+    return true;
+  };
+  const inSub = (m) => subMatrices.some(x => sameMat(m, x));
+  const tmul = (r, g) => {
+    const o = new Array(9);
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        o[i * 3 + j] = r[i] * g[j] + r[3 + i] * g[3 + j] + r[6 + i] * g[6 + j];
+    return o;
+  };
+  const reps = [];
+  const cosetOf = matrices.map((g) => {
+    for (let i = 0; i < reps.length; i++) if (inSub(tmul(reps[i], g))) return i;
+    reps.push(g);
+    return reps.length - 1;
+  });
+
+  /*
+   * Facets are matched by their centroids, as cells are matched by their
+   * centres: a facet is a convex polygon in a plane, so its centroid names it
+   * uniquely among the facets of the arrangement.
+   */
+  const pool = new VertexPool(1e-6);
+  const byCentre = new Map();
+  const all = [];
+  for (const plane of stel.arrangement) {
+    for (const f of plane) {
+      let x = 0, y = 0, z = 0;
+      for (const id of f.v) { const q = stel.pool.get(id); x += q.x; y += q.y; z += q.z; }
+      const n = f.v.length || 1;
+      f._cc = v3(x / n, y / n, z / n);
+      byCentre.set(pool.intern(f._cc), f);
+      all.push(f);
     }
   }
-  return { of, count };
+  const map = (g, f) => byCentre.get(pool.intern(matMul(g, f._cc)));
+
+  /*
+   * Anchored to the plane labelling wherever that exists.
+   *
+   * A coset labelling is canonical only WITHIN one orbit: swap an orbit's
+   * representative for one outside H and every label in it shifts together,
+   * and nothing in the group relates one orbit's choice to another's. So
+   * labelling each facet orbit independently — which is what this did at
+   * first, and what the cell colouring before it did — makes "colour 0" mean
+   * a different thing in different orbits, and the five tetrahedra come out
+   * shuffled. Every facet lies in a plane, and the planes are one orbit with
+   * one representative, so where the plane labelling exists it is the shared
+   * frame that makes the facets agree. Where it does not — the icosahedron
+   * under cosets of I, where every plane greys on its mirrors — each facet
+   * orbit is labelled on its own, which still separates the two hands, but
+   * only within an orbit.
+   */
+  const byPlane = cosetClasses(stel, matrices, subMatrices);
+  const planeAnchored = byPlane.planes.some(k => k >= 0);
+
+  const of = new Map();
+  if (planeAnchored) {
+    for (const f of all) of.set(f, byPlane.planes[f.plane]);
+    return { of, count: byPlane.count };
+  }
+
+  for (const seed of all) {
+    if (of.has(seed)) continue;
+    const orbit = [];
+    for (const g of matrices) {
+      const f = map(g, seed);
+      if (f && !of.has(f) && !orbit.includes(f)) orbit.push(f);
+    }
+    // a representative whose stabiliser sits inside H, or the orbit is gray
+    let rep = null;
+    for (const f of orbit) {
+      let ok = true;
+      for (const g of matrices) if (map(g, f) === f && !inSub(g)) { ok = false; break; }
+      if (ok) { rep = f; break; }
+    }
+    if (!rep) {
+      for (const f of orbit) of.set(f, -1);
+      continue;
+    }
+    for (let gi = 0; gi < matrices.length; gi++) {
+      const f = map(matrices[gi], rep);
+      if (f && !of.has(f)) of.set(f, cosetOf[gi]);
+    }
+    for (const f of orbit) {
+      let fixed = true;
+      for (const h of subMatrices) if (map(h, f) !== f) { fixed = false; break; }
+      if (fixed) of.set(f, -1);
+    }
+  }
+  return { of, count: reps.length };
 }
 
 export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {

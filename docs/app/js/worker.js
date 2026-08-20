@@ -10,7 +10,7 @@
 import {
   buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
   atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
-  formatCellsUnder, regroupSubCells, cosetClasses, leftCosetClasses,
+  formatCellsUnder, regroupSubCells, cosetClasses, facetCosetClasses,
 } from '../../lib/core.js';
 
 let stel = null;
@@ -39,19 +39,12 @@ let faceClassStell = null;
  */
 let cosets = null;
 /*
- * And the LEFT cosets: cell -> H-orbit, which needs no ambient group at all.
- * Same subgroup, same message, same independence from the editing symmetry.
+ * And the same cosets one grain finer: facet -> class. Same subgroup, same
+ * message; what differs is what wears the colour, a whole plane or a single
+ * piece of surface.
  */
 let cosetsL = null;
 let cosetGroup = null;
-
-const properOf = (mats) => {
-  const det = (m) => m[0] * (m[4] * m[8] - m[5] * m[7])
-                   - m[1] * (m[3] * m[8] - m[5] * m[6])
-                   + m[2] * (m[3] * m[7] - m[4] * m[6]);
-  const rotations = mats.filter(m => det(m) > 0);
-  return { rotations, hasImproper: rotations.length !== mats.length };
-};
 
 function toPoly(g) {
   const vertices = [];
@@ -133,11 +126,9 @@ function meshFor(selected) {
     // plane-partitions (five tetrahedra = five sets of four planes), and a
     // spike is one colour because its whole surface lies in one set's planes
     faceCosets: mesh.facetRefs.map(f => (cosets ? cosets.planes[f.plane] : -1)),
-    // and by LEFT coset: the H-orbit of the face's own cell
-    faceCosetsL: mesh.faces.map((_, i) => {
-      const c = across(i).inside;
-      return (cosetsL && c) ? (cosetsL.of.get(c) ?? -1) : -1;
-    }),
+    // and by coset of the facet itself — the finest grain, and the only one
+    // that can tell two hands apart when both lie in the same plane
+    faceCosetsL: mesh.facetRefs.map(f => (cosetsL ? (cosetsL.of.get(f) ?? -1) : -1)),
     faceInside: mesh.faces.map((_, i) => akey(across(i).inside) || null),
     faceOutside: mesh.faces.map((_, i) => akey(across(i).outside) || null),
     stats: {
@@ -184,8 +175,8 @@ function diagramFor(planeIndex, selected) {
         selected: f.selected,
         // the diagram is one plane, so its regions share that plane's coset
         coset: cosets ? cosets.planes[d.planeIndex] : -1,
-        // by LEFT coset each region wears the H-orbit of the cell it caps
-        cosetL: (cosetsL && (below || above)) ? (cosetsL.of.get(below || above) ?? -1) : -1,
+        // by facet, each region wears its own facet's coset
+        cosetL: cosetsL ? (cosetsL.of.get(f.facet) ?? -1) : -1,
         facing: f.facing,          // 1 outward, 0 inward (lines a cavity)
         ref: key(below || above),
         refBelow: key(below),
@@ -231,7 +222,7 @@ self.onmessage = (e) => {
         cosets = stel.planes.length
           ? cosetClasses(stel, cosetGroup, cosetGroup) : null;
         cosetsL = stel.planes.length
-          ? leftCosetClasses(stel, cosetGroup) : null;
+          ? facetCosetClasses(stel, cosetGroup, cosetGroup) : null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
@@ -335,16 +326,19 @@ self.onmessage = (e) => {
          */
         const prefer = payload.selected
           ? selectedCells(stel, new Set(payload.selected)) : null;
-        let G = cosetGroup;
-        if (G && payload.subMatrices) {
-          // a mirror-free subgroup counts its cosets among the rotations
-          const sub = properOf(payload.subMatrices), grp = properOf(G);
-          if (!sub.hasImproper && grp.hasImproper) G = grp.rotations;
-        }
-        cosets = (stel.planes.length && G && payload.subMatrices)
-          ? cosetClasses(stel, G, payload.subMatrices, prefer) : null;
-        cosetsL = (stel.planes.length && payload.subMatrices)
-          ? leftCosetClasses(stel, payload.subMatrices) : null;
+        /*
+     * The group is the polyhedron group exactly as chosen. It used to drop
+     * silently to that group's rotations whenever the subgroup had no
+     * mirrors, so that T inside Ih would produce the five tetrahedra — but
+     * that answers a question nobody asked, and for I inside Ih it collapsed
+     * the honest index of 2 to 1 and painted the whole figure one colour.
+     * The five tetrahedra are a chiral figure; they want the polyhedron
+     * symmetry set to I, and saying so is better than guessing.
+     */
+        cosets = (stel.planes.length && cosetGroup && payload.subMatrices)
+          ? cosetClasses(stel, cosetGroup, payload.subMatrices, prefer) : null;
+        cosetsL = (stel.planes.length && cosetGroup && payload.subMatrices)
+          ? facetCosetClasses(stel, cosetGroup, payload.subMatrices) : null;
         reply({ count: cosets ? cosets.count : 0,
                 countL: cosetsL ? cosetsL.count : 0 });
         break;

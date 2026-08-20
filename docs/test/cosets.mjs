@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { buildStellation, facePlanes, suggestDepth, cosetClasses,
-         leftCosetClasses, parseCellsAny, selectedCells } from '../lib/core.js';
+         facetCosetClasses, parseCellsAny, selectedCells } from '../lib/core.js';
 
 let passed = 0, failed = 0;
 const ok = (cond, label) => {
@@ -194,56 +194,51 @@ const groupsOf = (stel, res) => {
   }
 }
 
-// ------------------------- left cosets: cells of one H-orbit, one colour each
+
+
+// ------------------------------- the same cosets, one grain finer: facets
 
 {
   /*
-   * Left cosets are H-orbits: two elements carry the representative to the
-   * same cell exactly when they share a left coset, so the partition is
-   * intrinsic — no ambient group, no representative, no hand. Under T the
-   * icosahedron's twenty first-shell cells fall 4 + 4 + 12: the T-invariant
-   * tetrahedron, its counter-tetrahedron, and the rest in one orbit.
+   * Facets are what you are actually looking at, and the only grain that can
+   * separate two hands lying in the same plane. Three claims, on the case the
+   * owner reported: the icosahedron under Ih coloured by cosets of I.
    */
-  const stel = build('Ih', 'I');
-  const res = leftCosetClasses(stel, symmetry.T.matrices);
-  const shellIdx = stel.cellLayers.findIndex(l =>
-    l.reduce((n, o) => n + o.cells.length, 0) === 20);
-  const sizes = new Map();
-  for (const o of stel.cellLayers[shellIdx]) {
-    for (const c of o.cells) {
-      const k = res.of.get(c);
-      sizes.set(k, (sizes.get(k) || 0) + 1);
+  const stel = build('Ih', 'Ih');
+  const res = facetCosetClasses(stel, symmetry.Ih.matrices, symmetry.I.matrices);
+  ok(res.count === 2, `[Ih : I] = 2 — two colours (got ${res.count})`);
+  const used = new Set([...res.of.values()].filter(k => k >= 0));
+  ok(used.size === 2, 'and both are actually used on the facets');
+  const gray = [...res.of.values()].filter(k => k === -1).length;
+  ok(gray > 0, `${gray} facets are gray — those a mirror of Ih holds still`);
+  /*
+   * The planes cannot say any of that: every face plane's stabiliser in Ih is
+   * C₃ᵥ, whose mirrors I lacks, so the whole plane colouring greys. This is
+   * the difference the finer grain buys.
+   */
+  const byPlane = cosetClasses(stel, symmetry.Ih.matrices, symmetry.I.matrices);
+  ok(byPlane.planes.every(k => k === -1), 'where the plane colouring greys entirely');
+}
+
+{
+  // and where the planes DO work, the facets agree with them: I / T, five
+  // tetrahedra, no gray at either grain
+  const stel = build('I', 'T');
+  const f = facetCosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
+  ok(f.count === 5, `[I : T] = 5 at facet grain (got ${f.count})`);
+  ok([...f.of.values()].every(k => k >= 0), 'no facet is gray');
+  /*
+   * Every facet of a plane wears that plane's own label — the finer grain
+   * refines the coarser one, it does not contradict it.
+   */
+  const byPlane = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
+  let agree = true;
+  for (const plane of stel.arrangement) {
+    for (const facet of plane) {
+      if (f.of.get(facet) !== byPlane.planes[facet.plane]) agree = false;
     }
   }
-  const dist = [...sizes.values()].sort((a, b) => a - b).join('+');
-  ok(dist === '4+4+12', `the twenty first-shell cells split 4+4+12 under T (got ${dist})`);
-  ok(![...sizes.keys()].includes(-1), 'none of them is fixed by T, so none is gray');
-
-  // the core: one cell, fixed by everything — gray by instruction
-  const core = stel.cellLayers[0];
-  const coreCells = core.flatMap(o => o.cells);
-  ok(coreCells.length === 1 && res.of.get(coreCells[0]) === -1,
-     'the core cell, fixed by the whole subgroup, is gray');
-
-  // every cell in the arrangement is labelled or gray, and classes are whole
-  let total = 0, covered = 0;
-  for (const layer of stel.cellLayers) {
-    for (const o of layer) for (const c of o.cells) {
-      total++;
-      const k = res.of.get(c);
-      if (k === -1 || (k >= 0 && k < res.count)) covered++;
-    }
-  }
-  ok(covered === total, `every one of the ${total} cells is labelled or gray`);
-
-  // under C5(I) the twenty split into four orbits of five, no fixed cells
-  const res5 = leftCosetClasses(stel, symmetry['C5(I)'].matrices);
-  const sizes5 = new Map();
-  for (const o of stel.cellLayers[shellIdx]) {
-    for (const c of o.cells) sizes5.set(res5.of.get(c), (sizes5.get(res5.of.get(c)) || 0) + 1);
-  }
-  ok([...sizes5.values()].sort().join('+') === '5+5+5+5',
-     'under C5(I) the same shell splits into four orbits of five');
+  ok(agree, 'and each facet agrees with the plane it lies in');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
