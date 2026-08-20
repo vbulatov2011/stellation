@@ -19,7 +19,10 @@
  * that starts spinning the moment it loads is a surprise, not a preference.
  */
 
+import { hasFSAccess, writeFile, createFolderChooser } from '../../lib/uilib/files.js';
+
 const $ = (sel) => document.querySelector(sel);
+
 const STORE_KEY = 'stell.animation';
 const TAU = Math.PI * 2;
 
@@ -112,6 +115,24 @@ export function initAnimation({ renderer, currentName, setStatus }) {
   const canRecord = typeof MediaRecorder !== 'undefined' &&
                     !!renderer.canvas?.captureStream;
 
+  /*
+   * Where the videos go: the same remembered-folder machinery the two export
+   * dialogs use — asked once, kept in IndexedDB, changed from its own button.
+   * Its own key, so plates, models and videos can each have their place.
+   */
+  const folders = createFolderChooser({
+    key: 'stell.animation.folder', pickerId: 'stellation-videos',
+  });
+  async function showFolder() {
+    if (!hasFSAccess()) return;
+    const folder = await folders.current();
+    const where = $('#animWhere');
+    if (where) {
+      where.textContent = folder ? folder.name : 'you will be asked once';
+      where.classList.toggle('dim', !folder);
+    }
+  }
+
   async function recordTurn() {
     const axis = parseAxis(), speed = speedOf();
     if (!axis) { info.textContent = 'the axis needs three numbers, e.g. 0 1 0'; return; }
@@ -119,6 +140,19 @@ export function initAnimation({ renderer, currentName, setStatus }) {
 
     const mime = mimeFor(fmtSel.value);
     if (!mime) { info.textContent = `this browser cannot encode ${fmtSel.value}`; return; }
+
+    /*
+     * The folder first, while the click's user activation still holds — a
+     * recording takes seconds and the picker would be refused after it. A
+     * dismissed picker cancels the recording before any work is done.
+     */
+    let dir = null;
+    if (hasFSAccess()) {
+      try { dir = await folders.choose(); }
+      catch (err) { info.textContent = err && err.message ? err.message : String(err); return; }
+      if (!dir) { info.textContent = ''; return; }
+      showFolder();
+    }
 
     recording = true;
     videoBtn.disabled = true;
@@ -143,36 +177,46 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     rec.start();
 
     /*
-     * The angle comes from the clock, not from accumulated frames, so a slow
-     * machine drops frames rather than stretching the turn: the video is one
-     * turn long at the speed asked for, whatever the frame rate managed.
+     * The angle comes from the FRAME COUNT: one turn is a fixed number of
+     * frames, each exactly its share of the circle, whatever the wall clock
+     * did between them. Driven by time, a slow machine dropped the frames it
+     * could not render and the video jerked past them; counted, it just takes
+     * longer to record, and every frame is in the file — a perfectly even
+     * turn on any machine. That trade is right for a recording (nobody minds
+     * a slow export, everybody minds a jerky video) and wrong for the live
+     * spin above, which stays clock-driven for the same reason in reverse.
+     *
+     * The last frame is one step SHORT of 2π, not on it: the frame at 2π is
+     * the frame at 0 again, and a loop that repeats its seam frame plays with
+     * a stutter every time round.
+     *
+     * Pacing: never ahead of real time, so a fast machine records one turn in
+     * one turn's time and the file plays at the speed asked for; behind is
+     * let be. And each wait is a rAF raced against a timer, because rAF alone
+     * stops when the tab is covered — that froze the recorder with the button
+     * dead — while drawing and requestFrame() work fine without a compositor.
      */
-    /*
-     * Each step is a rAF raced against a timer. rAF alone stops the moment
-     * the tab is hidden — cover the window mid-recording and the loop hangs
-     * for ever with the button dead — while drawing and requestFrame() both
-     * keep working without the compositor. So a covered tab degrades to four
-     * frames a second instead of freezing, and the file still comes out one
-     * turn long, because the angle is the clock's, not the frame count's.
-     */
-    const step = (fn) => {
-      let called = false;
-      const once = () => { if (!called) { called = true; fn(); } };
-      requestAnimationFrame(once);
-      setTimeout(once, 250);
-    };
-    const t0 = performance.now();
-    await new Promise((resolve) => {
-      const frame = () => {
-        const frac = Math.min(1, (performance.now() - t0) / 1000 / T);
-        renderer.rotation = qnorm(qmul(q0, aboutAxis(axis, TAU * frac * Math.sign(speed))));
-        renderer.draw();
-        pushFrame();               // hand this exact frame to the encoder
-        info.textContent = `recording — ${(frac * T).toFixed(1)} of ${T.toFixed(1)} s`;
-        if (frac < 1) step(frame); else resolve();
+    const FPS = 60;
+    const frames = Math.max(8, Math.round(FPS * T));
+    const frameMs = 1000 * T / frames;
+    const waitUntil = (deadline) => new Promise((resolve) => {
+      const poke = () => {
+        if (performance.now() >= deadline) { resolve(); return; }
+        let called = false;
+        const once = () => { if (!called) { called = true; poke(); } };
+        requestAnimationFrame(once);
+        setTimeout(once, 250);
       };
-      step(frame);
+      poke();
     });
+    const t0 = performance.now();
+    for (let i = 0; i < frames; i++) {
+      renderer.rotation = qnorm(qmul(q0, aboutAxis(axis, TAU * (i / frames) * Math.sign(speed))));
+      renderer.draw();
+      pushFrame();               // hand this exact frame to the encoder
+      info.textContent = `recording — frame ${i + 1} of ${frames}`;
+      await waitUntil(t0 + (i + 1) * frameMs);
+    }
     // a beat for the encoder to take the closing frame, then stop
     await new Promise(r => setTimeout(r, 120));
     rec.stop();
@@ -191,12 +235,18 @@ export function initAnimation({ renderer, currentName, setStatus }) {
       .replace(/\.(json|stel|txt)$/i, '').toLowerCase().normalize('NFD')
       .replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') || 'stellation';
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${stem}-turn.${ext}`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
-    setStatus(`saved ${a.download} — one turn, ${T.toFixed(1)} s`);
+    const fname = `${stem}-turn.${ext}`;
+    if (dir) {
+      await writeFile(dir, fname, blob);
+      setStatus(`saved ${fname} in ${dir.name} — one turn, ${frames} frames`);
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fname;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+      setStatus(`saved ${fname} — one turn, ${frames} frames`);
+    }
     sync();
     if (on.checked) start();       // hand the wheel back to the free spin
   }
@@ -236,6 +286,18 @@ export function initAnimation({ renderer, currentName, setStatus }) {
   if (!mimeFor(fmtSel.value) && mimeFor('webm')) fmtSel.value = 'webm';
 
   for (const c of [on, axisIn, speedIn, fmtSel]) c.addEventListener('input', sync);
+  const whereRow = $('#animWhereRow');
+  if (whereRow) whereRow.hidden = !hasFSAccess();
+  const changeBtn = $('#animChangeFolder');
+  if (changeBtn) {
+    changeBtn.onclick = async () => {
+      try { await folders.choose(true); } catch (err) {
+        info.textContent = err && err.message ? err.message : String(err);
+      }
+      showFolder();
+    };
+  }
+  showFolder();
   videoBtn.onclick = () => { recordTurn().catch(err => {
     recording = false; videoBtn.disabled = false;
     info.textContent = err && err.message ? err.message : String(err);
