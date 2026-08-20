@@ -76,6 +76,21 @@ function call(type, payload, onProgress) {
 // ------------------------------------------------------------------ boot
 
 let renderer, diagram, cells, docs, presets, workspace;
+/*
+ * The #doc= link this session was opened with, held so the URL stays that
+ * link until the first edit — at which point the state hash below is the
+ * honest description again. The state hash carries geometry only, so letting
+ * it overwrite a document link threw away the colouring, the coset subgroup
+ * and the edge style: open the compound of five tetrahedra from the gallery,
+ * reload, and it came back grey.
+ *
+ * Declared here rather than beside syncHash, where it belongs by subject:
+ * boot() assigns it long before the bottom of this file is evaluated, and a
+ * declaration down there is in its temporal dead zone until then — which threw
+ * inside the open, where the catch turned a perfectly good document link into
+ * a silent fall back to the icosahedron.
+ */
+let docLinkHash = null;
 
 /*
  * How the facets are coloured. `class` groups the original faces under the
@@ -217,6 +232,24 @@ async function boot() {
       const r = await fetch(docLink[1]);
       if (!r.ok) throw new Error(r.statusText);
       await openDocument(await r.text(), docLink[1].split('/').pop());
+      /*
+       * Keep the link that opened this. The state hash below describes the
+       * geometry — solid, groups, depth, camera, cells — and nothing else, so
+       * overwriting a #doc= link with it silently threw away everything the
+       * document says about how to DRAW the figure: which colouring, which
+       * coset subgroup, the edge style. Open the compound of five tetrahedra
+       * from the gallery, reload, and it came back grey. So while the
+       * selection is still the document's own, the URL stays the document's
+       * own; see syncHash.
+       */
+      docLinkHash = hash;
+      /*
+       * And put it back now. The load's own refreshes have already written
+       * the state hash over it, and the only other caller is the camera
+       * watcher, which does nothing while the view sits still — so without
+       * this the link is restored only if you happen to turn the solid.
+       */
+      syncHash();
     } catch (err) {
       setStatus(`could not open ${docLink[1]}: ${err.message}`, false);
       await select(findItem('u27'));
@@ -256,6 +289,12 @@ let lastView = '';
 
 function syncHash() {
   if (!state.current) return;
+  // still the document that was linked: keep its link, which carries the
+  // display settings the state hash has no room for. mark() drops it.
+  if (docLinkHash) {
+    try { history.replaceState(null, '', '#' + docLinkHash); } catch { }
+    return;
+  }
   const v = renderer ? `/v${renderer.getView().join(',')}` : '';
   const h = `${state.current.file}/${state.polySym}/${state.stellSym}` +
             `/d${state.depth}${v}/${state.cellsString || ''}`;
@@ -288,6 +327,13 @@ function findItem(file) {
 const undoStack = { past: [], future: [], limit: 100 };
 
 function mark() {
+  /*
+   * The first edit is where a linked document stops being that document, so
+   * it is where its URL gives way to the state hash. Hung on mark() because
+   * mark() IS "the user is about to change the figure" — comparing cell
+   * strings instead meant racing refresh(), which fills them in later.
+   */
+  docLinkHash = null;
   undoStack.past.push(new Set(state.selected));
   if (undoStack.past.length > undoStack.limit) undoStack.past.shift();
   undoStack.future.length = 0;
