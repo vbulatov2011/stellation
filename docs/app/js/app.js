@@ -700,8 +700,13 @@ function syncSymmetrySelects() {
  * polyhedron group it no longer fits.
  */
 function fillCosetSub() {
+  const sel = $('#cosetSub');
   const names = subgroupsOf(state.polySym);
-  const kept = $('#cosetSub').value;
+  // a document being opened parks its subgroup here until the menu exists
+  const want = sel.dataset.want && names.includes(sel.dataset.want)
+    ? sel.dataset.want : null;
+  if (sel.dataset.want && names.includes(sel.dataset.want)) delete sel.dataset.want;
+  const kept = want || sel.value;
   fillSelect('#cosetSub', names, names.includes(kept) ? kept : state.polySym);
 }
 
@@ -1701,6 +1706,7 @@ function currentPresetText(docName) {
     showAllFacets: $('#showAllFacets').checked,
     spin: $('#autoRotate').checked,
     colorMode: $('#colorMode').value,
+    cosetSub: $('#cosetSub').value || null,
     faceOpacity: Number($('#faceOpacity').value) / 100,
     view: renderer?.getView() || null,
     planeRows: state.customPlanes ? state.planeRows : null,
@@ -1831,6 +1837,12 @@ function applyDisplaySettings(doc) {
   }
   $('#colorMode').value = doc.colorMode || 'layer';
   $('#colorMode').dispatchEvent(new Event('change'));
+  /*
+   * The coset subgroup cannot be set yet — its menu is refilled for the
+   * document's polyhedron group later in the open — so the wish is parked on
+   * the element and fillCosetSub() honours it when the options exist.
+   */
+  if (doc.cosetSub) $('#cosetSub').dataset.want = doc.cosetSub;
   $('#faceOpacity').value = String(Math.round((doc.faceOpacity ?? 1) * 100));
   $('#faceOpacity').dispatchEvent(new Event('input'));
   // a pre-split document has only `showEdges`, which drew both kinds alike

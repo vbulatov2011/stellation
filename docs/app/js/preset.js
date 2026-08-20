@@ -65,7 +65,7 @@ export function writePreset({
   name, polyhedron, file, polySymmetry, stellSymmetry,
   planeDepth, cells, cellsIndexing = null, diagramFace,
   showEdges = true, showAllFacets = true, spin = false, colorMode = 'layer',
-  faceOpacity = 1, edges = null,
+  cosetSub = null, faceOpacity = 1, edges = null,
   view = null, planeRows = null,
   exportLengthUnit = 0.01,
 }) {
@@ -92,7 +92,7 @@ export function writePreset({
        * beside it, as the master "any edges at all", so a document saved now
        * still opens sensibly in a build that predates the split.
        */
-      display: { diagramFace, showEdges, showAllFacets, spin, colorMode, faceOpacity, edges },
+      display: { diagramFace, showEdges, showAllFacets, spin, colorMode, cosetSub, faceOpacity, edges },
       camera: view ? { view } : undefined,
       /*
        * A custom arrangement's plane set, structured: one object per row,
@@ -282,8 +282,10 @@ export function readPreset(doc) {
      * the colouring is a view of the geometry, and the wrong one is better
      * than a mode this build cannot draw.
      */
-    colorMode: ['class', 'stellClass'].includes(p.display?.colorMode)
+    colorMode: ['class', 'stellClass', 'coset', 'cosetL'].includes(p.display?.colorMode)
       ? p.display.colorMode : 'layer',
+    // the coset colourings carry their subgroup, or they reopen colourless
+    cosetSub: typeof p.display?.cosetSub === 'string' ? p.display.cosetSub : null,
     // written since translucency existed; anything older was drawn solid
     faceOpacity: clamp01(p.display?.faceOpacity, 1),
     /*

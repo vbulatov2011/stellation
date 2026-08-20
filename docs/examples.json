@@ -109,6 +109,15 @@
         "icosahedral"
       ],
       "note": "The same twelve rotations as the small figure beside it, spent on a great deal more of the arrangement: 148 pieces reaching through six of the eight shells — four from the first, eighteen from the second, forty-eight from the third. Not one of them is a sub-cell the full group could have taken: under Ih every pick here would have dragged in the rest of its orbit and the figure would have closed up into something icosahedral. Under T each is a single tick in the cells table, which is why the file records the group it was picked under and not just the solid. 136 vertices and 244 faces."
+    },
+    {
+      "file": "examples/compound-of-five-tetrahedra.json",
+      "name": "Compound of five tetrahedra",
+      "tags": [
+        "compound",
+        "icosahedral"
+      ],
+      "note": "Crennell's 47th stellation, and the figure the coset colouring exists for. The twenty face planes of the icosahedron fall into five sets of four, each set the faces of a regular tetrahedron, and the five tetrahedra together use every plane once. The document opens coloured that way: face colours are set to right cosets of the subgroup T, so each tetrahedron wears one of five colours -- the classical picture. Drop the stellation symmetry to T and the editing follows one tetrahedron at a time while the colours stay put. 251 of the arrangement's 473 pieces; the mesh is 182 vertices and 300 faces."
     }
   ]
 }

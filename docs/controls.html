@@ -231,7 +231,7 @@
         icosahedron at all.</dd>
 
       <dt>face colours</dt>
-      <dd>Three ways to colour the facets. <em>By shell</em>, one hue per layer
+      <dd>Five ways to colour the facets. <em>By shell</em>, one hue per layer
         outward from the core, so you can read how deep a piece sits.
         <em>By face class</em>, one hue per kind of face of the original
         polyhedron — a property of the solid you started from, so an
@@ -242,7 +242,41 @@
         face onto every other. The icosahedron's twenty faces are one class
         under <em>I</em>, two under <em>T<sub>h</sub></em>, and twenty under
         <em>E</em> — so this is the colouring that shows what the symmetry you
-        are building under actually treats as the same.</dd>
+        are building under actually treats as the same. And two colourings by
+        the <b>cosets of a subgroup</b>, chosen in the menu that appears below
+        the colour choice — see the next entry.</dd>
+
+      <dt>coset subgroup</dt>
+      <dd>Shown when either coset colouring is chosen: a subgroup of the
+        <em>polyhedron</em> symmetry, deliberately independent of the
+        stellation symmetry — the stellation symmetry is how you <em>edit</em>,
+        and changing it never repaints the figure.
+        <p><em>By right cosets</em> paints every facet by which coset of the
+        subgroup its <em>plane</em> belongs to: the subgroup's own set of
+        planes, and one translate of that set per coset. The classical example
+        is the reason to have it — pick subgroup <b>T</b> on the icosahedron
+        and the twenty face planes fall into five sets of four, each set the
+        faces of one of the five inscribed tetrahedra, so the compound of five
+        tetrahedra (stellation 47) wears its five colours, one per tetrahedron.
+        The colours count cosets among the polyhedron group's rotations when
+        the subgroup has no mirrors, which is what the classical picture does:
+        cosets of <em>T</em> in <em>I</em>, on a solid whose full symmetry is
+        <em>I<sub>h</sub></em>. The twenty planes carry the partition once per
+        hand of the compound, and the figure on screen decides which hand the
+        colours follow. Planes the cosets cannot label — a subgroup whose
+        cosets do not fit the plane stabilisers, such as <em>C<sub>5</sub></em>
+        against three-fold face axes — are gray rather than wrongly coloured.</p>
+        <p><em>By left cosets</em> paints every <em>cell</em> by its orbit
+        under the subgroup — cells of one left coset are cells of one orbit,
+        so this partition always exists and needs no choices at all. Under
+        <b>T</b> the icosahedron's first shell splits 4&#8239;+&#8239;4&#8239;+&#8239;12:
+        the invariant tetrahedron, its counter-tetrahedron, and the rest. A
+        cell the whole subgroup fixes — the core, always — is gray: it sits on
+        the symmetry rather than being carried by it.</p>
+        <p>Both colourings follow the figure into the diagram, the diagram
+        export and every mesh format that carries colour, and a saved document
+        remembers them. The <a href="examples.html">gallery's compound of five
+        tetrahedra</a> opens already coloured this way.</p></dd>
 
       <dt>build out to N shells</dt>
       <dd>How far out to carry the arrangement. Chosen per solid; raise it if
