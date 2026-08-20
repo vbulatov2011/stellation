@@ -27,12 +27,12 @@ let meta = null;
 let faceClass = null;
 let faceClassStell = null;
 /*
- * Cell -> coset of the stellation subgroup in the polyhedron group, for the
- * coset colouring; -1 is gray. Recomputed whenever either group moves: on
- * build, and on regroup, which changes the subgroup without a rebuild.
+ * Cell -> coset, for the coset colouring; -1 is gray. The cosets are of a
+ * chosen subgroup INSIDE the stellation group ('cosets' message); the default
+ * after a build or regroup is the stellation group over itself, one colour.
  */
 let cosets = null;
-let groupMats = null;
+let stellMats = null;
 
 function toPoly(g) {
   const vertices = [];
@@ -200,9 +200,11 @@ self.onmessage = (e) => {
         faceClass = stel.planes.length ? planeClasses(stel, matrices).group : null;
         faceClassStell = stel.planes.length
           ? planeClasses(stel, subMatrices || matrices).group : null;
-        groupMats = matrices;
+        stellMats = subMatrices || matrices;
+        // the default colouring group is the stellation group over itself —
+        // one colour — until the app names a proper subgroup of it
         cosets = stel.planes.length
-          ? cosetClasses(stel, matrices, subMatrices || matrices) : null;
+          ? cosetClasses(stel, stellMats, stellMats) : null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
@@ -281,12 +283,27 @@ self.onmessage = (e) => {
         // the stellation group decides this classification, so it moves too
         faceClassStell = stel.planes.length
           ? planeClasses(stel, payload.subMatrices || payload.matrices || null).group : null;
-        cosets = (stel.planes.length && groupMats)
-          ? cosetClasses(stel, groupMats, payload.subMatrices || groupMats) : null;
+        stellMats = payload.subMatrices || payload.matrices || stellMats;
+        cosets = (stel.planes.length && stellMats)
+          ? cosetClasses(stel, stellMats, stellMats) : null;
         reply({
           outline: outline(),
           faces: diagramFaces(stel, payload.subMatrices || payload.matrices || null),
         });
+        break;
+      }
+
+      /*
+       * Recompute the coset colouring against a subgroup of the caller's own
+       * choosing — the colouring's subgroup is picked beside the colour menu
+       * and need not be the editing symmetry. Cheap: no rebuild, no regroup,
+       * just the cell -> coset map; the next mesh/diagram fetch carries it.
+       */
+      case 'cosets': {
+        if (!stel) { fail('nothing built yet'); break; }
+        cosets = (stel.planes.length && stellMats && payload.subMatrices)
+          ? cosetClasses(stel, stellMats, payload.subMatrices) : null;
+        reply({ count: cosets ? cosets.count : 0 });
         break;
       }
 

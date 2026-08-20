@@ -1557,8 +1557,10 @@ export function mat3mul(a, b) {
 // ---------------------------------------------------------------- coset colouring
 
 /*
- * Partition the cells by the cosets of the stellation subgroup H in the
- * polyhedron group G.
+ * Partition the cells by the cosets of a subgroup H in a group G — as the app
+ * wires it, H is chosen among the subgroups of the STELLATION group and G is
+ * that stellation group itself, so the colouring lives inside the symmetry
+ * the figure is being built under.
  *
  * The classic picture this generalises: take the icosahedron's rotation group
  * I and the tetrahedral subgroup T inside it, index 5. The twenty first-shell
@@ -1614,41 +1616,58 @@ export function cosetClasses(stel, matrices, subMatrices) {
   }
   const map = (g, c) => byCenter.get(pool.intern(matMul(g, c.center)));
 
+  /*
+   * The orbits are computed HERE, under the group that was passed in, rather
+   * than borrowed from stel.cellLayers: the arrangement's own orbit structure
+   * belongs to the polyhedron group, and the colouring's group — the
+   * stellation group — is usually smaller, so one of the arrangement's orbits
+   * is several of these. Borrowing left every cell outside the representative's
+   * own sub-orbit unlabelled.
+   */
   const of = new Map();
+  const used = new Set();
   for (const layer of stel.cellLayers) {
     for (const o of layer) {
-      /*
-       * A representative whose stabiliser sits inside H. When the orbit is
-       * regular — as many cells as group elements — every stabiliser is
-       * trivial and the first cell serves; otherwise each cell is tried until
-       * one fits, and an orbit where none does cannot be coset-coloured.
-       */
-      let rep = null;
-      if (o.cells.length === matrices.length) {
-        rep = o.cells[0];
-      } else {
-        for (const c of o.cells) {
-          let ok = true;
-          for (const g of matrices) {
-            if (map(g, c) === c && !inSub(g)) { ok = false; break; }
-          }
-          if (ok) { rep = c; break; }
+      for (const seed of o.cells) {
+        if (used.has(seed)) continue;
+        const orbit = [];
+        for (const g of matrices) {
+          const c = map(g, seed);
+          if (c && !used.has(c)) { used.add(c); orbit.push(c); }
         }
-      }
-      if (!rep) {
-        for (const c of o.cells) of.set(c, -1);
-        continue;
-      }
-      // label each cell with the coset of the first element that reaches it
-      for (let gi = 0; gi < matrices.length; gi++) {
-        const c = map(matrices[gi], rep);
-        if (c && !of.has(c)) of.set(c, cosetOf[gi]);
-      }
-      // invariant under the whole subgroup: on the symmetry, not carried by it
-      for (const c of o.cells) {
-        let fixed = true;
-        for (const h of subMatrices) if (map(h, c) !== c) { fixed = false; break; }
-        if (fixed) of.set(c, -1);
+        /*
+         * A representative whose stabiliser sits inside H. When the orbit is
+         * regular — as many cells as group elements — every stabiliser is
+         * trivial and the first cell serves; otherwise each cell is tried
+         * until one fits, and an orbit where none does cannot be coloured.
+         */
+        let rep = null;
+        if (orbit.length === matrices.length) {
+          rep = orbit[0];
+        } else {
+          for (const c of orbit) {
+            let ok = true;
+            for (const g of matrices) {
+              if (map(g, c) === c && !inSub(g)) { ok = false; break; }
+            }
+            if (ok) { rep = c; break; }
+          }
+        }
+        if (!rep) {
+          for (const c of orbit) of.set(c, -1);
+          continue;
+        }
+        // label each cell with the coset of the first element that reaches it
+        for (let gi = 0; gi < matrices.length; gi++) {
+          const c = map(matrices[gi], rep);
+          if (c && !of.has(c)) of.set(c, cosetOf[gi]);
+        }
+        // invariant under the whole subgroup: on the symmetry, not carried by it
+        for (const c of orbit) {
+          let fixed = true;
+          for (const h of subMatrices) if (map(h, c) !== c) { fixed = false; break; }
+          if (fixed) of.set(c, -1);
+        }
       }
     }
   }

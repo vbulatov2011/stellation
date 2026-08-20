@@ -145,5 +145,25 @@ const classesOf = (stel, res, layer) => {
   ok(by.size === 1 && by.has(-1), 'under Ih with mirrors in the stabiliser, T leaves the shell gray');
 }
 
+// ------------------- built under one group, coloured inside another (the UI's shape)
+
+{
+  /*
+   * The app builds the arrangement under the POLYHEDRON group and colours by
+   * cosets inside the STELLATION group — so the colouring's orbits are not
+   * the arrangement's orbits, and cosetClasses must compute its own. Built
+   * under Ih, coloured by T inside I: the five tetrahedra again, from an
+   * arrangement whose own orbit structure never mentions I.
+   */
+  const stel = build('Ih', 'I');
+  const res = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
+  ok(res.count === 5, 'built under Ih, [I : T] still counts 5 cosets');
+  const shell = stel.cellLayers.find(l =>
+    l.reduce((n, o) => n + o.cells.length, 0) === 20);
+  const by = classesOf(stel, res, stel.cellLayers.indexOf(shell));
+  ok(by.size === 5 && [...by.values()].every(c => c.length === 4),
+     'and the twenty cells still fall into five tetrahedra of four');
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

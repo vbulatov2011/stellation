@@ -687,7 +687,36 @@ function syncSymmetrySelects() {
   const stellNames = subgroupsOf(state.polySym);
   if (!stellNames.includes(state.stellSym)) state.stellSym = state.polySym;
   fillSelect('#stellSym', stellNames, state.stellSym);
+
+  fillCosetSub();
 }
+
+/*
+ * The coset colouring's own subgroup, offered beside the colour menu. Its
+ * candidates are the subgroups of the STELLATION group — the colouring lives
+ * inside the symmetry the figure is being built under, and its index there is
+ * how many colours it uses. The choice survives a stellation-symmetry change
+ * when it still fits, and falls back to the whole group (one colour) when not.
+ */
+function fillCosetSub() {
+  const names = subgroupsOf(state.stellSym);
+  const kept = $('#cosetSub').value;
+  fillSelect('#cosetSub', names, names.includes(kept) ? kept : state.stellSym);
+}
+
+/**
+ * Tell the worker which subgroup colours the cosets. The worker defaults to
+ * the whole stellation group on every build and regroup, so this only needs
+ * sending when the menu says otherwise — and after it, the next refresh()
+ * carries the new colouring.
+ */
+async function applyCosetSub() {
+  const name = $('#cosetSub').value;
+  if (!name || name === state.stellSym) return;
+  const g = state.symmetry[name];
+  if (g) await call('cosets', { subMatrices: g.matrices });
+}
+
 
 /*
  * Draggable splitters.
@@ -1005,6 +1034,7 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
       state.selected = new Set(keys);
     }
 
+    await applyCosetSub();      // the colouring's subgroup, when it differs
     await refresh();
     state.builtStellSym = state.stellSym;   // what the grouping on screen actually is
     const slow = info.ms > 5000 && !state.depthAuto;
@@ -1064,6 +1094,8 @@ async function changeStellSym() {
     refreshElements();
     renderLegend();
     state.building = false;
+    fillCosetSub();             // the candidates are the NEW group's subgroups
+    await applyCosetSub();      // regroup reset the worker's map to the new stellSym
     await refresh();
     state.builtStellSym = state.stellSym;
     setStatus(`editing symmetry ${state.stellSym} — selection kept`, false);
@@ -1277,6 +1309,17 @@ function wireControls() {
     localStorage.setItem('colorMode', e.target.value);
     renderer?.setColorMode(e.target.value);
     diagram?.setColorMode(e.target.value);
+    $('#cosetSubRow').hidden = e.target.value !== 'coset';
+  };
+  $('#cosetSubRow').hidden = $('#colorMode').value !== 'coset';
+  $('#cosetSub').onchange = async () => {
+    if (state.building) return;
+    const name = $('#cosetSub').value;
+    const g = state.symmetry[name];
+    if (!g) return;
+    // send unconditionally: unlike applyCosetSub, this IS the change
+    await call('cosets', { subMatrices: g.matrices });
+    await refresh();
   };
   /*
    * `input`, not `change`: opacity is judged against what you are looking at,

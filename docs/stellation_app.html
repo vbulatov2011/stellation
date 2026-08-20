@@ -307,8 +307,15 @@
           <option value="layer">by shell</option>
           <option value="class">by face class</option>
           <option value="stellClass">by stellation face class</option>
-          <option value="coset">by coset of the subgroup</option>
+          <option value="coset">by coset of a subgroup</option>
         </select>
+      </label>
+      <!-- shown only in coset mode: the subgroup of the STELLATION group whose
+           cosets do the colouring, chosen here beside the colour menu -->
+      <label class="field" id="cosetSubRow" hidden
+             title="The subgroup whose cosets colour the cells — a subgroup of the stellation symmetry, with as many colours as it has cosets there; cells it cannot label are gray. For the five-tetrahedra colouring: stellation symmetry I, coset subgroup T.">
+        <span>coset subgroup</span>
+        <select id="cosetSub"></select>
       </label>
       <label class="field" title="How solid the facets are. Below 100% the solid turns to glass and its hidden edges come through, so you can look at the cells inside it — the interior of a stellation is otherwise the one thing you cannot see. At 0% only the edges are left, which is a wireframe of the whole arrangement.">
         <span>facet opacity <b id="faceOpacityLabel">100</b>%</span>
