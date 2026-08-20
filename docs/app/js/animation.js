@@ -57,7 +57,34 @@ const mimeFor = (fmt) => typeof MediaRecorder === 'undefined' ? null
 export function initAnimation({ renderer, currentName, setStatus }) {
   const on = $('#animOn'), axisIn = $('#animAxis'), speedIn = $('#animSpeed');
   const fmtSel = $('#animFormat'), videoBtn = $('#animVideo'), info = $('#animInfo');
+  const sizeSel = $('#animSize'), customRow = $('#animCustomRow');
+  const wIn = $('#animW'), hIn = $('#animH');
   if (!on || !renderer) return null;
+
+  /*
+   * The video's resolution: a preset, or the custom fields. Everything is
+   * snapped to the NEAREST even number — 4:2:0 video pads an odd side and
+   * some players show the padding, which is the VLC glitch all over again —
+   * and the snapped value is written back into the field on change, so what
+   * the field says is what the file will be.
+   */
+  const even = (v, lo, hi) => Math.max(lo, Math.min(hi, 2 * Math.round(v / 2)));
+  function videoSize() {
+    if (sizeSel.value !== 'custom') {
+      const [w, h] = sizeSel.value.split('x').map(Number);
+      return { w, h };
+    }
+    return {
+      w: even(Number(wIn.value) || 1920, 16, 7680),
+      h: even(Number(hIn.value) || 1080, 16, 4320),
+    };
+  }
+  for (const [inp, lo, hi] of [[wIn, 16, 7680], [hIn, 16, 4320]]) {
+    inp.addEventListener('change', () => {
+      const v = Number(inp.value);
+      if (Number.isFinite(v)) inp.value = even(v, lo, hi);
+    });
+  }
 
   /*
    * An option the browser cannot encode is disabled rather than removed: a
@@ -160,32 +187,37 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     const T = 1 / Math.abs(speed);
     const chunks = [];
     /*
-     * The recording goes through a staging canvas whose sides are rounded
-     * DOWN to even. The view's canvas is its CSS size times the pixel ratio —
-     * any number at all, and half the time an odd one — but 4:2:0 video wants
-     * even dimensions: an encoder given an odd height pads the frame and
-     * marks the extra row as crop, and sloppy players show the padding —
-     * VLC's end-of-file glitch, a black flash and the picture changing size,
-     * is exactly that. Cropping one row of pixels is invisible; the glitch is
-     * not. Each frame is blitted after it is drawn, in the same task, while
-     * the WebGL buffer still holds it.
+     * The turn is RENDERED at the video's own resolution, not scaled up from
+     * the window: the view canvas's backing store is set to the chosen size
+     * for the duration — its CSS box does not move, ResizeObserver watches
+     * only that, and draw() takes its viewport and aspect from the backing
+     * store — so a 4K file is genuinely 4K sharp and framed as 4K, and the
+     * live canvas is put back afterwards, exactly as squareImage() does for
+     * thumbnails. The sizes are even by construction: 4:2:0 video pads an
+     * odd side and marks it as crop, and players that mishandle the crop
+     * show it — VLC's end-of-file black flash was exactly that.
      *
-     * captureStream(0): frames are pushed by hand, one requestFrame() right
-     * after each blit, rather than harvested from the compositor. Left to the
-     * compositor, a canvas that is not being composited — an occluded window,
-     * some embedded views — records a valid, empty file: a webm of nothing,
-     * which is exactly what this produced before the change. Pushing by hand
-     * also means the recording cannot miss a frame the loop drew.
+     * The staging canvas is still there, because the WebGL context has no
+     * preserveDrawingBuffer: each frame is blitted in the same task that
+     * drew it, while the buffer still holds it, and captureStream(0) with a
+     * hand-pushed requestFrame() per blit means the recording cannot miss a
+     * frame the loop drew — nor record a thing when the compositor is not
+     * looking, which once produced a valid webm of nothing.
      */
+    const { w: VW, h: VH } = videoSize();
     const src = renderer.canvas;
+    const kept = { w: src.width, h: src.height };
+    src.width = VW; src.height = VH;
     const stage = document.createElement('canvas');
-    stage.width = Math.max(2, src.width & ~1);
-    stage.height = Math.max(2, src.height & ~1);
+    stage.width = VW;
+    stage.height = VH;
     const stageCtx = stage.getContext('2d');
     const stream = stage.captureStream(0);
     const track = stream.getVideoTracks()[0];
     const pushFrame = () => { stageCtx.drawImage(src, 0, 0); track.requestFrame?.(); };
-    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+    // roughly a tenth of a bit per pixel per frame: ~12 Mb/s at 1080p60, more at 4K
+    const bits = Math.min(60e6, Math.max(8e6, VW * VH * 6));
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bits });
     rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
 
     const finished = new Promise((resolve) => { rec.onstop = resolve; });
@@ -224,23 +256,30 @@ export function initAnimation({ renderer, currentName, setStatus }) {
       };
       poke();
     });
-    const t0 = performance.now();
-    for (let i = 0; i < frames; i++) {
-      renderer.rotation = qnorm(qmul(q0, aboutAxis(axis, TAU * (i / frames) * Math.sign(speed))));
+    try {
+      const t0 = performance.now();
+      for (let i = 0; i < frames; i++) {
+        renderer.rotation = qnorm(qmul(q0, aboutAxis(axis, TAU * (i / frames) * Math.sign(speed))));
+        renderer.draw();
+        pushFrame();               // hand this exact frame to the encoder
+        info.textContent = `recording — frame ${i + 1} of ${frames}`;
+        await waitUntil(t0 + (i + 1) * frameMs);
+      }
+      // a beat for the encoder to take the closing frame, then stop
+      await new Promise(r => setTimeout(r, 120));
+      rec.stop();
+      await finished;
+    } finally {
+      stream.getTracks().forEach(t => t.stop());
+      /*
+       * The view canvas back the way it was, whatever happened above — an
+       * encoder that throws must not leave the app rendering into a 4K
+       * backing store for a 500-pixel box.
+       */
+      src.width = kept.w; src.height = kept.h;
+      renderer.rotation = q0;      // a turn is a full circle, but exactly
       renderer.draw();
-      pushFrame();               // hand this exact frame to the encoder
-      info.textContent = `recording — frame ${i + 1} of ${frames}`;
-      await waitUntil(t0 + (i + 1) * frameMs);
     }
-    // a beat for the encoder to take the closing frame, then stop
-    await new Promise(r => setTimeout(r, 120));
-    rec.stop();
-    await finished;
-    stream.getTracks().forEach(t => t.stop());
-
-    // the turn is a full circle, but put the exact quaternion back anyway
-    renderer.rotation = q0;
-    renderer.draw();
     recording = false;
     videoBtn.disabled = false;
 
@@ -285,16 +324,19 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     axisIn.classList.toggle('invalid', !axis);
     if (recording) return;                       // the recorder owns the line
     const encodable = canRecord && !!mimeFor(fmtSel.value);
+    customRow.hidden = sizeSel.value !== 'custom';
+    const { w, h } = videoSize();
     info.textContent = !axis
       ? 'the axis needs three numbers, e.g. 0 1 0'
       : !speed
         ? ''
-        : `one turn = ${(1 / Math.abs(speed)).toFixed(1)} s` +
+        : `one turn = ${(1 / Math.abs(speed)).toFixed(1)} s · ${w} × ${h}` +
           (encodable ? '' : ` — this browser cannot record ${fmtSel.value}`);
     videoBtn.disabled = !encodable || recording || !axis || !speed;
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({
         axis: axisIn.value, speed: speedIn.value, format: fmtSel.value,
+        size: sizeSel.value, customW: wIn.value, customH: hIn.value,
       }));
     } catch { }
     if (on.checked) start();
@@ -308,11 +350,16 @@ export function initAnimation({ renderer, currentName, setStatus }) {
       if (saved.speed !== undefined) speedIn.value = saved.speed;
       // a remembered format this browser cannot encode falls back silently
       if (saved.format && mimeFor(saved.format)) fmtSel.value = saved.format;
+      if (saved.size && [...sizeSel.options].some(o => o.value === saved.size)) {
+        sizeSel.value = saved.size;
+      }
+      if (saved.customW) wIn.value = saved.customW;
+      if (saved.customH) hIn.value = saved.customH;
     }
   } catch { }
   if (!mimeFor(fmtSel.value) && mimeFor('webm')) fmtSel.value = 'webm';
 
-  for (const c of [on, axisIn, speedIn, fmtSel]) c.addEventListener('input', sync);
+  for (const c of [on, axisIn, speedIn, fmtSel, sizeSel, wIn, hIn]) c.addEventListener('input', sync);
   const whereRow = $('#animWhereRow');
   if (whereRow) whereRow.hidden = !hasFSAccess();
   const changeBtn = $('#animChangeFolder');

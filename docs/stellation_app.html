@@ -381,6 +381,20 @@
           <option value="mp4">MP4</option>
         </select>
       </label>
+      <label class="field" title="The video's resolution. The turn is rendered at this size, not scaled up from the window — a 4K file is genuinely 4K sharp.">
+        <span>size</span>
+        <select id="animSize">
+          <option value="640x480">SD</option>
+          <option value="1280x720">HD</option>
+          <option value="1920x1080" selected>Full HD</option>
+          <option value="3840x2160">4K</option>
+          <option value="custom">custom</option>
+        </select>
+      </label>
+      <div class="row" id="animCustomRow" hidden>
+        <label class="dim">width <input type="number" id="animW" value="1920" min="16" max="7680" step="2"></label>
+        <label class="dim">height <input type="number" id="animH" value="1080" min="16" max="4320" step="2"></label>
+      </div>
       <div class="row buttons">
         <button id="animVideo" title="Record exactly one full turn from the current angle, as a video file">Save to video…</button>
       </div>
