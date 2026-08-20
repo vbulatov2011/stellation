@@ -16,6 +16,7 @@ import { initDocManager } from './docmanager.js';
 import { initPlanesDialog } from './planesdialog.js';
 import { initExportDialog } from './exportdialog.js';
 import { initExportSolid } from './exportsolid.js';
+import { initAnimation } from './animation.js';
 
 const $ = sel => document.querySelector(sel);
 const $$ = sel => [...document.querySelectorAll(sel)];
@@ -1460,6 +1461,13 @@ function wireControls() {
    * every one of them wrote straight to the downloads folder under a name
    * nobody chose.
    */
+  /*
+   * The turntable lives beside the view controls it belongs with. Wired here
+   * because it needs the live renderer — it turns the same quaternion the
+   * mouse does.
+   */
+  initAnimation({ renderer, currentName: currentDocName, setStatus });
+
   const solidDialog = initExportSolid({
     state, renderer, download, setStatus, writeStelText,
     currentName: currentDocName,

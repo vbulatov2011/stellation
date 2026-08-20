@@ -170,6 +170,35 @@
 
   <aside class="panel right">
 
+    <!-- first, because it is the panel you leave and re-enter the app through -->
+    <details class="group" open>
+      <summary><h2>Files</h2></summary>
+      <!-- Save As and Save New need the File System Access API; boot un-hides
+           them when the browser has it, so no dead buttons anywhere else.
+           Files… is always here: with the API it browses a folder, and without
+           one it falls back to the plain file picker, which is the only way
+           into a document there. The input behind it stays in the page. -->
+      <div class="row buttons tight files">
+        <button id="newBtn" title="Start a new document — from a polyhedron, a preset, a file, or your own plane set">New…</button>
+        <button id="browseBtn" title="Open a document — browsing a folder with previews where the browser allows it">Files…</button>
+        <button id="saveJson" class="primary" title="Save the document — over its file when it has one, else as a download">Save</button>
+        <button id="saveAsBtn" title="Save as a json + thumbnail pair, under a name and into a folder you choose" hidden>Save As</button>
+        <button id="saveNewBtn" title="Save as a new document — the same dialog, offering a fresh generated name instead of this document's" hidden>Save New</button>
+        <button id="showPresets" title="Ready-made stellations from this site, with previews">Presets…</button>
+      </div>
+      <input id="loadDoc" type="file" accept=".json,.stel,.txt" hidden>
+      <!-- two dialogs, because both ask the same three questions: which
+           format, what the file is called, and which folder it goes in -->
+      <div class="row buttons">
+        <button id="exportSolidBtn" title="The solid as a mesh or a picture — STL, OBJ, OFF, 3MF, glTF, GLB, PNG, or the original program's .stel">Export Solid…</button>
+        <button id="exportSvg" title="The stellation diagrams as vector art, for printing or cutting">Export Diagram…</button>
+      </div>
+      <p class="note">
+        Saves in the SymmHub preset shape. <code>.stel</code> files from the
+        original Java program still open.
+      </p>
+    </details>
+
     <div class="group cells-group">
       <div class="group-head">
         <h2>Cells</h2>
@@ -329,31 +358,26 @@
     </details>
 
     <details class="group">
-      <summary><h2>Files</h2></summary>
-      <!-- Save As and Save New need the File System Access API; boot un-hides
-           them when the browser has it, so no dead buttons anywhere else.
-           Files… is always here: with the API it browses a folder, and without
-           one it falls back to the plain file picker, which is the only way
-           into a document there. The input behind it stays in the page. -->
-      <div class="row buttons tight files">
-        <button id="newBtn" title="Start a new document — from a polyhedron, a preset, a file, or your own plane set">New…</button>
-        <button id="browseBtn" title="Open a document — browsing a folder with previews where the browser allows it">Files…</button>
-        <button id="saveJson" class="primary" title="Save the document — over its file when it has one, else as a download">Save</button>
-        <button id="saveAsBtn" title="Save as a json + thumbnail pair, under a name and into a folder you choose" hidden>Save As</button>
-        <button id="saveNewBtn" title="Save as a new document — the same dialog, offering a fresh generated name instead of this document's" hidden>Save New</button>
-        <button id="showPresets" title="Ready-made stellations from this site, with previews">Presets…</button>
-      </div>
-      <input id="loadDoc" type="file" accept=".json,.stel,.txt" hidden>
-      <p class="note">
-        Saves in the SymmHub preset shape. <code>.stel</code> files from the
-        original Java program still open.
-      </p>
-      <!-- two dialogs, because both ask the same three questions: which
-           format, what the file is called, and which folder it goes in -->
+      <summary><h2>Animation</h2></summary>
+      <!--
+        A turntable: the solid spins about an axis given in ITS OWN frame, so
+        "0 1 0" turns it about its own y — pick a symmetry axis and the figure
+        revolves about itself. The axis holds still on screen while the solid
+        goes round it.
+      -->
+      <label class="check"><input id="animOn" type="checkbox"> enabled</label>
+      <label class="field" title="The axis to spin about, in the solid's own coordinates — three numbers, e.g. 0 1 0 for y, or an axis of the figure">
+        <span>axis</span>
+        <input id="animAxis" type="text" value="0, 1, 0" spellcheck="false">
+      </label>
+      <label class="field" title="Full turns per second; negative spins the other way">
+        <span>speed</span>
+        <input id="animSpeed" type="number" value="0.1" step="0.02" min="-2" max="2"> turns/s
+      </label>
       <div class="row buttons">
-        <button id="exportSolidBtn" title="The solid as a mesh or a picture — STL, OBJ, OFF, 3MF, glTF, GLB, PNG, or the original program's .stel">Export Solid…</button>
-        <button id="exportSvg" title="The stellation diagrams as vector art, for printing or cutting">Export Diagram…</button>
+        <button id="animVideo" title="Record exactly one full turn from the current angle, as a video file">Save to video…</button>
       </div>
+      <p id="animInfo" class="note"></p>
     </details>
 
   </aside>

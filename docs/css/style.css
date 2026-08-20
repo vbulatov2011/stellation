@@ -1024,3 +1024,7 @@ button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--
  */
 .row.buttons.files { gap: 4px; }
 .row.buttons.files button { padding: 3px 4px; }
+
+/* the turntable's axis field: monospace, and plainly wrong when it is wrong */
+#animAxis { flex: 1; min-width: 0; font: 12px var(--mono); }
+.field input.invalid { border-color: #c0392b; }
