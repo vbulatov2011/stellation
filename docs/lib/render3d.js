@@ -744,6 +744,14 @@ export class Renderer3D {
   }
 
   resize() {
+    /*
+     * A recording owns the canvas size for its duration: it renders at the
+     * video's own resolution and letterboxes the element to show the video's
+     * framing, and the ResizeObserver fires on exactly that CSS change — so
+     * without the lock, starting a recording would immediately undo its own
+     * canvas.
+     */
+    if (this.lockSize) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = Math.max(1, Math.round(this.canvas.clientWidth * dpr));
     const h = Math.max(1, Math.round(this.canvas.clientHeight * dpr));

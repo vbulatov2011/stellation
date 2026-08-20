@@ -22,7 +22,7 @@
 import { toOFF, toOBJ, toSTL } from '../../lib/core.js';
 import { to3MF, toGLTF, toGLB, toVRML, toX3D, faceColors, tubesToMesh,
          annotationsToMesh, orientMesh, mergeMeshes } from '../../lib/exportmesh.js';
-import { hasFSAccess, writeFile, createFolderChooser } from '../../lib/uilib/files.js';
+import { hasFSAccess, writeFile, createFolderChooser, fileExists } from '../../lib/uilib/files.js';
 import { createInternalWindow } from '../../lib/uilib/modules.js';
 
 const $ = (q) => document.querySelector(q);
@@ -257,6 +257,12 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
     if (hasFSAccess()) {
       dir = await folders.choose();
       if (!dir) { info.textContent = ''; return; }      // dismissed; not an error
+      // a name already in the folder is a question, never a silent replacement
+      if (await fileExists(dir, name) &&
+          !window.confirm(`${name} already exists in ${dir.name} — overwrite it?`)) {
+        info.textContent = 'not written — give it another name';
+        return;
+      }
     }
 
     info.textContent = 'writing…';

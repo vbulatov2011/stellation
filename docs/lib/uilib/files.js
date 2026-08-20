@@ -156,3 +156,15 @@ export function createFolderChooser({ key, pickerId }) {
     },
   };
 }
+
+/**
+ * Does the folder already hold a file of this name?
+ *
+ * Asked before overwriting: every dialog that writes into a remembered folder
+ * wants to warn rather than silently replace, and the only way to know is to
+ * ask for the handle without creating it.
+ */
+export async function fileExists(dirHandle, fname) {
+  try { await dirHandle.getFileHandle(fname); return true; }
+  catch { return false; }
+}

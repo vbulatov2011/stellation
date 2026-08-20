@@ -30,7 +30,7 @@
 
 import { diagramSVG, diagramHasInk, DIAGRAM_DEFAULTS } from '../../lib/diagramsvg.js';
 import { makeZip } from '../../lib/uilib/zip.js';
-import { hasFSAccess, writeFile, createFolderChooser } from '../../lib/uilib/files.js';
+import { hasFSAccess, writeFile, createFolderChooser, fileExists } from '../../lib/uilib/files.js';
 import { createInternalWindow } from '../../lib/uilib/modules.js';
 
 const $ = (q) => document.querySelector(q);
@@ -620,6 +620,23 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
      * the API, one file downloads and several become one archive.
      */
     if (dir) {
+      /*
+       * Names already in the folder are one question, not one per file: an
+       * export of twenty plates that asked twenty times would teach people to
+       * stop reading the question, which is worse than not asking.
+       */
+      const clashes = [];
+      for (const f of files) if (await fileExists(dir, f.name)) clashes.push(f.name);
+      if (clashes.length) {
+        const listed = clashes.slice(0, 4).join('\n') +
+          (clashes.length > 4 ? `\n… and ${clashes.length - 4} more` : '');
+        if (!window.confirm(clashes.length === 1
+            ? `${clashes[0]} already exists in ${dir.name} — overwrite it?`
+            : `${clashes.length} of these files already exist in ${dir.name}:\n${listed}\n\nOverwrite them?`)) {
+          info.textContent = 'nothing was written';
+          return;
+        }
+      }
       for (const f of files) await writeFile(dir, f.name, f.blob ?? f.text);
       setStatus(files.length === 1
         ? `saved ${files[0].name} in ${dir.name}`

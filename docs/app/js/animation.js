@@ -19,7 +19,7 @@
  * that starts spinning the moment it loads is a surprise, not a preference.
  */
 
-import { hasFSAccess, writeFile, createFolderChooser } from '../../lib/uilib/files.js';
+import { hasFSAccess, writeFile, createFolderChooser, fileExists } from '../../lib/uilib/files.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -85,6 +85,18 @@ export function initAnimation({ renderer, currentName, setStatus }) {
       if (Number.isFinite(v)) inp.value = even(v, lo, hi);
     });
   }
+
+  /*
+   * What the file is called: the name field, or — left empty — the document's
+   * name with "-turn" on it. The placeholder shows the default, so an empty
+   * field is not a mystery, and everything is slugged the way the exports
+   * slug: a document's title is a good title and a poor filename.
+   */
+  const nameIn = $('#animName');
+  const slug = (s) => (s || '').replace(/\.(json|stel|txt)$/i, '')
+    .toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const stem = () => slug(nameIn.value) || `${slug(currentName()) || 'stellation'}-turn`;
 
   /*
    * An option the browser cannot encode is disabled rather than removed: a
@@ -167,11 +179,15 @@ export function initAnimation({ renderer, currentName, setStatus }) {
 
     const mime = mimeFor(fmtSel.value);
     if (!mime) { info.textContent = `this browser cannot encode ${fmtSel.value}`; return; }
+    const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+    const fname = `${stem()}.${ext}`;
 
     /*
      * The folder first, while the click's user activation still holds — a
      * recording takes seconds and the picker would be refused after it. A
-     * dismissed picker cancels the recording before any work is done.
+     * dismissed picker cancels the recording before any work is done, and so
+     * does declining to overwrite: the name is known now, so a clash is a
+     * question to ask before seconds of recording, not after.
      */
     let dir = null;
     if (hasFSAccess()) {
@@ -179,6 +195,11 @@ export function initAnimation({ renderer, currentName, setStatus }) {
       catch (err) { info.textContent = err && err.message ? err.message : String(err); return; }
       if (!dir) { info.textContent = ''; return; }
       showFolder();
+      if (await fileExists(dir, fname) &&
+          !window.confirm(`${fname} already exists in ${dir.name} — overwrite it?`)) {
+        info.textContent = 'not recorded — give it another name';
+        return;
+      }
     }
 
     recording = true;
@@ -206,7 +227,25 @@ export function initAnimation({ renderer, currentName, setStatus }) {
      */
     const { w: VW, h: VH } = videoSize();
     const src = renderer.canvas;
-    const kept = { w: src.width, h: src.height };
+    const kept = { w: src.width, h: src.height, style: src.getAttribute('style') };
+    /*
+     * While it records, the canvas SHOWS the video: its element is letterboxed
+     * to the video's aspect inside the box it normally fills, so what you
+     * watch during the turn is the framing the file is getting — not the
+     * video squashed into whatever shape the window is. The renderer's own
+     * resize is locked first, because the ResizeObserver fires on exactly
+     * this style change and would put the backing store right back.
+     */
+    renderer.lockSize = true;
+    const boxW = src.clientWidth, boxH = src.clientHeight;
+    if (boxW > 4 && boxH > 4) {
+      const sc = Math.min(boxW / VW, boxH / VH);
+      const dw = Math.round(VW * sc), dh = Math.round(VH * sc);
+      src.style.left = Math.round((boxW - dw) / 2) + 'px';
+      src.style.top = Math.round((boxH - dh) / 2) + 'px';
+      src.style.width = dw + 'px';
+      src.style.height = dh + 'px';
+    }
     src.width = VW; src.height = VH;
     const stage = document.createElement('canvas');
     stage.width = VW;
@@ -272,13 +311,17 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     } finally {
       stream.getTracks().forEach(t => t.stop());
       /*
-       * The view canvas back the way it was, whatever happened above — an
-       * encoder that throws must not leave the app rendering into a 4K
-       * backing store for a 500-pixel box.
+       * The view back the way it was, whatever happened above — an encoder
+       * that throws must not leave the app letterboxed, locked, or rendering
+       * into a 4K backing store for a 500-pixel box. The lock comes off
+       * before resize() so resize() works again.
        */
-      src.width = kept.w; src.height = kept.h;
+      if (kept.style === null) src.removeAttribute('style');
+      else src.setAttribute('style', kept.style);
+      renderer.lockSize = false;
       renderer.rotation = q0;      // a turn is a full circle, but exactly
-      renderer.draw();
+      src.width = kept.w; src.height = kept.h;
+      renderer.resize();           // recomputes from the restored CSS, and draws
     }
     recording = false;
     videoBtn.disabled = false;
@@ -296,12 +339,6 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     }
 
     const blob = new Blob(chunks, { type: mime.split(';')[0] });
-    const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
-    const stem = (currentName() || 'stellation')
-      .replace(/\.(json|stel|txt)$/i, '').toLowerCase().normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') || 'stellation';
-    const fname = `${stem}-turn.${ext}`;
     if (dir) {
       await writeFile(dir, fname, blob);
       setStatus(`saved ${fname} in ${dir.name} — one turn, ${frames} frames`);
@@ -325,6 +362,8 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     if (recording) return;                       // the recorder owns the line
     const encodable = canRecord && !!mimeFor(fmtSel.value);
     customRow.hidden = sizeSel.value !== 'custom';
+    const ext = mimeFor(fmtSel.value)?.startsWith('video/mp4') ? 'mp4' : 'webm';
+    nameIn.placeholder = `${slug(currentName()) || 'stellation'}-turn.${ext}`;
     const { w, h } = videoSize();
     info.textContent = !axis
       ? 'the axis needs three numbers, e.g. 0 1 0'
