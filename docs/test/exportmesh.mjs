@@ -22,7 +22,8 @@ import { dirname, join } from 'node:path';
 import { buildStellation, facePlanes, suggestDepth, parseCellsAny,
          selectedCells, extractMesh, toOFF } from '../lib/core.js';
 import { triangulate, to3MF, model3MF, toGLTF, toGLB, toVRML, toX3D,
-         faceColors, tubesToMesh, mergeMeshes } from '../lib/exportmesh.js';
+         faceColors, tubesToMesh, mergeMeshes, annotationsToMesh,
+         torusMesh, coneMesh, orientMesh } from '../lib/exportmesh.js';
 import { layerColor } from '../lib/palette.js';
 
 let passed = 0, failed = 0;
@@ -363,6 +364,91 @@ const colors = faceColors(mesh, 'layer');
     ok(ci.filter(v => v === '-1').length === merged.mesh.faces.length,
        'X3D writes the merged figure, tubes and all');
   }
+}
+
+// ------------------------------------ symmetry elements and the frame
+
+{
+  const t = torusMesh([0, 0, 1], 2, 0.1, [0, 1, 0], 32, 8);
+  ok(t.vertices.length === 32 * 8, 'a torus is one ring of tube sections per step');
+  ok(t.faces.length === 32 * 8 && t.faces.every(f => f.length === 4),
+     'quads all the way round, and closed both ways');
+  {
+    // every point sits at the tube radius from the centre circle
+    const off = t.vertices.map(v => {
+      const r = Math.hypot(v.x, v.y);
+      return Math.hypot(r - 2, v.z);
+    });
+    ok(off.every(d => Math.abs(d - 0.1) < 1e-9), 'each point a tube-radius off the ring');
+  }
+  ok(t.faces.every(f => f.every(i => i < t.vertices.length)), 'and no face past the end');
+
+  const c = coneMesh([0, 0, 1], 3, 1, 0.5, [1, 0, 0], 12);
+  ok(c.vertices.length === 13, 'a cone is a tip and a base ring');
+  ok(c.faces.length === 13, 'twelve sides and a base');
+  ok(Math.abs(c.vertices[0].z - 3) < 1e-9, 'its tip is where the axis ends');
+  ok(c.vertices.slice(1).every(v => Math.abs(v.z - 2) < 1e-9),
+     'and its base a height back down the axis');
+  ok(c.vertices.slice(1).every(v => Math.abs(Math.hypot(v.x, v.y) - 0.5) < 1e-9),
+     'at the radius asked for');
+
+  const spec = {
+    axes: [{ dir: [0, 0, 1], extent: 2, radius: 0.05, color: [0.2, 0.7, 0.9] }],
+    improper: [{ dir: [1, 0, 0], extent: 1.9, radius: 0.045, color: [0.7, 0.4, 0.9] }],
+    mirrors: [{ dir: [0, 1, 0], ring: 1.8, radius: 0.05, color: [0.4, 0.9, 0.8] }],
+    coord: [{ dir: [1, 0, 0], extent: 3, radius: 0.02, color: [0.9, 0.3, 0.3],
+              shaftEnd: 2.9, coneH: 0.1, coneR: 0.04 }],
+  };
+  const a = annotationsToMesh(spec, 8);
+  ok(a.faces.length === a.colors.length, 'every annotation face is coloured');
+  ok(a.faces.every(f => f.every(i => i >= 0 && i < a.vertices.length)),
+     'and every one indexes a vertex that exists');
+  {
+    const used = new Set(a.colors.map(c2 => c2.join()));
+    ok(used.size === 4, 'the four kinds keep four distinct colours');
+    ok(used.has('0.2,0.7,0.9') && used.has('0.4,0.9,0.8'),
+       'the axis teal and the mirror green among them');
+  }
+  {
+    // the axis runs through the origin, the coordinate shaft ends short of its tip
+    const far = Math.max(...a.vertices.map(v => Math.hypot(v.x, v.y, v.z)));
+    ok(far > 2.9 && far < 3.1, 'nothing reaches past the frame it was given');
+  }
+  const none = annotationsToMesh({ axes: [], improper: [], mirrors: [], coord: [] });
+  ok(none.faces.length === 0, 'nothing shown, nothing built');
+}
+
+// ------------------------------------------------------- orientation
+
+{
+  // a quarter turn about z: x goes to y
+  const m = [0, -1, 0, 1, 0, 0, 0, 0, 1];
+  const turned = orientMesh({ vertices: [{ x: 1, y: 0, z: 0 }, { x: 0, y: 0, z: 2 }],
+                              faces: [[0, 1]] }, m);
+  ok(Math.abs(turned.vertices[0].y - 1) < 1e-12 && Math.abs(turned.vertices[0].x) < 1e-12,
+     'orienting turns the vertices by the matrix given');
+  ok(Math.abs(turned.vertices[1].z - 2) < 1e-12, 'and leaves the axis of the turn alone');
+  ok(turned.faces[0].join() === '0,1', 'the faces are untouched — only the points move');
+
+  // identity leaves the figure exactly where it was
+  const I = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+  const same = orientMesh(mesh, I);
+  ok(same.vertices.every((v, i) => v.x === mesh.vertices[i].x &&
+                                   v.y === mesh.vertices[i].y &&
+                                   v.z === mesh.vertices[i].z),
+     'and the identity moves nothing');
+
+  // a rotation is rigid: it may not change any distance
+  const q = Math.SQRT1_2;
+  const r45 = [q, -q, 0, q, q, 0, 0, 0, 1];
+  const t45 = orientMesh(mesh, r45);
+  const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+  let worst = 0;
+  for (let i = 1; i < 60; i++) {
+    worst = Math.max(worst, Math.abs(d(mesh.vertices[0], mesh.vertices[i]) -
+                                     d(t45.vertices[0], t45.vertices[i])));
+  }
+  ok(worst < 1e-9, `orienting is rigid — no distance moves (worst ${worst.toExponential(1)})`);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -104,6 +104,125 @@ const norm = (a) => {
 };
 
 /**
+ * The symmetry elements and the coordinate frame, as geometry.
+ *
+ * An axis is a cylinder through the origin, so it is two points and the tube
+ * builder already knows how to do it. A mirror is the rim of its plane, a
+ * torus. A coordinate axis is a shaft with a cone on the end. All three are
+ * things the view draws around the figure rather than parts of it, which is
+ * why they are a separate switch — but if they are on screen they are what you
+ * are looking at, and a file that leaves them out is not the picture.
+ */
+export function annotationsToMesh(spec, sides = 8) {
+  const parts = [];
+  const along = (a) => ({ color: a.color, radius: a.radius,
+    segs: [[-a.dir[0] * a.extent, -a.dir[1] * a.extent, -a.dir[2] * a.extent],
+           [a.dir[0] * a.extent, a.dir[1] * a.extent, a.dir[2] * a.extent]] });
+
+  const segSpecs = [];
+  for (const a of spec.axes || []) segSpecs.push(along(a));
+  for (const a of spec.improper || []) segSpecs.push(along(a));
+  for (const a of spec.coord || []) {
+    // the shaft stops inside the arrowhead, as it does on screen
+    segSpecs.push({ color: a.color, radius: a.radius,
+      segs: [[-a.dir[0] * a.extent, -a.dir[1] * a.extent, -a.dir[2] * a.extent],
+             [a.dir[0] * a.shaftEnd, a.dir[1] * a.shaftEnd, a.dir[2] * a.shaftEnd]] });
+  }
+  if (segSpecs.length) parts.push(tubesToMesh(segSpecs, sides));
+  for (const m of spec.mirrors || []) {
+    parts.push(torusMesh(m.dir, m.ring, m.radius, m.color, Math.max(48, sides * 8), sides));
+  }
+  for (const a of spec.coord || []) {
+    parts.push(coneMesh(a.dir, a.extent, a.coneH, a.coneR, a.color, Math.max(12, sides)));
+  }
+
+  const out = { vertices: [], faces: [], colors: [] };
+  for (const p of parts) {
+    const off = out.vertices.length;
+    out.vertices.push(...p.vertices);
+    for (const f of p.faces) out.faces.push(f.map(i => i + off));
+    out.colors.push(...p.colors);
+  }
+  return out;
+}
+
+/** a ring of `major` radius made of a tube of `minor` radius, about `dir` */
+export function torusMesh(dir, major, minor, color, majorSteps = 64, minorSteps = 8) {
+  const w = norm(dir);
+  const t = Math.abs(w[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+  const u = norm(cross3(t, w)), v = cross3(w, u);
+  const vertices = [], faces = [], colors = [];
+  for (let i = 0; i < majorSteps; i++) {
+    const th = (i / majorSteps) * Math.PI * 2;
+    const c = Math.cos(th), s = Math.sin(th);
+    const radial = [u[0] * c + v[0] * s, u[1] * c + v[1] * s, u[2] * c + v[2] * s];
+    for (let j = 0; j < minorSteps; j++) {
+      const ph = (j / minorSteps) * Math.PI * 2;
+      const rr = major + minor * Math.cos(ph), h = minor * Math.sin(ph);
+      vertices.push({ x: radial[0] * rr + w[0] * h,
+                      y: radial[1] * rr + w[1] * h,
+                      z: radial[2] * rr + w[2] * h });
+    }
+  }
+  for (let i = 0; i < majorSteps; i++) {
+    const i2 = (i + 1) % majorSteps;
+    for (let j = 0; j < minorSteps; j++) {
+      const j2 = (j + 1) % minorSteps;
+      faces.push([i * minorSteps + j, i2 * minorSteps + j,
+                  i2 * minorSteps + j2, i * minorSteps + j2]);
+      colors.push(color);
+    }
+  }
+  return { vertices, faces, colors };
+}
+
+/** a cone with its tip at `dir * tipAt`, opening back towards the origin */
+export function coneMesh(dir, tipAt, height, radius, color, sides = 12) {
+  const w = norm(dir);
+  const t = Math.abs(w[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+  const u = norm(cross3(t, w)), v = cross3(w, u);
+  const tip = [w[0] * tipAt, w[1] * tipAt, w[2] * tipAt];
+  const baseAt = tipAt - height;
+  const vertices = [{ x: tip[0], y: tip[1], z: tip[2] }];
+  for (let i = 0; i < sides; i++) {
+    const th = (i / sides) * Math.PI * 2;
+    const c = Math.cos(th), s = Math.sin(th);
+    vertices.push({
+      x: w[0] * baseAt + (u[0] * c + v[0] * s) * radius,
+      y: w[1] * baseAt + (u[1] * c + v[1] * s) * radius,
+      z: w[2] * baseAt + (u[2] * c + v[2] * s) * radius,
+    });
+  }
+  const faces = [], colors = [];
+  for (let i = 0; i < sides; i++) {
+    faces.push([0, 1 + i, 1 + (i + 1) % sides]);
+    colors.push(color);
+  }
+  // the base, so the arrowhead is closed
+  faces.push(Array.from({ length: sides }, (_, i) => 1 + sides - 1 - i));
+  colors.push(color);
+  return { vertices, faces, colors };
+}
+
+/**
+ * The mesh turned to face the way the screen does.
+ *
+ * `m` is the view's rotation, row by row. Applying it puts x to the right, y
+ * up and z toward the viewer — which is what a file is for when the point of
+ * it is the angle you found rather than the figure in its own frame.
+ */
+export function orientMesh(mesh, m) {
+  return {
+    ...mesh,
+    vertices: mesh.vertices.map(({ x, y, z }) => ({
+      x: m[0] * x + m[1] * y + m[2] * z,
+      y: m[3] * x + m[4] * y + m[5] * z,
+      z: m[6] * x + m[7] * y + m[8] * z,
+    })),
+  };
+}
+
+/**
  * Two meshes as one, with their colours kept side by side.
  *
  * The second mesh's face indices are shifted past the first's vertices. Used

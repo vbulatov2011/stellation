@@ -20,8 +20,8 @@
  */
 
 import { toOFF, toOBJ, toSTL } from '../../lib/core.js';
-import { to3MF, toGLTF, toGLB, toVRML, toX3D,
-         faceColors, tubesToMesh, mergeMeshes } from '../../lib/exportmesh.js';
+import { to3MF, toGLTF, toGLB, toVRML, toX3D, faceColors, tubesToMesh,
+         annotationsToMesh, orientMesh, mergeMeshes } from '../../lib/exportmesh.js';
 import { hasFSAccess, writeFile, createFolderChooser } from '../../lib/uilib/files.js';
 import { createInternalWindow } from '../../lib/uilib/modules.js';
 
@@ -81,6 +81,7 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
   const el = (id) => dlg.querySelector(id);
   const fmtSel = el('#esFormat'), nameIn = el('#esName');
   const wantColor = el('#esColor'), wantTubes = el('#esTubes');
+  const wantElements = el('#esElements'), wantOrient = el('#esOrient');
   const info = el('#esInfo'), go = el('#esGo');
   let busy = false;
   /*
@@ -126,27 +127,48 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
 
   /** the edge tubes the view is drawing, if it is drawing any */
   const tubeSpec = () => (renderer?.edgeTubeSpec?.() || []);
+  /** the symmetry elements and coordinate frame the view is drawing */
+  const annotations = () => (renderer?.annotationSpec?.()
+    || { axes: [], improper: [], mirrors: [], coord: [] });
+  const annotationCount = (a) =>
+    (a.axes?.length || 0) + (a.improper?.length || 0) +
+    (a.mirrors?.length || 0) + (a.coord?.length || 0);
 
   /**
-   * What actually goes into the file: the solid, plus the edge tubes when the
-   * view is drawing them and they are wanted, plus a colour per face when the
-   * format can hold one. Built here rather than in each writer so that every
-   * format is given the same figure.
+   * What actually goes into the file: the solid, the edge tubes and the
+   * symmetry elements when the view is drawing them and they are wanted, a
+   * colour per face when the format can hold one, and the view's own
+   * orientation when that is asked for. Built here rather than in each writer
+   * so that every format is given the same figure.
+   *
+   * The colouring is the view's, read from the renderer rather than kept
+   * separately: the menu that changes it is the 3-D view's menu, and an export
+   * that always said "by shell" while the screen said "by face class" was
+   * answering a question nobody had asked.
    */
   function content() {
     const f = format();
     const colored = f.color && wantColor.checked;
     let mesh = state.mesh;
-    let colors = colored ? faceColors(mesh, state.colorMode || 'layer') : null;
+    let colors = colored ? faceColors(mesh, renderer?.colorMode || 'layer') : null;
 
-    const specs = wantTubes.checked ? tubeSpec() : [];
-    if (specs.length) {
-      const tubes = tubesToMesh(specs);
-      const merged = mergeMeshes(mesh, colors, tubes, tubes.colors);
+    const add = (part) => {
+      const merged = mergeMeshes(mesh, colors, part, part.colors);
       mesh = merged.mesh;
       colors = colored ? merged.colors : null;
+    };
+
+    const specs = wantTubes.checked ? tubeSpec() : [];
+    if (specs.length) add(tubesToMesh(specs));
+
+    const anno = wantElements.checked ? annotations() : null;
+    const nAnno = anno ? annotationCount(anno) : 0;
+    if (nAnno) add(annotationsToMesh(anno));
+
+    if (wantOrient.checked && renderer?.viewRotation3) {
+      mesh = orientMesh(mesh, renderer.viewRotation3());
     }
-    return { mesh, colors, tubes: specs.length };
+    return { mesh, colors, tubes: specs.length, elements: nAnno };
   }
 
   function sync() {
@@ -169,6 +191,17 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
     el('#esTubesWhy').textContent = drawn.length
       ? `${drawn.map(d => d.kind).join(' and ')} edges, as the view draws them`
       : 'the view is drawing edges as lines, which have no thickness';
+
+    const anno = annotations();
+    const kinds = [
+      anno.axes.length && `${anno.axes.length} axes`,
+      anno.improper.length && `${anno.improper.length} rotoreflection axes`,
+      anno.mirrors.length && `${anno.mirrors.length} mirror rims`,
+      anno.coord.length && 'the coordinate frame',
+    ].filter(Boolean);
+    wantElements.disabled = !kinds.length;
+    el('#esElementsWhy').textContent = kinds.length
+      ? kinds.join(', ') : 'none are shown in the view';
     /*
      * What each format actually gets. A PNG is the view as it stands — its
      * angle, its colours, its zoom — where every other format is the mesh,
@@ -182,16 +215,20 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
           ? 'the document in the original Java program’s format, not a mesh'
           : 'there is no mesh to write';
     } else {
-      // the real count, tubes included, because that is what will be written
-      const { mesh, tubes } = content();
+      // the real count, everything included, because that is what will be written
+      const { mesh, tubes, elements } = content();
+      const extra = [tubes && 'the edge tubes', elements && 'the symmetry elements']
+        .filter(Boolean).join(' and ');
       el('#esNote').textContent =
         `${mesh.vertices.length} vertices, ${mesh.faces.length} faces` +
-        (tubes ? ', the edge tubes among them' : '');
+        (extra ? `, ${extra} among them` : '');
     }
     go.disabled = busy || (!f.view && !f.doc && !state.mesh);
   }
 
-  for (const c of [fmtSel, nameIn, wantColor, wantTubes]) c.addEventListener('input', sync);
+  for (const c of [fmtSel, nameIn, wantColor, wantTubes, wantElements, wantOrient]) {
+    c.addEventListener('input', sync);
+  }
 
   el('#esChangeFolder').onclick = async () => {
     try { await folders.choose(true); }

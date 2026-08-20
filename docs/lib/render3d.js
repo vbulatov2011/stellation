@@ -499,6 +499,69 @@ export class Renderer3D {
   }
 
   /**
+   * Everything drawn AROUND the solid, as data: the symmetry elements and the
+   * coordinate frame, each with the size and colour the view is giving it.
+   *
+   * Only what is actually on screen — `elements` already holds just the kinds
+   * the panel has switched on, and the frame answers to its own flag. The
+   * numbers are recomputed here exactly as _buildElements and _buildCoordAxes
+   * compute them, so an exported axis is the length and thickness of the one
+   * you are looking at.
+   */
+  annotationSpec() {
+    const R = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1));
+    const el = this.elements;
+    const out = { axes: [], improper: [], mirrors: [], coord: [] };
+    if (el) {
+      const ext = R * ELEM_EXT;
+      const rad = R * 0.014 * (this.elemWidth > 0 ? this.elemWidth : 1);
+      for (const a of (el.axes || [])) {
+        out.axes.push({ dir: a.dir, extent: ext, radius: rad, color: a.rgb || [0.25, 0.72, 0.95] });
+      }
+      for (const a of (el.improper || [])) {
+        out.improper.push({ dir: a.dir, extent: ext * 0.94, radius: rad * 0.9,
+                            color: a.rgb || [0.72, 0.45, 0.95] });
+      }
+      /*
+       * A mirror exports as its rim alone. On screen it is a torus plus a
+       * translucent fill, and the fill is what makes the plane legible over
+       * the solid — but a file has no compositing, and a disc dropped into a
+       * mesh is an opaque wall through the middle of the figure.
+       */
+      for (const m of (el.mirrors || [])) {
+        out.mirrors.push({ dir: m.dir, ring: ext * 0.92, radius: rad,
+                           color: m.rgb || [0.42, 0.90, 0.80] });
+      }
+    }
+    if (this.showCoordAxes) {
+      const AR = R * AXES_EXT;
+      const rad = AR * 0.006 * (this.coordAxesWidth > 0 ? this.coordAxesWidth : 1);
+      const coneR = rad * 2, coneH = coneR * Math.sqrt(3);
+      const AXES = [
+        [[1, 0, 0], [0.90, 0.28, 0.28]],
+        [[0, 1, 0], [0.36, 0.78, 0.36]],
+        [[0, 0, 1], [0.36, 0.55, 0.95]],
+      ];
+      for (const [dir, color] of AXES) {
+        out.coord.push({ dir, extent: AR, radius: rad, color,
+                         shaftEnd: AR - coneH * 0.75, coneH, coneR });
+      }
+    }
+    return out;
+  }
+
+  /**
+   * The view's rotation as a plain 3×3, row by row — what to multiply a model
+   * point by to get where it sits on screen. Pan and zoom are deliberately not
+   * in it: they are where the camera is standing, not which way the figure is
+   * facing, and an exported model wants only the second.
+   */
+  viewRotation3() {
+    const m = quatToMat4(this.rotation);         // column-major
+    return [m[0], m[4], m[8], m[1], m[5], m[9], m[2], m[6], m[10]];
+  }
+
+  /**
    * Build (or reuse) the cylinder geometry for both edge kinds. Cached
    * against a key of everything baked into the vertices — widths, colours,
    * the mesh scale — so dragging a style slider rebuilds and everything
