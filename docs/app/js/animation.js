@@ -160,16 +160,31 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     const T = 1 / Math.abs(speed);
     const chunks = [];
     /*
+     * The recording goes through a staging canvas whose sides are rounded
+     * DOWN to even. The view's canvas is its CSS size times the pixel ratio —
+     * any number at all, and half the time an odd one — but 4:2:0 video wants
+     * even dimensions: an encoder given an odd height pads the frame and
+     * marks the extra row as crop, and sloppy players show the padding —
+     * VLC's end-of-file glitch, a black flash and the picture changing size,
+     * is exactly that. Cropping one row of pixels is invisible; the glitch is
+     * not. Each frame is blitted after it is drawn, in the same task, while
+     * the WebGL buffer still holds it.
+     *
      * captureStream(0): frames are pushed by hand, one requestFrame() right
-     * after each draw, rather than harvested from the compositor. Left to the
+     * after each blit, rather than harvested from the compositor. Left to the
      * compositor, a canvas that is not being composited — an occluded window,
      * some embedded views — records a valid, empty file: a webm of nothing,
      * which is exactly what this produced before the change. Pushing by hand
      * also means the recording cannot miss a frame the loop drew.
      */
-    const stream = renderer.canvas.captureStream(0);
+    const src = renderer.canvas;
+    const stage = document.createElement('canvas');
+    stage.width = Math.max(2, src.width & ~1);
+    stage.height = Math.max(2, src.height & ~1);
+    const stageCtx = stage.getContext('2d');
+    const stream = stage.captureStream(0);
     const track = stream.getVideoTracks()[0];
-    const pushFrame = () => track.requestFrame?.();
+    const pushFrame = () => { stageCtx.drawImage(src, 0, 0); track.requestFrame?.(); };
     const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
     rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
 
@@ -228,6 +243,18 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     renderer.draw();
     recording = false;
     videoBtn.disabled = false;
+
+    /*
+     * A covered tab records, but poorly: the loop keeps going on its timer
+     * and the file comes out whole, yet the browser throttles a hidden
+     * canvas's frame delivery to a few per second, and most of the sixty
+     * frames pushed never reach the encoder. That is the browser's ceiling,
+     * not ours — all that can be done is say so, instead of letting a sparse
+     * video look like a bug in the recorder.
+     */
+    if (document.visibilityState === 'hidden') {
+      setStatus('the tab was covered while recording — browsers starve a hidden canvas, so frames are missing; record with the tab visible', false);
+    }
 
     const blob = new Blob(chunks, { type: mime.split(';')[0] });
     const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
