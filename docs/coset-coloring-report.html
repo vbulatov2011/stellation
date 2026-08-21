@@ -186,9 +186,9 @@
     orbit independently, so on the gallery's own five-tetrahedra compound under
     I<sub>h</sub>/T <b>none of the 60 spikes comes out monochrome</b>; the facet path cannot
     be steered to the correct hand of a chiral compound (the plane path can), so switching
-    modes can silently flip the enantiomorph; <span class="mono">symmetry.json</span> lists
-    <span class="mono">C3(I)</span> and <span class="mono">S6(I)</span> as subgroups of
-    I/I<sub>h</sub> but contains no such entries, so two menu items point at nothing; and the
+    modes can silently flip the enantiomorph; <span class="mono">symmetry.json</span> carries stale
+    <span class="mono">subgroups</span> lists naming entries that do not exist (no code
+    reads them, but this survey did — see §6c as corrected); and the
     "fixed by all of H" rule grays the seed planes of
     I<sub>h</sub>/<span class="mono">C3v(I)</span>, leaving 18 of an intended 20 colors.</p>
   </div>
@@ -799,14 +799,18 @@
     none (<span class="mono">worker.js:339</span> vs <span class="mono">:341</span>).
     Consequence: on the five-tetrahedra document, per-plane picks the correct hand and
     per-facet may pick the wrong one — switching modes can silently flip the enantiomorph.</p>
-  <p><b>c · Two menu entries point at missing data.</b>
-    <span class="mono">Ih.subgroups</span> and <span class="mono">I.subgroups</span> list
-    <span class="mono">C3(I)</span> and <span class="mono">S6(I)</span>, but
-    <span class="mono">symmetry.json</span> has no such keys (only <span class="mono">C3</span>,
-    <span class="mono">S6</span>, placed outside I<sub>h</sub>). The coset-subgroup menu
-    offers both names; selecting them feeds <span class="mono">undefined</span> matrices to
-    the worker. <span class="mono">C3(I)</span> is also the one missing entry that would
-    enable a real coloring (I/C3(I): 20 colors).</p>
+  <p><b>c · The stored subgroup lists are stale generator residue.</b>
+    <em>Corrected after implementation began.</em> The first version of this paragraph
+    claimed the coset menu offered two broken names; in fact the app never reads the
+    <span class="mono">subgroups</span> fields at all — its menus compute literal matrix
+    containment — and the C<sub>3</sub>/S<sub>6</sub> subgroup types were reachable inside
+    I<sub>h</sub> all along as the aligned cubic-frame copies <span class="mono">C3(O)</span>
+    and <span class="mono">S6(O)</span> (the 18-of-20 coloring works today as
+    I/<span class="mono">C3(O)</span>). The real defect is dead, wrong data: across the
+    whole file the lists named 60-odd phantom entries (<span class="mono">C3(I)</span>,
+    <span class="mono">Cs(C2v)</span>, <span class="mono">C2(D)</span>, …) and wrong-frame
+    names not actually contained — harmless to the app, but poison to anything that trusted
+    them, including this report's own survey, which enumerated its subgroup pairs from them.</p>
   <p><b>d · The seed-plane wart.</b> The rule "a piece fixed by all of H is gray" is right
     for the core cell (the owner's original spec) but fires on well-defined singleton blocks
     too: under I<sub>h</sub>/<span class="mono">C3v(I)</span> the two planes on H's own axis
@@ -818,12 +822,12 @@
   <h2><span class="no">7</span>Recommendations</h2>
   <div class="tablewrap"><table class="ladder">
     <tr><th>step</th><th>change</th><th>unlocks</th><th class="n">size</th></tr>
-    <tr><td><b>R0</b></td><td>Correctness: add the two missing groups to
-      <span class="mono">symmetry.json</span> (or drop them from the subgroup lists); give
+    <tr><td><b>R0</b></td><td>Correctness: regenerate the stale
+      <span class="mono">subgroups</span> lists from containment (see §6c as corrected); give
       <span class="mono">facetCosetClasses</span> the <span class="mono">preferCells</span>
       steering; anchor the facet fallback globally instead of per orbit</td>
-      <td>rows 2, 3 of §5 become coherent; mode switching stops flipping hands; two menu
-      entries stop being broken</td><td class="n">S–M</td></tr>
+      <td>rows 2, 3 of §5 become coherent; mode switching stops flipping hands; the data
+      stops misleading its readers</td><td class="n">S–M</td></tr>
     <tr><td><b>R1</b></td><td>Blend as the graceful degradation of the existing modes:
       crisp where blocks exist → duotone/mix where [S:S∩H] is small (anchor at max |S∩H|,
       average in Oklab or draw two-tone) → gray only where the mix is total</td>
@@ -855,6 +859,19 @@
     signpost.
   </p>
 
+  <div class="finding">
+    <span class="label">Postscript — implemented</span>
+    <p>R0–R2 landed the day this report was published. The subgroup lists are regenerated
+    from containment and pinned by a test; the facet fallback labels all its orbits in one
+    frame stitched through the cells they cap (all sixty spikes of the gallery compound now
+    monochrome under I<sub>h</sub>/T, where before none was) and takes the same hand-steering
+    as the plane path; blends ship exactly as §4.3 specifies, mixed in Oklab, with the
+    twenty I<sub>h</sub>/T duotones verified live; and <b>by subgroup orbits</b> — per
+    plane, per facet, per cell — is a menu family of its own. Implementation corrected two
+    of this report's numbers, marked in place: §6c's mechanism, and 44 cell orbits under T
+    (Burnside: 528/12), not the survey's 40. R3–R4 remain open.</p>
+  </div>
+
   <!-- ================================================================ 8 -->
   <h2><span class="no">8</span>Methods</h2>
   <p>
@@ -879,7 +896,7 @@
       <div class="tablewrap"><table>
         <tr><th>solid · G · H</th><th>per plane</th><th>per facet</th><th>H-orbits (pl / fc / cells)</th><th>blend (planes)</th></tr>
         <tr><td>icosa · I · T</td><td>5 colors, 0 gray</td><td>identical</td><td>3 / — / —</td><td>crisp (= blocks)</td></tr>
-        <tr><td>icosa · I<sub>h</sub> · T</td><td>all gray</td><td>10 colors, 28% gray, incoherent</td><td>3 / 113 / 40</td><td>20 duotones (2 of 10 each)</td></tr>
+        <tr><td>icosa · I<sub>h</sub> · T</td><td>all gray</td><td>10 colors, 28% gray, incoherent</td><td>3 / 113 / 44</td><td>20 duotones (2 of 10 each)</td></tr>
         <tr><td>icosa · I<sub>h</sub> · T<sub>h</sub></td><td>all gray</td><td>5 colors, 1.5% gray</td><td>—</td><td>10 duotones</td></tr>
         <tr><td>icosa · I<sub>h</sub> · I</td><td>all gray</td><td>2 colors + 380 gray (480/480/380)</td><td>—</td><td>degenerate (total mix)</td></tr>
         <tr><td>icosa · I<sub>h</sub> · C5v(I)</td><td>all gray</td><td>12 colors, 1.5% gray</td><td>—</td><td>20 distinct triples</td></tr>
