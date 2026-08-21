@@ -443,5 +443,64 @@ const groupsOf = (stel, res) => {
   ok(agree, 'unselected, per-facet equals per-plane everywhere — agreement emerges');
 }
 
+// ------------- R4: mirror-cut refinement — split until the coloring exists
+
+{
+  /*
+   * A facet grays because its own stabilizer straddles cosets; cut along
+   * that stabilizer's mirror traces and the obstruction is gone — the
+   * pieces have trivial stabilizers, and trivial stabilizers sit inside
+   * every H. Ih / I is the classical picture: every one of the 380
+   * mirror-straddling facets splits — the 360 with one mirror into halves,
+   * the 20 face centers (C3v) into six sectors — and the pieces wear the
+   * two hands' colors in equal number, "one face wearing two colors
+   * separated by a mirror". No piece is gray, and the pieces tile their
+   * facet exactly.
+   */
+  const stel = build('Ih', 'I');
+  const F = facetCosetClasses(stel, symmetry.Ih.matrices, symmetry.I.matrices, null, { split: true });
+  ok(F.splits.size === 380, `all 380 straddling facets split (got ${F.splits.size})`);
+  let halves = 0, sectors = 0, balanced = 0, gray = 0, tiled = 0;
+  const area = (poly) => {
+    let ax = 0, ay = 0, az = 0;
+    for (let i = 1; i + 1 < poly.length; i++) {
+      const u = { x: poly[i].x - poly[0].x, y: poly[i].y - poly[0].y, z: poly[i].z - poly[0].z };
+      const v = { x: poly[i + 1].x - poly[0].x, y: poly[i + 1].y - poly[0].y, z: poly[i + 1].z - poly[0].z };
+      ax += u.y * v.z - u.z * v.y; ay += u.z * v.x - u.x * v.z; az += u.x * v.y - u.y * v.x;
+    }
+    return Math.hypot(ax, ay, az) / 2;
+  };
+  for (const [f, pieces] of F.splits) {
+    if (pieces.length === 2) halves++;
+    if (pieces.length === 6) sectors++;
+    const byLabel = new Map();
+    for (const p of pieces) {
+      if (p.label < 0) gray++;
+      byLabel.set(p.label, (byLabel.get(p.label) || 0) + 1);
+    }
+    if (byLabel.size === 2 && new Set(byLabel.values()).size === 1) balanced++;
+    const whole = area(f.v.map(id => stel.pool.get(id)));
+    const sum = pieces.reduce((s, p) => s + area(p.poly), 0);
+    if (Math.abs(sum - whole) < 1e-9 * Math.max(1, whole)) tiled++;
+  }
+  ok(halves === 360 && sectors === 20, `360 halves + 20 six-sector fans (got ${halves} + ${sectors})`);
+  ok(gray === 0, 'no piece is gray — the refinement removes the obstruction entirely');
+  ok(balanced === 380, `every split facet wears the two hands in equal measure (got ${balanced})`);
+  ok(tiled === 380, `and the pieces tile their facet exactly (got ${tiled})`);
+
+  // the purely rotational case takes the barycentric fan: I / C5(I) — the
+  // C3-held face centers have no mirror to cut along, so they fan about
+  // the centroid into six freely-permuted triangles, all crisply labeled
+  const F2 = facetCosetClasses(stel, symmetry.I.matrices, symmetry['C5(I)'].matrices, null, { split: true });
+  let fanPieces = 0, fanGray = 0, fanMulti = 0;
+  for (const [f, pieces] of F2.splits) {
+    fanPieces += pieces.length;
+    for (const p of pieces) if (p.label < 0) fanGray++;
+    if (new Set(pieces.map(p => p.label)).size > 1) fanMulti++;
+  }
+  ok(F2.splits.size === 20 && fanPieces === 120 && fanGray === 0 && fanMulti === 20,
+     `I/C5(I): 20 fans, 120 crisp pieces, every facet multicolored (got ${F2.splits.size}, ${fanPieces}, gray ${fanGray})`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

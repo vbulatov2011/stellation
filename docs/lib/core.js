@@ -1612,7 +1612,7 @@ export function mat3mul(a, b) {
  *
  * Returns { of: Map(facet -> class, -1 for gray), count }.
  */
-export function facetCosetClasses(stel, matrices, subMatrices, preferCells = null) {
+export function facetCosetClasses(stel, matrices, subMatrices, preferCells = null, opts = null) {
   const sameMat = (a, b) => {
     for (let i = 0; i < 9; i++) if (Math.abs(a[i] - b[i]) > 1e-6) return false;
     return true;
@@ -1803,7 +1803,86 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
             blend.set(f, Int32Array.from([...s].sort((a, b) => a - b)));
         }
       }
-      jobs.push({ orbit, distinct: null, blend });
+      /*
+       * Mirror-cut refinement (opts.split): the same orbit, but instead of
+       * settling for the mix, CUT each facet until the obstruction is gone.
+       * A facet grays here because its own stabilizer straddles cosets;
+       * cutting along that stabilizer's mirror traces (or, when it is
+       * purely rotational, the barycentric fan — the universal safe cut)
+       * leaves pieces with trivial stabilizers, and trivial stabilizers sit
+       * inside every H, so the pieces take crisp coset labels — the
+       * classical "one face wearing two colors separated by a mirror".
+       * Geometry is cut now; the pieces are labeled after the facet waves,
+       * so they can stitch to everything already settled.
+       */
+      let splitPieces = null;
+      if (opts && opts.split) {
+        splitPieces = [];
+        const det3 = (m) => m[0] * (m[4] * m[8] - m[5] * m[7])
+                          - m[1] * (m[3] * m[8] - m[5] * m[6])
+                          + m[2] * (m[3] * m[7] - m[4] * m[6]);
+        const cutBy = (poly, w) => {
+          // split a convex-ish polygon by the plane w·x = 0 through the origin
+          const EPS = 1e-9;
+          const pos = [], neg = [];
+          for (let i = 0; i < poly.length; i++) {
+            const a = poly[i], b = poly[(i + 1) % poly.length];
+            const da = a.x * w.x + a.y * w.y + a.z * w.z;
+            const db = b.x * w.x + b.y * w.y + b.z * w.z;
+            if (da >= -EPS) pos.push(a);
+            if (da <= EPS) neg.push(a);
+            if ((da > EPS && db < -EPS) || (da < -EPS && db > EPS)) {
+              const t = da / (da - db);
+              const p = v3(a.x + t * (b.x - a.x), a.y + t * (b.y - a.y), a.z + t * (b.z - a.z));
+              pos.push(p); neg.push(p);
+            }
+          }
+          const out = [];
+          for (const part of [pos, neg]) if (part.length >= 3) out.push(part);
+          return out.length ? out : [poly];
+        };
+        for (const f of orbit) {
+          const poly = f.v.map(id => stel.pool.get(id));
+          const stab = stabOf(f);
+          const mirrors = stab.filter(gi => det3(matrices[gi]) < 0);
+          let parts;
+          if (mirrors.length) {
+            parts = [poly];
+            for (const gi of mirrors) {
+              // the mirror plane of a reflection M = I − 2wwᵀ: w spans (I − M)
+              const m = matrices[gi];
+              const cols = [
+                v3((1 - m[0]) / 2, -m[3] / 2, -m[6] / 2),
+                v3(-m[1] / 2, (1 - m[4]) / 2, -m[7] / 2),
+                v3(-m[2] / 2, -m[5] / 2, (1 - m[8]) / 2),
+              ];
+              let w = cols[0];
+              for (const c of cols) if (dot(c, c) > dot(w, w)) w = c;
+              w = normalize(w);
+              parts = parts.flatMap(p => cutBy(p, w));
+            }
+          } else {
+            // purely rotational stabilizer: the barycentric fan about the
+            // centroid, which every rotation of the stabilizer permutes freely
+            let cx = 0, cy = 0, cz = 0;
+            for (const p of poly) { cx += p.x; cy += p.y; cz += p.z; }
+            const c = v3(cx / poly.length, cy / poly.length, cz / poly.length);
+            parts = [];
+            for (let i = 0; i < poly.length; i++) {
+              const a = poly[i], b = poly[(i + 1) % poly.length];
+              const m = v3((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+              parts.push([c, a, m], [c, m, b]);
+            }
+          }
+          for (const part of parts) {
+            let cx = 0, cy = 0, cz = 0;
+            for (const p of part) { cx += p.x; cy += p.y; cz += p.z; }
+            splitPieces.push({ parent: f, poly: part,
+                               c: v3(cx / part.length, cy / part.length, cz / part.length) });
+          }
+        }
+      }
+      jobs.push({ orbit, distinct: null, blend, splitPieces });
       continue;
     }
     // one labeling per candidate class, all from the table: the facet A[g]
@@ -1879,7 +1958,122 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
   for (const job of jobs) if (job.distinct && job.distinct.length === 1) settle(job);
   for (const job of jobs) if (job.distinct && job.distinct.length > 1) settle(job);
 
-  return { of, count: reps.length, blends };
+  /*
+   * Label the cut pieces, last, so they stitch to everything settled above.
+   * Pieces have trivial stabilizers by construction, so every piece-orbit
+   * takes the full [G:H] labeling; what remains is the same choice-of-
+   * translation problem as for facets, scored the same way — against the
+   * labeled facets and pieces capping the same cells, then the selection.
+   */
+  const splits = new Map();
+  const allPieces = [];
+  for (const job of jobs) if (job.splitPieces) allPieces.push(...job.splitPieces);
+  if (allPieces.length) {
+    const ppool = new VertexPool(1e-6);
+    const pAt = new Map();
+    for (const p of allPieces) pAt.set(ppool.intern(p.c), p);
+    const pmap = (g, p) => pAt.get(ppool.intern(matMul(g, p.c)));
+    const capPieceLabels = new Map();          // cell -> labels of settled pieces
+    const pieceOf = new Map();
+    const pjobs = [];
+    const pseen = new Set();
+    for (const seed of allPieces) {
+      if (pseen.has(seed)) continue;
+      const A = new Array(nG);
+      for (let gi = 0; gi < nG; gi++) A[gi] = pmap(matrices[gi], seed) || null;
+      const orbit = [];
+      const at = new Map();
+      for (let gi = 0; gi < nG; gi++) {
+        const p = A[gi];
+        if (p && !at.has(p)) { at.set(p, gi); orbit.push(p); pseen.add(p); }
+      }
+      // candidate classes, deduped by H-orbit — stabilizers are trivial, so
+      // every piece qualifies and the classes are the [G:H] translations
+      const cands = [];
+      const inCand = new Set();
+      for (const p of orbit) {
+        const k = at.get(p);
+        let ok = true;
+        for (let gi = 0; gi < nG; gi++)
+          if (A[mulIdx[gi * nG + k]] === p && !inH[gi]) { ok = false; break; }
+        if (!ok || inCand.has(p)) continue;
+        for (const hi of hIdx) inCand.add(A[mulIdx[hi * nG + k]]);
+        cands.push(k);
+      }
+      const distinct = [];
+      for (const k of cands) {
+        const ki = invIdx[k];
+        const lab = new Map();
+        for (let gi = 0; gi < nG; gi++) {
+          const p = A[gi];
+          if (p && !lab.has(p)) lab.set(p, cosetOf[mulIdx[gi * nG + ki]]);
+        }
+        const sig = orbit.map(p => lab.get(p)).join(',');
+        if (!distinct.some(d => d.sig === sig)) distinct.push({ sig, lab });
+      }
+      pjobs.push({ orbit, distinct });
+    }
+    const settleP = (job) => {
+      const { orbit, distinct } = job;
+      let best = distinct[0];
+      if (distinct.length > 1) {
+        let bestKey = null;
+        for (const cand of distinct) {
+          let clash = 0;
+          for (const p of orbit) {
+            const mates = capMates(p.parent);
+            if (!mates) continue;
+            const k = cand.lab.get(p);
+            for (const m of mates) {
+              const km = of.get(m);
+              if (km !== undefined && km >= 0 && km !== k) clash++;
+            }
+            const cap = p.parent.cellBelow;
+            const settled = cap && capPieceLabels.get(cap);
+            if (settled) for (const km of settled) if (km !== k) clash++;
+          }
+          let mixed = 0;
+          if (preferCells && preferCells.length) {
+            for (const c of preferCells) {
+              const seenK = new Set();
+              for (const f of c.top || []) {
+                const k = of.get(f);
+                if (k !== undefined && k >= 0) seenK.add(k);
+              }
+              for (const p of orbit) {
+                if (p.parent.cellBelow !== c) continue;
+                const k = cand.lab.get(p);
+                if (k !== undefined && k >= 0) seenK.add(k);
+              }
+              const settled = capPieceLabels.get(c);
+              if (settled) for (const km of settled) seenK.add(km);
+              if (seenK.size > 1) mixed += seenK.size - 1;
+            }
+          }
+          if (!bestKey || clash < bestKey[0] || (clash === bestKey[0] && mixed < bestKey[1])) {
+            bestKey = [clash, mixed]; best = cand;
+          }
+        }
+      }
+      for (const [p, k] of best.lab) {
+        if (pieceOf.has(p)) continue;
+        pieceOf.set(p, k);
+        const cap = p.parent.cellBelow;
+        if (cap && capMode !== 'none' && (capMode !== 'sel' || selSet.has(cap))) {
+          if (!capPieceLabels.has(cap)) capPieceLabels.set(cap, []);
+          capPieceLabels.get(cap).push(k);
+        }
+      }
+    };
+    for (const job of pjobs) if (job.distinct.length === 1) settleP(job);
+    for (const job of pjobs) if (job.distinct.length > 1) settleP(job);
+    for (const p of allPieces) {
+      if (!splits.has(p.parent)) splits.set(p.parent, []);
+      splits.get(p.parent).push({ poly: p.poly, label: pieceOf.get(p) ?? -1 });
+    }
+  }
+
+  return { of, count: reps.length, blends, splits };
 }
 
 /*
