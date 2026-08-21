@@ -29,8 +29,8 @@ const $ = (q) => document.querySelector(q);
 
 /*
  * Every format in one table: what it is called, what it writes, and whether it
- * can carry colour. `make` is given the mesh, the file's stem and the face
- * colours — null when the format cannot take them or the user does not want
+ * can carry color. `make` is given the mesh, the file's stem and the face
+ * colors — null when the format cannot take them or the user does not want
  * them — and returns a string, a Blob, or a Uint8Array; the writing code below
  * cares only which of those, not which format produced it.
  */
@@ -137,11 +137,11 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
   /**
    * What actually goes into the file: the solid, the edge tubes and the
    * symmetry elements when the view is drawing them and they are wanted, a
-   * colour per face when the format can hold one, and the view's own
+   * color per face when the format can hold one, and the view's own
    * orientation when that is asked for. Built here rather than in each writer
    * so that every format is given the same figure.
    *
-   * The colouring is the view's, read from the renderer rather than kept
+   * The coloring is the view's, read from the renderer rather than kept
    * separately: the menu that changes it is the 3-D view's menu, and an export
    * that always said "by shell" while the screen said "by face class" was
    * answering a question nobody had asked.
@@ -204,13 +204,13 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
       ? kinds.join(', ') : 'none are shown in the view';
     /*
      * What each format actually gets. A PNG is the view as it stands — its
-     * angle, its colours, its zoom — where every other format is the mesh,
+     * angle, its colors, its zoom — where every other format is the mesh,
      * which carries none of that; and .stel is the document rather than the
      * solid. Saying so here saves exporting one to find out.
      */
     if (f.view || f.doc || !state.mesh) {
       el('#esNote').textContent = f.view
-        ? 'the 3-D view exactly as it stands — angle, colours and all'
+        ? 'the 3-D view exactly as it stands — angle, colors and all'
         : f.doc
           ? 'the document in the original Java program’s format, not a mesh'
           : 'there is no mesh to write';

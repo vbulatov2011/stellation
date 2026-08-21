@@ -18,7 +18,7 @@
  *  - Chrome is styled from the app's theme variables (uilib.css) rather than
  *    hard-coded greys, so windows follow light/dark like everything else. The
  *    close button is a real <button> with an inline SVG in the app's
- *    stroke-currentColor icon style — no image asset to load or recolour.
+ *    stroke-currentColor icon style — no image asset to load or recolor.
  *
  *  - Windows are clamped to a container element (params.container, default
  *    document.body) rather than the viewport, so an app can keep them out of

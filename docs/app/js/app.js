@@ -80,7 +80,7 @@ let renderer, diagram, cells, docs, presets, workspace;
  * The #doc= link this session was opened with, held so the URL stays that
  * link until the first edit — at which point the state hash below is the
  * honest description again. The state hash carries geometry only, so letting
- * it overwrite a document link threw away the colouring, the coset subgroup
+ * it overwrite a document link threw away the coloring, the coset subgroup
  * and the edge style: open the compound of five tetrahedra from the gallery,
  * reload, and it came back grey.
  *
@@ -93,7 +93,7 @@ let renderer, diagram, cells, docs, presets, workspace;
 let docLinkHash = null;
 
 /*
- * How the facets are coloured. `class` groups the original faces under the
+ * How the facets are colored. `class` groups the original faces under the
  * POLYHEDRON's symmetry — a property of the solid you started from, so an
  * icosahedron has one class however you stellate it — and `stellClass` under
  * the STELLATION symmetry, which splits those faces the moment you build
@@ -236,7 +236,7 @@ async function boot() {
        * Keep the link that opened this. The state hash below describes the
        * geometry — solid, groups, depth, camera, cells — and nothing else, so
        * overwriting a #doc= link with it silently threw away everything the
-       * document says about how to DRAW the figure: which colouring, which
+       * document says about how to DRAW the figure: which coloring, which
        * coset subgroup, the edge style. Open the compound of five tetrahedra
        * from the gallery, reload, and it came back grey. So while the
        * selection is still the document's own, the URL stays the document's
@@ -393,7 +393,7 @@ function redo() {
  *               Green and red.
  *   diagram     every region lies between two cells: shift toggles the one
  *               beneath the plane, ctrl the one resting on it. Toggles, so
- *               their own colours — gold and blue, not green and red.
+ *               their own colors — gold and blue, not green and red.
  *   Cells       a bare click toggles a box; one modifier toggles it together
  *               with its whole supporting set.
  */
@@ -487,9 +487,9 @@ function onPick3D(hit, mod) {
 }
 
 /*
- * What a click here would do, said in colour before it is spent.
+ * What a click here would do, said in color before it is spent.
  *
- * Green adds, red removes — the natural reading of the two colours. When the
+ * Green adds, red removes — the natural reading of the two colors. When the
  * gesture has nothing to work on the outline is dimmed rather than dropped: a
  * highlight should mean the click will do something, but you still want to see
  * which face you are pointing at, so it stays visible and stops looking like a
@@ -738,8 +738,8 @@ function syncSymmetrySelects() {
 }
 
 /*
- * The coset colouring's own subgroup, offered beside the colour menu. Its
- * candidates are the subgroups of the POLYHEDRON symmetry: the colouring is a
+ * The coset coloring's own subgroup, offered beside the color menu. Its
+ * candidates are the subgroups of the POLYHEDRON symmetry: the coloring is a
  * property of the whole arrangement, and deliberately not of the stellation
  * symmetry, which is the editing symmetry — switching how you edit must not
  * repaint what you made. The choice survives everything but a change of
@@ -757,10 +757,10 @@ function fillCosetSub() {
 }
 
 /**
- * Tell the worker which subgroup colours the cosets. The worker defaults to
+ * Tell the worker which subgroup colors the cosets. The worker defaults to
  * the whole polyhedron group on every build, so this only needs sending when
  * the menu says otherwise — and after it, the next refresh() carries the new
- * colouring.
+ * coloring.
  */
 async function applyCosetSub() {
   const name = $('#cosetSub').value;
@@ -847,7 +847,7 @@ function rotationAxis(a, b, c, d, e, f, g, h, i) {
 
 /*
  * Every symmetry element of a group, sorted into the three kinds that can be
- * drawn, and further into INEQUIVALENT CLASSES, each with its own colour, so
+ * drawn, and further into INEQUIVALENT CLASSES, each with its own color, so
  * that axes of different order and of different orbits can be told apart.
  *
  *   axes      proper rotations (det +1), classified by order and by orbit
@@ -858,7 +858,7 @@ function rotationAxis(a, b, c, d, e, f, g, h, i) {
  * the other — the same containment idea the subgroup test uses, applied to the
  * elements themselves. In O_h that puts the three 4-fold axes, the four 3-fold
  * and the six 2-fold in three classes; in D2, whose three half-turn axes no
- * operation exchanges, each axis is its own class and gets its own colour.
+ * operation exchanges, each axis is its own class and gets its own color.
  *
  * If M is improper then -M is a proper rotation, so one axis extractor serves
  * all three kinds; for a mirror, -M is the half-turn about the plane's normal.
@@ -969,7 +969,7 @@ function refreshElements() {
     box.closest('label')?.classList.toggle('off', !list.length);
   }
 
-  // the colour legend: one chip per inequivalent class
+  // the color legend: one chip per inequivalent class
   const legend = $('#elemLegend');
   if (legend) {
     const shownKinds = new Set([$('#showAxes')?.checked && 'axes',
@@ -991,7 +991,7 @@ function refreshElements() {
 /*
  * The same elements, marked on the 2-D diagram: the point where each axis
  * pierces the drawing plane, the line where each mirror plane crosses it —
- * what the Java applet's diagram checkboxes drew. Same colours as the solid,
+ * what the Java applet's diagram checkboxes drew. Same colors as the solid,
  * so the dot and the cylinder read as one object.
  */
 function refreshDiagramOverlay() {
@@ -1087,7 +1087,7 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
       state.selected = new Set(keys);
     }
 
-    await applyCosetSub();      // the colouring's subgroup, when it differs
+    await applyCosetSub();      // the coloring's subgroup, when it differs
     await refresh();
     state.builtStellSym = state.stellSym;   // what the grouping on screen actually is
     const slow = info.ms > 5000 && !state.depthAuto;
@@ -1147,8 +1147,8 @@ async function changeStellSym() {
     refreshElements();
     renderLegend();
     state.building = false;
-    // the coset colouring is a property of the polyhedron group, and a
-    // stellation-symmetry change is editing — nothing to recolour here
+    // the coset coloring is a property of the polyhedron group, and a
+    // stellation-symmetry change is editing — nothing to recolor here
     await refresh();
     state.builtStellSym = state.stellSym;
     setStatus(`editing symmetry ${state.stellSym} — selection kept`, false);
@@ -1261,7 +1261,7 @@ function duValLabels() {
     ? DU_VAL_U27 : null;
 }
 
-/** the key to the bar colours: one swatch per distinct number of congruent pieces */
+/** the key to the bar colors: one swatch per distinct number of congruent pieces */
 function renderLegend() {
   const host = $('#cellsLegend');
   if (!host) return;
@@ -1354,7 +1354,7 @@ function wireControls() {
   $('#autoRotate').onchange = (e) => { if (renderer) renderer.autoRotate = e.target.checked; };
   for (const id of ['#showFaceEdges', '#faceEdgeColor', '#faceEdgeWidth', '#faceEdgeTubes',
                     '#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth', '#facetEdgeTubes']) {
-    // `input` rather than `change` so dragging a slider or scrubbing the colour
+    // `input` rather than `change` so dragging a slider or scrubbing the color
     // picker updates the solid as you go, which is the only way to tune a
     // weight or a shade against what you are actually looking at
     $(id).oninput = pushEdgeStyle;
@@ -1769,7 +1769,7 @@ function currentPresetText(docName) {
  *
  * The coordinate frame and the symmetry elements come off first. A thumbnail
  * is a promise about what opening the document gives you, and those two are
- * not in the document: currentDisplay() saves the edge style, the colouring
+ * not in the document: currentDisplay() saves the edge style, the coloring
  * and the opacity, but the frame and the elements are view preferences that
  * live in localStorage and belong to whoever is looking, not to the figure.
  * A card drawn with them shows a picture the document cannot reproduce.

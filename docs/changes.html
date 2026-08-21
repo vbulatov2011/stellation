@@ -155,32 +155,32 @@
       vertex-and-face count, which was a readout nothing depended on.
     </div></li>
     <li><div>
-      <b>Colouring by cosets of a subgroup.</b> A fourth face colouring:
-      <em>by coset</em>. A menu that appears beside the colour choice picks a
+      <b>Coloring by cosets of a subgroup.</b> A fourth face coloring:
+      <em>by coset</em>. A menu that appears beside the color choice picks a
       subgroup of the <em>polyhedron</em> symmetry, and every facet is painted
       by which coset its <em>plane</em> belongs to — the classical pictures
       are plane-partitions: the compound of five tetrahedra IS the
       icosahedron's twenty face planes falling into five sets of four, and a
-      spike is one colour precisely because its whole surface lies in one
+      spike is one color precisely because its whole surface lies in one
       set's planes. Pick coset subgroup <b>T</b> on the icosahedron and the
-      compound wears its five colours, each tetrahedron one of them. The
-      colouring belongs to the figure, not to the editing: it ignores the
+      compound wears its five colors, each tetrahedron one of them. The
+      coloring belongs to the figure, not to the editing: it ignores the
       stellation symmetry entirely, so regrouping to carve out a single
       tetrahedron does not repaint what you made. A mirror-free subgroup
       counts its cosets among the polyhedron group's rotations, which is what
       the classical pictures do — cosets of T in I, on a solid whose full
       symmetry is I<sub>h</sub>. The twenty planes carry the partition twice,
       once per hand of the compound, and the selection on screen decides which
-      hand the colours follow. Pieces the cosets cannot name are gray rather
-      than wrong. The colouring is offered two ways — one colour <em>per
+      hand the colors follow. Pieces the cosets cannot name are gray rather
+      than wrong. The coloring is offered two ways — one color <em>per
       plane</em>, where a whole face plane matches and the five tetrahedra
       appear, or one <em>per facet</em>, a single flat piece of surface at a
-      time, which can separate things a whole plane cannot — colour the icosahedron under I<sub>h</sub> by
+      time, which can separate things a whole plane cannot — color the icosahedron under I<sub>h</sub> by
       cosets of <b>I</b> and the two hands of its chiral facets come out as
-      the two colours. Where the per-plane labelling exists the facets inherit
+      the two colors. Where the per-plane labelling exists the facets inherit
       it, so the smaller pieces never contradict the larger. Both work in the 3-D
       view, the diagram, the diagram export and every mesh format that carries
-      colour.
+      color.
     </div></li>
     <li><div>
       <b>A turntable, and a video of one turn.</b> A new <b>Animation</b> panel
@@ -222,8 +222,8 @@
       that displays models.
     </div></li>
     <li><div>
-      <b>And it takes the colours and the edges with it.</b> Every format that
-      has somewhere to put a colour now carries the one you are looking at —
+      <b>And it takes the colors and the edges with it.</b> Every format that
+      has somewhere to put a color now carries the one you are looking at —
       by shell, or by which face of the original solid a facet lies in,
       whichever the view is using. OFF puts it after each face, 3MF as base
       materials a slicer reads, glTF and GLB on the vertices, VRML and X3D in a
@@ -232,7 +232,7 @@
       and the dialog says so rather than greying a box without a reason. And
       when the view is drawing the edges as <em>cylinders</em> rather than
       lines, those cylinders go into the file too, at the radius and in the
-      colour they are drawn in: if you are looking at tubes then they are part
+      color they are drawn in: if you are looking at tubes then they are part
       of the figure, not an annotation on it. The same for the symmetry
       elements and the coordinate frame — the rotation axes as their cylinders,
       the mirror planes as their rims, the frame as its three arrows, whichever
@@ -328,15 +328,15 @@
       anything is unreachable again.
     </div></li>
     <li><div>
-      <b>A third colouring: by stellation face class.</b> Colouring by face
+      <b>A third coloring: by stellation face class.</b> Coloring by face
       class asks which faces are the same <em>kind</em> of face of the solid
       you started from — a property of that solid, so an icosahedron is one
-      colour however you stellate it. The new setting asks the other
+      color however you stellate it. The new setting asks the other
       question: which faces the symmetry you are <em>building under</em> can
       still carry onto one another. The two agree at full symmetry and part
       company below it, so dropping the icosahedron to a subgroup splits its
-      twenty faces into two colours under T<sub>h</sub>, and into twenty
-      under E. Switching symmetry recolours immediately, without rebuilding.
+      twenty faces into two colors under T<sub>h</sub>, and into twenty
+      under E. Switching symmetry recolors immediately, without rebuilding.
     </div></li>
     <li><div>
       <b>A gallery of examples.</b> A new <a href="examples.html">Examples</a>
@@ -422,7 +422,7 @@
       (normal and distance, full double precision), a symmetry group of its
       own, and the computed orbit size. Groups mix freely — icosahedron planes
       beside cube planes in one arrangement. A live 3D preview shows every
-      plane as a spoke from the origin with a disc lying in it, coloured by
+      plane as a spoke from the origin with a disc lying in it, colored by
       row, and an import menu appends any catalog solid's planes reduced to
       one row per symmetry class — the icosahedron imports as a single Ih row
       of orbit twenty. Documents are unchanged: the rows are the same plane
@@ -517,26 +517,26 @@
   </div>
   <ul class="done">
     <li><div>
-      <b>Facets can be coloured by which face of the original solid they lie in.</b>
-      The 3D view had one colouring, a hue per shell outward from the core. A second
+      <b>Facets can be colored by which face of the original solid they lie in.</b>
+      The 3D view had one coloring, a hue per shell outward from the core. A second
       is now offered in the View panel: a hue per symmetry class of original face, so
       every facet lying in the same kind of face matches however far apart they are,
       with undersides in the same hue darkened. An icosahedron has one kind of face
-      and so takes two colours; an icosidodecahedron has two and takes four. The
+      and so takes two colors; an icosidodecahedron has two and takes four. The
       classes are orbits of the face planes under the <em>polyhedron's</em> group, not
       the stellation group chosen below it — the kind of face is a property of the
       solid you started from. The diagram follows the same choice: it is drawn on one
-      plane, so it takes that plane's colour and the only variation left is the
+      plane, so it takes that plane's color and the only variation left is the
       above/below split it already draws.
     </div></li>
     <li><div>
       <b>Face edges and facet edges are drawn separately.</b> Every edge of every
-      facet used to be drawn in one colour and one weight, which buries the shape of
+      facet used to be drawn in one color and one weight, which buries the shape of
       the solid in the arrangement that produced it. Where two facets of
       <em>different</em> planes meet there is a real crease, an edge of the solid;
       where two facets of the <em>same</em> plane meet, the surface runs flat across
       the join and the line only records how the arrangement was cut up. Each kind now
-      has its own toggle, colour and width. How much this matters depends on the
+      has its own toggle, color and width. How much this matters depends on the
       selection: whole consecutive shells have no facet edges at all, their per-plane
       regions being disjoint, while the shipped samples are close to half and half —
       240 of each for <span class="mono">sample_02</span>.
@@ -643,9 +643,9 @@
       scroll, so it no longer comes back cropped to where a bigger table left it.
     </div></li>
     <li><div>
-      <b>Symmetry elements in class colours, with a legend.</b> Inequivalent
+      <b>Symmetry elements in class colors, with a legend.</b> Inequivalent
       elements — axes no operation of the group carries onto each other — get
-      different colours; for I<sub>h</sub> the legend reads C₅ ×6, C₃ ×10, C₂ ×15,
+      different colors; for I<sub>h</sub> the legend reads C₅ ×6, C₃ ×10, C₂ ×15,
       m ×15, S₁₀ ×6, S₆ ×10, which is the textbook census. Mirror planes are rimmed
       with <em>thin tori</em> of the same thickness as the axis cylinders, so an
       edge-on plane reads as a bar instead of vanishing; the faint translucent fill
@@ -655,7 +655,7 @@
     <li><div>
       <b>The elements are marked on the diagram too.</b> A dot where each rotation
       axis pierces the drawing plane, a dashed line where each mirror plane crosses
-      it, in the same class colours — what the Java applet's diagram checkboxes drew.
+      it, in the same class colors — what the Java applet's diagram checkboxes drew.
       One toggle: <em>mark on the diagram</em>.
     </div></li>
     <li><div>
@@ -738,7 +738,7 @@
     </div></li>
     <li><div>
       <b>Green adds, red removes, in all three views.</b> Holding shift outlines the
-      target green, the carve modifier outlines it red, and the same two colours are
+      target green, the carve modifier outlines it red, and the same two colors are
       used in the 3-D view, the diagram and the Cells table. Releasing the modifier
       clears the outline immediately. When the gesture would do nothing — nothing
       further out to add, nothing behind the face to remove — the outline is dimmed
@@ -756,7 +756,7 @@
     <li><div>
       <b>The collapse arrow points back the way it opened</b> — ▸ to open a group of
       sub-cells, ◂ to close it, rather than a downward arrow that read as unrelated.
-      The arrow and the count of hidden parts are larger, heavier and in a colour you
+      The arrow and the count of hidden parts are larger, heavier and in a color you
       can find.
     </div></li>
     <li><div>

@@ -15,7 +15,7 @@
  * decimal.
  *
  * The preview draws each plane as a spoke from the origin with a disc lying
- * IN the plane at its foot, coloured by row, in a second Renderer3D that
+ * IN the plane at its foot, colored by row, in a second Renderer3D that
  * shares the app's controls (drag to turn, wheel to zoom).
  */
 
@@ -313,7 +313,7 @@ export function initPlanesDialog(deps) {
     const spokeR = maxD * 0.012, discR = maxD * 0.16;
     for (const { ri, p } of all) addPlaneGeometry(mesh, faceRows, ri, p.n, p.d, spokeR, discR);
     preview.resetScale();                 // a changed set re-frames itself
-    preview.setMesh(mesh, faceRows);      // row index -> the row's chip colour
+    preview.setMesh(mesh, faceRows);      // row index -> the row's chip color
   }
 
   // ---- opening, importing, building ---------------------------------------

@@ -1,9 +1,9 @@
 /*
- * The two ways a stellation is coloured, and nothing else.
+ * The two ways a stellation is colored, and nothing else.
  *
  * These lived in render3d.js, next to the shaders that use them. They moved
  * here when the diagram's SVG export became a pure function that node can
- * call: colouring a facet is arithmetic, and a program that writes an SVG on
+ * call: coloring a facet is arithmetic, and a program that writes an SVG on
  * the command line should not have to load a WebGL renderer to do it.
  *
  * render3d.js re-exports both, so `import { layerColor } from './render3d.js'`
@@ -25,7 +25,7 @@ export const layerColor = i => LAYER_COLORS[i % LAYER_COLORS.length];
  *
  * Every facet of the arrangement lies in one of the original face planes, and
  * those planes fall into symmetry classes — the "kinds" of face the solid has.
- * Colouring by class says something the layer palette cannot: this facet and
+ * Coloring by class says something the layer palette cannot: this facet and
  * that one, far apart in the model, are the same face of the icosahedron seen
  * twice. An icosahedron has one class, a cuboctahedron two.
  *
@@ -39,14 +39,14 @@ export const CLASS_COLORS = [
 ];
 
 /*
- * Undersides get the same colour, darkened.
+ * Undersides get the same color, darkened.
  *
  * A stellation's boundary uses each plane from both sides: the outward cap of a
  * cell, and the underside of the cell resting above it. They are the same face
  * class, so they take the same hue — but telling them apart is most of what you
  * want to see in a spiky stellation, where the two alternate all over the
  * surface. Multiplying rather than shifting the hue keeps it legible as "the
- * same colour, other side" instead of reading as a ninth class.
+ * same color, other side" instead of reading as a ninth class.
  *
  * The factor has to clear the shading: the fragment shader already spans a
  * range of brightness with its two lights, so too gentle a step is lost among
@@ -59,8 +59,8 @@ export const classColor = (i, top = true) => {
 };
 
 /*
- * Coset colouring needs as many colours as the subgroup has cosets — two for
- * an index-2 subgroup, five for the five-tetrahedra colouring, ten, sixty —
+ * Coset coloring needs as many colors as the subgroup has cosets — two for
+ * an index-2 subgroup, five for the five-tetrahedra coloring, ten, sixty —
  * so a fixed list cannot serve. The golden angle can: each hue lands 137.5°
  * past the last, which never repeats and keeps neighbours far apart, however
  * many are asked for. Gray is the non-answer: a cell the subgroup holds
@@ -78,7 +78,7 @@ function hslRgb(h, s, l) {
   return [r + m, g + m, b + m];
 }
 
-/** the colour of coset i — or gray for -1/null, the cells outside the story */
+/** the color of coset i — or gray for -1/null, the cells outside the story */
 export function cosetColor(i, top = true) {
   if (i == null || i < 0) {
     const g = top ? COSET_GRAY : COSET_GRAY * UNDERSIDE;

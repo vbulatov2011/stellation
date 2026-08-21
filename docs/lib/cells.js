@@ -7,7 +7,7 @@
  * say) is drawn as a shaded header box carrying the cell number, followed by one
  * small box per sub-cell.
  *
- * The coloured bars are the original's cleverest touch: every bar colour stands
+ * The colored bars are the original's cleverest touch: every bar color stands
  * for one particular number of congruent pieces, so cells that are the "same
  * kind of thing" read alike at a glance across the whole table.
  *
@@ -18,12 +18,12 @@
  *   click layer number act on the whole layer
  */
 
-/* Geometry. The colour bar sits in its own lane at the foot of each box, with the
+/* Geometry. The color bar sits in its own lane at the foot of each box, with the
    digit centred in the space above it — in the original they shared the same few
    pixels and collided. */
 const BOX_W    = 27;   // a cell box
 const BOX_H    = 28;
-const BAR_H    = 3;    // the colour bar
+const BAR_H    = 3;    // the color bar
 const BAR_INSET = 4;   // its margin from the box's left and right edges
 const BAR_LIFT = 4;    // how far its top sits above the box's bottom edge
 const GAP_X    = 3;    // between boxes
@@ -255,7 +255,7 @@ export class CellsPanel {
   /** optional display names for cells — { "layer.cell": "e₁", … } or null */
   setLabels(labels) { this.labels = labels; this.draw(); }
 
-  /** what each bar colour means: one entry per distinct piece-count */
+  /** what each bar color means: one entry per distinct piece-count */
   legend() { return this.palette?.entries ?? []; }
 
   // ---------------------------------------------------------------- selection
@@ -524,7 +524,7 @@ export class CellsPanel {
       ctx.lineWidth = group ? 2.4 : hovered ? 1.8 : 1;
       ctx.stroke();
 
-      // the colour bar, in its own lane at the foot of the box — never under the digit
+      // the color bar, in its own lane at the foot of the box — never under the digit
       const count = isHeader ? b.cell.primitives : b.sub.primitives;
       roundRect(ctx, b.x + BAR_INSET, b.y + b.h - BAR_LIFT - BAR_H,
                 b.w - 2 * BAR_INSET, BAR_H, BAR_H / 2);

@@ -74,7 +74,7 @@ export const DIAGRAM_DEFAULTS = {
   faceLines: true,      // the outline of the figure
   faceWidth: 0.7,
 
-  background: 'white',  // any CSS colour, or null for transparent
+  background: 'white',  // any CSS color, or null for transparent
   ink: '#222',          // the arrangement
   figureInk: null,      // the figure's own lines; null follows `ink`
   metadata: null,       // {…} describing the document, written into the file

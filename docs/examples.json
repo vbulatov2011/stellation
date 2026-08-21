@@ -117,7 +117,7 @@
         "compound",
         "icosahedral"
       ],
-      "note": "Crennell's 47th stellation, and the figure the coset colouring exists for. The twenty face planes of the icosahedron fall into five sets of four, each set the faces of a regular tetrahedron, and the five tetrahedra together use every plane once. The document opens coloured that way: face colours are set to right cosets of the subgroup T, so each tetrahedron wears one of five colours -- the classical picture. Drop the stellation symmetry to T and the editing follows one tetrahedron at a time while the colours stay put. 251 of the arrangement's 473 pieces; the mesh is 182 vertices and 300 faces."
+      "note": "Crennell's 47th stellation, and the figure the coset coloring exists for. The twenty face planes of the icosahedron fall into five sets of four, each set the faces of a regular tetrahedron, and the five tetrahedra together use every plane once. The document opens colored that way: face colors are set to right cosets of the subgroup T, so each tetrahedron wears one of five colors -- the classical picture. Drop the stellation symmetry to T and the editing follows one tetrahedron at a time while the colors stay put. 251 of the arrangement's 473 pieces; the mesh is 182 vertices and 300 faces."
     }
   ]
 }

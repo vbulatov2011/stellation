@@ -254,7 +254,7 @@
         </div>
       </div>
       <div class="cells-wrap"><canvas id="cells"></canvas></div>
-      <div id="cellsLegend" class="legend" title="Each bar colour marks one particular number of congruent pieces"></div>
+      <div id="cellsLegend" class="legend" title="Each bar color marks one particular number of congruent pieces"></div>
       <div id="cellInfo" class="info mono"></div>
       <div id="helpCellsPanel" class="view-help" hidden>
         <div class="what">
@@ -301,8 +301,8 @@
 
     <details class="group">
       <summary><h2>View</h2></summary>
-      <label class="field" title="How the facets are coloured. By shell: one colour per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one colour per kind of face of the ORIGINAL polyhedron — an icosahedron has one kind however you stellate it, so it takes one colour (two with the darkened undersides). By stellation face class: the same, but grouped under the stellation symmetry, so dropping to a subgroup splits those faces into the several kinds that symmetry can still tell apart — an icosahedron under a subgroup shows more than one colour.">
-        <span>face colours</span>
+      <label class="field" title="How the facets are colored. By shell: one color per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one color per kind of face of the ORIGINAL polyhedron — an icosahedron has one kind however you stellate it, so it takes one color (two with the darkened undersides). By stellation face class: the same, but grouped under the stellation symmetry, so dropping to a subgroup splits those faces into the several kinds that symmetry can still tell apart — an icosahedron under a subgroup shows more than one color.">
+        <span>face colors</span>
         <select id="colorMode">
           <option value="layer">by shell</option>
           <option value="class">by face class</option>
@@ -312,10 +312,10 @@
         </select>
       </label>
       <!-- shown only in coset mode: the subgroup of the POLYHEDRON group whose
-           cosets do the colouring — a property of the figure, not of the
+           cosets do the coloring — a property of the figure, not of the
            editing symmetry -->
       <label class="field" id="cosetSubRow" hidden
-             title="The subgroup whose cosets colour the figure — a subgroup of the polyhedron symmetry, independent of the editing symmetry, so regrouping never repaints. A mirror-free subgroup counts its cosets among the rotations. Faces the cosets cannot label are gray. The five tetrahedra: coset subgroup T on the icosahedron.">
+             title="The subgroup whose cosets color the figure — a subgroup of the polyhedron symmetry, independent of the editing symmetry, so regrouping never repaints. A mirror-free subgroup counts its cosets among the rotations. Faces the cosets cannot label are gray. The five tetrahedra: coset subgroup T on the icosahedron.">
         <span>coset subgroup</span>
         <select id="cosetSub"></select>
       </label>
@@ -328,21 +328,21 @@
         <legend title="Every facet lies in one of the original face planes. Where two facets of DIFFERENT planes meet there is a real crease — an edge of the solid. Where two facets of the SAME plane meet the surface runs flat across the join and the line is just how the plane arrangement was cut up. Drawing the two the same buries the shape of the solid in the arrangement that produced it.">edges</legend>
         <label class="check" title="The creases: where facets lying in different face planes meet"><input id="showFaceEdges" type="checkbox" checked> face edges</label>
         <div class="row edge-style">
-          <input id="faceEdgeColor" type="color" value="#000000" title="Colour of the face edges">
+          <input id="faceEdgeColor" type="color" value="#000000" title="Color of the face edges">
           <input id="faceEdgeWidth" type="range" min="0.1" max="8" step="0.1" value="1" title="Thickness — pixels for lines, scaled radius for cylinders">
           <b id="faceEdgeWidthLabel">1.0</b>
         </div>
         <label class="check" title="Draw the face edges as thin lit cylinders — real geometry that shades round and thickens as you zoom — instead of flat lines of constant screen width. Very thin cylinders can shimmer; lines stay clean at any width."><input id="faceEdgeTubes" type="checkbox"> as cylinders</label>
         <label class="check" title="The subdivision: where facets lying in the same face plane meet, with no crease between them"><input id="showFacetEdges" type="checkbox" checked> facet edges</label>
         <div class="row edge-style">
-          <input id="facetEdgeColor" type="color" value="#6b7080" title="Colour of the facet edges">
+          <input id="facetEdgeColor" type="color" value="#6b7080" title="Color of the facet edges">
           <input id="facetEdgeWidth" type="range" min="0.1" max="8" step="0.1" value="1" title="Thickness — pixels for lines, scaled radius for cylinders">
           <b id="facetEdgeWidthLabel">1.0</b>
         </div>
         <label class="check" title="Draw the facet edges as thin lit cylinders — real geometry that shades round and thickens as you zoom — instead of flat lines of constant screen width. Very thin cylinders can shimmer; lines stay clean at any width."><input id="facetEdgeTubes" type="checkbox"> as cylinders</label>
       </fieldset>
       <fieldset class="sym-elems">
-        <legend title="The symmetry elements of the stellation group, drawn through the origin as real geometry so the solid hides the parts behind it. Inequivalent elements get different colours — the legend below names them.">symmetry elements</legend>
+        <legend title="The symmetry elements of the stellation group, drawn through the origin as real geometry so the solid hides the parts behind it. Inequivalent elements get different colors — the legend below names them.">symmetry elements</legend>
         <label class="check"><input id="showAxes" type="checkbox"> rotation axes</label>
         <label class="check" title="Each mirror plane as a rim the thickness of the axes, with a faint translucent fill"><input id="showMirrors" type="checkbox"> mirror planes</label>
         <label class="check" title="Rotoreflection (Sₙ) axes — turn, then reflect. The three-dimensional cousin of a glide reflection."><input id="showImproper" type="checkbox"> rotoreflection axes</label>
@@ -498,7 +498,7 @@
   <p class="note">
     The figure itself, in whichever format the thing you are taking it to
     wants. Every mesh format carries the same geometry, and every one that has
-    somewhere to put a colour carries the colouring you are looking at.
+    somewhere to put a color carries the coloring you are looking at.
   </p>
 
   <div class="ex-section">
@@ -507,8 +507,8 @@
       <select id="esFormat" class="grow" aria-label="Format"></select>
     </div>
     <p id="esNote" class="note"></p>
-    <label class="check" title="A colour on every face, in whichever reading the view is using — by shell, or by which face of the original solid it lies in">
-      <input type="checkbox" id="esColor" checked> Colours
+    <label class="check" title="A color on every face, in whichever reading the view is using — by shell, or by which face of the original solid it lies in">
+      <input type="checkbox" id="esColor" checked> Colors
       <span id="esColorWhy" class="dim"></span>
     </label>
     <label class="check" title="The edges as the cylinders the view is drawing, at the same radius, as part of the same object">
@@ -690,7 +690,7 @@
     <li>The <b>Cells</b> table on the right has one row per layer, the core at the
       bottom and each shell built on the one below it. Each box is a symmetric set
       of cells; a shaded box with smaller boxes beside it is a cell that splits into
-      <b>sub-cells</b>, such as a chiral pair. Bar colours group cells by how many
+      <b>sub-cells</b>, such as a chiral pair. Bar colors group cells by how many
       congruent pieces they contain.</li>
     <li>Each view works at its own scale.
       In the <b>solid</b>, <kbd>shift</kbd>-click <b class="add">adds</b> the one

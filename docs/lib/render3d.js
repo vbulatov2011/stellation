@@ -5,7 +5,7 @@
  * needs far less than a general 3D engine, and a static page with no build step
  * loads instantly.
  *
- * Faces are given per-face flat normals and a per-face colour keyed to the
+ * Faces are given per-face flat normals and a per-face color keyed to the
  * stellation layer, so you can read the structure of a stellation by eye.
  */
 
@@ -92,7 +92,7 @@ out vec4 fragColor;
 void main() { fragColor = uColor; }`;
 
 /*
- * The palettes live in palette.js so that the diagram's SVG export can colour
+ * The palettes live in palette.js so that the diagram's SVG export can color
  * a facet without loading a renderer. Re-exported here because that is where
  * every caller has always imported them from.
  */
@@ -152,7 +152,7 @@ const POINTER_PHYSICS = {
  * One palette for the two gestures, shared by all three views.
  *
  * Adding is green and carving is red — the natural reading — and the same two
- * colours mean the same two things whether you are pointing at the solid, the
+ * colors mean the same two things whether you are pointing at the solid, the
  * diagram or a box in the Cells table.
  *
  * `off` is what a modifier gets when the gesture cannot do anything from here —
@@ -219,7 +219,7 @@ export class Renderer3D {
      * solid: a "face edge". Where two facets of the SAME plane meet the surface
      * is flat across the join and the line is pure subdivision, an artefact of
      * how the plane arrangement was cut up: a "facet edge". Drawing both in one
-     * colour, as this used to, buries the shape of the solid in the arrangement
+     * color, as this used to, buries the shape of the solid in the arrangement
      * that produced it.
      */
     const segBufs = () => ({ a: gl.createBuffer(), b: gl.createBuffer(), side: gl.createBuffer(), end: gl.createBuffer() });
@@ -293,7 +293,7 @@ export class Renderer3D {
      * of the arrangement, and reading them as quieter than the solid's own
      * edges is the point of separating them at all. Blending is only enabled
      * around the mirror discs, so these stay opaque and the distinction is
-     * carried by colour and width, not alpha.
+     * carried by color and width, not alpha.
      */
     // `tubes` swaps that kind's lines for thin lit cylinders — see _ensureTubes.
     // Per kind, because the two want different treatment: face edges are the
@@ -423,7 +423,7 @@ export class Renderer3D {
       // the slider scales the thickness; the extent stays put, so a thicker
       // axis is a fatter tube reaching exactly as far as the thin one did
       const rad = R * 0.014 * (this.elemWidth > 0 ? this.elemWidth : 1);
-      // every element carries its own colour: inequivalent elements differ
+      // every element carries its own color: inequivalent elements differ
       for (const a of (el.axes || [])) tube(tubes, a.dir, ext, rad, a.rgb || [0.25, 0.72, 0.95]);
       for (const a of (el.improper || [])) tube(tubes, a.dir, ext * 0.94, rad * 0.9, a.rgb || [0.72, 0.45, 0.95]);
       /*
@@ -479,10 +479,10 @@ export class Renderer3D {
    * The edge tubes as data, for anything that is not the GPU.
    *
    * Returns one entry per edge kind currently drawn as cylinders — its
-   * segments, the world radius the sliders came to, and its colour — or an
+   * segments, the world radius the sliders came to, and its color — or an
    * empty list when the view is drawing lines, which have no geometry to
    * give. Deliberately data rather than triangles: the export builds its own
-   * cylinders, indexed and per-face-coloured, where _ensureTubes builds a
+   * cylinders, indexed and per-face-colored, where _ensureTubes builds a
    * flat soup with baked normals because that is what a vertex buffer wants.
    */
   edgeTubeSpec() {
@@ -500,7 +500,7 @@ export class Renderer3D {
 
   /**
    * Everything drawn AROUND the solid, as data: the symmetry elements and the
-   * coordinate frame, each with the size and colour the view is giving it.
+   * coordinate frame, each with the size and color the view is giving it.
    *
    * Only what is actually on screen — `elements` already holds just the kinds
    * the panel has switched on, and the frame answers to its own flag. The
@@ -563,7 +563,7 @@ export class Renderer3D {
 
   /**
    * Build (or reuse) the cylinder geometry for both edge kinds. Cached
-   * against a key of everything baked into the vertices — widths, colours,
+   * against a key of everything baked into the vertices — widths, colors,
    * the mesh scale — so dragging a style slider rebuilds and everything
    * else redraws what is already on the GPU.
    */
@@ -800,7 +800,7 @@ export class Renderer3D {
   /**
    * upload a mesh: {vertices:[{x,y,z}], faces:[[i,...]]} plus a layer per face.
    *
-   * `faceClass` is optional and carries the other colourings:
+   * `faceClass` is optional and carries the other colorings:
    * {classes, classesStell, top}, one entry per face — which symmetry class
    * of original face the facet lies in, under the polyhedron's group and
    * under the stellation group, and whether it is an outward cap or an
@@ -820,7 +820,7 @@ export class Renderer3D {
                   : this.colorMode === 'stellClass' ? faceClass?.classesStell
                   : null;
     const byClass = !!classes;
-    // coset colouring reads its own map and its own palette — golden-angle
+    // coset coloring reads its own map and its own palette — golden-angle
     // hues, one per class, gray where the cosets cannot label. Right cosets
     // ride on the planes, left cosets on the cells' H-orbits.
     const cosets = this.colorMode === 'coset' ? faceClass?.cosets
@@ -992,12 +992,12 @@ export class Renderer3D {
   }
 
   /**
-   * Switch between colouring by shell and by face class.
+   * Switch between coloring by shell and by face class.
    *
    * Re-uploads from the mesh already held rather than asking the worker for it
-   * again: nothing about the geometry changes, only the colour attribute. The
+   * again: nothing about the geometry changes, only the color attribute. The
    * rebuild costs what one selection toggle costs, and it happens once per menu
-   * change, so it is not worth a separate colour-only path through setMesh.
+   * change, so it is not worth a separate color-only path through setMesh.
    *
    * Framing is untouched because the content is identical — the fill fraction
    * setMesh tests against is exactly what it was, so no re-fit is triggered.
@@ -1010,7 +1010,7 @@ export class Renderer3D {
 
   /**
    * How solid the facets are, 1 down to 0. Costs nothing but a redraw — the
-   * geometry and its colours are untouched, only how they are blended.
+   * geometry and its colors are untouched, only how they are blended.
    */
   setFaceOpacity(v) {
     const a = Math.max(0, Math.min(1, Number(v)));
@@ -1447,7 +1447,7 @@ export class Renderer3D {
   /**
    * Outline one face, or clear with -1.
    *
-   * `action` is 'add' | 'remove' | null and picks the colour; `enabled` false
+   * `action` is 'add' | 'remove' | null and picks the color; `enabled` false
    * dims it, meaning "you are pointing at this, but the click would do nothing".
    */
   setHighlight(faceIndex, action = null, enabled = true) {
@@ -1689,7 +1689,7 @@ export class Renderer3D {
         const hit = picking(e) ? this.pick(e) : null;
         c.style.cursor = hit ? 'crosshair' : 'grab';
         // the app knows whether the gesture can actually do anything here, so it
-        // owns the highlight colour; without it, fall back to a plain outline
+        // owns the highlight color; without it, fall back to a plain outline
         if (this.onPickHover) this.onPickHover(hit, mods(e));
         else this.setHighlight(hit ? hit.face : -1);
         return;

@@ -282,8 +282,8 @@ SYMBOLS.forEach((symbol, i) => {
    * a solid with several kinds of face would have several, which is what
    * diagramFaces() is for.
    *
-   * Coloured by shell, the same as the solid beside it: the two pictures of a
-   * figure should agree about what colour its shells are.
+   * Colored by shell, the same as the solid beside it: the two pictures of a
+   * figure should agree about what color its shells are.
    */
   const faces = diagramFaces(stel, symmetry[chiral ? 'I' : 'Ih'].matrices);
   if (faces.length !== 1) problems.push(`${n} ${symbol}: ${faces.length} distinct diagrams, expected 1`);
@@ -322,7 +322,7 @@ SYMBOLS.forEach((symbol, i) => {
       polyhedron: 'icosahedron', file: 'u27',
       polySymmetry: 'Ih', stellSymmetry: chiral ? 'I' : 'Ih',
       planeDepth: DEPTH, cells, diagramFace: 0,
-      colorMode: 'layer',        // colour by shell: the letters, made visible
+      colorMode: 'layer',        // color by shell: the letters, made visible
       /*
        * The camera, from icosahedra-views.json: the same +z rotation for all
        * 59, and a zoom fitted so each fills the frame. Written into the

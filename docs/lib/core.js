@@ -1554,31 +1554,31 @@ export function mat3mul(a, b) {
   return o;
 }
 
-// ---------------------------------------------------------------- coset colouring
+// ---------------------------------------------------------------- coset coloring
 
 /*
  * Label the arrangement's PLANES by the cosets of a subgroup H in a group G —
  * as the app wires it, G is the POLYHEDRON group and H a subgroup of it chosen
- * beside the colour menu. The facet version above is the same labelling on
- * smaller pieces; the two differ in what wears one colour, not in handedness.
+ * beside the color menu. The facet version above is the same labelling on
+ * smaller pieces; the two differ in what wears one color, not in handedness.
  * Returns { planes: Int32Array(plane -> coset, -1 for gray), count }.
  *
  * Planes, not cells, because the classical pictures this exists for are
  * plane-partitions. The compound of five tetrahedra IS a partition of the
  * icosahedron's twenty face planes into five sets of four; the classical
- * five-colouring of the icosahedron paints each face by which tetrahedron its
- * plane belongs to; and a spike of the compound is one colour precisely
+ * five-coloring of the icosahedron paints each face by which tetrahedron its
+ * plane belongs to; and a spike of the compound is one color precisely
  * because every facet of its surface lies in that one tetrahedron's planes.
- * Colouring the facets by their planes therefore colours every one of those
+ * Coloring the facets by their planes therefore colors every one of those
  * pictures correctly at every depth.
  *
- * It is also what makes the labelling COHERENT. A first version coloured
+ * It is also what makes the labelling COHERENT. A first version colored
  * cells, orbit by orbit, and each orbit independently chose a representative;
  * the choices did not agree between orbits — each fixes its own conjugate of
- * H — and the five colours came out shuffled from one shell to the next. The
+ * H — and the five colors came out shuffled from one shell to the next. The
  * planes form a single orbit for every solid with one kind of face, so one
  * representative anchors the entire figure; a solid with several kinds of
- * face at worst rotates colours between kinds, never within one.
+ * face at worst rotates colors between kinds, never within one.
  *
  * The construction, on each plane orbit under G: a representative q₀ is
  * SOUGHT whose stabiliser sits inside H — the labelling "plane g·q₀ wears the
@@ -1586,9 +1586,9 @@ export function mat3mul(a, b) {
  * representative is a plane of one of the two T-invariant tetrahedra, and
  * choosing it is what makes the five tetrahedra appear; which enantiomorph is
  * found first decides the compound's handedness, deterministically. An orbit
- * with no such representative has no coset colouring and is gray rather than
+ * with no such representative has no coset coloring and is gray rather than
  * wrong — under the full Ih every face stabiliser holds mirrors that T lacks,
- * which is why the five-colouring needs the chiral groups. And a plane the
+ * which is why the five-coloring needs the chiral groups. And a plane the
  * whole subgroup fixes is gray by instruction: it sits on the symmetry rather
  * than being carried by it.
  */
@@ -1596,10 +1596,10 @@ export function mat3mul(a, b) {
 /**
  * The same labelling on smaller pieces: the arrangement's FACETS.
  *
- * A facet is a single flat piece of surface, so "these facets share a colour"
+ * A facet is a single flat piece of surface, so "these facets share a color"
  * says exactly that the subgroup carries one onto the other — which is the
- * claim the colouring is making, at the scale you are actually looking at.
- * Planes are coarser: a whole plane takes one colour, so a figure with facets
+ * claim the coloring is making, at the scale you are actually looking at.
+ * Planes are coarser: a whole plane takes one color, so a figure with facets
  * of both hands in one plane cannot be told apart, and the icosahedron under
  * cosets of I comes out entirely gray when the two hands of its chiral cells
  * are precisely what there is to see.
@@ -1659,7 +1659,7 @@ export function facetCosetClasses(stel, matrices, subMatrices) {
    * representative for one outside H and every label in it shifts together,
    * and nothing in the group relates one orbit's choice to another's. So
    * labelling each facet orbit independently — which is what this did at
-   * first, and what the cell colouring before it did — makes "colour 0" mean
+   * first, and what the cell coloring before it did — makes "color 0" mean
    * a different thing in different orbits, and the five tetrahedra come out
    * shuffled. Every facet lies in a plane, and the planes are one orbit with
    * one representative, so where the plane labelling exists it is the shared
@@ -1775,7 +1775,7 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
      * the planes — and a T-stabilised representative exists in each. Which
      * hand is wanted is not a group-theoretic fact at all: it is the figure's,
      * so when the caller passes its selected cells, each distinct candidate
-     * labelling is scored by how coherently it colours them — a cell bounded
+     * labelling is scored by how coherently it colors them — a cell bounded
      * by planes of one tetrahedron counts clean under the right hand and
      * mixed under the wrong one — and the cleanest wins. No cells, or a tie
      * (every achiral figure), falls to the first candidate, deterministically.
@@ -1826,10 +1826,10 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
 // ---------------------------------------------------------------- export formats
 
 /**
- * OFF, optionally with a colour on each face.
+ * OFF, optionally with a color on each face.
  *
  * The format allows three or four numbers after a face's vertex list, read as
- * its colour; readers that do not want them ignore the tail. Written as 0–255
+ * its color; readers that do not want them ignore the tail. Written as 0–255
  * integers, which is the reading every viewer agrees on — floats are also
  * legal and are guessed at differently from one program to the next.
  */

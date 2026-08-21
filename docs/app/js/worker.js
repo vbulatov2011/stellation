@@ -17,7 +17,7 @@ let stel = null;
 let meta = null;
 /*
  * plane index -> symmetry class of the original face, under each of the two
- * groups. They answer different questions and both are worth colouring by:
+ * groups. They answer different questions and both are worth coloring by:
  * the polyhedron's group says which faces are the same KIND of face of the
  * solid you started from, and the stellation group says which of those the
  * symmetry you are building under can still carry onto one another. Under
@@ -27,10 +27,10 @@ let meta = null;
 let faceClass = null;
 let faceClassStell = null;
 /*
- * Plane -> coset, for the coset colouring; -1 is gray. The cosets are of a
+ * Plane -> coset, for the coset coloring; -1 is gray. The cosets are of a
  * chosen subgroup relative to the POLYHEDRON group ('cosets' message) — the
  * stellation group is the editing symmetry and deliberately has no hand in
- * the colouring, so regrouping never repaints. A mirror-free subgroup counts
+ * the coloring, so regrouping never repaints. A mirror-free subgroup counts
  * its cosets among the polyhedron group's rotations: cosets of a chiral
  * subgroup inside an achiral group can never label the planes (every plane
  * stabiliser then holds mirrors the subgroup lacks), and dropping the
@@ -40,7 +40,7 @@ let faceClassStell = null;
 let cosets = null;
 /*
  * And the same cosets per facet: facet -> class. Same subgroup, same
- * message; what differs is what wears the colour, a whole plane or a single
+ * message; what differs is what wears the color, a whole plane or a single
  * piece of surface.
  */
 let cosetsL = null;
@@ -82,7 +82,7 @@ function outline() {
 }
 
 /**
- * The mesh for a selection, plus per face: the stellation layer (for colour) and
+ * The mesh for a selection, plus per face: the stellation layer (for color) and
  * the sub-cells on either side of it. Those two references are what turns a
  * click on the solid into "grow here" or "carve this away".
  */
@@ -106,10 +106,10 @@ function meshFor(selected) {
     faces: mesh.faces,
     faceLayers: mesh.facetRefs.map(f => f.layer),
     /*
-     * The other colouring: which class of original face this facet lies in, and
+     * The other coloring: which class of original face this facet lies in, and
      * whether it is an outward cap or an underside. Sent alongside the layer
      * rather than instead of it, so switching the menu is a re-upload of the
-     * colour attribute and never another round trip to this worker.
+     * color attribute and never another round trip to this worker.
      */
     faceClasses: mesh.facetRefs.map(f => (faceClass ? faceClass[f.plane] : 0)),
     faceClassesStell: mesh.facetRefs.map(f => (faceClassStell ? faceClassStell[f.plane] : 0)),
@@ -122,9 +122,9 @@ function meshFor(selected) {
     // gestures act on. The top/bottom orientation mirrors cellsAcrossFace;
     // reading cellBelow / cellAbove the same way round everywhere instead made
     // shift and ctrl both silent no-ops on every downward-facing face.
-    // which coset the face's PLANE belongs to — the classical colourings are
+    // which coset the face's PLANE belongs to — the classical colorings are
     // plane-partitions (five tetrahedra = five sets of four planes), and a
-    // spike is one colour because its whole surface lies in one set's planes
+    // spike is one color because its whole surface lies in one set's planes
     faceCosets: mesh.facetRefs.map(f => (cosets ? cosets.planes[f.plane] : -1)),
     // and by coset of the facet itself — the smallest piece, and the only one
     // that can tell two hands apart when both lie in the same plane
@@ -210,15 +210,15 @@ self.onmessage = (e) => {
          * group chosen below it. "The same kind of face" is a property of the
          * solid you started from — an icosahedron has one kind however you
          * choose to stellate it — and using the stellation group instead would
-         * split the twenty faces into several colours the moment you picked a
-         * subgroup, which is not what the colouring is claiming to show.
+         * split the twenty faces into several colors the moment you picked a
+         * subgroup, which is not what the coloring is claiming to show.
          */
         faceClass = stel.planes.length ? planeClasses(stel, matrices).group : null;
         faceClassStell = stel.planes.length
           ? planeClasses(stel, subMatrices || matrices).group : null;
         cosetGroup = matrices;
-        // the default colouring is the polyhedron group over itself — one
-        // colour, and one class per orbit — until the app names a subgroup
+        // the default coloring is the polyhedron group over itself — one
+        // color, and one class per orbit — until the app names a subgroup
         cosets = stel.planes.length
           ? cosetClasses(stel, cosetGroup, cosetGroup) : null;
         cosetsL = stel.planes.length
@@ -301,7 +301,7 @@ self.onmessage = (e) => {
         // the stellation group decides this classification, so it moves too
         faceClassStell = stel.planes.length
           ? planeClasses(stel, payload.subMatrices || payload.matrices || null).group : null;
-        // the coset colouring is untouched: the stellation group is the
+        // the coset coloring is untouched: the stellation group is the
         // editing symmetry, and editing must not repaint the figure
         reply({
           outline: outline(),
@@ -311,8 +311,8 @@ self.onmessage = (e) => {
       }
 
       /*
-       * Recompute the coset colouring against a subgroup of the caller's own
-       * choosing — the colouring's subgroup is picked beside the colour menu
+       * Recompute the coset coloring against a subgroup of the caller's own
+       * choosing — the coloring's subgroup is picked beside the color menu
        * and need not be the editing symmetry. Cheap: no rebuild, no regroup,
        * just the cell -> coset map; the next mesh/diagram fetch carries it.
        */
@@ -331,7 +331,7 @@ self.onmessage = (e) => {
      * silently to that group's rotations whenever the subgroup had no
      * mirrors, so that T inside Ih would produce the five tetrahedra — but
      * that answers a question nobody asked, and for I inside Ih it collapsed
-     * the honest index of 2 to 1 and painted the whole figure one colour.
+     * the honest index of 2 to 1 and painted the whole figure one color.
      * The five tetrahedra are a chiral figure; they want the polyhedron
      * symmetry set to I, and saying so is better than guessing.
      */

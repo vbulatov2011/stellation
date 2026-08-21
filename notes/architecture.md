@@ -77,7 +77,7 @@ the shells fall out of the clipping rather than needing a separate pass. For the
 dense duals this clips millions of polygons.
 
 Two facts about facets carry most of the UI. A facet knows its `plane`, which is
-what face-class colouring keys off. And `extractMesh` returns `facetTop` — for
+what face-class coloring keys off. And `extractMesh` returns `facetTop` — for
 each boundary face, whether the solid is below it (an outward cap) or above it
 (an underside lining a cavity). That flag is what turns a click into "add" or
 "remove", and what the class palette darkens.
@@ -170,7 +170,7 @@ that buffer reaches no file.
 All three share one gesture palette (`ACTION` in `render3d.js`) and toggle the
 same selection, so green means add and red means remove everywhere.
 
-### Three colourings
+### Three colorings
 
 Chosen in the View panel, saved under `params.display.colorMode`:
 
@@ -187,10 +187,10 @@ Chosen in the View panel, saved under `params.display.colorMode`:
 
 The worker keeps both plane→class maps (`faceClass`, `faceClassStell`) and
 sends both arrays with every mesh, so switching the menu is a re-upload of
-the colour attribute and never another build. The stellation one is
+the color attribute and never another build. The stellation one is
 recomputed by `regroup` as well as `build`, since the group that defines it
 is exactly what a regroup changes. The diagram follows the same choice — it
-is drawn on one plane, so by either class it takes that plane's colour and
+is drawn on one plane, so by either class it takes that plane's color and
 the only variation left is the above/below split.
 
 ### Facet opacity
@@ -223,7 +223,7 @@ cylinder well, while facet edges are usually hairlines, and a sub-pixel
 cylinder aliases where a line stays clean. The width sliders (0.1 steps) set
 the radius, scaled to the mesh radius so the same number reads alike on any
 model; being geometry, they thicken as you zoom. Built lazily and cached
-against a key of everything baked into the vertices (widths, colours, mesh
+against a key of everything baked into the vertices (widths, colors, mesh
 scale), so line mode never pays for them.
 
 Blending is order-dependent, and the order is exact: the facets draw
@@ -243,7 +243,7 @@ triangles × 32 planes), an element-buffer upload, one draw call.
 
 ### Two kinds of edge
 
-Also drawn from two buffers, each with its own toggle, colour and width, saved
+Also drawn from two buffers, each with its own toggle, color and width, saved
 under `params.display.edges`. Where two facets of DIFFERENT planes meet there is
 a real crease, an edge of the solid: a **face edge**. Where two facets of the
 SAME plane meet, the surface runs flat across the join and the line only records
@@ -432,12 +432,12 @@ prose. Treat it as the design record, because it is.
 ## Loose ends
 
 - **The two implementations are diverging, and the gap is widening.** The
-  JavaScript has gained face-class colouring, the face/facet edge split, the
+  JavaScript has gained face-class coloring, the face/facet edge split, the
   AnimatedPointer trackball, a parallel projection and a capped-arrangement
   guard that the Java knows nothing about. Nothing checks they still agree
   beyond the frozen numbers in `validate.mjs` — and those cover the engine only,
   so none of the above is tested against anything.
-- **The new view features have no test.** Colouring, edge classification and the
+- **The new view features have no test.** Coloring, edge classification and the
   trackball were each verified once by measurement — face-class counts per
   solid, edge counts per sample, drag and throw behaviour — but none of it is in
   `docs/test/`. Edge classification in particular is a pure function of the mesh

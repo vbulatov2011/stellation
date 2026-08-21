@@ -276,15 +276,15 @@ export function readPreset(doc) {
     showAllFacets: p.display?.showAllFacets ?? true,
     spin: p.display?.spin ?? false,
     /*
-     * Documents written before face-class colouring existed have no setting;
+     * Documents written before face-class coloring existed have no setting;
      * they were all drawn by shell, so that is what they should reopen as.
      * An unknown value falls back the same way rather than being trusted:
-     * the colouring is a view of the geometry, and the wrong one is better
+     * the coloring is a view of the geometry, and the wrong one is better
      * than a mode this build cannot draw.
      */
     colorMode: ['class', 'stellClass', 'coset', 'cosetL'].includes(p.display?.colorMode)
       ? p.display.colorMode : 'layer',
-    // the coset colourings carry their subgroup, or they reopen colourless
+    // the coset colorings carry their subgroup, or they reopen colorless
     cosetSub: typeof p.display?.cosetSub === 'string' ? p.display.cosetSub : null,
     // written since translucency existed; anything older was drawn solid
     faceOpacity: clamp01(p.display?.faceOpacity, 1),

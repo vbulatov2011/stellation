@@ -6,12 +6,12 @@
  *
  *  - imports only ./internalWindow.js — never a barrel, so pulling this file
  *    in cannot drag the rest of the lib along with it;
- *  - the thumbnail background modes (solid colour / checkerboard, persisted
+ *  - the thumbnail background modes (solid color / checkerboard, persisted
  *    per dialog) are dropped — stellation thumbnails are opaque renders and
  *    the chrome should follow the theme, not fight it;
  *  - the missing-thumbnail placeholder is an inline SVG data URL — the
  *    original pointed at an image path that no app actually served;
- *  - the drag-highlight is a CSS class rather than inline colours, so the
+ *  - the drag-highlight is a CSS class rather than inline colors, so the
  *    theme owns it.
  *
  * Items are supplied as {url|tmb|file, data}: `url` becomes a plain <img src>

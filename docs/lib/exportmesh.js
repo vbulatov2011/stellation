@@ -6,7 +6,7 @@
  * rest of it. What is here is everything else — 3MF, a zip of XML; glTF, JSON
  * around a binary buffer; GLB, that pair in one binary file; and VRML 2 and
  * X3D, which are scene graphs — plus what they share: the triangulation, the
- * colours, and the edge tubes.
+ * colors, and the edge tubes.
  *
  * Pure, like diagramsvg.js: a mesh in, bytes out. No DOM, no download, no
  * dialog, so node can write the same files the app does and the tests can read
@@ -17,7 +17,7 @@
  * correct triangulation of each. VRML and X3D need no fan at all: they take
  * polygons, and a pentagon stays a pentagon.
  *
- * Colour is carried wherever the format has somewhere to put it, in the same
+ * Color is carried wherever the format has somewhere to put it, in the same
  * reading the view is using — by shell, or by which face of the original solid
  * a facet lies in. STL has nowhere to put it and OBJ would need a second file,
  * so those two are the shape alone.
@@ -27,7 +27,7 @@ import { makeZip } from './uilib/zip.js';
 import { layerColor, classColor, cosetColor } from './palette.js';
 
 /**
- * What colour each face is, by the same rule the 3-D view and the diagram use.
+ * What color each face is, by the same rule the 3-D view and the diagram use.
  *
  * The mesh carries everything the decision needs — which shell each face is
  * in, which class of the original solid's faces it lies in under each of the
@@ -231,7 +231,7 @@ export function orientMesh(mesh, m) {
 }
 
 /**
- * Two meshes as one, with their colours kept side by side.
+ * Two meshes as one, with their colors kept side by side.
  *
  * The second mesh's face indices are shifted past the first's vertices. Used
  * to put the edge tubes into the same file as the solid rather than beside it:
@@ -259,10 +259,10 @@ export function mergeMeshes(a, aColors, b, bColors) {
  */
 export function triangulate(mesh, colors = null) {
   /*
-   * Coloured, the vertices cannot be shared: a corner where three faces meet
-   * is one point of the solid but three different colours, and a format that
-   * colours vertices has no way to say that except by having three vertices
-   * there. Uncoloured, sharing is kept — it is half the file size and it is
+   * Colored, the vertices cannot be shared: a corner where three faces meet
+   * is one point of the solid but three different colors, and a format that
+   * colors vertices has no way to say that except by having three vertices
+   * there. Uncolored, sharing is kept — it is half the file size and it is
    * what the geometry actually is.
    */
   if (colors) {
@@ -344,10 +344,10 @@ const hex2 = (v) => Math.max(0, Math.min(255, Math.round(v * 255)))
 const hexColor = (c) => '#' + hex2(c[0]) + hex2(c[1]) + hex2(c[2]) + 'FF';
 
 /**
- * The distinct colours in use, and which one each face wants.
+ * The distinct colors in use, and which one each face wants.
  *
  * Formats that carry a palette want it deduplicated — a stellation has as many
- * faces as it has facets and as few colours as it has shells, so writing one
+ * faces as it has facets and as few colors as it has shells, so writing one
  * material per face would be hundreds of identical entries.
  */
 function palette(colors) {
@@ -371,7 +371,7 @@ export function model3MF(mesh, name = 'stellation', colors = null) {
     '  <resources>',
   ];
   /*
-   * Colour through base materials, which is the part of 3MF every slicer
+   * Color through base materials, which is the part of 3MF every slicer
    * reads — the newer colorgroup extension is better specified and less well
    * supported, and a file a slicer opens in grey is no use.
    */
@@ -416,8 +416,8 @@ export function to3MF(mesh, name = 'stellation', colors = null) {
 /*
  * Both are scene-graph formats that take polygons directly, so neither needs
  * the fan — a pentagon stays a pentagon, which is what the figure is made of.
- * Both also colour per FACE natively, with a palette and an index per face, so
- * a stellation's few shell colours are written once each rather than copied
+ * Both also color per FACE natively, with a palette and an index per face, so
+ * a stellation's few shell colors are written once each rather than copied
  * onto every corner. They are the two formats here that fit the object best.
  */
 
@@ -506,11 +506,11 @@ function gltfJSON(mesh, name, bufferField, colors) {
     { buffer: 0, byteOffset: offsets[1], byteLength: positions.byteLength, target: 34962 },
   ];
   /*
-   * Colour rides on the vertices rather than on materials. A stellation has a
-   * handful of colours but hundreds of faces, and glTF can only give a
+   * Color rides on the vertices rather than on materials. A stellation has a
+   * handful of colors but hundreds of faces, and glTF can only give a
    * primitive one material — so per-face materials would mean splitting the
    * mesh into a primitive per shell. COLOR_0 says the same thing in one
-   * primitive, and every viewer multiplies it into the base colour.
+   * primitive, and every viewer multiplies it into the base color.
    */
   if (rgb) {
     attributes.COLOR_0 = 2;
@@ -526,7 +526,7 @@ function gltfJSON(mesh, name, bufferField, colors) {
     materials: [{
       name: 'stellation',
       pbrMetallicRoughness: {
-        // white when the vertices carry the colour, since the two multiply;
+        // white when the vertices carry the color, since the two multiply;
         // a neutral grey when they do not, so the figure is not a white blob
         baseColorFactor: rgb ? [1, 1, 1, 1] : [0.78, 0.79, 0.82, 1],
         metallicFactor: 0.1, roughnessFactor: 0.7,

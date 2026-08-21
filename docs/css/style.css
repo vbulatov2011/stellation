@@ -498,7 +498,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); 
 }
 #helpClose:hover { border-color: var(--accent); color: var(--accent); }
 
-/* the key to the Cells bar colours */
+/* the key to the Cells bar colors */
 .legend {
   display: flex;
   align-items: center;
@@ -601,7 +601,7 @@ main { grid-template-columns: minmax(0, 1fr) 6px var(--panel-w, 322px); }
  * One rule for every icon in the app, wherever the button lives.
  *
  * `stroke: currentColor` is the whole trick: an icon then follows its button's
- * colour through hover, disabled and both themes without a second rule
+ * color through hover, disabled and both themes without a second rule
  * anywhere. Shapes that need to read as *filled* — a selected shell in the
  * cells icons — carry class="on" and swap the two.
  */
@@ -682,9 +682,9 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 
    Green adds, red carves, and the pair reads the same in the 3-D view, in the
    diagram and in the Cells table. Keeping the words in the captions the same
-   colour as the outline that appears under the pointer is what ties the three
+   color as the outline that appears under the pointer is what ties the three
    together — before, each view had its own idea of what a highlight looked like.
-   Kept identical in light and dark: these are signal colours, not decoration. */
+   Kept identical in light and dark: these are signal colors, not decoration. */
 :root { --add: #2fa855; --rem: #d63c3c; }
 :root[data-theme="dark"] { --add: #4acb70; --rem: #f05454; }
 .add { color: var(--add); }
@@ -700,7 +700,7 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .sym-elems legend { font-size: 10.5px; color: var(--dim); padding: 0 4px; }
 .sym-elems .check { margin: 2px 0; }
 
-/* the two kinds of edge: a checkbox, then its colour and weight on one row */
+/* the two kinds of edge: a checkbox, then its color and weight on one row */
 .edge-kinds {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -736,11 +736,11 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .buttons button.icon { width: 26px; padding: 4px 0; text-align: center; }
 /*
  * The cells row is all icons now, and matches the tool buttons over the views:
- * same 26x24 square, same muted colour, same translucent panel.
+ * same 26x24 square, same muted color, same translucent panel.
  *
  * It did neither before. `.buttons button` stretches to fill its row, so these
  * came out wider than square; and it paints `color: var(--text)`, the full
- * strength text colour, so icons drawn in currentColor came out near black
+ * strength text color, so icons drawn in currentColor came out near black
  * beside the same icons in a view, which use `--dim`. Two rows of buttons doing
  * comparable jobs should not look like they come from different programs.
  */
@@ -751,7 +751,7 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .buttons button:disabled { opacity: 0.35; cursor: default; }
 .buttons button:disabled:hover { border-color: var(--line); color: inherit; }
 
-/* the diagram's two toggle colours — gold beneath the plane, blue above */
+/* the diagram's two toggle colors — gold beneath the plane, blue above */
 :root { --below: #b98d10; --above: #2f7cc9; }
 :root[data-theme="dark"] { --below: #f5d24d; --above: #4da3f5; }
 .below { color: var(--below); }
@@ -762,7 +762,7 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .elem-legend { margin-top: 4px; }
 .elem-legend:empty { display: none; }
 
-/* the same three colours the arrows are drawn in, so the label is the key */
+/* the same three colors the arrows are drawn in, so the label is the key */
 .ax-x { color: #e64747; }
 .ax-y { color: #5cc75c; }
 .ax-z { color: #5c8cf2; }

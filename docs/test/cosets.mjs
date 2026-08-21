@@ -1,11 +1,11 @@
 /*
- * Coset colouring produces the classical pictures.
+ * Coset coloring produces the classical pictures.
  *
  *   node docs/test/cosets.mjs
  *
- * The colouring labels PLANES: the compound of five tetrahedra is a partition
+ * The coloring labels PLANES: the compound of five tetrahedra is a partition
  * of the icosahedron's twenty face planes into five sets of four, and the
- * classical five-colouring paints each face by which tetrahedron its plane
+ * classical five-coloring paints each face by which tetrahedron its plane
  * belongs to. The decisive check is geometric, not a count: the four planes
  * of one label must be the faces of a REGULAR tetrahedron, which means every
  * pair of their normals meets at the tetrahedral angle — dot product exactly
@@ -51,7 +51,7 @@ const groupsOf = (stel, res) => {
 {
   const stel = build('I', 'T');
   const res = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
-  ok(res.count === 5, `[I : T] = 5 — five colours (got ${res.count})`);
+  ok(res.count === 5, `[I : T] = 5 — five colors (got ${res.count})`);
   ok(res.planes.length === 20, `twenty planes (got ${res.planes.length})`);
   const by = groupsOf(stel, res);
   ok(!by.has(-1), 'none of the twenty is gray');
@@ -84,7 +84,7 @@ const groupsOf = (stel, res) => {
   /*
    * A face plane's stabiliser in I is the C3 about its own axis, and no
    * conjugate of C3 fits inside C5 — no representative exists, so the whole
-   * orbit is honestly gray rather than wrongly coloured.
+   * orbit is honestly gray rather than wrongly colored.
    */
   ok(res.planes.every(k => k === -1), 'every plane is gray under C5(I)');
 }
@@ -97,7 +97,7 @@ const groupsOf = (stel, res) => {
   ok(res.count === 10, `[Ih : T] = 10 (got ${res.count})`);
   /*
    * Inside the FULL group a face plane's stabiliser is C3v, and T holds no
-   * mirror — the tetrahedral colouring cannot exist there, which is why it
+   * mirror — the tetrahedral coloring cannot exist there, which is why it
    * needs the chiral groups.
    */
   ok(res.planes.every(k => k === -1), 'inside Ih, T greys every plane — the mirrors do not fit');
@@ -110,15 +110,15 @@ const groupsOf = (stel, res) => {
   const res = cosetClasses(stel, symmetry.Ih.matrices, symmetry.Ih.matrices);
   ok(res.count === 1, '[Ih : Ih] = 1');
   ok(res.planes.every(k => k === 0),
-     'the whole group over itself paints everything the one colour');
+     'the whole group over itself paints everything the one color');
 }
 
-// ------------- built under one group, coloured inside another (the UI's shape)
+// ------------- built under one group, colored inside another (the UI's shape)
 
 {
   /*
-   * The app builds the arrangement under the POLYHEDRON group and colours by
-   * cosets inside the STELLATION group. Built under Ih, coloured by T inside
+   * The app builds the arrangement under the POLYHEDRON group and colors by
+   * cosets inside the STELLATION group. Built under Ih, colored by T inside
    * I: the same five tetrahedra, from an arrangement whose own orbit
    * structure never mentions I.
    */
@@ -134,8 +134,8 @@ const groupsOf = (stel, res) => {
 
 {
   /*
-   * The bug this construction replaced: colouring cells orbit by orbit, each
-   * orbit choosing its own representative, so the five colours shuffled
+   * The bug this construction replaced: coloring cells orbit by orbit, each
+   * orbit choosing its own representative, so the five colors shuffled
    * between shells. Plane labels cannot shuffle — every facet at every depth
    * lies in one of the twenty planes — but pin it anyway: the label map is a
    * single global function of the plane, so two runs agree exactly, and the
@@ -153,7 +153,7 @@ const groupsOf = (stel, res) => {
   /*
    * The twenty planes carry the five-tetrahedra partition TWICE — the two
    * chiral compounds of five tetrahedra share them — and which hand a
-   * colouring should use is the figure's property, not the group's. The
+   * coloring should use is the figure's property, not the group's. The
    * compound document (Crennell 47, Ef₁) is one specific hand: with its cells
    * passed in, every selected spike cell must have all its upper facets in
    * planes of ONE label — its own tetrahedron — where the wrong hand gives
@@ -176,7 +176,7 @@ const groupsOf = (stel, res) => {
     }
     if (labels.size === 1) clean++;
   }
-  ok(clean === 60, `every one of them wears one colour (got ${clean} of 60)`);
+  ok(clean === 60, `every one of them wears one color (got ${clean} of 60)`);
 
   // the other hand really is different, and really is worse
   const blind = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices, null);
@@ -202,22 +202,22 @@ const groupsOf = (stel, res) => {
   /*
    * Facets are what you are actually looking at, and the only piece small
    * enough to separate two hands lying in the same plane. Three claims, on the case the
-   * owner reported: the icosahedron under Ih coloured by cosets of I.
+   * owner reported: the icosahedron under Ih colored by cosets of I.
    */
   const stel = build('Ih', 'Ih');
   const res = facetCosetClasses(stel, symmetry.Ih.matrices, symmetry.I.matrices);
-  ok(res.count === 2, `[Ih : I] = 2 — two colours (got ${res.count})`);
+  ok(res.count === 2, `[Ih : I] = 2 — two colors (got ${res.count})`);
   const used = new Set([...res.of.values()].filter(k => k >= 0));
   ok(used.size === 2, 'and both are actually used on the facets');
   const gray = [...res.of.values()].filter(k => k === -1).length;
   ok(gray > 0, `${gray} facets are gray — those a mirror of Ih holds still`);
   /*
    * The planes cannot say any of that: every face plane's stabiliser in Ih is
-   * C₃ᵥ, whose mirrors I lacks, so the whole plane colouring greys. This is
+   * C₃ᵥ, whose mirrors I lacks, so the whole plane coloring greys. This is
    * the difference the smaller piece buys.
    */
   const byPlane = cosetClasses(stel, symmetry.Ih.matrices, symmetry.I.matrices);
-  ok(byPlane.planes.every(k => k === -1), 'where the plane colouring greys entirely');
+  ok(byPlane.planes.every(k => k === -1), 'where the plane coloring greys entirely');
 }
 
 {

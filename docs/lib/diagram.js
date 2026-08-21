@@ -59,7 +59,7 @@ export class DiagramView {
       const i = this.hitTest(e);
       const m = mods(e);
       // both diagram gestures are toggles — of the cell beneath this region and
-      // of the one resting on it — so they get their own colours, not the 3-D
+      // of the one resting on it — so they get their own colors, not the 3-D
       // view's add-green and remove-red
       const act = m.shift ? 'below' : m.ctrl ? 'above' : null;
       if (i !== this.hover || act !== this.hoverAction) {
@@ -72,7 +72,7 @@ export class DiagramView {
     });
 
     /*
-     * The colour under the pointer says what a click would do, so it has to
+     * The color under the pointer says what a click would do, so it has to
      * follow the modifier keys and not just the pointer — otherwise letting go
      * of shift leaves the diagram claiming a click will still add.
      */
@@ -131,7 +131,7 @@ export class DiagramView {
       e.preventDefault();
       down = null;
       if (!e.ctrlKey) return;
-      // shift wins even here, matching the hover colour: a macOS ctrl+shift-click
+      // shift wins even here, matching the hover color: a macOS ctrl+shift-click
       // arrives as this event but the user meant the shift gesture
       const i = this.hitTest(e);
       if (i >= 0) this.onToggle?.(this.data.facets[i],
@@ -163,7 +163,7 @@ export class DiagramView {
     if (changedPlane) this.resetView(); else this.draw();
   }
 
-  /** switch between colouring by shell and by face class, as the 3D view does */
+  /** switch between coloring by shell and by face class, as the 3D view does */
   setColorMode(mode) {
     if (mode === this.colorMode) return;
     this.colorMode = mode;
@@ -171,7 +171,7 @@ export class DiagramView {
   }
 
   /**
-   * The fill colour for a facet, as [r,g,b] in 0..1.
+   * The fill color for a facet, as [r,g,b] in 0..1.
    *
    * By shell: the layer palette, so the concentric rings of the arrangement
    * read as depth — which is what a stellation diagram is usually for.
@@ -181,9 +181,9 @@ export class DiagramView {
    * only variation left is which way a facet looks. That is deliberately flat:
    * it is the honest answer to "which face of the original solid is this?", and
    * it makes the diagram and the solid agree at a glance — the plane you are
-   * drawing on is the colour you see on the model.
+   * drawing on is the color you see on the model.
    */
-  /** either of the two face-class modes, as against colouring by shell */
+  /** either of the two face-class modes, as against coloring by shell */
   _byClass() { return this.colorMode === 'class' || this.colorMode === 'stellClass'; }
 
   _color(facet, outward = true) {
@@ -337,9 +337,9 @@ export class DiagramView {
      * beside them. By shell, hue is already spent on depth, so the difference
      * has to be carried by alpha: outward solid, inward very pale — "surface,
      * but not the outside". By face class, hue is free, so the two get the two
-     * colours the solid uses — the class colour and the same colour darkened —
+     * colors the solid uses — the class color and the same color darkened —
      * both fully opaque. That is the whole point of the class palette: two
-     * colours for one kind of face, one seen from above and one from below.
+     * colors for one kind of face, one seen from above and one from below.
      */
     for (const facet of facets) {
       if (!facet.selected) continue;
@@ -389,7 +389,7 @@ export class DiagramView {
      *
      * The Java original draws these on its diagram: the point where each
      * rotation axis pierces the drawing plane, and the line where each mirror
-     * plane crosses it. Colours match the
+     * plane crosses it. Colors match the
      * 3-D view's, so the dot on the diagram and the cylinder in the solid
      * read as the same object.
      */
@@ -424,10 +424,10 @@ export class DiagramView {
     }
 
     /*
-     * 5. hover highlight, coloured by what a click would do.
+     * 5. hover highlight, colored by what a click would do.
      *
      * Green for shift (add), red for the carve modifier, and a neutral wash when
-     * neither is held, since a bare click here only pans. The same two colours
+     * neither is held, since a bare click here only pans. The same two colors
      * mean the same two things in the 3-D view and in the Cells table.
      */
     if (this.hover >= 0 && facets[this.hover]) {
@@ -472,7 +472,7 @@ export class DiagramView {
    * The drawing itself is diagramSVG() in diagramsvg.js — a pure function, so
    * that the file you export and the pictures on the example pages come out of
    * one piece of code. What belongs to the view, and so is supplied here, is
-   * only what the view happens to be showing: which colouring, and whether the
+   * only what the view happens to be showing: which coloring, and whether the
    * traces are drawn as the arrangement's facets or straight across the plane.
    * Zoom and pan are deliberately not passed — an exported diagram is always
    * the whole plane, or two of them could not be compared.

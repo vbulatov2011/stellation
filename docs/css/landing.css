@@ -11,7 +11,7 @@
  *
  * So this file only widens the column and styles the cards. Rules are scoped
  * under .landing-main, because .doc-body already claims plain `a` and `p` and
- * would otherwise recolour the cards' text.
+ * would otherwise recolor the cards' text.
  */
 
 .doc-body.landing-main {

@@ -231,7 +231,7 @@ ul.todo li { margin: 7px 0; }
 }
 .anatomy-row { display: flex; align-items: center; gap: 4px; margin-bottom: 18px; }
 
-/* mock boxes, matching the real table: digit above, colour bar in its own lane */
+/* mock boxes, matching the real table: digit above, color bar in its own lane */
 .an-layer, .an-cell, .an-sub {
   position: relative;
   display: flex;
@@ -328,7 +328,7 @@ table.shells td:nth-child(2) { color: var(--accent); }
 table.shells tr:last-child td { border-bottom: none; }
 table.shells td:last-child { color: var(--dim); }
 
-/* the bar-colour key, at reading size */
+/* the bar-color key, at reading size */
 .legend.big {
   display: flex;
   flex-wrap: wrap;

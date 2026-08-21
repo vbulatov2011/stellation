@@ -298,7 +298,7 @@ async function boot() {
   };
   applyTheme(localStorage.getItem('theme') || 'auto');
 
-  // the key to the bar colours, drawn from the real palette
+  // the key to the bar colors, drawn from the real palette
   const legendHost = $('#barLegend');
   if (legendHost) {
     const entries = figs.get('figLayers')?.cells?.legend() || [];
@@ -307,7 +307,7 @@ async function boot() {
     const rare = entries[entries.length - 1];
     const rareEl = $('#barRare');
     if (rare && rareEl) {
-      rareEl.innerHTML = `<i class="swatch" style="background:${rare.color}"></i> the ${rare.count}-piece colour`;
+      rareEl.innerHTML = `<i class="swatch" style="background:${rare.color}"></i> the ${rare.count}-piece color`;
     }
   }
 
