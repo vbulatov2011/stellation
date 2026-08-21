@@ -1612,7 +1612,7 @@ export function mat3mul(a, b) {
  *
  * Returns { of: Map(facet -> class, -1 for gray), count }.
  */
-export function facetCosetClasses(stel, matrices, subMatrices) {
+export function facetCosetClasses(stel, matrices, subMatrices, preferCells = null) {
   const sameMat = (a, b) => {
     for (let i = 0; i < 9; i++) if (Math.abs(a[i] - b[i]) > 1e-6) return false;
     return true;
@@ -1668,7 +1668,7 @@ export function facetCosetClasses(stel, matrices, subMatrices) {
    * orbit is labeled on its own, which still separates the two hands, but
    * only within an orbit.
    */
-  const byPlane = cosetClasses(stel, matrices, subMatrices);
+  const byPlane = cosetClasses(stel, matrices, subMatrices, preferCells);
   const planeAnchored = byPlane.planes.some(k => k >= 0);
 
   const of = new Map();
@@ -1677,6 +1677,25 @@ export function facetCosetClasses(stel, matrices, subMatrices) {
     return { of, count: byPlane.count };
   }
 
+  /*
+   * No plane frame exists, so the facet orbits must be labeled directly —
+   * and labeled COHERENTLY. Each orbit offers several genuinely different
+   * candidate labelings (one per H-class of valid representatives), and an
+   * independent choice per orbit makes "color 0" mean a different sub-figure
+   * in different orbits: on the compound of five tetrahedra under Ih/T that
+   * shuffle left not one of the sixty spikes wearing a single color. What
+   * relates the orbits is the figure itself: facets that cap the SAME cell
+   * belong to the same component, so a candidate is scored by how well it
+   * agrees, across each cell's cap, with the facets already labeled — the
+   * cells stitch the orbits together exactly where the picture needs them
+   * to agree. The caller's selected cells break the remaining tie, which is
+   * the hand of a chiral compound, the same steering cosetClasses takes;
+   * with nothing to prefer, the first candidate wins, deterministically.
+   */
+  const capMates = (f) => {
+    const c = f.cellBelow;
+    return c && c.top ? c.top : null;
+  };
   for (const seed of all) {
     if (of.has(seed)) continue;
     const orbit = [];
@@ -1684,21 +1703,66 @@ export function facetCosetClasses(stel, matrices, subMatrices) {
       const f = map(g, seed);
       if (f && !of.has(f) && !orbit.includes(f)) orbit.push(f);
     }
-    // a representative whose stabiliser sits inside H, or the orbit is gray
-    let rep = null;
+    // every representative whose stabiliser sits inside H, or the orbit is gray
+    const candidates = [];
     for (const f of orbit) {
       let ok = true;
       for (const g of matrices) if (map(g, f) === f && !inSub(g)) { ok = false; break; }
-      if (ok) { rep = f; break; }
+      if (ok) candidates.push(f);
     }
-    if (!rep) {
+    if (!candidates.length) {
       for (const f of orbit) of.set(f, -1);
       continue;
     }
-    for (let gi = 0; gi < matrices.length; gi++) {
-      const f = map(matrices[gi], rep);
-      if (f && !of.has(f)) of.set(f, cosetOf[gi]);
+    const tryRep = (rep) => {
+      const lab = new Map();
+      for (let gi = 0; gi < matrices.length; gi++) {
+        const f = map(matrices[gi], rep);
+        if (f && !lab.has(f)) lab.set(f, cosetOf[gi]);
+      }
+      return lab;
+    };
+    const distinct = [];
+    for (const rep of candidates) {
+      const lab = tryRep(rep);
+      const sig = orbit.map(f => lab.get(f)).join(',');
+      if (!distinct.some(d => d.sig === sig)) distinct.push({ sig, lab });
     }
+    let best = distinct[0];
+    if (distinct.length > 1) {
+      let bestKey = null;
+      for (const cand of distinct) {
+        // structural term: disagreements with already-labeled facets that
+        // cap the same cells — zero for the first orbit, decisive after it
+        let clash = 0;
+        for (const f of orbit) {
+          const mates = capMates(f);
+          if (!mates) continue;
+          const k = cand.lab.get(f);
+          for (const m of mates) {
+            const km = of.get(m);
+            if (km !== undefined && km >= 0 && km !== k) clash++;
+          }
+        }
+        // the figure's term: the selected cells' caps should stay monochrome
+        let mixed = 0;
+        if (preferCells && preferCells.length) {
+          for (const c of preferCells) {
+            const seen = new Set();
+            for (const f of c.top || []) {
+              const k = cand.lab.has(f) ? cand.lab.get(f) : of.get(f);
+              if (k !== undefined && k >= 0) seen.add(k);
+            }
+            if (seen.size > 1) mixed += seen.size - 1;
+          }
+        }
+        const key = [clash, mixed];
+        if (!bestKey || key[0] < bestKey[0] || (key[0] === bestKey[0] && key[1] < bestKey[1])) {
+          bestKey = key; best = cand;
+        }
+      }
+    }
+    for (const [f, k] of best.lab) if (!of.has(f)) of.set(f, k);
     for (const f of orbit) {
       let fixed = true;
       for (const h of subMatrices) if (map(h, f) !== f) { fixed = false; break; }

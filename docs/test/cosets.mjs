@@ -241,5 +241,66 @@ const groupsOf = (stel, res) => {
   ok(agree, 'and each facet agrees with the plane it lies in');
 }
 
+// -------------- coherence: the facet fallback shares one frame across orbits
+
+{
+  /*
+   * Ih / T on the compound of five tetrahedra. The planes gray entirely (the
+   * mirrors do not fit in T), so the facets are labeled orbit by orbit — and
+   * the orbits must AGREE where the figure joins them: every spike of the
+   * compound is one tetrahedron's corner, so its cap must be monochrome.
+   * Before the caps stitched the orbits together, ten colors appeared and
+   * not one of the sixty spikes wore a single one.
+   */
+  const stel = build('Ih', 'I');
+  const doc = JSON.parse(readFileSync(join(DOCS, 'icosahedra', '47-ef1-chiral.json'), 'utf8'));
+  const cells = selectedCells(stel, parseCellsAny(stel, doc.params.cells.selection));
+  const outermost = Math.max(...cells.map(c => c.layer));
+  const spikes = cells.filter(c => c.layer === outermost);
+
+  const spikeReport = (F) => {
+    let mono = 0;
+    const worn = new Set();
+    for (const c of spikes) {
+      const seen = new Set();
+      for (const f of c.top || []) seen.add(F.of.get(f));
+      if (seen.size === 1 && [...seen][0] >= 0) { mono++; worn.add([...seen][0]); }
+    }
+    return { mono, worn };
+  };
+
+  const F = facetCosetClasses(stel, symmetry.Ih.matrices, symmetry.T.matrices, cells);
+  ok(F.count === 10, `[Ih : T] = 10 at the facets (got ${F.count})`);
+  const r = spikeReport(F);
+  ok(r.mono === 60, `every spike monochrome under Ih/T (got ${r.mono} of 60)`);
+  ok(r.worn.size === 5, `the five selected tetrahedra wear five of the ten colors (got ${r.worn.size})`);
+
+  // the ten-tetrahedra pairing: Th is the stabiliser of one stella octangula
+  const F2 = facetCosetClasses(stel, symmetry.Ih.matrices, symmetry.Th.matrices, cells);
+  ok(F2.count === 5, `[Ih : Th] = 5 (got ${F2.count})`);
+  const r2 = spikeReport(F2);
+  ok(r2.mono === 60 && r2.worn.size === 5,
+     `and under Th every spike wears its pair's color (${r2.mono} of 60, ${r2.worn.size} colors)`);
+
+  // the steering rides through the plane-anchored path too: per facet under
+  // I/T must inherit the HAND the selection chose, not an arbitrary one
+  const F3 = facetCosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices, cells);
+  const r3 = spikeReport(F3);
+  ok(r3.mono === 60, `I/T per facet inherits the steered hand (${r3.mono} of 60 spikes clean)`);
+
+  // deterministic
+  const Fb = facetCosetClasses(stel, symmetry.Ih.matrices, symmetry.T.matrices, cells);
+  let same = Fb.of.size === F.of.size;
+  for (const [f, k] of F.of) if (Fb.of.get(f) !== k) { same = false; break; }
+  ok(same, 'the labeling is deterministic across runs');
+
+  // and the flagship regression: Ih / I keeps its two hands and honest gray
+  const FI = facetCosetClasses(stel, symmetry.Ih.matrices, symmetry.I.matrices, cells);
+  const used = new Set(), grays = [...FI.of.values()].filter(k => k === -1).length;
+  for (const k of FI.of.values()) if (k >= 0) used.add(k);
+  ok(used.size === 2 && grays === 380,
+     `Ih / I still gives two hands + 380 mirror-fixed gray (got ${used.size}, ${grays})`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

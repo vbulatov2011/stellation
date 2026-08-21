@@ -338,7 +338,7 @@ self.onmessage = (e) => {
         cosets = (stel.planes.length && cosetGroup && payload.subMatrices)
           ? cosetClasses(stel, cosetGroup, payload.subMatrices, prefer) : null;
         cosetsL = (stel.planes.length && cosetGroup && payload.subMatrices)
-          ? facetCosetClasses(stel, cosetGroup, payload.subMatrices) : null;
+          ? facetCosetClasses(stel, cosetGroup, payload.subMatrices, prefer) : null;
         reply({ count: cosets ? cosets.count : 0,
                 countL: cosetsL ? cosetsL.count : 0 });
         break;
