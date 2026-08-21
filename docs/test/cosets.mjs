@@ -373,21 +373,74 @@ const groupsOf = (stel, res) => {
    * Orbits that offer exactly one labeling carry information but make no
    * choice, so they settle before any orbit that has a choice — a tie
    * scored against a half-empty map locked in labelings the very next
-   * forced orbit contradicted. On the compound document under Ih/Th the
-   * fix cuts the cells with multicolored caps from 112 to 52, the optimum
-   * the reviewers computed by trying every permitted tie-break.
+   * forced orbit contradicted. Coherence is scored on the FIGURE: the caps
+   * that stitch the orbits are the selected cells' (the ones the viewer is
+   * looking at), so the pin is the figure-level optimum the reviewers
+   * computed by trying every permitted tie-break — on the compound document
+   * under Ih/Th, 40 of the 251 selected caps mix unavoidably and not one
+   * more, with every spike monochrome.
    */
   const stel = build('Ih', 'I');
   const doc = JSON.parse(readFileSync(join(DOCS, 'icosahedra', '47-ef1-chiral.json'), 'utf8'));
   const cells = selectedCells(stel, parseCellsAny(stel, doc.params.cells.selection));
   const F = facetCosetClasses(stel, symmetry.Ih.matrices, symmetry.Th.matrices, cells);
   let multi = 0;
-  for (const layer of stel.cellLayers) for (const o of layer) for (const c of o.cells) {
+  for (const c of cells) {
     const seen = new Set();
     for (const f of c.top || []) { const k = F.of.get(f); if (k !== undefined && k >= 0) seen.add(k); }
     if (seen.size > 1) multi++;
   }
-  ok(multi === 52, `forced orbits settle first: 52 multicolored caps, not 112 (got ${multi})`);
+  ok(multi === 40, `only the unavoidable 40 selected caps mix under Ih/Th (got ${multi})`);
+}
+
+// ------------- R3: the figure outranks the plane frame, per facet
+
+{
+  /*
+   * The compound of five octahedra — Hess 1876, Wenninger 23 — wants one
+   * color per octahedron, and no per-plane coloring can give it: every
+   * icosahedron plane carries a hexagram of two triangles from two
+   * DIFFERENT octahedra. Under I/T the per-plane labeling succeeds anyway
+   * (it draws the five-tetrahedra partition of the planes) and used to be
+   * inherited wholesale, painting each hexagram one color and splitting
+   * every octahedron. Per facet now computes its own blocks, with the
+   * plane labeling demoted to the last tie-break: the selection's caps
+   * win, each outer cell of the compound wears its own octahedron's color,
+   * and exactly the hexagram halves part company with their planes.
+   */
+  const stel = build('Ih', 'I');
+  const cells = selectedCells(stel, parseCellsAny(stel, '{0,1,2}'));
+  const F = facetCosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices, cells);
+  const P = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices, cells);
+  const outer = Math.max(...cells.map(c => c.layer));
+  const shell = cells.filter(c => c.layer === outer);
+  let mono = 0, deviations = 0;
+  const worn = new Set();
+  for (const c of shell) {
+    const seen = new Set();
+    for (const f of c.top || []) {
+      seen.add(F.of.get(f));
+      if (F.of.get(f) !== P.planes[f.plane]) deviations++;
+    }
+    if (seen.size === 1 && [...seen][0] >= 0) { mono++; worn.add([...seen][0]); }
+  }
+  ok(shell.length === 30 && mono === 30,
+     `five octahedra: all ${shell.length} outer cells monochrome (got ${mono})`);
+  ok(worn.size === 5, `in five colors, one per octahedron (got ${worn.size})`);
+  ok(deviations > 0, 'and the hexagram halves part company with their planes — the point of R3');
+
+  /*
+   * And where nothing contradicts the planes, per-facet stays literally
+   * equal to per-plane: with no selection at all, the plane prior decides
+   * every orbit, so the classical inheritance is the emergent answer.
+   */
+  const F0 = facetCosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
+  const P0 = cosetClasses(stel, symmetry.I.matrices, symmetry.T.matrices);
+  let agree = true;
+  for (const plane of stel.arrangement) for (const f of plane) {
+    if (F0.of.get(f) !== P0.planes[f.plane]) agree = false;
+  }
+  ok(agree, 'unselected, per-facet equals per-plane everywhere — agreement emerges');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

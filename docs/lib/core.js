@@ -1653,53 +1653,51 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
   const map = (g, f) => byCenter.get(pool.intern(matMul(g, f._cc)));
 
   /*
-   * Anchored to the plane labeling wherever that exists.
+   * The facet orbits are labeled DIRECTLY, and labeled COHERENTLY. Each
+   * orbit offers several genuinely different candidate labelings (one per
+   * H-class of valid representatives), and an independent choice per orbit
+   * makes "color 0" mean a different sub-figure in different orbits: on the
+   * compound of five tetrahedra under Ih/T that shuffle left not one of the
+   * sixty spikes wearing a single color. What relates the orbits is the
+   * figure itself: facets that cap the SAME cell belong to the same
+   * component, so a candidate is scored by how well it agrees, across each
+   * cell's cap, with the facets already labeled — the cells stitch the
+   * orbits together exactly where the picture needs them to agree. The
+   * caller's selected cells break the next tie, which is the hand of a
+   * chiral compound, the same steering cosetClasses takes.
    *
-   * A coset labeling is canonical only WITHIN one orbit: swap an orbit's
-   * representative for one outside H and every label in it shifts together,
-   * and nothing in the group relates one orbit's choice to another's. So
-   * labeling each facet orbit independently — which is what this did at
-   * first, and what the cell coloring before it did — makes "color 0" mean
-   * a different thing in different orbits, and the five tetrahedra come out
-   * shuffled. Every facet lies in a plane, and the planes are one orbit with
-   * one representative, so where the plane labeling exists it is the shared
-   * frame that makes the facets agree. Where it does not — the icosahedron
-   * under cosets of I, where every plane grays on its mirrors — each facet
-   * orbit is labeled on its own, which still separates the two hands, but
-   * only within an orbit.
+   * The plane labeling, where it exists, is the LAST tie-break, not an
+   * override. An earlier version inherited plane labels wholesale, which
+   * made per-facet identical to per-plane whenever the planes colored at
+   * all — and one classical picture is unreachable that way: the compound
+   * of five octahedra under I/T, where every icosahedron plane carries a
+   * hexagram of two octahedra, so the plane labeling paints each hexagram
+   * one tetrahedron-partition color and splits every octahedron. Scored
+   * below the caps and the selection, the plane prior still pins the exact
+   * translation wherever nothing contradicts it — the five tetrahedra come
+   * out facet-equal to their plane labels — but the figure now wins where
+   * the figure knows better.
    */
   const byPlane = cosetClasses(stel, matrices, subMatrices, preferCells);
-  const planeAnchored = byPlane.planes.some(k => k >= 0);
 
   const of = new Map();
   const blends = new Map();
-  if (planeAnchored) {
-    for (const f of all) {
-      of.set(f, byPlane.planes[f.plane]);
-      const b = byPlane.blends && byPlane.blends[f.plane];
-      if (b) blends.set(f, b);
-    }
-    return { of, count: byPlane.count, blends };
-  }
-
   /*
-   * No plane frame exists, so the facet orbits must be labeled directly —
-   * and labeled COHERENTLY. Each orbit offers several genuinely different
-   * candidate labelings (one per H-class of valid representatives), and an
-   * independent choice per orbit makes "color 0" mean a different sub-figure
-   * in different orbits: on the compound of five tetrahedra under Ih/T that
-   * shuffle left not one of the sixty spikes wearing a single color. What
-   * relates the orbits is the figure itself: facets that cap the SAME cell
-   * belong to the same component, so a candidate is scored by how well it
-   * agrees, across each cell's cap, with the facets already labeled — the
-   * cells stitch the orbits together exactly where the picture needs them
-   * to agree. The caller's selected cells break the remaining tie, which is
-   * the hand of a chiral compound, the same steering cosetClasses takes;
-   * with nothing to prefer, the first candidate wins, deterministically.
+   * Whose caps stitch the orbits together. The SELECTED cells' — the caps
+   * the viewer is actually looking at — when there is a selection; without
+   * one, all caps if no plane frame exists (something must relate the
+   * orbits), and none at all when the planes already provide the global
+   * frame — deep unselected cells must not outvote the classical picture.
    */
+  const selSet = preferCells && preferCells.length ? new Set(preferCells) : null;
+  const planesExist = byPlane.planes.some(k => k >= 0);
+  const capMode = selSet ? 'sel' : (planesExist ? 'none' : 'all');
   const capMates = (f) => {
     const c = f.cellBelow;
-    return c && c.top ? c.top : null;
+    if (!c || !c.top) return null;
+    if (capMode === 'none') return null;
+    if (capMode === 'sel' && !selSet.has(c)) return null;
+    return c.top;
   };
 
   /*
@@ -1854,8 +1852,18 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
             if (seenK.size > 1) mixed += seenK.size - 1;
           }
         }
-        if (!bestKey || clash < bestKey[0] || (clash === bestKey[0] && mixed < bestKey[1])) {
-          bestKey = [clash, mixed]; best = cand;
+        // the plane prior: with nothing above to say otherwise, agree with
+        // the plane labeling — which pins the exact translation and keeps
+        // per-facet literally equal to per-plane wherever that is right
+        let planeDiff = 0;
+        for (const f of orbit) {
+          const kp = byPlane.planes[f.plane];
+          if (kp >= 0 && cand.lab.get(f) !== kp) planeDiff++;
+        }
+        if (!bestKey || clash < bestKey[0]
+            || (clash === bestKey[0] && (mixed < bestKey[1]
+            || (mixed === bestKey[1] && planeDiff < bestKey[2])))) {
+          bestKey = [clash, mixed, planeDiff]; best = cand;
         }
       }
     }
