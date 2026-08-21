@@ -381,5 +381,39 @@ console.log('\n5. the viewpoints named after symmetry axes really are axes');
   }
 }
 
+/*
+ * The stored `subgroups` lists tell the truth. They were once generator
+ * residue — phantom names like C3(I) and Cs(C2v) that existed in no entry,
+ * and wrong-frame names like C3v "inside" D3d — which no code read, but
+ * which misled anything that did (the coset-coloring survey enumerated
+ * subgroup pairs from them). Now each list is exactly what the app's own
+ * subgroupsOf() computes: the named groups literally contained in the
+ * parent, largest first.
+ */
+console.log('\n6. the stored subgroup lists match literal containment');
+{
+  const real = Object.keys(S).filter(n => S[n].order > 0);
+  let exists = true, contained = true, complete = true;
+  for (const g of Object.keys(S)) {
+    if (!('subgroups' in S[g]) || S[g].order === 0) continue;
+    const universe = new Set(S[g].matrices.map(key));
+    for (const n of S[g].subgroups) {
+      if (!S[n] || !S[n].order) { exists = false; console.log(`        (${g} lists ${n}, which has no entry)`); continue; }
+      if (!S[n].matrices.every(m => universe.has(key(m)))) {
+        contained = false; console.log(`        (${g} lists ${n}, whose matrices are not inside it)`);
+      }
+    }
+    const expect = real
+      .filter(n => S[n].order <= S[g].order && S[n].matrices.every(m => universe.has(key(m))))
+      .sort((a, b) => S[b].order - S[a].order || a.localeCompare(b));
+    if (expect.join(' ') !== S[g].subgroups.join(' ')) {
+      complete = false; console.log(`        (${g}: stored [${S[g].subgroups.join(' ')}] vs contained [${expect.join(' ')}])`);
+    }
+  }
+  ok(exists, 'every listed subgroup exists as an entry');
+  ok(contained, 'every listed subgroup sits literally inside its parent');
+  ok(complete, 'every list is complete — nothing contained is missing, largest first');
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
