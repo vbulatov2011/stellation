@@ -11,6 +11,7 @@ import {
   buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
   atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
   formatCellsUnder, regroupSubCells, cosetClasses, facetCosetClasses,
+  subgroupOrbits,
 } from '../../lib/core.js';
 
 let stel = null;
@@ -44,6 +45,12 @@ let cosets = null;
  * piece of surface.
  */
 let cosetsL = null;
+/*
+ * And the subgroup's plain ORBITS on planes, facets and cells — the "what
+ * does H preserve" coloring. Anchor-free, never gray, defined for every
+ * subgroup; same H as the cosets, refreshed by the same message.
+ */
+let orbits = null;
 let cosetGroup = null;
 
 /*
@@ -150,6 +157,15 @@ function meshFor(selected) {
     // and by coset of the facet itself — the smallest piece, and the only one
     // that can tell two hands apart when both lie in the same plane
     faceCosetsL: mesh.facetRefs.map(f => cosetOfFacet(f)),
+    // the same subgroup's plain orbits, at each of the three piece sizes;
+    // the cell is the SOLID side of the face, the piece a model painter holds
+    faceOrbitP: mesh.facetRefs.map(f => (orbits ? orbits.planes[f.plane] : 0)),
+    faceOrbitF: mesh.facetRefs.map(f => (orbits ? (orbits.facets.get(f) ?? 0) : 0)),
+    faceOrbitC: mesh.facetRefs.map((f, i) => {
+      if (!orbits) return 0;
+      const own = mesh.facetTop[i] ? f.cellBelow : f.cellAbove;
+      return own ? (orbits.cells.get(own) ?? 0) : 0;
+    }),
     faceInside: mesh.faces.map((_, i) => akey(across(i).inside) || null),
     faceOutside: mesh.faces.map((_, i) => akey(across(i).outside) || null),
     stats: {
@@ -198,6 +214,11 @@ function diagramFor(planeIndex, selected) {
         coset: cosetOfPlane(d.planeIndex),
         // by facet, each region wears its own facet's coset
         cosetL: cosetOfFacet(f.facet),
+        // subgroup orbits at the three sizes; the cell is the one this
+        // region caps — the same cell a shift-click toggles
+        orbitP: orbits ? orbits.planes[d.planeIndex] : 0,
+        orbitF: orbits ? (orbits.facets.get(f.facet) ?? 0) : 0,
+        orbitC: orbits && f.facet.cellBelow ? (orbits.cells.get(f.facet.cellBelow) ?? 0) : 0,
         facing: f.facing,          // 1 outward, 0 inward (lines a cavity)
         ref: key(below || above),
         refBelow: key(below),
@@ -244,6 +265,7 @@ self.onmessage = (e) => {
           ? cosetClasses(stel, cosetGroup, cosetGroup) : null;
         cosetsL = stel.planes.length
           ? facetCosetClasses(stel, cosetGroup, cosetGroup) : null;
+        orbits = stel.planes.length ? subgroupOrbits(stel, cosetGroup) : null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
@@ -360,8 +382,12 @@ self.onmessage = (e) => {
           ? cosetClasses(stel, cosetGroup, payload.subMatrices, prefer) : null;
         cosetsL = (stel.planes.length && cosetGroup && payload.subMatrices)
           ? facetCosetClasses(stel, cosetGroup, payload.subMatrices, prefer) : null;
+        orbits = (stel.planes.length && payload.subMatrices)
+          ? subgroupOrbits(stel, payload.subMatrices) : null;
         reply({ count: cosets ? cosets.count : 0,
-                countL: cosetsL ? cosetsL.count : 0 });
+                countL: cosetsL ? cosetsL.count : 0,
+                orbitCounts: orbits
+                  ? [orbits.planeCount, orbits.facetCount, orbits.cellCount] : null });
         break;
       }
 

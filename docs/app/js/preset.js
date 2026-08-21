@@ -282,7 +282,8 @@ export function readPreset(doc) {
      * the coloring is a view of the geometry, and the wrong one is better
      * than a mode this build cannot draw.
      */
-    colorMode: ['class', 'stellClass', 'coset', 'cosetL'].includes(p.display?.colorMode)
+    colorMode: ['class', 'stellClass', 'coset', 'cosetL',
+                 'orbitP', 'orbitF', 'orbitC'].includes(p.display?.colorMode)
       ? p.display.colorMode : 'layer',
     // the coset colorings carry their subgroup, or they reopen colorless
     cosetSub: typeof p.display?.cosetSub === 'string' ? p.display.cosetSub : null,

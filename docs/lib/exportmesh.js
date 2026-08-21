@@ -43,6 +43,12 @@ export function faceColors(mesh, colorMode = 'layer') {
     return mesh.faces.map((_, i) =>
       cosetColor(mesh.faceCosetsL[i] ?? -1, mesh.faceTop ? mesh.faceTop[i] !== false : true));
   }
+  if (colorMode.startsWith('orbit')) {
+    const orb = colorMode === 'orbitP' ? mesh.faceOrbitP
+              : colorMode === 'orbitF' ? mesh.faceOrbitF : mesh.faceOrbitC;
+    if (orb) return mesh.faces.map((_, i) =>
+      cosetColor(orb[i] ?? 0, mesh.faceTop ? mesh.faceTop[i] !== false : true));
+  }
   const classes = colorMode === 'class' ? mesh.faceClasses
                 : colorMode === 'stellClass' ? mesh.faceClassesStell
                 : null;

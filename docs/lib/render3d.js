@@ -825,6 +825,9 @@ export class Renderer3D {
     // ride on the planes, left cosets on the cells' H-orbits.
     const cosets = this.colorMode === 'coset' ? faceClass?.cosets
                  : this.colorMode === 'cosetL' ? faceClass?.cosetsL
+                 : this.colorMode === 'orbitP' ? faceClass?.orbitP
+                 : this.colorMode === 'orbitF' ? faceClass?.orbitF
+                 : this.colorMode === 'orbitC' ? faceClass?.orbitC
                  : null;
     /*
      * key -> {a, b, plane, uses, crease}. A Set of seen keys was enough when

@@ -1806,6 +1806,101 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
   return { of, count: reps.length, blends };
 }
 
+/*
+ * The OTHER half of "cosets": color pieces by their ORBITS under H alone.
+ *
+ * Two pieces share a color exactly when some motion of H carries one onto
+ * the other — on a free orbit these classes are the right cosets Hg, and in
+ * general the double cosets H\G/S. Where the block coloring above answers
+ * "which copy of the sub-figure is this?", this answers "what does H itself
+ * preserve?": the H-invariant sub-figures appear as the small classes (T on
+ * the icosahedron's twenty planes gives 4 + 4 + 12 — the two T-invariant
+ * tetrahedra and the rest), applying any h ∈ H fixes every class pointwise,
+ * and the coloring exists for EVERY subgroup with no gray and no anchor —
+ * orbits are intrinsic, so nothing needs choosing and nothing can shuffle.
+ * Class sizes vary, which is exactly why these are not cosets; a first
+ * version of the coset coloring partitioned cells this way and painted
+ * 4 + 4 + 12 as if it were three cosets of an order-12 group.
+ *
+ * Labels planes, facets and cells in one pass, by first appearance in a
+ * fixed order, so the result is deterministic. Returns
+ *   { planes: Int32Array, planeCount,
+ *     facets: Map(facet -> orbit), facetCount,
+ *     cells:  Map(cell  -> orbit), cellCount }.
+ */
+export function subgroupOrbits(stel, subMatrices) {
+  const { planes } = stel;
+
+  // planes, matched by n·d as everywhere else
+  const pool = new VertexPool(1e-6);
+  const idOf = new Map();
+  planes.forEach((q, i) => {
+    const id = pool.intern(mul(q.n, q.d));
+    if (!idOf.has(id)) idOf.set(id, i);
+  });
+  const planeOf = new Int32Array(planes.length).fill(-1);
+  let planeCount = 0;
+  for (let i = 0; i < planes.length; i++) {
+    if (planeOf[i] >= 0) continue;
+    const k = planeCount++;
+    for (const h of subMatrices) {
+      const j = idOf.get(pool.intern(matMul(h, mul(planes[i].n, planes[i].d))));
+      if (j != null && planeOf[j] < 0) planeOf[j] = k;
+    }
+  }
+
+  // facets, matched by centroid
+  const fpool = new VertexPool(1e-6);
+  const byCenter = new Map();
+  const allFacets = [];
+  for (const plane of stel.arrangement) {
+    for (const f of plane) {
+      let x = 0, y = 0, z = 0;
+      for (const id of f.v) { const q = stel.pool.get(id); x += q.x; y += q.y; z += q.z; }
+      const n = f.v.length || 1;
+      const c = v3(x / n, y / n, z / n);
+      byCenter.set(fpool.intern(c), f);
+      allFacets.push({ f, c });
+    }
+  }
+  const facets = new Map();
+  let facetCount = 0;
+  for (const { f, c } of allFacets) {
+    if (facets.has(f)) continue;
+    const k = facetCount++;
+    for (const h of subMatrices) {
+      const m = byCenter.get(fpool.intern(matMul(h, c)));
+      if (m && !facets.has(m)) facets.set(m, k);
+    }
+  }
+
+  // cells, matched by center — the piece a physical model paints
+  const cpool = new VertexPool(1e-6);
+  const cellAt = new Map();
+  const allCells = [];
+  for (const layer of stel.cellLayers) {
+    for (const orbit of layer) {
+      for (const c of orbit.cells) {
+        const ctr = cellCenter(c, stel.pool);
+        cellAt.set(cpool.intern(ctr), c);
+        allCells.push({ c, ctr });
+      }
+    }
+  }
+  const cells = new Map();
+  let cellCount = 0;
+  for (const { c, ctr } of allCells) {
+    if (cells.has(c)) continue;
+    const k = cellCount++;
+    for (const h of subMatrices) {
+      const m = cellAt.get(cpool.intern(matMul(h, ctr)));
+      if (m && !cells.has(m)) cells.set(m, k);
+    }
+  }
+
+  return { planes: planeOf, planeCount, facets, facetCount, cells, cellCount };
+}
+
 export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
   const sameMat = (a, b) => {
     for (let i = 0; i < 9; i++) if (Math.abs(a[i] - b[i]) > 1e-6) return false;

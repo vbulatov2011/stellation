@@ -192,6 +192,9 @@ export class DiagramView {
     // by coset: right cosets ride the plane, left the cell this region caps
     if (this.colorMode === 'coset') return cosetColor(facet.coset ?? -1, outward);
     if (this.colorMode === 'cosetL') return cosetColor(facet.cosetL ?? -1, outward);
+    if (this.colorMode === 'orbitP') return cosetColor(facet.orbitP ?? 0, outward);
+    if (this.colorMode === 'orbitF') return cosetColor(facet.orbitF ?? 0, outward);
+    if (this.colorMode === 'orbitC') return cosetColor(facet.orbitC ?? 0, outward);
     return layerColor(facet.layer);
   }
 
