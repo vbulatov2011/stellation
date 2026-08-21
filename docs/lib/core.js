@@ -1672,9 +1672,14 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
   const planeAnchored = byPlane.planes.some(k => k >= 0);
 
   const of = new Map();
+  const blends = new Map();
   if (planeAnchored) {
-    for (const f of all) of.set(f, byPlane.planes[f.plane]);
-    return { of, count: byPlane.count };
+    for (const f of all) {
+      of.set(f, byPlane.planes[f.plane]);
+      const b = byPlane.blends && byPlane.blends[f.plane];
+      if (b) blends.set(f, b);
+    }
+    return { of, count: byPlane.count, blends };
   }
 
   /*
@@ -1711,7 +1716,36 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
       if (ok) candidates.push(f);
     }
     if (!candidates.length) {
-      for (const f of orbit) of.set(f, -1);
+      // no crisp labeling — blend from the best-overlapping anchor, exactly
+      // as the plane path does; total mixes stay honestly gray
+      let anchor = null, overlap = 0, stabSize = 0;
+      for (const f of orbit) {
+        let s = 0, o = 0;
+        for (const g of matrices) {
+          if (map(g, f) !== f) continue;
+          s++;
+          if (inSub(g)) o++;
+        }
+        if (o > overlap) { anchor = f; overlap = o; stabSize = s; }
+      }
+      const mixSize = overlap ? stabSize / overlap : reps.length;
+      if (!anchor || mixSize >= reps.length) {
+        for (const f of orbit) of.set(f, -1);
+        continue;
+      }
+      const sets = new Map();
+      for (let gi = 0; gi < matrices.length; gi++) {
+        const f = map(matrices[gi], anchor);
+        if (!f) continue;
+        if (!sets.has(f)) sets.set(f, new Set());
+        sets.get(f).add(cosetOf[gi]);
+      }
+      for (const f of orbit) {
+        of.set(f, -1);
+        const s = sets.get(f);
+        if (s && s.size > 1 && s.size < reps.length)
+          blends.set(f, Int32Array.from([...s].sort((a, b) => a - b)));
+      }
       continue;
     }
     const tryRep = (rep) => {
@@ -1769,7 +1803,7 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
       if (fixed) of.set(f, -1);
     }
   }
-  return { of, count: reps.length };
+  return { of, count: reps.length, blends };
 }
 
 export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
@@ -1811,6 +1845,7 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
   };
 
   const label = new Int32Array(planes.length).fill(-2);   // -2: not yet reached
+  const blends = new Array(planes.length).fill(null);
   for (let i = 0; i < planes.length; i++) {
     if (label[i] !== -2) continue;
     const orbit = [];
@@ -1828,7 +1863,45 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
       if (ok) candidates.push(q);
     }
     if (!candidates.length) {
-      for (const q of orbit) label[q] = -1;
+      /*
+       * No crisp labeling exists — but a canonical BLEND may. Anchor at a
+       * plane q whose stabiliser overlaps H the most; the set of cosets
+       * { gH : g·q = p } then has the same size [S : S∩H] for every plane
+       * of the orbit, and each plane wears the MIX of exactly the cosets
+       * whose translate of the reference sub-figure contains it. Crisp is
+       * the [S:S∩H] = 1 case of this; the anchor policy is not optional —
+       * a careless anchor blends [S : 1] colors and the picture is mush.
+       * When even the best anchor mixes everything (SH = G, e.g. any
+       * index-2 subgroup), gray remains the honest answer.
+       */
+      let anchor = -1, overlap = 0, stabSize = 0;
+      for (const q of orbit) {
+        let s = 0, o = 0;
+        for (const g of matrices) {
+          if (mapPlane(g, q) !== q) continue;
+          s++;
+          if (inSub(g)) o++;
+        }
+        if (o > overlap) { anchor = q; overlap = o; stabSize = s; }
+      }
+      const mixSize = overlap ? stabSize / overlap : reps.length;
+      if (anchor < 0 || mixSize >= reps.length) {
+        for (const q of orbit) label[q] = -1;
+        continue;
+      }
+      const sets = new Map();
+      for (let gi = 0; gi < matrices.length; gi++) {
+        const j = mapPlane(matrices[gi], anchor);
+        if (j < 0) continue;
+        if (!sets.has(j)) sets.set(j, new Set());
+        sets.get(j).add(cosetOf[gi]);
+      }
+      for (const q of orbit) {
+        label[q] = -1;
+        const s = sets.get(q);
+        if (s && s.size > 1 && s.size < reps.length)
+          blends[q] = Int32Array.from([...s].sort((a, b) => a - b));
+      }
       continue;
     }
     /*
@@ -1884,7 +1957,7 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
       if (fixed) label[q] = -1;
     }
   }
-  return { planes: label, count: reps.length };
+  return { planes: label, count: reps.length, blends };
 }
 
 // ---------------------------------------------------------------- export formats

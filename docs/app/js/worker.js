@@ -46,6 +46,27 @@ let cosets = null;
 let cosetsL = null;
 let cosetGroup = null;
 
+/*
+ * A face's coset value for the payloads: the crisp label where one exists,
+ * the blend SET (a plain array of coset indices) where only a mix does, and
+ * -1 for honest gray. The palette accepts either form, so the renderer, the
+ * diagram and every exporter take blends without knowing about them.
+ */
+function cosetOfPlane(p) {
+  if (!cosets) return -1;
+  const k = cosets.planes[p];
+  if (k >= 0) return k;
+  const b = cosets.blends && cosets.blends[p];
+  return b ? Array.from(b) : -1;
+}
+function cosetOfFacet(f) {
+  if (!cosetsL) return -1;
+  const k = cosetsL.of.get(f);
+  if (k != null && k >= 0) return k;
+  const b = cosetsL.blends && cosetsL.blends.get(f);
+  return b ? Array.from(b) : -1;
+}
+
 function toPoly(g) {
   const vertices = [];
   for (let i = 0; i < g.v.length; i += 3) vertices.push({ x: g.v[i], y: g.v[i + 1], z: g.v[i + 2] });
@@ -125,10 +146,10 @@ function meshFor(selected) {
     // which coset the face's PLANE belongs to — the classical colorings are
     // plane-partitions (five tetrahedra = five sets of four planes), and a
     // spike is one color because its whole surface lies in one set's planes
-    faceCosets: mesh.facetRefs.map(f => (cosets ? cosets.planes[f.plane] : -1)),
+    faceCosets: mesh.facetRefs.map(f => cosetOfPlane(f.plane)),
     // and by coset of the facet itself — the smallest piece, and the only one
     // that can tell two hands apart when both lie in the same plane
-    faceCosetsL: mesh.facetRefs.map(f => (cosetsL ? (cosetsL.of.get(f) ?? -1) : -1)),
+    faceCosetsL: mesh.facetRefs.map(f => cosetOfFacet(f)),
     faceInside: mesh.faces.map((_, i) => akey(across(i).inside) || null),
     faceOutside: mesh.faces.map((_, i) => akey(across(i).outside) || null),
     stats: {
@@ -174,9 +195,9 @@ function diagramFor(planeIndex, selected) {
         layer: f.layer,
         selected: f.selected,
         // the diagram is one plane, so its regions share that plane's coset
-        coset: cosets ? cosets.planes[d.planeIndex] : -1,
+        coset: cosetOfPlane(d.planeIndex),
         // by facet, each region wears its own facet's coset
-        cosetL: cosetsL ? (cosetsL.of.get(f.facet) ?? -1) : -1,
+        cosetL: cosetOfFacet(f.facet),
         facing: f.facing,          // 1 outward, 0 inward (lines a cavity)
         ref: key(below || above),
         refBelow: key(below),

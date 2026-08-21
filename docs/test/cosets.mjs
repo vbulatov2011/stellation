@@ -302,5 +302,42 @@ const groupsOf = (stel, res) => {
      `Ih / I still gives two hands + 380 mirror-fixed gray (got ${used.size}, ${grays})`);
 }
 
+// ---------------- blends: the canonical mix where no crisp labeling exists
+
+{
+  /*
+   * Ih / T is the case the whole blend exists for: crisply it grays (§ the
+   * mirrors), but each plane is contained in exactly one right-handed and
+   * one left-handed tetrahedron of the ten translates, so it wears the mix
+   * of those two cosets — twenty distinct duotones, and both chiral
+   * compounds of five legible on one figure.
+   */
+  const stel = build('Ih', 'I');
+  const r = cosetClasses(stel, symmetry.Ih.matrices, symmetry.T.matrices);
+  ok(r.planes.every(k => k === -1), 'Ih/T: no plane takes a crisp label');
+  ok(r.blends.every(b => b && b.length === 2), 'and every plane blends exactly 2 of the 10');
+  const sigs = new Set(r.blends.map(b => b.join('+')));
+  ok(sigs.size === 20, `all twenty duotones are distinct (got ${sigs.size})`);
+  const appear = new Map();
+  for (const b of r.blends) for (const k of b) appear.set(k, (appear.get(k) || 0) + 1);
+  ok(appear.size === 10 && [...appear.values()].every(n => n === 4),
+     'each of the ten cosets shows on exactly its tetrahedron\'s 4 planes');
+
+  // where the mix is total the blend stands down: Ih / I stays honest gray
+  const rI = cosetClasses(stel, symmetry.Ih.matrices, symmetry.I.matrices);
+  ok(rI.blends.every(b => b === null), 'Ih/I mixes totally — no blend, gray remains');
+
+  // and the facet fallback blends its own gray the same way: the 380
+  // mirror-straddling facets under Ih/T each mix a pair of cosets
+  const F = facetCosetClasses(stel, symmetry.Ih.matrices, symmetry.T.matrices);
+  let pairs = 0, sized = true;
+  for (const [f, k] of F.of) {
+    if (k !== -1) continue;
+    const b = F.blends.get(f);
+    if (b) { pairs++; if (b.length !== 2) sized = false; }
+  }
+  ok(pairs === 380 && sized, `the 380 gray facets blend in pairs (got ${pairs})`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
