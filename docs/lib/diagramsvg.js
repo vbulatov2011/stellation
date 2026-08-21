@@ -11,7 +11,7 @@
  * `data` is what createDiagram() returns: facets with their projected polygons,
  * which shell each belongs to, and which of them the current selection puts on
  * the surface. Nothing about zoom or pan reaches this — the drawing is always
- * the whole plane at its full extent, centred, which is what makes two of them
+ * the whole plane at its full extent, centered, which is what makes two of them
  * comparable and one of them reproducible. `scale` frames that drawing more
  * tightly or more loosely, but it is a number stated in the options, the same
  * for every plane in an export, not wherever the view happened to be left.
@@ -205,7 +205,7 @@ export function diagramSVG(data, options = {}) {
   const o = { ...DIAGRAM_DEFAULTS, ...options };
   const W = o.width, H = o.height;
   /*
-   * The figure is fitted to the SHORTER side and centred in both, so a picture
+   * The figure is fitted to the SHORTER side and centered in both, so a picture
    * that is not square is the same drawing with air added, never a squashed
    * one. `scale` then multiplies the fit: above 1 the figure fills more of the
    * frame and eventually runs past it, which the viewBox crops — that is what
@@ -248,7 +248,7 @@ export function diagramSVG(data, options = {}) {
     if (o.traces === 'full') {
       /*
        * Each trace is drawn as a chord about its own closest point to the
-       * centre, long enough to leave the box from there whatever its angle:
+       * center, long enough to leave the box from there whatever its angle:
        * that distance plus the half-diagonal is an upper bound on the way out
        * to any corner. A single fixed length was enough only while the picture
        * was square and the figure always fitted it.

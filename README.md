@@ -192,5 +192,5 @@ work in every browser.
 
 An earlier attempt machine-translated the Java with the
 [JSweet transpiler](https://www.jsweet.org/).  That route was abandoned in
-favour of the hand port and its files have been removed; it is in the history if
+favor of the hand port and its files have been removed; it is in the history if
 you ever want it back.

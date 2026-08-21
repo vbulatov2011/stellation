@@ -116,7 +116,7 @@ ok(indices.BYTES_PER_ELEMENT === 4, 'indices are 32-bit, so a deep stellation ca
   ok(nv === mesh.vertices.length, `the model lists all ${mesh.vertices.length} vertices`);
   ok(nt === expectTris, `and all ${expectTris} triangles`);
   ok(model.includes('<build><item objectid="1"/></build>'), 'and builds the object it defines');
-  ok(model.includes('unit="millimeter"'), 'in millimetres, which is what a slicer assumes');
+  ok(model.includes('unit="millimeter"'), 'in millimeters, which is what a slicer assumes');
   ok(!/v[123]="(\d+)"/.test(model) ||
      [...model.matchAll(/v[123]="(\d+)"/g)].every(m => +m[1] < mesh.vertices.length),
      'no triangle points past the last vertex');
@@ -280,7 +280,7 @@ const colors = faceColors(mesh, 'layer');
   ok(!JSON.parse(toGLTF(mesh, 'plain')).meshes[0].primitives[0].attributes.COLOR_0,
      'an uncolored glTF has no COLOR_0');
   ok(JSON.parse(toGLTF(mesh, 'plain')).materials[0].pbrMetallicRoughness
-       .baseColorFactor[0] < 1, 'and keeps a neutral grey instead');
+       .baseColorFactor[0] < 1, 'and keeps a neutral gray instead');
 }
 
 // ------------------------------------------------------ VRML 2 and X3D
@@ -374,7 +374,7 @@ const colors = faceColors(mesh, 'layer');
   ok(t.faces.length === 32 * 8 && t.faces.every(f => f.length === 4),
      'quads all the way round, and closed both ways');
   {
-    // every point sits at the tube radius from the centre circle
+    // every point sits at the tube radius from the center circle
     const off = t.vertices.map(v => {
       const r = Math.hypot(v.x, v.y);
       return Math.hypot(r - 2, v.z);

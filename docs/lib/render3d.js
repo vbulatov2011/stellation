@@ -217,7 +217,7 @@ export class Renderer3D {
      * Every facet of the surface lies in one of the original face planes. Where
      * two facets of DIFFERENT planes meet there is a real crease, an edge of the
      * solid: a "face edge". Where two facets of the SAME plane meet the surface
-     * is flat across the join and the line is pure subdivision, an artefact of
+     * is flat across the join and the line is pure subdivision, an artifact of
      * how the plane arrangement was cut up: a "facet edge". Drawing both in one
      * color, as this used to, buries the shape of the solid in the arrangement
      * that produced it.
@@ -289,7 +289,7 @@ export class Renderer3D {
      * edgeColor / edgeWidth", which is what keeps the figure pages working
      * unchanged — they set edgeWidth and know nothing about the two kinds.
      *
-     * Facet edges default to a grey rather than black: they are the subdivision
+     * Facet edges default to a gray rather than black: they are the subdivision
      * of the arrangement, and reading them as quieter than the solid's own
      * edges is the point of separating them at all. Blending is only enabled
      * around the mirror discs, so these stay opaque and the distinction is
@@ -856,7 +856,7 @@ export class Renderer3D {
      * The app pins it, so that adding a shell never rescales what is already on
      * screen. Nobody else does: the walkthrough and the Brückner and historical
      * figures all leave it unset, and it used to fall back to the constant 1 —
-     * the first mesh's radius, since modelScale normalises it. A figure that
+     * the first mesh's radius, since modelScale normalizes it. A figure that
      * opened on the core therefore stayed framed for the core forever, and
      * selecting a cell in an outer layer drew it seven times outside the
      * viewport.
@@ -1364,7 +1364,7 @@ export class Renderer3D {
    *
    * Under a parallel projection none of those can happen: shape does not depend
    * on distance, so zooming cannot change it, and framing is pure 2-D scale.
-   * `dist` survives only to place the view along -Z and to centre the depth
+   * `dist` survives only to place the view along -Z and to center the depth
    * range; it no longer affects what anything looks like.
    *
    * `halfH` is the world half-height the viewport shows, and is the only thing
@@ -1491,7 +1491,7 @@ export class Renderer3D {
    * This replaced a first-order filter that banked the motion and spent a fixed
    * fraction of it per frame. That could not overshoot, which was its virtue,
    * but momentum had to be bolted on separately at release — and it arrived as
-   * two different behaviours either side of a speed threshold: a hard flick got
+   * two different behaviors either side of a speed threshold: a hard flick got
    * a constant-rate spin at a capped speed, a soft one got a fixed 0.11 s of
    * glide. A throw twice as hard produced exactly the same spin as one just
    * over the line.
@@ -1866,7 +1866,7 @@ function tube(o, dir, ext, rad, col, sides = 10) {
 /**
  * A cone along `dir`, its tip at distance `tip` from the origin and its base
  * `height` back along the axis — the arrowhead on a coordinate axis. Side
- * normals lean out by the half-angle (radial·h + axial·r, normalised), so it
+ * normals lean out by the half-angle (radial·h + axial·r, normalized), so it
  * shades as a cone rather than as a faceted fan.
  */
 function cone(o, dir, tip, height, rad, col, sides = 18) {
@@ -1939,7 +1939,7 @@ function segTube(o, a, b, rad, col, sides = 6) {
 function torus(o, dir, rad, tr, col, sides = 224, ring = 8) {
   const { w, u, v } = basis(dir);
   const P = (t, s) => {
-    // centre circle point + tube offset in the (radial, normal) frame
+    // center circle point + tube offset in the (radial, normal) frame
     const c = Math.cos(t), sn = Math.sin(t);
     const radial = [u[0] * c + v[0] * sn, u[1] * c + v[1] * sn, u[2] * c + v[2] * sn];
     const rr = rad + tr * Math.cos(s), h = tr * Math.sin(s);
@@ -2068,7 +2068,7 @@ const ISO_Q = quatMul(quatFromAxis([1, 0, 0], Math.atan(Math.SQRT1_2)),
  *
  * The axes worth looking down: the coordinate axes; the body diagonal, which
  * is a cube's 3-fold; (1, 0, τ), an icosahedron's vertex and so a 5-fold;
- * (0, 1/τ, τ), a face centre and so a 3-fold; (0, 1, 1), a cube's edge
+ * (0, 1/τ, τ), a face center and so a 3-fold; (0, 1, 1), a cube's edge
  * midpoint and so a 2-fold. Down those last the solids look like what they
  * are — an icosahedral stellation seen down its 5-fold axis is five-fold on
  * the screen.
@@ -2123,7 +2123,7 @@ const VIEW_SPECS = [
    ISO_Q],
   ['+o4', [0, 0, 1], 'down a cubic 4-fold axis — the z axis, named for what it is'],
   ['+i2', [0, 0, 1], 'down an icosahedral 2-fold axis — the z axis, named for what it is'],
-  ['+i3', [0, 1 / TAU, TAU], 'down an icosahedral 3-fold axis, (0, 1/τ, τ) — a face centre'],
+  ['+i3', [0, 1 / TAU, TAU], 'down an icosahedral 3-fold axis, (0, 1/τ, τ) — a face center'],
   ['+i5', [1, 0, TAU], 'down an icosahedral 5-fold axis, (1, 0, τ) — a vertex'],
 
   // ---- and the same nine from the far side ----
@@ -2172,7 +2172,7 @@ Renderer3D.STANDARD_VIEWS = STANDARD_VIEWS;
 /**
  * The SHORTEST rotation bringing model direction `dir` round to face the
  * viewer — the standard half-way-vector construction: the axis is dir × z
- * and the scalar part 1 + dir·z, normalised.
+ * and the scalar part 1 + dir·z, normalized.
  *
  * Straight back (dir = -z) is the one direction with no shortest turn: every
  * half turn about every axis in the screen plane does it. That one is chosen

@@ -218,5 +218,5 @@ writeFileSync(CATALOG, formatCatalog(catalog));
 
 if (moving) { unlinkSync(src + '.png'); unlinkSync(src); }
 
-console.log(`\n  catalogued — ${catalog.items.length} examples\n` +
+console.log(`\n  cataloged — ${catalog.items.length} examples\n` +
             '  check it:  node docs/test/examples.mjs');

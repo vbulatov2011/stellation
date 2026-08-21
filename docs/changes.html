@@ -139,7 +139,7 @@
       the resolution — so a 0.7 px hairline is 0.7 px whether the plate is 500
       pixels or 4000, where before it was a fraction of the frame and thickened
       as the frame grew. A picture that is not square fits the figure to the
-      shorter side and centres it in both, and the previews take the picture's
+      shorter side and centers it in both, and the previews take the picture's
       own proportions.
     </div></li>
     <li><div>
@@ -177,7 +177,7 @@
       appear, or one <em>per facet</em>, a single flat piece of surface at a
       time, which can separate things a whole plane cannot — color the icosahedron under I<sub>h</sub> by
       cosets of <b>I</b> and the two hands of its chiral facets come out as
-      the two colors. Where the per-plane labelling exists the facets inherit
+      the two colors. Where the per-plane labeling exists the facets inherit
       it, so the smaller pieces never contradict the larger. Both work in the 3-D
       view, the diagram, the diagram export and every mesh format that carries
       color.
@@ -229,7 +229,7 @@
       materials a slicer reads, glTF and GLB on the vertices, VRML and X3D in a
       <code>Color</code> node indexed per face. STL has nowhere to put it and
       OBJ would need a second file beside it, so those two are the shape alone,
-      and the dialog says so rather than greying a box without a reason. And
+      and the dialog says so rather than graying a box without a reason. And
       when the view is drawing the edges as <em>cylinders</em> rather than
       lines, those cylinders go into the file too, at the radius and in the
       color they are drawn in: if you are looking at tubes then they are part
@@ -548,7 +548,7 @@
       pointer, damped by fluid friction — the AnimatedPointer from the author's
       SymmHub, with its physics unchanged. Releasing the button switches the spring
       off and the mass keeps its speed, so a throw spins as fast as it was thrown,
-      with no cap. This replaced three separate mechanisms whose release behaviour
+      with no cap. This replaced three separate mechanisms whose release behavior
       split at a threshold: a throw twice as hard used to produce exactly the same
       spin as one just over the line. A drag that decelerates before release still
       stops dead, which is the fault the Java drag fix diagnosed.
@@ -607,7 +607,7 @@
     <li><div>
       <b>The camera never moves within an arrangement.</b> The third-round fix pinned
       foreshortening to the selection's bounding sphere, but the camera still
-      travelled as that sphere changed — so toggling an outer cell subtly changed the
+      traveled as that sphere changed — so toggling an outer cell subtly changed the
       perspective of everything else, on both machines this time. Distance is now set
       once per build, from the radius of the whole buildable arrangement; selecting
       and deselecting cells changes it by exactly nothing, and only zoom — a flat
@@ -649,7 +649,7 @@
       m ×15, S₁₀ ×6, S₆ ×10, which is the textbook census. Mirror planes are rimmed
       with <em>thin tori</em> of the same thickness as the axis cylinders, so an
       edge-on plane reads as a bar instead of vanishing; the faint translucent fill
-      stays, having been looked at and kept. Checkboxes grey out when the group has
+      stays, having been looked at and kept. Checkboxes gray out when the group has
       none of that kind.
     </div></li>
     <li><div>
@@ -660,7 +660,7 @@
     </div></li>
     <li><div>
       <b>A real flick keeps the solid spinning.</b> Release while moving fast enough
-      and it spins on at that rate until you catch it — the Java behaviour. A gentle
+      and it spins on at that rate until you catch it — the Java behavior. A gentle
       release still just coasts to a stop.
     </div></li>
     <li><div>
@@ -749,7 +749,7 @@
       <b>Diagram face is a dropdown of the faces that actually differ.</b> It was a
       number with no upper limit, so most values did nothing. The list is now the
       orbits of the face planes under the chosen symmetry, each named by the polygon
-      at the centre of its diagram. The cuboctahedron under O<sub>h</sub> offers
+      at the center of its diagram. The cuboctahedron under O<sub>h</sub> offers
       exactly two — <em>triangle · 8 planes</em> and <em>square · 6 planes</em> —
       and lowering the symmetry splits them, as it should.
     </div></li>
@@ -826,7 +826,7 @@
     <li><div>
       <b>ctrl is the exact inverse of shift.</b> Both now walk inward: shift adds a
       cell with everything supporting it, ctrl removes that same set. Before, shift
-      reached inward and ctrl reached outward, so the pair never cancelled.
+      reached inward and ctrl reached outward, so the pair never canceled.
     </div></li>
     <li><div>
       <b>Sub-cell groups start collapsed</b>, with an arrow beside each showing how
@@ -968,8 +968,8 @@
     <li><div>
       <b>Planes through the origin.</b> Described in the session as a fundamental
       defect: a plane stored as a single point cannot represent one that passes through
-      the centre, which is why twenty hemipolyhedra and their duals are commented out
-      of the catalogue — the reason is written in the source, in the author's hand.
+      the center, which is why twenty hemipolyhedra and their duals are commented out
+      of the catalog — the reason is written in the source, in the author's hand.
       <br><br>
       Investigated rather than fixed, on the instruction not to start it yet. The short
       version: the JavaScript port <em>already</em> stores four numbers, so the

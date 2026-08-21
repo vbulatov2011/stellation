@@ -75,8 +75,8 @@ ok(Object.keys(tags).length > 0, `${Object.keys(tags).length} tags declared`);
 // Both document folders hold only what their manifest lists. Either one can
 // pick up a stray, because either can be the folder the app last saved into,
 // and a document nothing points at is invisible: it ships, and no page ever
-// offers it. Catching it here is the difference between "not catalogued yet"
-// and "catalogued, one line above".
+// offers it. Catching it here is the difference between "not cataloged yet"
+// and "cataloged, one line above".
 {
   const { readdirSync } = await import('node:fs');
   const patrol = (folder, listed) => {

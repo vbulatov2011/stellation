@@ -95,7 +95,7 @@ time from now, and the flick comes out too fast.
   from a heavy stellation over-rotated a light model's first frame roughly five
   times over. It is now seeded from the first real sample of each spin.
 
-## One deliberate behaviour change
+## One deliberate behavior change
 
 `spinSpeedCutoff` was `0.001` rad/s — about one turn per hundred minutes, which
 is no threshold at all. A careful one-pixel-per-tenth-second positioning drag
@@ -107,7 +107,7 @@ This is a feel setting, not a defect: turn it down if spins are too hard to
 start, up if they still trigger accidentally. One line, `Canvas3D.java`.
 
 Explicitly **not** added: friction. The undamped constant-rate flick is the
-intended behaviour — "a real flick keeps the solid spinning until you catch it".
+intended behavior — "a real flick keeps the solid spinning until you catch it".
 Only the threshold was wrong.
 
 ---

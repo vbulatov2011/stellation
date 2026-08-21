@@ -184,7 +184,7 @@ export function torusMesh(dir, major, minor, color, majorSteps = 64, minorSteps 
   return { vertices, faces, colors };
 }
 
-/** a cone with its tip at `dir * tipAt`, opening back towards the origin */
+/** a cone with its tip at `dir * tipAt`, opening back toward the origin */
 export function coneMesh(dir, tipAt, height, radius, color, sides = 12) {
   const w = norm(dir);
   const t = Math.abs(w[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
@@ -322,7 +322,7 @@ const esc = (s) => String(s)
  * the file will not open: the content types say what the model part is, the
  * relationship says which part is the model, and the model carries the mesh.
  *
- * Units are millimetres, which is what a slicer assumes and what makes the
+ * Units are millimeters, which is what a slicer assumes and what makes the
  * numbers here the same numbers the STL carries.
  */
 const CONTENT_TYPES =
@@ -373,7 +373,7 @@ export function model3MF(mesh, name = 'stellation', colors = null) {
   /*
    * Color through base materials, which is the part of 3MF every slicer
    * reads — the newer colorgroup extension is better specified and less well
-   * supported, and a file a slicer opens in grey is no use.
+   * supported, and a file a slicer opens in gray is no use.
    */
   const pal = colors ? palette(colors) : null;
   if (pal) {
@@ -527,7 +527,7 @@ function gltfJSON(mesh, name, bufferField, colors) {
       name: 'stellation',
       pbrMetallicRoughness: {
         // white when the vertices carry the color, since the two multiply;
-        // a neutral grey when they do not, so the figure is not a white blob
+        // a neutral gray when they do not, so the figure is not a white blob
         baseColorFactor: rgb ? [1, 1, 1, 1] : [0.78, 0.79, 0.82, 1],
         metallicFactor: 0.1, roughnessFactor: 0.7,
       },

@@ -299,7 +299,7 @@ export class DiagramView {
 
     if (this.lineOnly) {
       this._drawLines(ctx, f, dark);
-      // the original face, so the centre of the figure is identifiable
+      // the original face, so the center of the figure is identifiable
       const core = facets.find(x => x.layer === 0);
       if (core) {
         ctx.fillStyle = dark ? 'rgba(230,180,90,0.30)' : 'rgba(200,140,40,0.28)';

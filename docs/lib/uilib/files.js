@@ -85,7 +85,7 @@ export async function restoreHandle(key, mode = 'readwrite') {
 }
 
 /**
- * Centre-crop a canvas to a square thumbnail of the given size.
+ * Center-crop a canvas to a square thumbnail of the given size.
  * (SymmHub utils.js getSquareThumbnailCanvas, unchanged in spirit: the
  * shorter side is kept whole, the longer one is cropped symmetrically.)
  */

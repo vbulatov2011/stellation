@@ -178,8 +178,8 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
 
     /*
      * Both switches say what they can do rather than vanishing when they
-     * cannot: a greyed box with a reason beside it answers "why is this file
-     * grey" before it is asked, where a missing one leaves the question.
+     * cannot: a grayed box with a reason beside it answers "why is this file
+     * gray" before it is asked, where a missing one leaves the question.
      */
     const drawn = tubeSpec();
     wantColor.disabled = !f.color;

@@ -1,7 +1,7 @@
 /*
  * The document manager: where a document lives, and how it gets saved.
  *
- * Modelled on SymmHub's SymDocumentManager, reduced to what stellation needs.
+ * Modeled on SymmHub's SymDocumentManager, reduced to what stellation needs.
  * The heart of it is the ORIGIN: a document opened from a local folder
  * remembers its folder handle and file name, so Save overwrites it in place
  * and refreshes its thumbnail; a document that came from anywhere else — a

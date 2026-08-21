@@ -33,7 +33,7 @@ const BLURB = {
   X:    'Thirty-three models, mostly the polar (isohedral) mates of the uniform star ' +
         'polyhedra on the other plates. No. 5 is the small stellated dodecahedron; ' +
         'no. 13 is Escher’s solid; no. 3 the sixth stellation of the icosahedron.',
-  XI:   'Twenty-four models: more polars and uniform star polyhedra — and, top centre ' +
+  XI:   'Twenty-four models: more polars and uniform star polyhedra — and, top center ' +
         'of the second sheet, the final stellation of the icosahedron, with the great ' +
         'icosahedron closing the plate at no. 24.',
   XII:  'The last plate: one-sided polyhedra, the solids Brückner derives from the ' +
@@ -137,7 +137,7 @@ function openViewer(sheetEl, sheet, fig, hs) {
   if (fig.status === 'tbd') {
     info.appendChild(el('p', null,
       'No passage naming this figure has been found yet — neither the book’s text ' +
-      'nor the modern literature pins it down. It stays grey until it can be read.'));
+      'nor the modern literature pins it down. It stays gray until it can be read.'));
   }
   const extra = fig.info;
   if (extra) {

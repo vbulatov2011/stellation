@@ -620,7 +620,7 @@ svg.ic .on { fill: currentColor; stroke: currentColor; }
 /*
  * The four shell icons are the exception to currentColor: one square, with the
  * third of it that is selected filled. They are read against each other rather
- * than against the button, so the pair of greys is fixed — a light fill inside
+ * than against the button, so the pair of grays is fixed — a light fill inside
  * a darker outline — and only flips with the theme.
  */
 /* 1.6 is what every other icon strokes at, and the square sits beside them */
@@ -730,7 +730,7 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .sw.mi { background: #6be0cc; }
 .sw.im { background: #b873f2; }
 
-/* undo / redo sit with the other cell buttons and grey out when there is
+/* undo / redo sit with the other cell buttons and gray out when there is
    nothing to undo — the disabled state is the only affordance saying whether a
    change has been made yet */
 .buttons button.icon { width: 26px; padding: 4px 0; text-align: center; }
@@ -757,7 +757,7 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .below { color: var(--below); }
 .above { color: var(--above); }
 
-/* element checkboxes grey out when the group has none of that kind */
+/* element checkboxes gray out when the group has none of that kind */
 .sym-elems .check.off { opacity: 0.4; }
 .elem-legend { margin-top: 4px; }
 .elem-legend:empty { display: none; }

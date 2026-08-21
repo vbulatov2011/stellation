@@ -90,7 +90,7 @@ function meshFor(selected) {
   const picked = selectedCells(stel, selected);
   const mesh = extractMesh([{ cells: picked }], stel.pool);
   /*
-   * The neighbours across a face are reported as ATOMS — the primitive cell
+   * The neighbors across a face are reported as ATOMS — the primitive cell
    * itself, not its owning sub-cell. A click means "toggle the orbit of THIS
    * cell under the current editing symmetry", and the app does the orbit
    * expansion, so the reference must survive a regrouping unchanged.
@@ -118,7 +118,7 @@ function meshFor(selected) {
     // planes (a face edge) from a join within one plane (a facet edge)
     facePlanes: mesh.facetRefs.map(f => f.plane),
     // "inside" is the solid cell this face belongs to, "outside" the empty
-    // neighbour across it — which is what a click means, and what the two
+    // neighbor across it — which is what a click means, and what the two
     // gestures act on. The top/bottom orientation mirrors cellsAcrossFace;
     // reading cellBelow / cellAbove the same way round everywhere instead made
     // shift and ctrl both silent no-ops on every downward-facing face.
@@ -161,7 +161,7 @@ function diagramFor(planeIndex, selected) {
     facets: d.facets.map(f => {
       /*
        * Every region of the diagram sits between two three-dimensional cells:
-       * the one it caps (below the plane, toward the centre) and the one that
+       * the one it caps (below the plane, toward the center) and the one that
        * rests on it (above). The two references let a click mean "toggle the
        * cell under this region" or "toggle the one on top of it" — which is how
        * the Java original works. Like the mesh, they refer to ATOMS, so a
@@ -226,14 +226,14 @@ self.onmessage = (e) => {
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
-            (c ? ` — all ${c} pass through the centre, which this representation cannot hold` : ''));
+            (c ? ` — all ${c} pass through the center, which this representation cannot hold` : ''));
         }
         reply({
           planes: stel.planes.length,
           /*
            * What was left out of the arrangement.
            *
-           * A solid whose planes pass through the centre quietly loses them
+           * A solid whose planes pass through the center quietly loses them
            * here, and what you then stellate is not the solid you picked. The
            * counts go up to the UI so it can say "N of M planes" instead of
            * showing a wrong answer with a confident face.

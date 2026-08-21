@@ -62,7 +62,7 @@ export const classColor = (i, top = true) => {
  * Coset coloring needs as many colors as the subgroup has cosets — two for
  * an index-2 subgroup, five for the five-tetrahedra coloring, ten, sixty —
  * so a fixed list cannot serve. The golden angle can: each hue lands 137.5°
- * past the last, which never repeats and keeps neighbours far apart, however
+ * past the last, which never repeats and keeps neighbors far apart, however
  * many are asked for. Gray is the non-answer: a cell the subgroup holds
  * invariant, or an orbit the cosets cannot label at all.
  */

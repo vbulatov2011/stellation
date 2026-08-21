@@ -172,7 +172,7 @@
     <tr><td><b>D1</b></td><td>No engine change: derive selections that already exist in shipped arrangements (winding-number automation + per-figure research)</td><td class="n">+39</td><td class="n"><b>55</b></td></tr>
     <tr><td><b>D2</b></td><td>Custom plane sets — restore the applet's <span class="mono">__PLANES</span> source (or ship kernel geometry files) for compounds and Brückner's “combination” solids</td><td class="n">+71</td><td class="n"><b>126</b></td></tr>
     <tr><td><b>D3</b></td><td>Dihedral families: prism/antiprism/stephanoid geometry for the already-shipped D<i>n</i> symmetry machinery</td><td class="n">+13</td><td class="n"><b>139</b></td></tr>
-    <tr><td><b>D4</b></td><td>Diametral planes (<span class="mono">d&nbsp;=&nbsp;0</span>): unlocks the octahemioctahedron directly and is a prerequisite inside D1/D2 for Brückner's through-the-centre varieties</td><td class="n">+1</td><td class="n"><b>140</b></td></tr>
+    <tr><td><b>D4</b></td><td>Diametral planes (<span class="mono">d&nbsp;=&nbsp;0</span>): unlocks the octahemioctahedron directly and is a prerequisite inside D1/D2 for Brückner's through-the-center varieties</td><td class="n">+1</td><td class="n"><b>140</b></td></tr>
     <tr><td><b>D5</b></td><td>Face-set display mode for the five truly one-sided models (cells can never represent them)</td><td class="n">+5 shown</td><td class="n"><b>145</b> shown</td></tr>
   </table></div>
   <p class="footnote">
@@ -287,10 +287,10 @@
   <h3>3.2 What the port actually does</h3>
   <pre><code>// docs/lib/core.js — facePlanes()
 if (d &lt; 0) { n = mul(n, -1); d = -d; }   // orient away from the origin
-if (Math.abs(d) &lt; 1e-9) continue;        // plane through the centre: skip</code></pre>
+if (Math.abs(d) &lt; 1e-9) continue;        // plane through the center: skip</code></pre>
   <p>
     The representation is Vladimir's proposed four numbers already; the two lines above are the
-    inherited <em>policy</em>. Note the port converts the Java behaviour from loud to silent:
+    inherited <em>policy</em>. Note the port converts the Java behavior from loud to silent:
     the applet's plane-from-point constructor degenerates visibly, while the port just drops the
     plane — no console message, no count. The vestigial
     <span class="mono">planeFromPoint()</span> has no remaining callers and substitutes an
@@ -303,7 +303,7 @@ if (Math.abs(d) &lt; 1e-9) continue;        // plane through the centre: skip</c
     the nine hemipolyhedra plus the great dirhombicosidodecahedron:
   </p>
   <div class="tablewrap"><table>
-    <tr><th>File</th><th>Solid</th><th class="n">Planes</th><th class="n">Through centre</th><th class="n">Survive the skip</th></tr>
+    <tr><th>File</th><th>Solid</th><th class="n">Planes</th><th class="n">Through center</th><th class="n">Survive the skip</th></tr>
     <tr><td class="mono">u08</td><td>octahemioctahedron <span class="chip ok">orientable</span></td><td class="n">12</td><td class="n">4</td><td class="n">8</td></tr>
     <tr><td class="mono">u09</td><td>tetrahemihexahedron</td><td class="n">7</td><td class="n">3</td><td class="n">4</td></tr>
     <tr><td class="mono">u20</td><td>cubohemioctahedron</td><td class="n">10</td><td class="n">4</td><td class="n">6</td></tr>
@@ -323,15 +323,15 @@ if (Math.abs(d) &lt; 1e-9) continue;        // plane through the centre: skip</c
     hemipolyhedron, it is honestly rebuildable as cells once its diametral hexagons exist),
     <b>XII-1</b> (small dodecahemicosahedron), and Brückner's own degenerate-parameter varieties
     <b>IX-1</b> and <b>IX-18</b>, where he moves a family of dodecahedron planes until they
-    <em>pass through the centre</em>. Vladimir's hunch that “possibly many of Brückner's” fail
+    <em>pass through the center</em>. Vladimir's hunch that “possibly many of Brückner's” fail
     for this reason is right in kind — the book deliberately visits the degenerate case — but
     small in count: four figures of 146.
   </p>
   <p>
     What the real fix requires beyond un-skipping: (a) an explicit orientation convention per
-    diametral plane (both half-spaces touch the centre, so “outward” is a choice, not a fact);
+    diametral plane (both half-spaces touch the center, so “outward” is a choice, not a fact);
     (b) generalized layer semantics — today layer 0 is the cell containing the origin, and with
-    a diametral plane no cell contains it (for <span class="mono">u09</span> the centre sits on
+    a diametral plane no cell contains it (for <span class="mono">u09</span> the center sits on
     three planes at once and the “core” is eight octants); (c) UI: the Cells table, the
     <span class="mono">{0}</span> presets, and the walkthrough all assume a core row.
     None of this touches the clipping algebra itself — the Java constructions show the
@@ -519,7 +519,7 @@ if (Math.abs(d) &lt; 1e-9) continue;        // plane through the centre: skip</c
     Geraden” — the plane at infinity is just another line of the figure. The irony writes
     itself: the 1900 book is more projectively complete than the affine
     <span class="mono">d&nbsp;&gt;&nbsp;0</span> shortcut in the 2000s software; and Brückner's
-    one-sided §148 models with faces through the centre are exactly the cases the point
+    one-sided §148 models with faces through the center are exactly the cases the point
     encoding excludes. His face-first stance is also why one-sided solids belong in his book at
     all: a surface needs no interior.
   </p>
@@ -552,7 +552,7 @@ if (Math.abs(d) &lt; 1e-9) continue;        // plane through the centre: skip</c
     <tr><td>1</td><td>Bow-tie normal fix in <span class="mono">facePlanes</span> (fit plane from vertices when |Newell| ≈ 0)</td><td>correctness, ~10 lines</td><td>7 catalog solids stop being silently wrong; unblocks 3 dual-star figures</td></tr>
     <tr><td>2</td><td>Surface the skip: log/status “N of M planes used” whenever planes are dropped or deduped</td><td>honesty, trivial</td><td>no more silent wrongness anywhere; makes #6 testable</td></tr>
     <tr><td>3</td><td>Winding-number derivation tool (refusing non-orientable input) + run over the 17 self-stars and 13 dual-stars; add results to the grid page</td><td>tooling, no engine change</td><td>16 → ~55 clickable figures; three selections already derived and verified</td></tr>
-    <tr><td>4</td><td>§157–158 research derivations on <span class="mono">d29</span>/<span class="mono">d15</span></td><td>research</td><td>the last grey “stellation of the triacontahedron” entries go live</td></tr>
+    <tr><td>4</td><td>§157–158 research derivations on <span class="mono">d29</span>/<span class="mono">d15</span></td><td>research</td><td>the last gray “stellation of the triacontahedron” entries go live</td></tr>
     <tr><td>5</td><td>Custom plane sets: honor the .stel <span class="mono">planes</span> source end-to-end; textarea UI later</td><td>feature, port-side plumbing exists</td><td>+71 figures reachable (compounds incl. both remaining Escher solids; combination varieties); old applet files load</td></tr>
     <tr><td>6</td><td>Diametral planes: un-skip, define orientation + layer-0 semantics, expose hemis with correct symmetries</td><td>engine semantics + UI</td><td>VIII-1 buildable; IX-1/IX-18/XII-1 varieties honest; 10 orphan files real</td></tr>
     <tr><td>7</td><td>Dihedral families: parametric prism/antiprism planes; fill the 20 empty symmetry stubs; restore icosahedral-frame subgroups</td><td>feature</td><td>+13 axial figures; partial-symmetry stellations return</td></tr>
@@ -691,7 +691,7 @@ if (Math.abs(d) &lt; 1e-9) continue;        // plane through the centre: skip</c
     <div><b>IX-5</b> no. 36 · 62 planes, Ih</div>
     <div><b>IX-12</b> cube+octahedron through-edge variety · 14 planes, Oh</div>
     <div><b>IX-14</b> no. 62 · 44 planes, Ih</div>
-    <div><b>IX-18</b> no. 48 variety, planes through centre · 44 planes, Ih · <span class="chip bad">needs d=0</span></div>
+    <div><b>IX-18</b> no. 48 variety, planes through center · 44 planes, Ih · <span class="chip bad">needs d=0</span></div>
     <div><b>IX-22</b> no. 54 · 52 planes, Ih</div>
     <div><b>IX-23</b> three cubes (Escher) · 18 planes, Oh</div>
     <div><b>IX-24</b> no. 43 · 54 planes, Ih</div>

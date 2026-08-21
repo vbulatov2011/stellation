@@ -198,7 +198,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     el('#exScaleOut').textContent =
       `${o.width} × ${o.height} px — the figure fills ${fill}% of ${side}` +
       (fill > 100 ? ', running past the edges, which are cropped' : '');
-    // a kind that is switched off greys its own weight rather than hiding it
+    // a kind that is switched off grays its own weight rather than hiding it
     for (const k of KINDS) {
       if (!k.w) continue;
       k.w.disabled = !k.on.checked;
@@ -548,7 +548,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
      * name, and every field of the metadata — is read once, here, and the
      * signature is checked after every fetch: if the document moves while this
      * is running, the export stops and says so rather than writing a set of
-     * plates that came from two different figures, or a picture labelled with
+     * plates that came from two different figures, or a picture labeled with
      * a cell string that does not draw it.
      */
     const sig = signature();

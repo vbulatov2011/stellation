@@ -16,7 +16,7 @@
  *    finger and can be styled to be seen.
  *
  *  - Chrome is styled from the app's theme variables (uilib.css) rather than
- *    hard-coded greys, so windows follow light/dark like everything else. The
+ *    hard-coded grays, so windows follow light/dark like everything else. The
  *    close button is a real <button> with an inline SVG in the app's
  *    stroke-currentColor icon style — no image asset to load or recolor.
  *
@@ -28,7 +28,7 @@
  * object, the localStorage persistence format (`<storageId>_params` for
  * geometry, `<storageId>_visible` for visibility), the window-manager z-order
  * bands (plain windows restack from Z_BASE; alwaysOnTop and modal sit in fixed
- * bands above them), and the clamp-back-into-view behaviour on resize.
+ * bands above them), and the clamp-back-into-view behavior on resize.
  */
 
 const Z_BASE = 5;
@@ -90,7 +90,7 @@ function createWindowManager() {
   /*
    * Escape closes the top window, matching what every floating-panel UI
    * teaches. Two abstentions: native <dialog>s own Escape in the top layer
-   * (cancelling their close event from here would be a fight we lose), and a
+   * (canceling their close event from here would be a fight we lose), and a
    * focused text field keeps its key — Escape there means "abandon my edit",
    * not "take my window away".
    */
@@ -187,7 +187,7 @@ export function createInternalWindow(params = {}) {
   wnd.style.top = params.top || DEFAULT_OFFSET;
 
   /*
-   * Restore the persisted geometry. Width/height are only honoured for
+   * Restore the persisted geometry. Width/height are only honored for
    * resizable windows — a fixed-size window keeps whatever the code says, so
    * a layout change in a new version is not vetoed by an old localStorage
    * entry (the SymmHub rule, kept).
@@ -230,7 +230,7 @@ export function createInternalWindow(params = {}) {
 
   container.appendChild(wnd);
 
-  // ---- behaviour ------------------------------------------------------
+  // ---- behavior ------------------------------------------------------
 
   function containerBox() {
     // body height can be 0 in a flex layout; the viewport is the safe floor

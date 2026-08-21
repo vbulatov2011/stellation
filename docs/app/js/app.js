@@ -82,7 +82,7 @@ let renderer, diagram, cells, docs, presets, workspace;
  * honest description again. The state hash carries geometry only, so letting
  * it overwrite a document link threw away the coloring, the coset subgroup
  * and the edge style: open the compound of five tetrahedra from the gallery,
- * reload, and it came back grey.
+ * reload, and it came back gray.
  *
  * Declared here rather than beside syncHash, where it belongs by subject:
  * boot() assigns it long before the bottom of this file is evaluated, and a
@@ -163,7 +163,7 @@ async function boot() {
   diagram = new DiagramView($('#diagram'), {
     onToggle: (facet, mod) => applyToFacet(facet, mod),
     onHover: (facet) => {
-      // name both neighbours, since the two gestures reach one each
+      // name both neighbors, since the two gestures reach one each
       $('#hover2d').textContent = facet
         ? `beneath ${facet.refBelow ? facet.refBelow.join('.') : '—'} · ` +
           `above ${facet.refAbove ? facet.refAbove.join('.') : '—'}`
@@ -224,7 +224,7 @@ async function boot() {
    */
   const docLink = hash.match(/^doc=([\w./-]+\.(?:json|stel|txt))$/);
   // the cells segment allows the c{…} member-indexed form — an unaligned
-  // selection, which parseCellsAny recognises by the prefix
+  // selection, which parseCellsAny recognizes by the prefix
   const m = hash.match(
     /^([\w]+)(?:\/([\w()]+))?(?:\/([\w()]+))?(?:\/d(\d+))?(?:\/v([-\d.,eE]+))?(?:\/(c?\{.*\}))?$/);
   if (docLink && !docLink[1].includes('..')) {
@@ -238,7 +238,7 @@ async function boot() {
        * overwriting a #doc= link with it silently threw away everything the
        * document says about how to DRAW the figure: which coloring, which
        * coset subgroup, the edge style. Open the compound of five tetrahedra
-       * from the gallery, reload, and it came back grey. So while the
+       * from the gallery, reload, and it came back gray. So while the
        * selection is still the document's own, the URL stays the document's
        * own; see syncHash.
        */
@@ -350,7 +350,7 @@ function clearHistory() {
 /*
  * Undo and redo appear in all three views, so the buttons are found by class
  * rather than by id — one pair per view, every pair driven from the one stack.
- * Anything else means a button that is greyed out in one corner of the screen
+ * Anything else means a button that is grayed out in one corner of the screen
  * and live in another.
  */
 function syncUndo() {
@@ -862,7 +862,7 @@ function rotationAxis(a, b, c, d, e, f, g, h, i) {
  *
  * If M is improper then -M is a proper rotation, so one axis extractor serves
  * all three kinds; for a mirror, -M is the half-turn about the plane's normal.
- * The inversion centre is a point, not a line or plane, and is left out: there
+ * The inversion center is a point, not a line or plane, and is left out: there
  * is nothing to draw, and it is present in almost every group anyway.
  */
 const CLASS_PALETTE = ['#4da3f5', '#f2b23c', '#a06ef2', '#f2646c', '#3cc98f',
@@ -907,7 +907,7 @@ function symmetryElements(name) {
       const th = Math.acos(Math.min(1, Math.max(-1, (trace - 1) / 2)));
       collect(out.axes, rotationAxis(a, b, c, d, e, f, g, h, i), Math.round(2 * Math.PI / th));
     } else {
-      if (trace < -2.999) continue;                    // inversion centre
+      if (trace < -2.999) continue;                    // inversion center
       const n = rotationAxis(-a, -b, -c, -d, -e, -f, -g, -h, -i);
       if (Math.abs(trace - 1) < 1e-6) collect(out.mirrors, n, 2);
       else {
@@ -1097,7 +1097,7 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
     const dropped = (info.planesCentral || 0) + (info.planesDegenerate || 0);
     $('#status').title = dropped
       ? `${dropped} of this solid's ${info.planesTotal} faces have no usable plane here` +
-        (info.planesCentral ? ` — ${info.planesCentral} pass exactly through the centre, ` +
+        (info.planesCentral ? ` — ${info.planesCentral} pass exactly through the center, ` +
           'which this representation cannot hold (see notes/design/plane-representation.md)' : '')
       : '';
   } catch (err) {
@@ -1119,7 +1119,7 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
  * menu, the symmetry elements, the legend. If the worker cannot regroup —
  * restarted after a failure, nothing built — the preserve-mode rebuild is
  * the slow road to the same place. A switch during a build cannot be
- * honoured at all (the worker is busy making some other arrangement), so
+ * honored at all (the worker is busy making some other arrangement), so
  * the control snaps back to what is actually built rather than lying.
  */
 async function changeStellSym() {
@@ -1211,7 +1211,7 @@ function planeReport(info) {
  * onto one another give the same picture — so offer one of each kind rather
  * than a number to type with no upper bound. The cuboctahedron under O_h, for
  * instance, has exactly two. Each entry is named after the polygon at the
- * centre of that diagram, which is the solid's own face there.
+ * center of that diagram, which is the solid's own face there.
  */
 const POLYGON = { 3: 'triangle', 4: 'square', 5: 'pentagon', 6: 'hexagon',
                   7: 'heptagon', 8: 'octagon', 9: 'nonagon', 10: 'decagon', 12: 'dodecagon' };
@@ -1433,7 +1433,7 @@ function wireControls() {
 
   // the diagram's fit, replacing the double-click that used to reset the view
   // and kept firing on two quick cell toggles
-  $('#fitDiagram').onclick = () => { diagram?.resetView(); setStatus('diagram centred', false); };
+  $('#fitDiagram').onclick = () => { diagram?.resetView(); setStatus('diagram centered', false); };
   $('#fitView').onclick = () => { renderer?.fit(); setStatus('rescaled to fit', false); };
   /*
    * The orientation control is both a readout and a chooser. The menu picks
@@ -1886,7 +1886,7 @@ function applyDisplaySettings(doc) {
   /*
    * The coset subgroup cannot be set yet — its menu is refilled for the
    * document's polyhedron group later in the open — so the wish is parked on
-   * the element and fillCosetSub() honours it when the options exist.
+   * the element and fillCosetSub() honors it when the options exist.
    */
   if (doc.cosetSub) $('#cosetSub').dataset.want = doc.cosetSub;
   $('#faceOpacity').value = String(Math.round((doc.faceOpacity ?? 1) * 100));

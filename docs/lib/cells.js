@@ -19,7 +19,7 @@
  */
 
 /* Geometry. The color bar sits in its own lane at the foot of each box, with the
-   digit centred in the space above it — in the original they shared the same few
+   digit centered in the space above it — in the original they shared the same few
    pixels and collided. */
 const BOX_W    = 27;   // a cell box
 const BOX_H    = 28;
@@ -534,7 +534,7 @@ export class CellsPanel {
       ctx.globalAlpha = 1;
 
       /*
-       * The digit, centred in the space above the bar.
+       * The digit, centered in the space above the bar.
        *
        * A single-sub-cell box shows its CELL index, not its sub-cell index —
        * the sub index is always 0 for such a box, so every plain box in a row

@@ -225,7 +225,7 @@ export function createFileSelectionDialog(options = {}) {
   async function show() {
     ensureSelector();
     if (!rootHandle && !(await loadRootHandle())) {
-      if (!(await selectFolder())) return;       // user cancelled the picker
+      if (!(await selectFolder())) return;       // user canceled the picker
       selector.setVisible(true);
       return;
     }

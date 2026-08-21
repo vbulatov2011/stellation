@@ -209,7 +209,7 @@ console.log('\n4. the icosahedral frames line up with the cubic ones');
    * The rule: a group tagged with a frame sits on the axis the camera of the
    * same name looks down. The (O) groups take octahedral axes — o3, the cube
    * diagonal, and o2, an edge midpoint — and the (I) groups take icosahedral
-   * ones: i5 a vertex, i3 a face centre. Choose D5, press +i5, and you are
+   * ones: i5 a vertex, i3 a face center. Choose D5, press +i5, and you are
    * looking straight down the axis the group turns about, which is the only
    * thing that makes either name worth having.
    *

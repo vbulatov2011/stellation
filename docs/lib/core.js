@@ -77,7 +77,7 @@ export function matMul(m, a) {
  * seen Vector3D when a new one lands within `tolerance`. We reproduce that by
  * interning every vertex into an integer id via a spatial hash, so identity
  * becomes integer equality. This is the same idea, but robust at bucket edges:
- * we probe all 27 neighbouring grid cells rather than trusting one hash bucket.
+ * we probe all 27 neighboring grid cells rather than trusting one hash bucket.
  */
 export class VertexPool {
   constructor(tol = TOL) {
@@ -152,8 +152,8 @@ export function facePlanes(poly) {
     /*
      * Newell's sum is a *signed* area, and a crossed polygon — a "bow tie", which
      * several of the star faces in this catalog are — has two lobes wound
-     * opposite ways whose contributions cancel. The sum then collapses towards
-     * zero and normalising it yields a direction made of rounding error, so the
+     * opposite ways whose contributions cancel. The sum then collapses toward
+     * zero and normalizing it yields a direction made of rounding error, so the
      * face's plane came out wrong or was thrown away entirely.
      *
      * The plane itself is perfectly well defined: the vertices are coplanar
@@ -188,7 +188,7 @@ export function facePlanes(poly) {
     // so this is unaffected by the crossing above
     let d = dot(n, c);
     if (d < 0) { n = mul(n, -1); d = -d; }   // orient away from the origin
-    if (Math.abs(d) < 1e-9) { central++; continue; }   // through the centre: skip
+    if (Math.abs(d) < 1e-9) { central++; continue; }   // through the center: skip
 
     const dup = seen.some(p => Math.abs(p.d - d) < 1e-6 &&
                                Math.abs(dot(p.n, n) - 1) < 1e-9);
@@ -219,8 +219,8 @@ export function facePlanes(poly) {
  * group to each, stellate the result. The engine below never cared where its
  * planes came from; this is the front door for handing it a list directly.
  * Input rows are {n:[x,y,z], d} (or {n:{x,y,z}, d}); the same hygiene as
- * facePlanes applies — normalise, orient away from the origin, skip planes
- * through the centre (this representation cannot hold them), dedupe — and the
+ * facePlanes applies — normalize, orient away from the origin, skip planes
+ * through the center (this representation cannot hold them), dedupe — and the
  * same accounting rides along so the UI can say what was dropped.
  */
 export function planesFromList(rows) {
@@ -253,9 +253,9 @@ export function planesFromList(rows) {
  * Rewind every face so the surface is consistently oriented, or say why not.
  *
  * The catalog lists each face's vertices in *some* order and promises nothing
- * about agreement between neighbours — most solids in the data disagree
+ * about agreement between neighbors — most solids in the data disagree
  * somewhere. Orientation is recoverable, and uniquely so on a connected
- * orientable surface: walk the face adjacency and flip any neighbour that
+ * orientable surface: walk the face adjacency and flip any neighbor that
  * traverses the shared edge the same way round. Two failures are fatal rather
  * than repairable and are reported instead of guessed at: an edge bordering
  * other than two faces (not a closed surface), and a flip contradicting one
@@ -323,7 +323,7 @@ export function orientFaces(poly) {
  * join them were never built. Too deep and the densest solids take half a
  * minute. So pick per polyhedron, from two things known before any work starts:
  *
- *  - **How close a plane passes to the centre.** A plane near the origin is cut
+ *  - **How close a plane passes to the center.** A plane near the origin is cut
  *    by every other plane and shatters into thousands of facets. The duals of
  *    the hemi-polyhedra do this: their plane distances span 80:1, against 1.0
  *    for every well-behaved solid, and they are far and away the slowest.
@@ -557,7 +557,7 @@ export function makeCellsBetween(bottomFaces, topFaces, layer, pool) {
     };
     for (const id of face.v) absorbVertex(id);
 
-    // --- top surface of the cell: walk same-winding neighbours
+    // --- top surface of the cell: walk same-winding neighbors
     const tfaces = [face];
     let iface;
     while ((iface = findAdjacentFace(tAdj, tfaces, 1, pool)) !== null) {
@@ -897,7 +897,7 @@ export function buildStellation(poly, matrices, opts = {}) {
  * group, and see which plane it lands on. That is the same interning trick
  * makeSymmetricCells uses, so it agrees with how the cells were grouped.
  *
- * Each representative is labelled by the innermost facet on its plane, which for
+ * Each representative is labeled by the innermost facet on its plane, which for
  * a convex solid is the solid's own face there — so "4 sides" really does mean
  * the square face of the cuboctahedron.
  */
@@ -957,7 +957,7 @@ export function cellsAcrossFacet(facet) {
 
 /**
  * For each face of an extractMesh() surface: the solid cell it belongs to, and
- * the empty neighbour across it. That is what a click means — remove the solid
+ * the empty neighbor across it. That is what a click means — remove the solid
  * one, or add the empty one.
  *
  * Not the same as cellsAcrossFacet: below/above are fixed geometric labels, and
@@ -1396,7 +1396,7 @@ export function writeStel({ polyhedron, polySymmetry, stellSymmetry, cells, expo
 
 /**
  * Project one plane's facets into 2D for the classic stellation diagram.
- * Faithful to Stellation.createDiagram: translate the innermost facet's centre
+ * Faithful to Stellation.createDiagram: translate the innermost facet's center
  * to the origin, rotate the plane normal onto +Z, then optionally spin a chosen
  * vertex up to +Y.
  */
@@ -1559,7 +1559,7 @@ export function mat3mul(a, b) {
 /*
  * Label the arrangement's PLANES by the cosets of a subgroup H in a group G —
  * as the app wires it, G is the POLYHEDRON group and H a subgroup of it chosen
- * beside the color menu. The facet version above is the same labelling on
+ * beside the color menu. The facet version above is the same labeling on
  * smaller pieces; the two differ in what wears one color, not in handedness.
  * Returns { planes: Int32Array(plane -> coset, -1 for gray), count }.
  *
@@ -1572,7 +1572,7 @@ export function mat3mul(a, b) {
  * Coloring the facets by their planes therefore colors every one of those
  * pictures correctly at every depth.
  *
- * It is also what makes the labelling COHERENT. A first version colored
+ * It is also what makes the labeling COHERENT. A first version colored
  * cells, orbit by orbit, and each orbit independently chose a representative;
  * the choices did not agree between orbits — each fixes its own conjugate of
  * H — and the five colors came out shuffled from one shell to the next. The
@@ -1581,7 +1581,7 @@ export function mat3mul(a, b) {
  * face at worst rotates colors between kinds, never within one.
  *
  * The construction, on each plane orbit under G: a representative q₀ is
- * SOUGHT whose stabiliser sits inside H — the labelling "plane g·q₀ wears the
+ * SOUGHT whose stabiliser sits inside H — the labeling "plane g·q₀ wears the
  * coset of g" is well defined exactly then. For T inside I that
  * representative is a plane of one of the two T-invariant tetrahedra, and
  * choosing it is what makes the five tetrahedra appear; which enantiomorph is
@@ -1594,7 +1594,7 @@ export function mat3mul(a, b) {
  */
 
 /**
- * The same labelling on smaller pieces: the arrangement's FACETS.
+ * The same labeling on smaller pieces: the arrangement's FACETS.
  *
  * A facet is a single flat piece of surface, so "these facets share a color"
  * says exactly that the subgroup carries one onto the other — which is the
@@ -1634,11 +1634,11 @@ export function facetCosetClasses(stel, matrices, subMatrices) {
 
   /*
    * Facets are matched by their centroids, as cells are matched by their
-   * centres: a facet is a convex polygon in a plane, so its centroid names it
+   * centers: a facet is a convex polygon in a plane, so its centroid names it
    * uniquely among the facets of the arrangement.
    */
   const pool = new VertexPool(1e-6);
-  const byCentre = new Map();
+  const byCenter = new Map();
   const all = [];
   for (const plane of stel.arrangement) {
     for (const f of plane) {
@@ -1646,26 +1646,26 @@ export function facetCosetClasses(stel, matrices, subMatrices) {
       for (const id of f.v) { const q = stel.pool.get(id); x += q.x; y += q.y; z += q.z; }
       const n = f.v.length || 1;
       f._cc = v3(x / n, y / n, z / n);
-      byCentre.set(pool.intern(f._cc), f);
+      byCenter.set(pool.intern(f._cc), f);
       all.push(f);
     }
   }
-  const map = (g, f) => byCentre.get(pool.intern(matMul(g, f._cc)));
+  const map = (g, f) => byCenter.get(pool.intern(matMul(g, f._cc)));
 
   /*
-   * Anchored to the plane labelling wherever that exists.
+   * Anchored to the plane labeling wherever that exists.
    *
-   * A coset labelling is canonical only WITHIN one orbit: swap an orbit's
+   * A coset labeling is canonical only WITHIN one orbit: swap an orbit's
    * representative for one outside H and every label in it shifts together,
    * and nothing in the group relates one orbit's choice to another's. So
-   * labelling each facet orbit independently — which is what this did at
+   * labeling each facet orbit independently — which is what this did at
    * first, and what the cell coloring before it did — makes "color 0" mean
    * a different thing in different orbits, and the five tetrahedra come out
    * shuffled. Every facet lies in a plane, and the planes are one orbit with
-   * one representative, so where the plane labelling exists it is the shared
+   * one representative, so where the plane labeling exists it is the shared
    * frame that makes the facets agree. Where it does not — the icosahedron
-   * under cosets of I, where every plane greys on its mirrors — each facet
-   * orbit is labelled on its own, which still separates the two hands, but
+   * under cosets of I, where every plane grays on its mirrors — each facet
+   * orbit is labeled on its own, which still separates the two hands, but
    * only within an orbit.
    */
   const byPlane = cosetClasses(stel, matrices, subMatrices);
@@ -1775,7 +1775,7 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
      * the planes — and a T-stabilised representative exists in each. Which
      * hand is wanted is not a group-theoretic fact at all: it is the figure's,
      * so when the caller passes its selected cells, each distinct candidate
-     * labelling is scored by how coherently it colors them — a cell bounded
+     * labeling is scored by how coherently it colors them — a cell bounded
      * by planes of one tetrahedron counts clean under the right hand and
      * mixed under the wrong one — and the cleanest wins. No cells, or a tie
      * (every achiral figure), falls to the first candidate, deterministically.

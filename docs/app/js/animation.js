@@ -100,7 +100,7 @@ export function initAnimation({ renderer, currentName, setStatus }) {
 
   /*
    * An option the browser cannot encode is disabled rather than removed: a
-   * menu that silently loses an entry looks broken, where a greyed MP4 with
+   * menu that silently loses an entry looks broken, where a grayed MP4 with
    * the tooltip above it says whose limitation it is.
    */
   for (const o of fmtSel.options) {

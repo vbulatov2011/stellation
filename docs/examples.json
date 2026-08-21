@@ -54,7 +54,7 @@
         "custom-planes",
         "icosahedral"
       ],
-      "note": "Two plane orbits in one arrangement: the twenty face planes of an icosahedron and the twelve of a dodecahedron, set at different distances from the centre. Thirty-two planes that belong to no single solid, stellated under Th."
+      "note": "Two plane orbits in one arrangement: the twenty face planes of an icosahedron and the twelve of a dodecahedron, set at different distances from the center. Thirty-two planes that belong to no single solid, stellated under Th."
     },
     {
       "file": "examples/twin-octahedra.json",

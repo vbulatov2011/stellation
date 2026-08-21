@@ -100,7 +100,7 @@ const groupsOf = (stel, res) => {
    * mirror — the tetrahedral coloring cannot exist there, which is why it
    * needs the chiral groups.
    */
-  ok(res.planes.every(k => k === -1), 'inside Ih, T greys every plane — the mirrors do not fit');
+  ok(res.planes.every(k => k === -1), 'inside Ih, T grays every plane — the mirrors do not fit');
 }
 
 // ------------------------------------------- Ih / Ih: the degenerate index 1
@@ -213,11 +213,11 @@ const groupsOf = (stel, res) => {
   ok(gray > 0, `${gray} facets are gray — those a mirror of Ih holds still`);
   /*
    * The planes cannot say any of that: every face plane's stabiliser in Ih is
-   * C₃ᵥ, whose mirrors I lacks, so the whole plane coloring greys. This is
+   * C₃ᵥ, whose mirrors I lacks, so the whole plane coloring grays. This is
    * the difference the smaller piece buys.
    */
   const byPlane = cosetClasses(stel, symmetry.Ih.matrices, symmetry.I.matrices);
-  ok(byPlane.planes.every(k => k === -1), 'where the plane coloring greys entirely');
+  ok(byPlane.planes.every(k => k === -1), 'where the plane coloring grays entirely');
 }
 
 {

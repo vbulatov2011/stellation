@@ -51,7 +51,7 @@ is the file you edit.
 ## The JavaScript engine
 
 `docs/lib/core.js` (1,354 lines) is the entire mathematical pipeline, in
-labelled sections that read in dependency order:
+labeled sections that read in dependency order:
 
 | line | section | what it does |
 |---|---|---|
@@ -60,7 +60,7 @@ labelled sections that read in dependency order:
 | 73 | vertex pool | interning by position, so identity is shared and exact |
 | 122 | planes | `facePlanes`, `planesFromList`, `orientFaces`, `suggestDepth` |
 | 351 | arrangement | `makeArrangement` — the expensive step |
-| 464 | facet helpers | centre, vector area, oriented adjacency |
+| 464 | facet helpers | center, vector area, oriented adjacency |
 | 503 | layers & cells | `makeLayers`, `makeCellsBetween` |
 | 627 | symmetry orbits | `makeSymmetricCells`, `makeSubCells`, `planeClasses` |
 | 750 | mesh extraction | `extractMesh` — selection to boundary surface |
@@ -439,7 +439,7 @@ prose. Treat it as the design record, because it is.
   so none of the above is tested against anything.
 - **The new view features have no test.** Coloring, edge classification and the
   trackball were each verified once by measurement — face-class counts per
-  solid, edge counts per sample, drag and throw behaviour — but none of it is in
+  solid, edge counts per sample, drag and throw behavior — but none of it is in
   `docs/test/`. Edge classification in particular is a pure function of the mesh
   and would sit naturally beside `facing.mjs`.
 - **The UI has no automated test at all.** Windowed mode, the preset browser and
