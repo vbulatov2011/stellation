@@ -214,11 +214,21 @@ function diagramFor(planeIndex, selected) {
         coset: cosetOfPlane(d.planeIndex),
         // by facet, each region wears its own facet's coset
         cosetL: cosetOfFacet(f.facet),
-        // subgroup orbits at the three sizes; the cell is the one this
-        // region caps — the same cell a shift-click toggles
+        // subgroup orbits at the three sizes. Per cell the region wears the
+        // SOLID side's cell, matching the 3-D mesh: an outward region caps
+        // the cell below it, an inward one (facing 0, lining a cavity) is
+        // the underside of the cell above — coloring those by the empty
+        // cell below made the diagram disagree with the solid on every
+        // exposed underside. Unselected regions fall to the cell they would
+        // toggle, the one below.
         orbitP: orbits ? orbits.planes[d.planeIndex] : 0,
         orbitF: orbits ? (orbits.facets.get(f.facet) ?? 0) : 0,
-        orbitC: orbits && f.facet.cellBelow ? (orbits.cells.get(f.facet.cellBelow) ?? 0) : 0,
+        orbitC: (() => {
+          if (!orbits) return 0;
+          const own = (f.facing === 0 ? f.facet.cellAbove : f.facet.cellBelow)
+                    || f.facet.cellBelow || f.facet.cellAbove;
+          return own ? (orbits.cells.get(own) ?? 0) : 0;
+        })(),
         facing: f.facing,          // 1 outward, 0 inward (lines a cavity)
         ref: key(below || above),
         refBelow: key(below),

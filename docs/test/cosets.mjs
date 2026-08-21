@@ -339,5 +339,56 @@ const groupsOf = (stel, res) => {
   ok(pairs === 380 && sized, `the 380 gray facets blend in pairs (got ${pairs})`);
 }
 
+// ------------- review fixes: H-fixed pieces stay gray, forced orbits first
+
+{
+  /*
+   * The blend must not outrank the owner's rule: a piece the whole subgroup
+   * fixes sits ON the symmetry and stays gray, exactly as in the crisp
+   * branch. Cube under Oh, cosets of C4: no crisp representative exists
+   * anywhere (every face stabilizer is order 8), so the blend path runs —
+   * and the two planes on C4's own axis must come out gray while the four
+   * equatorial planes blend pairs. The first version blended all six, so
+   * enlarging G from O (where the crisp path grays them) to Oh recolored
+   * the H-invariant planes.
+   */
+  const cubeG = JSON.parse(readFileSync(join(DOCS, 'data', 'geometry.json'), 'utf8')).u11;
+  const cv = [];
+  for (let i = 0; i < cubeG.v.length; i += 3) cv.push({ x: cubeG.v[i], y: cubeG.v[i + 1], z: cubeG.v[i + 2] });
+  const cube = { vertices: cv, faces: cubeG.f };
+  const cstel = buildStellation(cube, symmetry.Oh.matrices,
+    { subMatrices: symmetry.Oh.matrices, maxIntersection: suggestDepth(facePlanes(cube)) });
+  const r = cosetClasses(cstel, symmetry.Oh.matrices, symmetry.C4.matrices);
+  const axis = [], rest = [];
+  cstel.planes.forEach((q, i) => (Math.abs(Math.abs(q.n.z) - 1) < 1e-9 ? axis : rest).push(i));
+  ok(r.planes.every(k => k === -1), 'Oh/C4: no crisp label anywhere');
+  ok(axis.length === 2 && axis.every(i => r.blends[i] === null),
+     'the two planes C4 itself fixes stay gray — no blend');
+  ok(rest.every(i => r.blends[i] && r.blends[i].length === 2),
+     'while the four equatorial planes blend pairs');
+}
+
+{
+  /*
+   * Orbits that offer exactly one labeling carry information but make no
+   * choice, so they settle before any orbit that has a choice — a tie
+   * scored against a half-empty map locked in labelings the very next
+   * forced orbit contradicted. On the compound document under Ih/Th the
+   * fix cuts the cells with multicolored caps from 112 to 52, the optimum
+   * the reviewers computed by trying every permitted tie-break.
+   */
+  const stel = build('Ih', 'I');
+  const doc = JSON.parse(readFileSync(join(DOCS, 'icosahedra', '47-ef1-chiral.json'), 'utf8'));
+  const cells = selectedCells(stel, parseCellsAny(stel, doc.params.cells.selection));
+  const F = facetCosetClasses(stel, symmetry.Ih.matrices, symmetry.Th.matrices, cells);
+  let multi = 0;
+  for (const layer of stel.cellLayers) for (const o of layer) for (const c of o.cells) {
+    const seen = new Set();
+    for (const f of c.top || []) { const k = F.of.get(f); if (k !== undefined && k >= 0) seen.add(k); }
+    if (seen.size > 1) multi++;
+  }
+  ok(multi === 52, `forced orbits settle first: 52 multicolored caps, not 112 (got ${multi})`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

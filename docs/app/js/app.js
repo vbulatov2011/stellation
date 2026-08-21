@@ -1932,6 +1932,14 @@ async function openDocument(text, filename = '') {
     if (ok && doc.cells) {
       const { selected } = await call('parseCells', { cells: doc.cells, indexing: doc.cellsIndexing || null });
       state.selected = new Set(selected);
+      /*
+       * The build sent the cosets message with the default selection, but
+       * the selection is the steering: it decides between enantiomorphic
+       * labelings. Now that the document's own cells are in, send it again
+       * so a chiral figure reopens in its own hand, exactly as the catalog
+       * path does by passing the cells into build().
+       */
+      await applyCosetSub();
       await refresh();
     }
     if (ok && doc.view) renderer?.setView(doc.view);

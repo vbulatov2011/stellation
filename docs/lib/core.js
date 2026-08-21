@@ -1701,73 +1701,137 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
     const c = f.cellBelow;
     return c && c.top ? c.top : null;
   };
+
+  /*
+   * The group as integers, computed once. Every question below — stabilizer,
+   * H-membership, which facet g carries the seed to — reduces to lookups in
+   * a multiplication table, so each orbit costs ONE interning sweep and the
+   * rest is integer work. The first version re-swept the group per candidate
+   * representative, which on a free orbit under E is |orbit| sweeps of |G|
+   * internings each — a fifteen-second stall on the big duals.
+   */
+  const q4 = (v) => Math.round(v * 1e4) / 1e4 + 0;
+  const mkey = (m) => m.map(q4).join(',');
+  const gIdx = new Map(matrices.map((m, i) => [mkey(m), i]));
+  const nG = matrices.length;
+  const mat9 = (a, b) => {
+    const o = new Array(9);
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        o[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
+    return o;
+  };
+  const mulIdx = new Int32Array(nG * nG);
+  for (let a = 0; a < nG; a++)
+    for (let b = 0; b < nG; b++)
+      mulIdx[a * nG + b] = gIdx.get(mkey(mat9(matrices[a], matrices[b]))) ?? -1;
+  const invIdx = new Int32Array(nG);
+  for (let a = 0; a < nG; a++) {
+    const m = matrices[a];
+    invIdx[a] = gIdx.get(mkey([m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]])) ?? -1;
+  }
+  const inH = matrices.map(m => inSub(m));
+  const hIdx = [];
+  for (let i = 0; i < nG; i++) if (inH[i]) hIdx.push(i);
+
+  /*
+   * Enumerate every orbit BEFORE labeling any, because the labeling order
+   * matters: an orbit with several genuinely different candidate labelings
+   * must be scored against everything that carries information — and the
+   * orbits with exactly one labeling carry information while making no
+   * choice. Settling those first (together with the gray and blended ones,
+   * which constrain nothing) means a tie at "no disagreement yet" is broken
+   * by the figure's forced structure rather than by file order; scored
+   * against a half-empty map, the first-candidate tie-break locked in
+   * labelings the very next forced orbit contradicted.
+   */
+  const jobs = [];
+  const seen = new Set();
   for (const seed of all) {
-    if (of.has(seed)) continue;
+    if (seen.has(seed)) continue;
+    // one interning sweep: which facet each group element carries the seed to
+    const A = new Array(nG);
+    for (let gi = 0; gi < nG; gi++) A[gi] = map(matrices[gi], seed) || null;
     const orbit = [];
-    for (const g of matrices) {
-      const f = map(g, seed);
-      if (f && !of.has(f) && !orbit.includes(f)) orbit.push(f);
+    const at = new Map();                      // facet -> some gi reaching it
+    for (let gi = 0; gi < nG; gi++) {
+      const f = A[gi];
+      if (f && !at.has(f)) { at.set(f, gi); orbit.push(f); seen.add(f); }
     }
-    // every representative whose stabiliser sits inside H, or the orbit is gray
-    const candidates = [];
+    // stabilizer of A[k] = { g : g·k reaches the same facet } — all integer
+    const stabOf = (f) => {
+      const k = at.get(f), s = [];
+      for (let gi = 0; gi < nG; gi++) if (A[mulIdx[gi * nG + k]] === f) s.push(gi);
+      return s;
+    };
+    const fixedByH = (f) => {
+      const k = at.get(f);
+      for (const hi of hIdx) if (A[mulIdx[hi * nG + k]] !== f) return false;
+      return true;
+    };
+    // candidate anchors: stabilizer inside H; deduped by H-orbit, since
+    // anchors in one H-orbit induce the identical labeling
+    const cands = [];
+    const inCand = new Set();
+    let bestOverlap = 0, bestAnchor = -1, bestStab = 0;
     for (const f of orbit) {
-      let ok = true;
-      for (const g of matrices) if (map(g, f) === f && !inSub(g)) { ok = false; break; }
-      if (ok) candidates.push(f);
+      const s = stabOf(f);
+      let o = 0;
+      for (const gi of s) if (inH[gi]) o++;
+      if (o > bestOverlap) { bestOverlap = o; bestAnchor = at.get(f); bestStab = s.length; }
+      if (o !== s.length) continue;            // stabilizer not inside H
+      if (inCand.has(f)) continue;
+      const k = at.get(f);
+      for (const hi of hIdx) inCand.add(A[mulIdx[hi * nG + k]]);
+      cands.push(k);
     }
-    if (!candidates.length) {
+    if (!cands.length) {
       // no crisp labeling — blend from the best-overlapping anchor, exactly
-      // as the plane path does; total mixes stay honestly gray
-      let anchor = null, overlap = 0, stabSize = 0;
-      for (const f of orbit) {
-        let s = 0, o = 0;
-        for (const g of matrices) {
-          if (map(g, f) !== f) continue;
-          s++;
-          if (inSub(g)) o++;
+      // as the plane path does; total mixes, and pieces the whole subgroup
+      // fixes, stay honestly gray
+      const mixSize = bestOverlap ? bestStab / bestOverlap : reps.length;
+      const blend = new Map();
+      if (bestAnchor >= 0 && mixSize < reps.length) {
+        const sets = new Map();
+        for (let gi = 0; gi < nG; gi++) {
+          const f = A[mulIdx[gi * nG + bestAnchor]];
+          if (!f) continue;
+          if (!sets.has(f)) sets.set(f, new Set());
+          sets.get(f).add(cosetOf[gi]);
         }
-        if (o > overlap) { anchor = f; overlap = o; stabSize = s; }
+        for (const f of orbit) {
+          const s = sets.get(f);
+          if (s && s.size > 1 && s.size < reps.length && !fixedByH(f))
+            blend.set(f, Int32Array.from([...s].sort((a, b) => a - b)));
+        }
       }
-      const mixSize = overlap ? stabSize / overlap : reps.length;
-      if (!anchor || mixSize >= reps.length) {
-        for (const f of orbit) of.set(f, -1);
-        continue;
-      }
-      const sets = new Map();
-      for (let gi = 0; gi < matrices.length; gi++) {
-        const f = map(matrices[gi], anchor);
-        if (!f) continue;
-        if (!sets.has(f)) sets.set(f, new Set());
-        sets.get(f).add(cosetOf[gi]);
-      }
-      for (const f of orbit) {
-        of.set(f, -1);
-        const s = sets.get(f);
-        if (s && s.size > 1 && s.size < reps.length)
-          blends.set(f, Int32Array.from([...s].sort((a, b) => a - b)));
-      }
+      jobs.push({ orbit, distinct: null, blend });
       continue;
     }
-    const tryRep = (rep) => {
-      const lab = new Map();
-      for (let gi = 0; gi < matrices.length; gi++) {
-        const f = map(matrices[gi], rep);
-        if (f && !lab.has(f)) lab.set(f, cosetOf[gi]);
-      }
-      return lab;
-    };
+    // one labeling per candidate class, all from the table: the facet A[g]
+    // is (g·k⁻¹)·anchor, so it wears the coset of g·k⁻¹
     const distinct = [];
-    for (const rep of candidates) {
-      const lab = tryRep(rep);
+    for (const k of cands) {
+      const ki = invIdx[k];
+      const lab = new Map();
+      for (let gi = 0; gi < nG; gi++) {
+        const f = A[gi];
+        if (f && !lab.has(f)) lab.set(f, cosetOf[mulIdx[gi * nG + ki]]);
+      }
       const sig = orbit.map(f => lab.get(f)).join(',');
       if (!distinct.some(d => d.sig === sig)) distinct.push({ sig, lab });
     }
+    jobs.push({ orbit, distinct, fixedByH: orbit.filter(f => fixedByH(f)) });
+  }
+
+  const settle = (job) => {
+    const { orbit, distinct } = job;
     let best = distinct[0];
     if (distinct.length > 1) {
       let bestKey = null;
       for (const cand of distinct) {
         // structural term: disagreements with already-labeled facets that
-        // cap the same cells — zero for the first orbit, decisive after it
+        // cap the same cells — the cells stitch the orbits together
         let clash = 0;
         for (const f of orbit) {
           const mates = capMates(f);
@@ -1782,27 +1846,31 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
         let mixed = 0;
         if (preferCells && preferCells.length) {
           for (const c of preferCells) {
-            const seen = new Set();
+            const seenK = new Set();
             for (const f of c.top || []) {
               const k = cand.lab.has(f) ? cand.lab.get(f) : of.get(f);
-              if (k !== undefined && k >= 0) seen.add(k);
+              if (k !== undefined && k >= 0) seenK.add(k);
             }
-            if (seen.size > 1) mixed += seen.size - 1;
+            if (seenK.size > 1) mixed += seenK.size - 1;
           }
         }
-        const key = [clash, mixed];
-        if (!bestKey || key[0] < bestKey[0] || (key[0] === bestKey[0] && key[1] < bestKey[1])) {
-          bestKey = key; best = cand;
+        if (!bestKey || clash < bestKey[0] || (clash === bestKey[0] && mixed < bestKey[1])) {
+          bestKey = [clash, mixed]; best = cand;
         }
       }
     }
     for (const [f, k] of best.lab) if (!of.has(f)) of.set(f, k);
-    for (const f of orbit) {
-      let fixed = true;
-      for (const h of subMatrices) if (map(h, f) !== f) { fixed = false; break; }
-      if (fixed) of.set(f, -1);
-    }
+    for (const f of job.fixedByH) of.set(f, -1);
+  };
+
+  for (const job of jobs) {
+    if (job.distinct) continue;
+    for (const f of job.orbit) of.set(f, -1);
+    for (const [f, b] of job.blend) blends.set(f, b);
   }
+  for (const job of jobs) if (job.distinct && job.distinct.length === 1) settle(job);
+  for (const job of jobs) if (job.distinct && job.distinct.length > 1) settle(job);
+
   return { of, count: reps.length, blends };
 }
 
@@ -1993,6 +2061,11 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
       }
       for (const q of orbit) {
         label[q] = -1;
+        // a plane the whole subgroup fixes sits ON the symmetry: gray by
+        // instruction here exactly as in the crisp branch below
+        let fixed = true;
+        for (const h of subMatrices) if (mapPlane(h, q) !== q) { fixed = false; break; }
+        if (fixed) continue;
         const s = sets.get(q);
         if (s && s.size > 1 && s.size < reps.length)
           blends[q] = Int32Array.from([...s].sort((a, b) => a - b));

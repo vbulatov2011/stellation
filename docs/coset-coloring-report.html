@@ -870,6 +870,16 @@
     plane, per facet, per cell — is a menu family of its own. Implementation corrected two
     of this report's numbers, marked in place: §6c's mechanism, and 44 cell orbits under T
     (Burnside: 528/12), not the survey's 40. R3–R4 remain open.</p>
+    <p>An adversarial review of the implementation (four independent lenses, each finding
+    verified by refutation) then surfaced and fixed six more defects: the blend path skipped
+    the fixed-by-the-subgroup gray rule (the cube under O<sub>h</sub>/C<sub>4</sub> blended
+    its two axis planes); the fallback's tie-break settled orbits with a choice before the
+    forced orbits that would have informed it (112 → 52 multicolored caps on the showcase,
+    the reviewers' computed optimum); the fallback cost |orbit| group sweeps per orbit — a
+    16-second stall on the great dodecahemicosahedron under E, now 0.6 s via an integer
+    multiplication table; per-cell orbit colors disagreed between the diagram and the solid
+    on exposed undersides; the diagram-export cache ignored the coloring subgroup; and a
+    custom-planes document reopened with its hand steered by the wrong selection.</p>
   </div>
 
   <!-- ================================================================ 8 -->
