@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cosets, Orbits, and Blends — Coloring a Stellation from (G, H)</title>
+<meta name="description" content="Why the coset coloring so often grays, why per-plane and per-facet usually coincide, and the verified alternatives: H-orbits, blends, mirror-cut refinement, coarsening.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<script>
+  (() => {
+    const saved = localStorage.getItem('theme') || 'auto';
+    const dark = saved === 'dark' || (saved === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+</head>
+<body>
+<style>
+  :root {
+    --paper: #FAFAF6;
+    --ink: #22242A;
+    --dim: #666A73;
+    --gold: #A87514;
+    --gold-soft: rgba(168, 117, 20, 0.10);
+    --steel: #46708F;
+    --steel-soft: rgba(70, 112, 143, 0.08);
+    --line: #E2E2DA;
+    --card: #FFFFFF;
+    --bad: #A33B2E;
+    --ok: #3E7A4E;
+    --mono-bg: #F1F1EB;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #16181D; --ink: #E6E4DC; --dim: #9DA0A8;
+      --gold: #D9A43E; --gold-soft: rgba(217, 164, 62, 0.12);
+      --steel: #82ABCB; --steel-soft: rgba(130, 171, 203, 0.10);
+      --line: #2D3038; --card: #1D2026; --bad: #D97A6C; --ok: #7FB98E;
+      --mono-bg: #22252C;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #16181D; --ink: #E6E4DC; --dim: #9DA0A8;
+    --gold: #D9A43E; --gold-soft: rgba(217, 164, 62, 0.12);
+    --steel: #82ABCB; --steel-soft: rgba(130, 171, 203, 0.10);
+    --line: #2D3038; --card: #1D2026; --bad: #D97A6C; --ok: #7FB98E;
+    --mono-bg: #22252C;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    font-size: 16.5px; line-height: 1.62;
+  }
+  .page { max-width: 76ch; margin: 0 auto; padding: 48px 24px 96px; }
+
+  h1, h2, h3, h4, .label {
+    font-family: "Avenir Next", Seravek, "Segoe UI", system-ui, sans-serif;
+  }
+  h1 { font-size: 30px; line-height: 1.2; margin: 8px 0 4px; text-wrap: balance; font-weight: 650; }
+  h2 { font-size: 21px; margin: 52px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); font-weight: 640; }
+  h2 .no { color: var(--gold); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  h3 { font-size: 16.5px; margin: 28px 0 6px; font-weight: 640; }
+  p { margin: 0 0 13px; }
+  ul, ol { margin: 0 0 13px; padding-left: 26px; }
+  li { margin-bottom: 5px; }
+  a { color: var(--steel); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  .kicker {
+    font-family: "Avenir Next", Seravek, "Segoe UI", system-ui, sans-serif;
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold);
+  }
+  .meta { color: var(--dim); font-size: 14px; margin-bottom: 30px; }
+
+  code, .mono {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.86em; background: var(--mono-bg); border-radius: 4px; padding: 1px 5px;
+  }
+
+  .finding {
+    border-left: 3px solid var(--gold); background: var(--gold-soft);
+    border-radius: 0 8px 8px 0; padding: 10px 16px; margin: 18px 0;
+  }
+  .finding .label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 3px; }
+  .finding p { margin: 0 0 6px; } .finding p:last-child { margin: 0; }
+  .finding.steel { border-left-color: var(--steel); background: var(--steel-soft); }
+  .finding.steel .label { color: var(--steel); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .tablewrap { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--line); border-radius: 8px; }
+  th {
+    font-family: "Avenir Next", Seravek, "Segoe UI", system-ui, sans-serif;
+    font-size: 11.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--dim);
+    text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--card);
+  }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--line); vertical-align: top; background: var(--card); }
+  tr:last-child td { border-bottom: none; }
+  td.n, th.n { text-align: right; }
+  td.c, th.c { text-align: center; }
+
+  .chip {
+    display: inline-block; font-family: "Avenir Next", Seravek, "Segoe UI", system-ui, sans-serif;
+    font-size: 11px; letter-spacing: 0.05em; border-radius: 20px; padding: 1px 9px 2px;
+    border: 1px solid var(--line); color: var(--dim); white-space: nowrap;
+  }
+  .chip.gold { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); }
+  .chip.bad  { color: var(--bad); border-color: var(--bad); }
+  .chip.ok   { color: var(--ok); border-color: var(--ok); }
+
+  details { margin: 10px 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+  summary {
+    cursor: pointer; padding: 9px 14px;
+    font-family: "Avenir Next", Seravek, "Segoe UI", system-ui, sans-serif; font-size: 13.5px; font-weight: 600;
+  }
+  summary:focus-visible { outline: 2px solid var(--steel); border-radius: 8px; }
+  details > div { padding: 2px 14px 12px; }
+
+  .plate { margin: 20px 0; }
+  .plate .frame {
+    background: #FAFAF6; border: 1px solid var(--line); border-radius: 8px;
+    padding: 6px; overflow: hidden;
+  }
+  .plate svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+  .plate figcaption { font-size: 13px; color: var(--dim); margin-top: 6px; }
+  .platepair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .platepair { grid-template-columns: 1fr; } }
+  figure { margin: 0; }
+
+  .sw {
+    display: inline-block; width: 0.9em; height: 0.9em; border-radius: 3px;
+    vertical-align: -0.08em; border: 1px solid rgba(0,0,0,0.18);
+  }
+  .footnote { color: var(--dim); font-size: 13.5px; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 40px 0; }
+  .colophon { color: var(--dim); font-size: 13.5px; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); }
+</style>
+
+<div class="page">
+  <span class="kicker">Technical report · Stellation engine</span>
+  <h1>Coloring a stellation from (G,&nbsp;H)</h1>
+  <p class="meta">
+    Why the coset coloring so often comes out gray, why its two modes are usually the same
+    picture, and what the good alternatives are — right cosets, mixed colors, and three more.<br>
+    Prepared 21 August 2026 · from a 210-pair sweep over six solids, group computations
+    verified by independent recomputation, and the model-building literature ·
+    <a href="stellation_app.html">the app</a> · <a href="controls.html">controls</a> ·
+    <a href="plane-design-report.html">the earlier plane report</a>
+  </p>
+
+  <!-- ================================================================ 1 -->
+  <h2><span class="no">1</span>Summary</h2>
+  <p>
+    Both observations are correct, and neither is an accident. Measured over every
+    (solid, G, H) the menus can currently express — six solids, both group choices, all 210
+    subgroup pairs — the per-plane coset coloring is <b>entirely gray in 76%</b> of cases,
+    rising to <b>84%</b> when G is a full group (I<sub>h</sub>, O<sub>h</sub>), which is the
+    default. And per-plane and per-facet produce the identical picture in <b>every</b> case
+    where the plane coloring succeeds at all, because the facet mode inherits plane labels by
+    construction; the two differ only when the planes gray entirely.
+  </p>
+  <p>
+    The gray is mathematically forced, not a bug (§2): the coset coloring exists on an orbit
+    of pieces precisely when some piece's stabilizer fits inside H, and under a full group
+    every face-plane stabilizer contains mirrors that most subgroups lack. On the icosahedron
+    under I<sub>h</sub>, 19 of the 22 offered subgroups gray every plane; the entire
+    icosahedral menu contains exactly <b>one</b> interesting per-plane coloring — I/T, the
+    five tetrahedra.
+  </p>
+  <p>
+    The way out is not to fix the coset coloring but to widen the family. Five schemes,
+    each computed and verified on the real engine (§4): the current <b>blocks</b>
+    (left cosets — "which copy of the sub-figure"); <b>H-orbits</b> (the honest version of
+    "right cosets" — always defined, never gray); <b>blends</b> (the color-mixing idea, which
+    turns out to be canonical, with a theorem fixing exactly how many colors mix);
+    <b>mirror-cut refinement</b> (split each facet along its own mirror traces, after which
+    the full coloring always exists); and <b>coarsening</b> (the nearest subgroup that does
+    color). Section 5 checks all of them against ten classical pictures — the compounds of
+    five tetrahedra, ten tetrahedra, five octahedra, five cubes, Wenninger's color tables,
+    the antipodal conventions — and §7 distills a recommendation ladder.
+  </p>
+  <div class="finding">
+    <span class="label">Also found while measuring</span>
+    <p>Four concrete defects in what ships today (§6): the per-facet fallback labels each
+    orbit independently, so on the gallery's own five-tetrahedra compound under
+    I<sub>h</sub>/T <b>none of the 60 spikes comes out monochrome</b>; the facet path cannot
+    be steered to the correct hand of a chiral compound (the plane path can), so switching
+    modes can silently flip the enantiomorph; <span class="mono">symmetry.json</span> lists
+    <span class="mono">C3(I)</span> and <span class="mono">S6(I)</span> as subgroups of
+    I/I<sub>h</sub> but contains no such entries, so two menu items point at nothing; and the
+    "fixed by all of H" rule grays the seed planes of
+    I<sub>h</sub>/<span class="mono">C3v(I)</span>, leaving 18 of an intended 20 colors.</p>
+  </div>
+
+  <!-- ================================================================ 2 -->
+  <h2><span class="no">2</span>Why it grays: the mathematics of the current scheme</h2>
+  <p>
+    Fix one G-orbit of pieces (planes, facets, or cells) and a representative q₀ with
+    stabilizer S = Stab<sub>G</sub>(q₀). The piece g·q₀ determines g only up to the coset gS,
+    so a labeling by cosets of H is consistent exactly when the coset is constant on gS:
+  </p>
+  <ul>
+    <li><b>Left labeling</b> g·q₀ ↦ gH is well-defined <b>iff S ≤ H</b>.</li>
+    <li><b>Right labeling</b> g·q₀ ↦ Hg is well-defined iff the whole <em>normal closure</em>
+      of S lies in H — far more restrictive, and essentially never true in the polyhedral
+      groups. (What survives of "right cosets" is the H-orbit coloring, §4.2.)</li>
+  </ul>
+  <p>
+    The code implements the left labeling: in both <span class="mono">cosetClasses</span> and
+    <span class="mono">facetCosetClasses</span> the test is g&nbsp;∈&nbsp;rH (the transpose
+    contraction <span class="mono">tmul(r,&nbsp;g)</span> is r⁻¹g for orthogonal matrices).
+    Verified directly: with H&nbsp;=&nbsp;T in I<sub>h</sub> the code's partition of the 120
+    group elements equals the left-coset partition and differs from the right one.
+  </p>
+  <p>
+    When S&nbsp;≤&nbsp;H the color classes are the G-translates of the H-orbit of q₀ — a
+    <b>system of imprimitivity</b> with [G:H] blocks of [H:S] pieces each. The five-tetrahedra
+    coloring <em>is</em> this: each block is one T-orbit of 4 planes, a regular tetrahedron.
+    And the gray criterion falls out: <b>an orbit colors iff some conjugate of S lies in H;
+    otherwise no consistent labeling exists and gray is the honest answer.</b>
+  </p>
+  <p>
+    Now the census. Every icosahedron face-plane stabilizer in I<sub>h</sub> is
+    C<sub>3v</sub> — order 6, and it contains a mirror. A subgroup H can host that stabilizer
+    only if it holds the matching mirrors, which almost none do:
+  </p>
+  <div class="tablewrap"><table>
+    <tr><th>G on the icosahedron</th><th>subgroups offered</th><th>per-plane coloring exists for</th><th>everything else</th></tr>
+    <tr>
+      <td>I<sub>h</sub> (order 120)</td><td class="n">22</td>
+      <td><span class="mono">Ih</span> (1 color) · <span class="mono">D3d(I)</span> (10) ·
+          <span class="mono">C3v(I)</span> (18 of 20 — see §6)</td>
+      <td><b>19 of 22 all gray</b>, including every chiral subgroup — T, I, all the
+          C<sub>n</sub>/D<sub>n</sub></td>
+    </tr>
+    <tr>
+      <td>I (order 60)</td><td class="n">9</td>
+      <td><span class="mono">I</span> (1) · <span class="mono">T</span> (5, the five
+          tetrahedra) · <span class="mono">D3(I)</span> (10)</td>
+      <td>6 of 9 all gray</td>
+    </tr>
+  </table></div>
+  <p>
+    So the coloring the feature was built for exists, under exactly one chiral pair — and the
+    default G, being the full group, can never show it per plane. Across all six solids the
+    proportions are the same in aggregate:
+  </p>
+  <div class="tablewrap"><table>
+    <tr><th>population</th><th class="n">pairs</th><th class="n">per-plane all gray</th><th class="n">per-facet all gray</th><th class="n">facet ≡ plane</th><th class="n">facet rescues</th></tr>
+    <tr><td>all (G, H) menu pairs, six solids</td><td class="n">210</td><td class="n"><b>76.2%</b></td><td class="n">34.8%</td><td class="n">58.6%</td><td class="n">41.4%</td></tr>
+    <tr><td>G = full group (I<sub>h</sub>, O<sub>h</sub>)</td><td class="n">150</td><td class="n"><b>84.0%</b></td><td class="n">40.0%</td><td class="n">56.0%</td><td class="n">44.0%</td></tr>
+    <tr><td>G = rotation group (I, O)</td><td class="n">60</td><td class="n">56.7%</td><td class="n">21.7%</td><td class="n">65.0%</td><td class="n">35.0%</td></tr>
+    <tr><td>excluding the trivial H = G and H = E</td><td class="n">186</td><td class="n">79.6%</td><td class="n">32.8%</td><td class="n">53.2%</td><td class="n">46.8%</td></tr>
+  </table></div>
+  <p class="footnote">
+    Solids: icosahedron, dodecahedron, octahedron, cube, cuboctahedron, icosidodecahedron —
+    full arrangements, every listed subgroup, 8.3 s total. "Facet rescues" = planes gray
+    entirely but the facet fallback produces colors. H-orbit colorings (§4.2) grayed in
+    <b>0 of 210</b> rows.
+  </p>
+  <div class="platepair">
+    <figure class="plate">
+      <div class="frame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" font-family="Georgia, 'Times New Roman', serif">
+<rect width="640" height="480" fill="#FAFAF6"/>
+<text x="24" y="34" font-size="17" font-weight="bold" fill="#333333">A1 - Left cosets of T in I: the five-tetrahedra coloring</text>
+<text x="24" y="54" font-size="12" fill="#666">Icosahedron net; each face colored by the coset of its plane. G = I (60 rotations), H = T (12), index 5.</text>
+<polygon points="83.50,166.48 169.50,166.48 126.50,92.00" fill="#d14747" stroke="#444444" stroke-width="1"/>
+<polygon points="83.50,166.48 169.50,166.48 126.50,240.96" fill="#47bad1" stroke="#444444" stroke-width="1"/>
+<polygon points="126.50,240.96 212.50,240.96 169.50,166.48" fill="#47d170" stroke="#444444" stroke-width="1"/>
+<polygon points="126.50,240.96 212.50,240.96 169.50,315.43" fill="#9847d1" stroke="#444444" stroke-width="1"/>
+<polygon points="169.50,166.48 255.50,166.48 212.50,92.00" fill="#9847d1" stroke="#444444" stroke-width="1"/>
+<polygon points="169.50,166.48 255.50,166.48 212.50,240.96" fill="#d1c047" stroke="#444444" stroke-width="1"/>
+<polygon points="212.50,240.96 298.50,240.96 255.50,166.48" fill="#d14747" stroke="#444444" stroke-width="1"/>
+<polygon points="212.50,240.96 298.50,240.96 255.50,315.43" fill="#47bad1" stroke="#444444" stroke-width="1"/>
+<polygon points="255.50,166.48 341.50,166.48 298.50,92.00" fill="#47bad1" stroke="#444444" stroke-width="1"/>
+<polygon points="255.50,166.48 341.50,166.48 298.50,240.96" fill="#47d170" stroke="#444444" stroke-width="1"/>
+<polygon points="298.50,240.96 384.50,240.96 341.50,166.48" fill="#9847d1" stroke="#444444" stroke-width="1"/>
+<polygon points="298.50,240.96 384.50,240.96 341.50,315.43" fill="#d1c047" stroke="#444444" stroke-width="1"/>
+<polygon points="341.50,166.48 427.50,166.48 384.50,92.00" fill="#d1c047" stroke="#444444" stroke-width="1"/>
+<polygon points="341.50,166.48 427.50,166.48 384.50,240.96" fill="#d14747" stroke="#444444" stroke-width="1"/>
+<polygon points="384.50,240.96 470.50,240.96 427.50,166.48" fill="#47bad1" stroke="#444444" stroke-width="1"/>
+<polygon points="384.50,240.96 470.50,240.96 427.50,315.43" fill="#47d170" stroke="#444444" stroke-width="1"/>
+<polygon points="427.50,166.48 513.50,166.48 470.50,92.00" fill="#47d170" stroke="#444444" stroke-width="1"/>
+<polygon points="427.50,166.48 513.50,166.48 470.50,240.96" fill="#9847d1" stroke="#444444" stroke-width="1"/>
+<polygon points="470.50,240.96 556.50,240.96 513.50,166.48" fill="#d1c047" stroke="#444444" stroke-width="1"/>
+<polygon points="470.50,240.96 556.50,240.96 513.50,315.43" fill="#d14747" stroke="#444444" stroke-width="1"/>
+<rect x="30" y="374" width="14" height="14" fill="#d14747" stroke="#888" stroke-width="0.5"/><text x="50" y="385" font-size="12" fill="#333333">coset 0 (4 faces, a regular tetrahedron)</text>
+<rect x="326" y="374" width="14" height="14" fill="#47d170" stroke="#888" stroke-width="0.5"/><text x="346" y="385" font-size="12" fill="#333333">coset 1 (4 faces, a regular tetrahedron)</text>
+<rect x="30" y="398" width="14" height="14" fill="#9847d1" stroke="#888" stroke-width="0.5"/><text x="50" y="409" font-size="12" fill="#333333">coset 2 (4 faces, a regular tetrahedron)</text>
+<rect x="326" y="398" width="14" height="14" fill="#d1c047" stroke="#888" stroke-width="0.5"/><text x="346" y="409" font-size="12" fill="#333333">coset 3 (4 faces, a regular tetrahedron)</text>
+<rect x="30" y="422" width="14" height="14" fill="#47bad1" stroke="#888" stroke-width="0.5"/><text x="50" y="433" font-size="12" fill="#333333">coset 4 (4 faces, a regular tetrahedron)</text>
+
+</svg></div>
+      <figcaption>The one picture the menu can reach per plane: left cosets of T in I on the
+      icosahedron's 20 face planes — five blocks of four, each a regular tetrahedron
+      (pairwise |n·n′| = 1/3, verified). This is the classical five-coloring.</figcaption>
+    </figure>
+    <figure class="plate">
+      <div class="frame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" font-family="Georgia, 'Times New Roman', serif">
+<rect width="640" height="480" fill="#FAFAF6"/>
+<text x="24" y="34" font-size="17" font-weight="bold" fill="#333333">A3 - Left cosets of T in Ih: the current all-gray result</text>
+<text x="24" y="54" font-size="12" fill="#666">Every face-plane stabilizer in Ih is C3v; its mirrors do not fit in T, so every orbit grays. [Ih:T] = 10.</text>
+<polygon points="83.50,166.48 169.50,166.48 126.50,92.00" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="83.50,166.48 169.50,166.48 126.50,240.96" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="126.50,240.96 212.50,240.96 169.50,166.48" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="126.50,240.96 212.50,240.96 169.50,315.43" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="169.50,166.48 255.50,166.48 212.50,92.00" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="169.50,166.48 255.50,166.48 212.50,240.96" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="212.50,240.96 298.50,240.96 255.50,166.48" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="212.50,240.96 298.50,240.96 255.50,315.43" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="255.50,166.48 341.50,166.48 298.50,92.00" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="255.50,166.48 341.50,166.48 298.50,240.96" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="298.50,240.96 384.50,240.96 341.50,166.48" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="298.50,240.96 384.50,240.96 341.50,315.43" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="341.50,166.48 427.50,166.48 384.50,92.00" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="341.50,166.48 427.50,166.48 384.50,240.96" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="384.50,240.96 470.50,240.96 427.50,166.48" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="384.50,240.96 470.50,240.96 427.50,315.43" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="427.50,166.48 513.50,166.48 470.50,92.00" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="427.50,166.48 513.50,166.48 470.50,240.96" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="470.50,240.96 556.50,240.96 513.50,166.48" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<polygon points="470.50,240.96 556.50,240.96 513.50,315.43" fill="#9e9e9e" stroke="#444444" stroke-width="1"/>
+<rect x="30" y="374" width="14" height="14" fill="#9e9e9e" stroke="#888" stroke-width="0.5"/><text x="50" y="385" font-size="12" fill="#333333">gray: no coset labeling exists (all 20 planes)</text>
+
+</svg></div>
+      <figcaption>The same request under the full group: G = I<sub>h</sub>, H = T. Every
+      stabilizer is C<sub>3v</sub>, T holds no mirror, no block system exists — all 20
+      planes gray. This is the complaint, made visible.</figcaption>
+    </figure>
+  </div>
+
+  <!-- ================================================================ 3 -->
+  <h2><span class="no">3</span>Why per plane and per facet are usually the same picture</h2>
+  <p>
+    By construction. <span class="mono">facetCosetClasses</span> first computes the plane
+    labeling; if <em>any</em> plane label exists, every facet inherits its plane's label
+    verbatim, and only when the planes gray entirely does it fall back to labeling facet
+    orbits on their own. The inheritance was added for a good reason — the planes of a
+    face-transitive solid form a single orbit, so one anchor makes the whole figure coherent —
+    but it means the second menu entry adds information <em>only</em> in the fallback case.
+    Measured: identical in 58.6% of the 210 pairs, which is 100% of the pairs where any plane
+    colors; the remaining 41.4% are rescues, where planes are all gray and facets still find
+    structure (the chiral hands under I<sub>h</sub>/I being the flagship).
+  </p>
+  <p>
+    The rescue is real but has limits. On the <b>dodecahedron every facet of the full
+    arrangement is mirror-fixed</b> — the arrangement is achiral down to its smallest pieces —
+    so the facet fallback rescues nothing there: 13 of 22 subgroup choices are dead in both
+    modes, and tetrahedral subgroups (the five-cubes partition!) can show nothing at all on
+    the dodecahedron itself.
+  </p>
+  <div class="finding steel">
+    <span class="label">The subtler problem: inheritance can succeed with the wrong picture</span>
+    <p>The compound of <b>five octahedra</b> (cells <span class="mono">{0,1,2}</span> of the
+    icosahedron) wants one color per octahedron. Each icosahedron plane carries a hexagram —
+    coplanar triangles of <em>two different</em> octahedra — so no per-plane coloring can be
+    right in principle. Under (I, T) the per-plane labeling nevertheless <em>succeeds
+    numerically</em> (5 colors, zero gray) and paints each whole hexagram one
+    tetrahedron-partition color, splitting every octahedron across colors; the facet mode
+    then inherits that wrong picture. Per-facet blocks with their own anchor would give the
+    right one. Mode choice should be available to the user even when the plane labeling
+    exists (§7, R3).</p>
+  </div>
+  <div class="platepair">
+    <figure class="plate">
+      <div class="frame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" font-family="Georgia, 'Times New Roman', serif">
+<rect width="640" height="480" fill="#FAFAF6"/>
+<text x="24" y="34" font-size="17" font-weight="bold" fill="#333333">B2 - The same plane inside the five-coloring: G = I, H = T, per facet</text>
+<text x="24" y="54" font-size="12" fill="#666">Every facet inherits its plane's coset label, so the whole diagram wears one of the five colors (coset 1).</text>
+<polygon points="337.17,206.00 392.75,206.00 437.71,128.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="302.83,206.00 337.17,206.00 320.00,80.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="247.25,206.00 302.83,206.00 202.29,128.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,332.00 292.21,283.87 275.04,409.87" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="275.04,254.13 247.25,206.00 157.33,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="292.21,283.87 275.04,254.13 174.51,332.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="364.96,254.13 347.79,283.87 465.49,332.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="347.79,283.87 320.00,332.00 364.96,409.87" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="392.75,206.00 364.96,254.13 482.67,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,332.00 312.32,275.65 292.21,283.87" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="337.17,206.00 340.11,227.52 392.75,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="364.96,254.13 344.85,262.35 347.79,283.87" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="275.04,254.13 292.21,240.83 247.25,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="347.79,283.87 327.68,275.65 320.00,332.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="392.75,206.00 347.79,240.83 364.96,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="302.83,206.00 320.00,219.30 337.17,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="247.25,206.00 299.89,227.52 302.83,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="292.21,283.87 295.15,262.35 275.04,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="337.17,265.49 347.79,283.87 344.85,262.35" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="347.79,283.87 328.59,269.00 327.68,275.65" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="343.73,254.13 344.85,262.35 364.96,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="342.48,244.94 364.96,254.13 347.79,240.83" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="302.83,206.00 313.44,224.38 320.00,219.30" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="306.11,230.06 302.83,206.00 299.89,227.52" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="311.41,269.00 292.21,283.87 312.32,275.65" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="292.21,283.87 302.83,265.49 295.15,262.35" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="327.68,275.65 320.00,272.51 312.32,275.65 320.00,332.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="333.89,230.06 340.11,227.52 337.17,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,219.30 326.56,224.38 337.17,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="341.23,235.74 347.79,240.83 392.75,206.00 340.11,227.52" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="295.15,262.35 296.27,254.13 275.04,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="297.52,244.94 292.21,240.83 275.04,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="298.77,235.74 299.89,227.52 247.25,206.00 292.21,240.83" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="330.61,254.13 337.17,265.49 344.85,262.35 343.73,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="302.83,265.49 309.39,254.13 296.27,254.13 295.15,262.35" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="313.44,224.38 320.00,235.74 326.56,224.38 320.00,219.30" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="337.17,265.49 328.59,269.00 347.79,283.87" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="328.59,269.00 320.00,272.51 327.68,275.65" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="342.48,244.94 343.73,254.13 364.96,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="342.48,244.94 347.79,240.83 341.23,235.74" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="306.11,230.06 299.89,227.52 298.77,235.74" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="306.11,230.06 313.44,224.38 302.83,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,272.51 311.41,269.00 312.32,275.65" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="311.41,269.00 302.83,265.49 292.21,283.87" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="333.89,230.06 341.23,235.74 340.11,227.52" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="326.56,224.38 333.89,230.06 337.17,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="296.27,254.13 297.52,244.94 275.04,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="297.52,244.94 298.77,235.74 292.21,240.83" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="342.48,244.94 330.61,254.13 343.73,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="330.61,254.13 328.59,269.00 337.17,265.49" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="328.59,269.00 320.00,262.35 311.41,269.00 320.00,272.51" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="309.39,254.13 297.52,244.94 296.27,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="311.41,269.00 309.39,254.13 302.83,265.49" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="297.52,244.94 307.57,240.83 306.11,230.06 298.77,235.74" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="333.89,230.06 332.43,240.83 342.48,244.94 341.23,235.74" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,235.74 333.89,230.06 326.56,224.38" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="306.11,230.06 320.00,235.74 313.44,224.38" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="330.61,254.13 342.48,244.94 332.43,240.83" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="330.61,254.13 320.00,262.35 328.59,269.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="309.39,254.13 307.57,240.83 297.52,244.94" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,262.35 309.39,254.13 311.41,269.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="307.57,240.83 320.00,235.74 306.11,230.06" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,235.74 332.43,240.83 333.89,230.06" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,235.74 330.61,254.13 332.43,240.83" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="309.39,254.13 320.00,235.74 307.57,240.83" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="330.61,254.13 309.39,254.13 320.00,262.35" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,235.74 309.39,254.13 330.61,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<rect x="30" y="451" width="14" height="14" fill="#d14747" stroke="#888" stroke-width="0.5"/><text x="50" y="462" font-size="12" fill="#333333">coset 0</text>
+<rect x="114.80000000000001" y="451" width="14" height="14" fill="#47d170" stroke="#888" stroke-width="0.5"/><text x="134.8" y="462" font-size="12" fill="#333333">coset 1 (this plane)</text>
+<rect x="282.8" y="451" width="14" height="14" fill="#9847d1" stroke="#888" stroke-width="0.5"/><text x="302.8" y="462" font-size="12" fill="#333333">coset 2</text>
+<rect x="367.6" y="451" width="14" height="14" fill="#d1c047" stroke="#888" stroke-width="0.5"/><text x="387.6" y="462" font-size="12" fill="#333333">coset 3</text>
+<rect x="452.40000000000003" y="451" width="14" height="14" fill="#47bad1" stroke="#888" stroke-width="0.5"/><text x="472.40000000000003" y="462" font-size="12" fill="#333333">coset 4</text>
+
+</svg></div>
+      <figcaption>Why one diagram can't show the per-plane coloring: the stellation diagram
+      of a face plane draws only facets lying <em>in</em> that plane, and per-plane gives
+      them all one label — here coset 1 of (I, T), all 67 facets. The five colors are only
+      visible across planes, on the solid.</figcaption>
+    </figure>
+    <figure class="plate">
+      <div class="frame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" font-family="Georgia, 'Times New Roman', serif">
+<rect width="640" height="480" fill="#FAFAF6"/>
+<text x="24" y="34" font-size="17" font-weight="bold" fill="#333333">B1 - Stellation diagram, per-facet cosets: G = Ih, H = I</text>
+<text x="24" y="54" font-size="12" fill="#666">One face plane, all 8 shells (67 facets). Per-plane grays entirely; per-facet separates the hands.</text>
+<polygon points="337.17,206.00 392.75,206.00 437.71,128.13" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="302.83,206.00 337.17,206.00 320.00,80.00" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="247.25,206.00 302.83,206.00 202.29,128.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,332.00 292.21,283.87 275.04,409.87" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="275.04,254.13 247.25,206.00 157.33,206.00" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="292.21,283.87 275.04,254.13 174.51,332.00" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="364.96,254.13 347.79,283.87 465.49,332.00" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="347.79,283.87 320.00,332.00 364.96,409.87" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="392.75,206.00 364.96,254.13 482.67,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,332.00 312.32,275.65 292.21,283.87" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="337.17,206.00 340.11,227.52 392.75,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="364.96,254.13 344.85,262.35 347.79,283.87" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="275.04,254.13 292.21,240.83 247.25,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="347.79,283.87 327.68,275.65 320.00,332.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="392.75,206.00 347.79,240.83 364.96,254.13" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="302.83,206.00 320.00,219.30 337.17,206.00" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="247.25,206.00 299.89,227.52 302.83,206.00" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="292.21,283.87 295.15,262.35 275.04,254.13" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="337.17,265.49 347.79,283.87 344.85,262.35" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="347.79,283.87 328.59,269.00 327.68,275.65" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="343.73,254.13 344.85,262.35 364.96,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="342.48,244.94 364.96,254.13 347.79,240.83" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="302.83,206.00 313.44,224.38 320.00,219.30" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="306.11,230.06 302.83,206.00 299.89,227.52" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="311.41,269.00 292.21,283.87 312.32,275.65" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="292.21,283.87 302.83,265.49 295.15,262.35" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="327.68,275.65 320.00,272.51 312.32,275.65 320.00,332.00" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="333.89,230.06 340.11,227.52 337.17,206.00" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,219.30 326.56,224.38 337.17,206.00" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="341.23,235.74 347.79,240.83 392.75,206.00 340.11,227.52" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="295.15,262.35 296.27,254.13 275.04,254.13" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="297.52,244.94 292.21,240.83 275.04,254.13" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="298.77,235.74 299.89,227.52 247.25,206.00 292.21,240.83" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="330.61,254.13 337.17,265.49 344.85,262.35 343.73,254.13" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="302.83,265.49 309.39,254.13 296.27,254.13 295.15,262.35" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="313.44,224.38 320.00,235.74 326.56,224.38 320.00,219.30" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="337.17,265.49 328.59,269.00 347.79,283.87" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="328.59,269.00 320.00,272.51 327.68,275.65" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="342.48,244.94 343.73,254.13 364.96,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="342.48,244.94 347.79,240.83 341.23,235.74" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="306.11,230.06 299.89,227.52 298.77,235.74" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="306.11,230.06 313.44,224.38 302.83,206.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,272.51 311.41,269.00 312.32,275.65" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="311.41,269.00 302.83,265.49 292.21,283.87" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="333.89,230.06 341.23,235.74 340.11,227.52" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="326.56,224.38 333.89,230.06 337.17,206.00" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="296.27,254.13 297.52,244.94 275.04,254.13" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="297.52,244.94 298.77,235.74 292.21,240.83" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="342.48,244.94 330.61,254.13 343.73,254.13" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="330.61,254.13 328.59,269.00 337.17,265.49" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="328.59,269.00 320.00,262.35 311.41,269.00 320.00,272.51" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="309.39,254.13 297.52,244.94 296.27,254.13" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="311.41,269.00 309.39,254.13 302.83,265.49" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="297.52,244.94 307.57,240.83 306.11,230.06 298.77,235.74" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="333.89,230.06 332.43,240.83 342.48,244.94 341.23,235.74" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,235.74 333.89,230.06 326.56,224.38" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="306.11,230.06 320.00,235.74 313.44,224.38" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="330.61,254.13 342.48,244.94 332.43,240.83" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="330.61,254.13 320.00,262.35 328.59,269.00" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="309.39,254.13 307.57,240.83 297.52,244.94" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,262.35 309.39,254.13 311.41,269.00" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="307.57,240.83 320.00,235.74 306.11,230.06" fill="#d14747" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,235.74 332.43,240.83 333.89,230.06" fill="#47d170" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,235.74 330.61,254.13 332.43,240.83" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="309.39,254.13 320.00,235.74 307.57,240.83" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="330.61,254.13 309.39,254.13 320.00,262.35" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<polygon points="320.00,235.74 309.39,254.13 330.61,254.13" fill="#9e9e9e" stroke="#444444" stroke-width="0.7"/>
+<rect x="30" y="451" width="14" height="14" fill="#d14747" stroke="#888" stroke-width="0.5"/><text x="50" y="462" font-size="12" fill="#333333">right hand (I) - 24</text>
+<rect x="191.60000000000002" y="451" width="14" height="14" fill="#47d170" stroke="#888" stroke-width="0.5"/><text x="211.60000000000002" y="462" font-size="12" fill="#333333">left hand (sI) - 24</text>
+<rect x="353.20000000000005" y="451" width="14" height="14" fill="#9e9e9e" stroke="#888" stroke-width="0.5"/><text x="373.20000000000005" y="462" font-size="12" fill="#333333">mirror-fixed - 19</text>
+
+</svg></div>
+      <figcaption>The fallback earning its keep: same plane, G = I<sub>h</sub>, H = I,
+      per facet. Planes gray entirely; facets split 24 right-hand + 24 left-hand + 19
+      mirror-fixed gray. This is the app's canonical chirality picture.</figcaption>
+    </figure>
+  </div>
+
+  <!-- ================================================================ 4 -->
+  <h2><span class="no">4</span>The space of schemes</h2>
+  <p>
+    Everything below is G-equivariant (rotating the figure permutes colors consistently),
+    verified on the engine, and reduces to the current coloring where the current coloring
+    exists.
+  </p>
+
+  <h3>4.1 &nbsp;Blocks — left cosets (the current scheme)</h3>
+  <p>
+    Color = "which G-translate of the reference sub-figure H·q₀ contains this piece."
+    [G:H] colors when defined; the components-of-a-compound coloring; needs an anchor per
+    orbit and, for chiral figures, the hand choice (which
+    <span class="mono">preferCells</span> already solves for planes by scoring candidate
+    anchors against the selected cells). Keep it — it is correct, and correctly gray.
+  </p>
+
+  <h3>4.2 &nbsp;H-orbits — what "right cosets" really offers</h3>
+  <p>
+    Two pieces share a color iff some h&nbsp;∈&nbsp;H carries one to the other. On a free
+    orbit these classes <em>are</em> the right cosets Hg; in general they are the double
+    cosets H\G/S — and unlike blocks they <b>always exist, for every (G, H), with no gray</b>
+    (0 gray rows in the whole sweep). The class count comes from Burnside on the restricted
+    action; class sizes vary, which is exactly why they are not cosets — the removed
+    cell-coloring mode was this scheme, mislabeled. The two colorings answer different
+    questions:
+  </p>
+  <ul>
+    <li><b>Blocks:</b> "which copy of the sub-figure is this?" — G permutes the palette;
+      applying h&nbsp;∈&nbsp;H shuffles copies. Body frame.</li>
+    <li><b>H-orbits:</b> "what does H itself preserve?" — every h fixes every color class;
+      the H-invariant sub-figures appear as the small classes. Space frame. The two coincide
+      exactly when H is normal in G (verified across all 210 rows, no exceptions: I in
+      I<sub>h</sub> yes, T in I<sub>h</sub> no).</li>
+  </ul>
+  <p>
+    Per plane this scheme already ships under another name — "by stellation face class" is
+    H-orbits of planes with H the editing symmetry. Offering it per facet and per cell, with
+    H the coset subgroup, is new, cheap, and honest. Per cell it is the always-defined
+    replacement for the old cell mode — useful for physical models, where a cell is the unit
+    that gets painted.
+  </p>
+  <figure class="plate">
+    <div class="frame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" font-family="Georgia, 'Times New Roman', serif">
+<rect width="640" height="480" fill="#FAFAF6"/>
+<text x="24" y="34" font-size="17" font-weight="bold" fill="#333333">A2 - H-orbits, not cosets: T acting on the 20 face planes</text>
+<text x="24" y="54" font-size="12" fill="#666">Orbit sizes 4 + 4 + 12. Orbits exist for any H, but only the |H|-sized ones are cosets; 4 and 12 are not.</text>
+<polygon points="83.50,166.48 169.50,166.48 126.50,92.00" fill="#47d170" stroke="#444444" stroke-width="1"/>
+<polygon points="83.50,166.48 169.50,166.48 126.50,240.96" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="126.50,240.96 212.50,240.96 169.50,166.48" fill="#d14747" stroke="#444444" stroke-width="1"/>
+<polygon points="126.50,240.96 212.50,240.96 169.50,315.43" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="169.50,166.48 255.50,166.48 212.50,92.00" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="169.50,166.48 255.50,166.48 212.50,240.96" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="212.50,240.96 298.50,240.96 255.50,166.48" fill="#47d170" stroke="#444444" stroke-width="1"/>
+<polygon points="212.50,240.96 298.50,240.96 255.50,315.43" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="255.50,166.48 341.50,166.48 298.50,92.00" fill="#d14747" stroke="#444444" stroke-width="1"/>
+<polygon points="255.50,166.48 341.50,166.48 298.50,240.96" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="298.50,240.96 384.50,240.96 341.50,166.48" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="298.50,240.96 384.50,240.96 341.50,315.43" fill="#d14747" stroke="#444444" stroke-width="1"/>
+<polygon points="341.50,166.48 427.50,166.48 384.50,92.00" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="341.50,166.48 427.50,166.48 384.50,240.96" fill="#47d170" stroke="#444444" stroke-width="1"/>
+<polygon points="384.50,240.96 470.50,240.96 427.50,166.48" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="384.50,240.96 470.50,240.96 427.50,315.43" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="427.50,166.48 513.50,166.48 470.50,92.00" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="427.50,166.48 513.50,166.48 470.50,240.96" fill="#d14747" stroke="#444444" stroke-width="1"/>
+<polygon points="470.50,240.96 556.50,240.96 513.50,166.48" fill="#d8b9ee" stroke="#444444" stroke-width="1"/>
+<polygon points="470.50,240.96 556.50,240.96 513.50,315.43" fill="#47d170" stroke="#444444" stroke-width="1"/>
+<rect x="30" y="374" width="14" height="14" fill="#d14747" stroke="#888" stroke-width="0.5"/><text x="50" y="385" font-size="12" fill="#333333">T-orbit of 4 planes (one invariant tetrahedron)</text>
+<rect x="30" y="398" width="14" height="14" fill="#47d170" stroke="#888" stroke-width="0.5"/><text x="50" y="409" font-size="12" fill="#333333">T-orbit of 4 planes (the other tetrahedron)</text>
+<rect x="30" y="422" width="14" height="14" fill="#d8b9ee" stroke="#888" stroke-width="0.5"/><text x="50" y="433" font-size="12" fill="#333333">T-orbit of 12 planes (lightened for contrast)</text>
+
+</svg></div>
+    <figcaption>T acting on the icosahedron's 20 planes: orbits of 4 + 4 + 12. The two
+    4-orbits are the two T-invariant tetrahedra — the sub-figures the subgroup actually
+    holds — and no orbit of size 12 is a coset of the order-12 group. Always defined; a
+    different truth than the five blocks of A1.</figcaption>
+  </figure>
+
+  <h3>4.3 &nbsp;Blends — mixing the cosets that reach a piece</h3>
+  <p>
+    The color-mixing idea is not a heuristic; it is the canonical object that remains when
+    blocks fail. For a piece p = g·q₀ the well-defined datum is the <em>set</em> of left
+    cosets C(p) = { g′H : g′·q₀ = p } — the set of translates of the reference sub-figure
+    that contain p. Three verified facts make it well-behaved:
+  </p>
+  <ul>
+    <li>|C(p)| = [S : S∩H], the <b>same size for every piece of the orbit</b>, and each coset
+      in it is hit with equal multiplicity — so the uniform average of the coset colors is
+      the canonical mix, with no weighting choices to make.</li>
+    <li>It is G-equivariant, crisp exactly when S ≤ H (where it <em>is</em> the block
+      coloring), and fully mixed exactly when SH = G (where gray remains the honest
+      answer).</li>
+    <li>It depends on the anchor only through the anchor's H-orbit — but it <b>does</b>
+      depend on that: the anchor must be chosen to <b>maximize |S∩H|</b>. On
+      I<sub>h</sub>/T the right anchor gives 2-color mixes; a careless one gives 6-color
+      mush. This bit one of the two independent measurement passes during this study, so it
+      is not a theoretical footnote.</li>
+    </ul>
+  <p>
+    The showcase is the case the complaint started from. G = I<sub>h</sub>, H = T, all-gray
+    today. Blended, every face mixes exactly <b>two</b> of the ten coset colors — always one
+    right-handed tetrahedron and one left-handed one, because the ten translates of the
+    reference tetrahedron are precisely the two chiral compounds of five. All 20 duotone
+    pairs are distinct; grouping faces by the rotational member of the pair reproduces one
+    hand's five-coloring, by the reflective member the other hand's. <b>The blend
+    superimposes the two enantiomorphic compounds on one figure</b> — a picture the crisp
+    scheme cannot draw at all. A coarser pastel variant exists one step up:
+    H&nbsp;=&nbsp;T<sub>h</sub> (the stabilizer of one stella octangula) gives five crisp
+    blocks per facet, or ten distinct two-mixes per plane.
+  </p>
+  <figure class="plate">
+    <div class="frame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" font-family="Georgia, 'Times New Roman', serif">
+<rect width="640" height="480" fill="#FAFAF6"/>
+<text x="24" y="34" font-size="17" font-weight="bold" fill="#333333">A4 - Ih / T, blended: mixing the cosets that reach each plane</text>
+<text x="24" y="54" font-size="12" fill="#666">Plane p blends { gT : g q0 = p }. All 20 faces blend exactly 2 of the 10 cosets; 20 distinct blends appear.</text>
+<polygon points="83.50,166.48 169.50,166.48 126.50,92.00" fill="#d1846d" stroke="#444444" stroke-width="1"/>
+<polygon points="83.50,166.48 169.50,166.48 126.50,240.96" fill="#b45e8c" stroke="#444444" stroke-width="1"/>
+<polygon points="126.50,240.96 212.50,240.96 169.50,166.48" fill="#8f478c" stroke="#444444" stroke-width="1"/>
+<polygon points="126.50,240.96 212.50,240.96 169.50,315.43" fill="#9dc947" stroke="#444444" stroke-width="1"/>
+<polygon points="169.50,166.48 255.50,166.48 212.50,92.00" fill="#59d15b" stroke="#444444" stroke-width="1"/>
+<polygon points="169.50,166.48 255.50,166.48 212.50,240.96" fill="#47c6b7" stroke="#444444" stroke-width="1"/>
+<polygon points="212.50,240.96 298.50,240.96 255.50,166.48" fill="#b447b1" stroke="#444444" stroke-width="1"/>
+<polygon points="212.50,240.96 298.50,240.96 255.50,315.43" fill="#8ca35b" stroke="#444444" stroke-width="1"/>
+<polygon points="255.50,166.48 341.50,166.48 298.50,92.00" fill="#d15e47" stroke="#444444" stroke-width="1"/>
+<polygon points="255.50,166.48 341.50,166.48 298.50,240.96" fill="#8f848c" stroke="#444444" stroke-width="1"/>
+<polygon points="298.50,240.96 384.50,240.96 341.50,166.48" fill="#59c68c" stroke="#444444" stroke-width="1"/>
+<polygon points="298.50,240.96 384.50,240.96 341.50,315.43" fill="#8c8c73" stroke="#444444" stroke-width="1"/>
+<polygon points="341.50,166.48 427.50,166.48 384.50,92.00" fill="#708cb7" stroke="#444444" stroke-width="1"/>
+<polygon points="341.50,166.48 427.50,166.48 384.50,240.96" fill="#8c8c81" stroke="#444444" stroke-width="1"/>
+<polygon points="384.50,240.96 470.50,240.96 427.50,166.48" fill="#d19b47" stroke="#444444" stroke-width="1"/>
+<polygon points="384.50,240.96 470.50,240.96 427.50,315.43" fill="#7347d1" stroke="#444444" stroke-width="1"/>
+<polygon points="427.50,166.48 513.50,166.48 470.50,92.00" fill="#4a81d1" stroke="#444444" stroke-width="1"/>
+<polygon points="427.50,166.48 513.50,166.48 470.50,240.96" fill="#9d8c47" stroke="#444444" stroke-width="1"/>
+<polygon points="470.50,240.96 556.50,240.96 513.50,166.48" fill="#47d187" stroke="#444444" stroke-width="1"/>
+<polygon points="470.50,240.96 556.50,240.96 513.50,315.43" fill="#8c81b1" stroke="#444444" stroke-width="1"/>
+<rect x="30" y="375" width="14" height="14" fill="#9d8c47" stroke="#888" stroke-width="0.5"/><text x="50" y="386" font-size="12" fill="#333333">0+6</text>
+<rect x="89.2" y="375" width="14" height="14" fill="#8f478c" stroke="#888" stroke-width="0.5"/><text x="109.2" y="386" font-size="12" fill="#333333">0+7</text>
+<rect x="148.4" y="375" width="14" height="14" fill="#d15e47" stroke="#888" stroke-width="0.5"/><text x="168.4" y="386" font-size="12" fill="#333333">0+8</text>
+<rect x="207.60000000000002" y="375" width="14" height="14" fill="#8c8c73" stroke="#888" stroke-width="0.5"/><text x="227.60000000000002" y="386" font-size="12" fill="#333333">0+9</text>
+<rect x="266.8" y="375" width="14" height="14" fill="#8c8c81" stroke="#888" stroke-width="0.5"/><text x="286.8" y="386" font-size="12" fill="#333333">1+5</text>
+<rect x="326" y="375" width="14" height="14" fill="#59d15b" stroke="#888" stroke-width="0.5"/><text x="346" y="386" font-size="12" fill="#333333">1+6</text>
+<rect x="385.2" y="375" width="14" height="14" fill="#8ca35b" stroke="#888" stroke-width="0.5"/><text x="405.2" y="386" font-size="12" fill="#333333">1+8</text>
+<rect x="444.4" y="375" width="14" height="14" fill="#47d187" stroke="#888" stroke-width="0.5"/><text x="464.4" y="386" font-size="12" fill="#333333">1+9</text>
+<rect x="503.59999999999997" y="375" width="14" height="14" fill="#b447b1" stroke="#888" stroke-width="0.5"/><text x="523.5999999999999" y="386" font-size="12" fill="#333333">2+5</text>
+<rect x="562.8" y="375" width="14" height="14" fill="#7347d1" stroke="#888" stroke-width="0.5"/><text x="582.8" y="386" font-size="12" fill="#333333">2+7</text>
+<rect x="30" y="399" width="14" height="14" fill="#b45e8c" stroke="#888" stroke-width="0.5"/><text x="50" y="410" font-size="12" fill="#333333">2+8</text>
+<rect x="89.2" y="399" width="14" height="14" fill="#708cb7" stroke="#888" stroke-width="0.5"/><text x="109.2" y="410" font-size="12" fill="#333333">2+9</text>
+<rect x="148.4" y="399" width="14" height="14" fill="#d1846d" stroke="#888" stroke-width="0.5"/><text x="168.4" y="410" font-size="12" fill="#333333">3+5</text>
+<rect x="207.60000000000002" y="399" width="14" height="14" fill="#9dc947" stroke="#888" stroke-width="0.5"/><text x="227.60000000000002" y="410" font-size="12" fill="#333333">3+6</text>
+<rect x="266.8" y="399" width="14" height="14" fill="#8f848c" stroke="#888" stroke-width="0.5"/><text x="286.8" y="410" font-size="12" fill="#333333">3+7</text>
+<rect x="326" y="399" width="14" height="14" fill="#d19b47" stroke="#888" stroke-width="0.5"/><text x="346" y="410" font-size="12" fill="#333333">3+8</text>
+<rect x="385.2" y="399" width="14" height="14" fill="#8c81b1" stroke="#888" stroke-width="0.5"/><text x="405.2" y="410" font-size="12" fill="#333333">4+5</text>
+<rect x="444.4" y="399" width="14" height="14" fill="#59c68c" stroke="#888" stroke-width="0.5"/><text x="464.4" y="410" font-size="12" fill="#333333">4+6</text>
+<rect x="503.59999999999997" y="399" width="14" height="14" fill="#4a81d1" stroke="#888" stroke-width="0.5"/><text x="523.5999999999999" y="410" font-size="12" fill="#333333">4+7</text>
+<rect x="562.8" y="399" width="14" height="14" fill="#47c6b7" stroke="#888" stroke-width="0.5"/><text x="582.8" y="410" font-size="12" fill="#333333">4+9</text>
+<text x="30" y="466" font-size="11" fill="#666">Each face carries exactly 2 of the 10 cosets of T in Ih (one rotational, one reflective); fill = RGB average of the two coset colors.</text>
+</svg></div>
+    <figcaption>I<sub>h</sub>/T blended, computed at the correct anchor: every face is the
+    average of one rotational and one reflective coset color, 20 distinct duotones. The two
+    five-tetrahedra compounds are simultaneously legible. (Figure mixes in RGB; an
+    implementation should average in Oklab, or render the two colors as a two-tone pattern —
+    golden-angle hues averaged in RGB drift toward mud.)</figcaption>
+  </figure>
+  <p class="footnote">
+    Where blend degenerates it should stand down: under I<sub>h</sub>/I every plane mixes
+    both cosets — a uniform 50% pastel, informationally gray — and on the dodecahedron with
+    tetrahedral H every plane touches all five sub-figures (36 of 210 rows degenerate fully).
+    Those cases need refinement (§4.4) or the facet fallback, not blending.
+  </p>
+
+  <h3>4.4 &nbsp;Mirror-cut refinement — split the pieces until the coloring exists</h3>
+  <p>
+    Gray pieces are pieces whose own symmetry straddles cosets. Cutting each such facet along
+    the traces of its stabilizer's mirrors removes the obstruction: the sectors have smaller
+    stabilizers, and in the limit (barycentric flags) the stabilizer is <em>trivial</em> —
+    proven, and spot-checked on the engine — so the full [G:H]-color block coloring exists
+    for <b>every</b> (G, H) with no gray at all. The minimal version only cuts facets that
+    need it: a facet with dihedral stabilizer C<sub>nv</sub> splits into 2n sectors wearing
+    crisp alternating coset colors. Under I<sub>h</sub>/I this reproduces the classical
+    "one face wearing two colors separated by a mirror line" convention exactly, and it
+    eliminates precisely the residual gray of the facet mode (the 380 mirror-straddling
+    facets of the icosahedron). The cost is real — subdivision in the mesh, the 2-D diagram,
+    and every exporter — which is why it is last on the ladder, not first.
+  </p>
+
+  <h3>4.5 &nbsp;Coarsening — the nearest H that does color</h3>
+  <p>
+    If no conjugate of S fits in H, the minimal admissible enlargements are the groups
+    ⟨H, S<sub>p</sub>⟩ over pieces p; taking the smallest gives "the closest coloring to the
+    one asked for." It genuinely helps for axial subgroups — O<sub>h</sub>/C<sub>4</sub> on
+    the cube grays, but ⟨C<sub>4</sub>, S⟩ = C<sub>4v</sub> colors all six faces;
+    I<sub>h</sub>/C<sub>2</sub> lands on D<sub>3d</sub> with ten colors — but it cannot save
+    the marquee cases: ⟨T, C<sub>3v</sub>⟩ = I<sub>h</sub>, so I<sub>h</sub>/T coarsens to
+    one color. (I is simple; almost everything in the icosahedral lattice collapses.) Worth
+    offering as a hint ("nearest coloring subgroup: D<sub>3d</sub>") rather than as a mode.
+  </p>
+
+  <h3>4.6 &nbsp;Decision matrix</h3>
+  <div class="tablewrap"><table>
+    <tr><th>scheme</th><th>defined</th><th class="n">colors on one orbit</th><th class="c">G permutes palette</th><th class="c">H fixes picture</th><th class="c">five tetrahedra</th><th>anchor</th></tr>
+    <tr><td><b>1 · blocks</b> (left cosets — current)</td><td>iff a conjugate of S ≤ H</td><td class="n">[G:H]</td><td class="c">yes</td><td class="c">no</td><td class="c"><b>yes</b></td><td>per orbit + hand</td></tr>
+    <tr><td><b>2 · H-orbits</b> ("right cosets", generalized)</td><td><b>always</b></td><td class="n">|H\G/S|</td><td class="c">iff H ⊴ G</td><td class="c"><b>yes</b></td><td class="c">no (4+4+12)</td><td>none</td></tr>
+    <tr><td><b>3 · blend</b> over the covering translates</td><td><b>always</b></td><td class="n">mixes of [S:S∩H]</td><td class="c">yes</td><td class="c">no</td><td class="c">degrades gracefully</td><td>max |S∩H|</td></tr>
+    <tr><td><b>4 · refinement</b> (mirror-cut) + blocks</td><td><b>always</b></td><td class="n">[G:H]</td><td class="c">yes</td><td class="c">no</td><td class="c">yes + split faces</td><td>inherited</td></tr>
+    <tr><td><b>5 · coarsening</b> to min ⟨H, S⟩</td><td><b>always</b></td><td class="n">[G:K], may be 1</td><td class="c">yes</td><td class="c">no</td><td class="c">collapses</td><td>minimize over orbit</td></tr>
+    <tr><td>6 · stabilizer class (diagnostic overlay)</td><td>always</td><td class="n">​# classes</td><td class="c">invariant</td><td class="c">yes</td><td class="c">no</td><td>none</td></tr>
+  </table></div>
+  <p class="footnote">
+    "H fixes picture": applying a motion of H maps every piece to a same-colored piece.
+    Blocks and H-orbits are the two halves of the owner's left-vs-right question; they
+    coincide exactly when H is normal — on the icosahedral menus, only for H = I in
+    I<sub>h</sub>.
+  </p>
+
+  <!-- ================================================================ 5 -->
+  <h2><span class="no">5</span>The classical pictures, as acceptance tests</h2>
+  <p>
+    A coloring system for stellations should be judged by the pictures geometers actually
+    draw. Ten, from Escher's hand-colored Brückner plate to Wenninger's color tables — each
+    with the recipe that produces it and whether today's code can:
+  </p>
+  <div class="tablewrap"><table>
+    <tr><th class="n">#</th><th>picture</th><th>recipe (G · H · scheme · pieces)</th><th>today</th></tr>
+    <tr><td class="n">1</td><td>Five tetrahedra, 5 colors, chosen hand (Escher via Brückner IX-11; Cundy &amp; Rollett; W24)</td><td>I · T · blocks · planes, hand from selection</td><td><span class="chip ok">works</span></td></tr>
+    <tr><td class="n">2</td><td>Ten tetrahedra, 5 colors by chiral pair / cube (C&amp;R; W25)</td><td>I<sub>h</sub> · T<sub>h</sub> · blocks · facets</td><td><span class="chip bad">incoherent</span> §6a</td></tr>
+    <tr><td class="n">3</td><td>Ten tetrahedra, 10 colors, one per tetrahedron</td><td>I<sub>h</sub> · T · blocks · facets</td><td><span class="chip bad">incoherent</span> §6a</td></tr>
+    <tr><td class="n">4</td><td>Ten tetrahedra, 2 colors, right vs left compound</td><td>I<sub>h</sub> · I · blocks · facets</td><td><span class="chip ok">works</span></td></tr>
+    <tr><td class="n">5</td><td>Five octahedra, 5 colors, one per octahedron (Hess 1876; W23)</td><td>I<sub>h</sub> · T<sub>h</sub> · blocks · facets, <b>overriding</b> the per-plane labeling</td><td><span class="chip bad">obstructed</span> §3</td></tr>
+    <tr><td class="n">6</td><td>Five cubes, 5 colors (C&amp;R "ideally in five colours")</td><td>triacontahedron d29 · I<sub>h</sub> · T<sub>h</sub> · blocks · planes</td><td><span class="chip ok">verified: 5 × 6, 0 gray</span></td></tr>
+    <tr><td class="n">7</td><td>Chiral halves, 2 colors, mirror-fixed pieces gray</td><td>I<sub>h</sub> · I · blocks · facets</td><td><span class="chip ok">works</span></td></tr>
+    <tr><td class="n">8</td><td>Wenninger's icosahedral 5-color table, any icosahedral stellation (incl. great icosahedron)</td><td>I · T · blocks · planes</td><td><span class="chip ok">works</span></td></tr>
+    <tr><td class="n">9</td><td>Opposite-faces-alike: 6 colors on dodecahedral, 10 on icosahedral, 15 on triacontahedral stellations</td><td>I<sub>h</sub> · D5d(I) / D3d(I) / D2h · blocks · planes (H ∋ inversion ⇒ antipodal pairs)</td><td><span class="chip ok">verified, all three</span></td></tr>
+    <tr><td class="n">10</td><td>Hess/Brückner isogonal convention; one-tetrahedron highlight (4+4+12)</td><td>any · any · <b>H-orbits</b> · planes exists as "face class"; facets/cells new</td><td><span class="chip gold">partial</span> §4.2</td></tr>
+  </table></div>
+  <p>
+    Two structural notes fall out of building this table. First, <b>T<sub>h</sub> is the
+    workhorse subgroup nobody can currently reach usefully</b> — it is the stabilizer of a
+    stella octangula, of a cube in the compound of five, and of an octahedron in the compound
+    of five, so rows 2, 5 and 6 all run through it. Second, the blend of §4.3 and the
+    T<sub>h</sub> blocks are two roads to the same place: blending I<sub>h</sub>/T pairs the
+    cosets exactly as ⟨T, σ⟩ = T<sub>h</sub> merges them (T<sub>d</sub> is not a subgroup of
+    I<sub>h</sub>; T<sub>h</sub> is the only order-24 option).
+  </p>
+  <p>
+    <b>What no scheme reproduces</b> — declared out of scope rather than papered over: the
+    map-style chromatic colorings (the 4-coloring of the dodecahedron's 12 planes, three
+    faces per color, adjacent faces distinct, used in many published models). I<sub>h</sub>
+    has no index-4 subgroup and the partition is not G-invariant; it is graph coloring, not
+    symmetry, and would need a separate manual-palette facility if ever wanted.
+  </p>
+
+  <!-- ================================================================ 6 -->
+  <h2><span class="no">6</span>Defects in what ships today</h2>
+  <p><b>a · The facet fallback is incoherent across orbits.</b> When planes gray, each facet
+    orbit picks its own anchor independently, so labels do not agree between orbits. Measured
+    on the gallery's own compound-of-five-tetrahedra document under I<sub>h</sub>/T:
+    10 colors appear, but <b>0 of the 60 spike cells wear a single color</b> — every spike
+    mixes. (Under I<sub>h</sub>/I the fallback happens to cohere — index 2 leaves no room to
+    shuffle — which is why the flagship chirality picture works and hid the defect.) The fix
+    is the same anchoring idea that already works for planes: one global reference, with
+    per-orbit anchors chosen compatibly (equivalently: label a facet by which translate of
+    the H-invariant component contains it).</p>
+  <p><b>b · The facet path cannot be steered.</b>
+    <span class="mono">cosetClasses</span> accepts <span class="mono">preferCells</span> and
+    picks the hand of a chiral compound from the on-screen selection;
+    <span class="mono">facetCosetClasses</span> has no such parameter and the worker passes
+    none (<span class="mono">worker.js:339</span> vs <span class="mono">:341</span>).
+    Consequence: on the five-tetrahedra document, per-plane picks the correct hand and
+    per-facet may pick the wrong one — switching modes can silently flip the enantiomorph.</p>
+  <p><b>c · Two menu entries point at missing data.</b>
+    <span class="mono">Ih.subgroups</span> and <span class="mono">I.subgroups</span> list
+    <span class="mono">C3(I)</span> and <span class="mono">S6(I)</span>, but
+    <span class="mono">symmetry.json</span> has no such keys (only <span class="mono">C3</span>,
+    <span class="mono">S6</span>, placed outside I<sub>h</sub>). The coset-subgroup menu
+    offers both names; selecting them feeds <span class="mono">undefined</span> matrices to
+    the worker. <span class="mono">C3(I)</span> is also the one missing entry that would
+    enable a real coloring (I/C3(I): 20 colors).</p>
+  <p><b>d · The seed-plane wart.</b> The rule "a piece fixed by all of H is gray" is right
+    for the core cell (the owner's original spec) but fires on well-defined singleton blocks
+    too: under I<sub>h</sub>/<span class="mono">C3v(I)</span> the two planes on H's own axis
+    gray, leaving 18 of the intended 20 colors. A singleton block has an unambiguous label;
+    coloring it and marking "sits on the symmetry" in the legend loses nothing. Judgment
+    call — but it should be a decision, not a side effect.</p>
+
+  <!-- ================================================================ 7 -->
+  <h2><span class="no">7</span>Recommendations</h2>
+  <div class="tablewrap"><table class="ladder">
+    <tr><th>step</th><th>change</th><th>unlocks</th><th class="n">size</th></tr>
+    <tr><td><b>R0</b></td><td>Correctness: add the two missing groups to
+      <span class="mono">symmetry.json</span> (or drop them from the subgroup lists); give
+      <span class="mono">facetCosetClasses</span> the <span class="mono">preferCells</span>
+      steering; anchor the facet fallback globally instead of per orbit</td>
+      <td>rows 2, 3 of §5 become coherent; mode switching stops flipping hands; two menu
+      entries stop being broken</td><td class="n">S–M</td></tr>
+    <tr><td><b>R1</b></td><td>Blend as the graceful degradation of the existing modes:
+      crisp where blocks exist → duotone/mix where [S:S∩H] is small (anchor at max |S∩H|,
+      average in Oklab or draw two-tone) → gray only where the mix is total</td>
+      <td>I<sub>h</sub>/T shows the superimposed chiral compounds instead of gray; most of
+      the 84% headline becomes informative; the legend can say <em>why</em> something is
+      pastel</td><td class="n">M</td></tr>
+    <tr><td><b>R2</b></td><td>H-orbit coloring as a named scheme, per plane / facet / cell
+      ("by subgroup orbits")</td>
+      <td>never-gray option for every (G, H); the one-tetrahedron highlight (4+4+12); the
+      honest form of "right cosets"; per-cell coloring for physical models</td><td class="n">S–M</td></tr>
+    <tr><td><b>R3</b></td><td>Let per-facet blocks be chosen even when per-plane succeeds
+      (compute facet blocks directly with the global anchor; agreement with per-plane then
+      emerges where it should instead of being imposed)</td>
+      <td>five octahedra (§5 row 5); removes the last redundancy between the two menu
+      entries</td><td class="n">M</td></tr>
+    <tr><td><b>R4</b></td><td>Mirror-cut refinement (facet sectors along stabilizer mirror
+      traces; barycentric as the universal fallback)</td>
+      <td>every (G, H) colorable with zero gray; the classical split-face pictures;
+      eliminates the 380 residual gray facets of I<sub>h</sub>/I</td><td class="n">L</td></tr>
+  </table></div>
+  <p>
+    UI shape that falls out: one coset entry with three small controls — <b>subgroup</b> (as
+    now), <b>pieces</b> (planes / facets / cells), <b>scheme</b> (cosets / subgroup orbits),
+    with blend as the built-in degradation of "cosets" rather than a separate mode. The
+    legend earns its keep here: it should show the palette with [G:H] or the orbit count,
+    mark blended swatches as pairs, and name gray precisely ("fixed by the subgroup" vs
+    "no coset can label this orbit"). A one-line hint for dead cases — "nearest subgroup
+    that colors: D<sub>3d</sub>" (§4.5) — turns the remaining grays from a wall into a
+    signpost.
+  </p>
+
+  <!-- ================================================================ 8 -->
+  <h2><span class="no">8</span>Methods</h2>
+  <p>
+    Everything numerical ran on the shipped engine (<span class="mono">docs/lib/core.js</span>,
+    <span class="mono">buildStellation</span> / <span class="mono">cosetClasses</span> /
+    <span class="mono">facetCosetClasses</span>) against
+    <span class="mono">data/symmetry.json</span> matrices, tolerance 10⁻⁶. The sweep: six
+    solids at full arrangement depth, G ∈ {full, rotation}, H = every listed subgroup —
+    210 pairs, five schemes each, 8.3 s. Verification was adversarial and independent: the
+    mathematical framework was reduced to 15 numbered claims, each confirmed by a separate
+    pass that re-derived the group theory and re-ran the computations from scratch (15/15
+    confirmed, two cosmetic corrections); the sweep's golden rows were recomputed
+    independently, which caught one real interpretive error — a blend measured at an
+    arbitrary anchor rather than the optimal one — now §4.3's warning. The figures were
+    asserted in code before being drawn (block sizes, tetrahedron angles, orbit sizes,
+    blend cardinalities). The repo's own suite (<span class="mono">docs/test/cosets.mjs</span>,
+    25 checks) passes throughout.
+  </p>
+  <details>
+    <summary>Selected sweep rows</summary>
+    <div>
+      <div class="tablewrap"><table>
+        <tr><th>solid · G · H</th><th>per plane</th><th>per facet</th><th>H-orbits (pl / fc / cells)</th><th>blend (planes)</th></tr>
+        <tr><td>icosa · I · T</td><td>5 colors, 0 gray</td><td>identical</td><td>3 / — / —</td><td>crisp (= blocks)</td></tr>
+        <tr><td>icosa · I<sub>h</sub> · T</td><td>all gray</td><td>10 colors, 28% gray, incoherent</td><td>3 / 113 / 40</td><td>20 duotones (2 of 10 each)</td></tr>
+        <tr><td>icosa · I<sub>h</sub> · T<sub>h</sub></td><td>all gray</td><td>5 colors, 1.5% gray</td><td>—</td><td>10 duotones</td></tr>
+        <tr><td>icosa · I<sub>h</sub> · I</td><td>all gray</td><td>2 colors + 380 gray (480/480/380)</td><td>—</td><td>degenerate (total mix)</td></tr>
+        <tr><td>icosa · I<sub>h</sub> · C5v(I)</td><td>all gray</td><td>12 colors, 1.5% gray</td><td>—</td><td>20 distinct triples</td></tr>
+        <tr><td>icosa · I<sub>h</sub> · D3d(I)</td><td>10 colors, 0 gray</td><td>identical</td><td>—</td><td>crisp</td></tr>
+        <tr><td>dodeca · I · T</td><td>all gray</td><td>5 colors, 6% gray</td><td>—</td><td>degenerate (each plane meets all 5)</td></tr>
+        <tr><td>dodeca · I<sub>h</sub> · T / I</td><td>all gray</td><td><b>all gray</b> (every facet achiral)</td><td>colors fine</td><td>degenerate</td></tr>
+        <tr><td>dodeca · I<sub>h</sub> · D5d(I)</td><td>6 colors (antipodal pairs), 0 gray</td><td>identical</td><td>2+10</td><td>crisp</td></tr>
+        <tr><td>triaconta · I<sub>h</sub> · T<sub>h</sub></td><td><b>5 colors × 6 planes, 0 gray</b> (five cubes)</td><td>identical</td><td>—</td><td>crisp</td></tr>
+        <tr><td>cube · O<sub>h</sub> · C4</td><td>all gray</td><td>—</td><td>—</td><td>coarsens to C<sub>4v</sub>: 6 colors</td></tr>
+      </table></div>
+      <p class="footnote">Full data: 210 rows in <span class="mono">results.json</span>
+      (sweep scripts alongside), plus the verification scripts — kept with the analysis
+      work, not shipped in the repo.</p>
+    </div>
+  </details>
+
+  <p class="colophon">
+    Prepared for the stellation app — a JavaScript port of Vladimir Bulatov's 1998–2001
+    Stellation applet. Palette note: coset i wears
+    <span class="sw" style="background:hsl(0,60%,55%)"></span>
+    <span class="sw" style="background:hsl(137.5,60%,55%)"></span>
+    <span class="sw" style="background:hsl(275,60%,55%)"></span>
+    <span class="sw" style="background:hsl(52.5,60%,55%)"></span>
+    <span class="sw" style="background:hsl(190,60%,55%)"></span> …
+    hsl(i·137.508°, 60%, 55%) — the golden angle, so any index count stays distinguishable —
+    and <span class="sw" style="background:#9E9E9E"></span> gray marks a piece no coset can
+    honestly claim. All figures in this report use that palette, so they match the app.
+  </p>
+</div>
+
+</body>
+</html>
