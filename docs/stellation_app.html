@@ -173,25 +173,32 @@
     <!-- first, because it is the panel you leave and re-enter the app through -->
     <details class="group" open>
       <summary><h2>Files</h2></summary>
-      <!-- Save As and Save New need the File System Access API; boot un-hides
+      <!-- Every verb this panel has, in ONE row, so they wrap as one group.
+           They were two rows once, and the second had no top margin: the
+           `.row + .row` rule that spaces consecutive rows is an ADJACENT
+           sibling selector, and the hidden file input below sat between them,
+           so the export row went unspaced and its buttons sat flush against
+           the line above.
+
+           Save As and Save New need the File System Access API; boot un-hides
            them when the browser has it, so no dead buttons anywhere else.
            Files… is always here: with the API it browses a folder, and without
            one it falls back to the plain file picker, which is the only way
-           into a document there. The input behind it stays in the page. -->
+           into a document there. The two export buttons open dialogs that ask
+           the same three questions: which format, what the file is called, and
+           which folder it goes in. -->
       <div class="row buttons tight files nogrow">
         <button id="newBtn" title="Start a new document — from a polyhedron, a preset, a file, or your own plane set">New…</button>
         <button id="browseBtn" title="Open a document — browsing a folder with previews where the browser allows it">Files…</button>
         <button id="saveJson" class="primary" title="Save the document — over its file when it has one, else as a download">Save</button>
         <button id="saveAsBtn" title="Save as a json + thumbnail pair, under a name and into a folder you choose" hidden>Save As…</button>
         <button id="saveNewBtn" title="Save as a new document — the same dialog, offering a fresh generated name instead of this document's" hidden>Save New…</button>
-      </div>
-      <input id="loadDoc" type="file" accept=".json,.stel,.txt" hidden>
-      <!-- two dialogs, because both ask the same three questions: which
-           format, what the file is called, and which folder it goes in -->
-      <div class="row buttons nogrow">
         <button id="exportSolidBtn" title="The solid as a mesh or a picture — STL, OBJ, OFF, 3MF, glTF, GLB, PNG, or the original program's .stel">Export Solid…</button>
         <button id="exportSvg" title="The stellation diagrams as vector art, for printing or cutting">Export Diagram…</button>
       </div>
+      <!-- the picker behind Files…, kept out of the button row so it cannot
+           come between two of them the way it once came between two rows -->
+      <input id="loadDoc" type="file" accept=".json,.stel,.txt" hidden>
     </details>
 
     <div class="group cells-group">
