@@ -1625,7 +1625,9 @@ function wireControls() {
   };
 
   presets = initPresets({ openDocument, setStatus });
-  $('#showPresets').onclick = () => presets.show();
+  // Presets… has no button of its own in the Files row any more; it is opened
+  // from the windows menu, which is where every panel is reachable from
+  $('#showPresets')?.addEventListener('click', () => presets.show());
 
   /*
    * The plane-set editor wires its own controls: rows, per-row factor and

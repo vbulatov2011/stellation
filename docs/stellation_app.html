@@ -178,25 +178,20 @@
            Files… is always here: with the API it browses a folder, and without
            one it falls back to the plain file picker, which is the only way
            into a document there. The input behind it stays in the page. -->
-      <div class="row buttons tight files">
+      <div class="row buttons tight files nogrow">
         <button id="newBtn" title="Start a new document — from a polyhedron, a preset, a file, or your own plane set">New…</button>
         <button id="browseBtn" title="Open a document — browsing a folder with previews where the browser allows it">Files…</button>
         <button id="saveJson" class="primary" title="Save the document — over its file when it has one, else as a download">Save</button>
-        <button id="saveAsBtn" title="Save as a json + thumbnail pair, under a name and into a folder you choose" hidden>Save As</button>
-        <button id="saveNewBtn" title="Save as a new document — the same dialog, offering a fresh generated name instead of this document's" hidden>Save New</button>
-        <button id="showPresets" title="Ready-made stellations from this site, with previews">Presets…</button>
+        <button id="saveAsBtn" title="Save as a json + thumbnail pair, under a name and into a folder you choose" hidden>Save As…</button>
+        <button id="saveNewBtn" title="Save as a new document — the same dialog, offering a fresh generated name instead of this document's" hidden>Save New…</button>
       </div>
       <input id="loadDoc" type="file" accept=".json,.stel,.txt" hidden>
       <!-- two dialogs, because both ask the same three questions: which
            format, what the file is called, and which folder it goes in -->
-      <div class="row buttons">
+      <div class="row buttons nogrow">
         <button id="exportSolidBtn" title="The solid as a mesh or a picture — STL, OBJ, OFF, 3MF, glTF, GLB, PNG, or the original program's .stel">Export Solid…</button>
         <button id="exportSvg" title="The stellation diagrams as vector art, for printing or cutting">Export Diagram…</button>
       </div>
-      <p class="note">
-        Saves in the SymmHub preset shape. <code>.stel</code> files from the
-        original Java program still open.
-      </p>
     </details>
 
     <div class="group cells-group">

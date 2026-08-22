@@ -1034,14 +1034,31 @@ button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--
 }
 
 /*
- * The six document buttons on one line. They come to 26px more than the docked
- * panel gives them at its usual width, so this row alone trims its padding and
- * its gap rather than letting Presets… drop to a line of its own — six related
- * verbs read as a row, and one of them stranded underneath reads as something
- * else. Anywhere narrower they still wrap, which is what should happen.
+ * The document buttons on one line. They are a close-packed row of related
+ * verbs, so this row alone trims its padding and its column gap to keep them
+ * together at the docked panel's usual width. Anywhere narrower they still
+ * wrap, which is what should happen.
+ *
+ * The row gap is deliberately LARGER than the column gap. A wrapped line
+ * separated by exactly the column gap reads as crowded — at some zoom levels
+ * the borders of two lines land on the same device pixel and the second row
+ * looks like it is sitting on the first. Giving the lines a little more air
+ * than the buttons have between them removes the question.
  */
-.row.buttons.files { gap: 4px; }
+.row.buttons.files { column-gap: 4px; row-gap: 6px; }
 .row.buttons.files button { padding: 3px 4px; }
+
+/*
+ * Buttons that keep their own width.
+ *
+ * `.buttons button` is `flex: 1 1 auto`, which fills the row — right for a
+ * dialog's pair of actions, wrong for a row of independent verbs: when the
+ * row wraps, the one or two buttons left on the last line stretch across the
+ * whole panel and stop looking like the same kind of thing as the line above.
+ * These keep the width their text asks for and may still shrink if a panel
+ * gets narrower than the row.
+ */
+.row.buttons.nogrow button { flex: 0 1 auto; }
 
 /* the turntable's axis field: monospace, and plainly wrong when it is wrong */
 #animAxis { flex: 1; min-width: 0; font: 12px var(--mono); }
