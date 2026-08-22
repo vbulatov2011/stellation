@@ -1,0 +1,36 @@
+{
+ "name": "Compound of five cubes",
+ "appInfo": {
+  "appName": "Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1",
+  "fileFormatRelease": 1
+ },
+ "params": {
+  "polyhedron": {
+   "name": "rhombic triacontahedron",
+   "file": "d29"
+  },
+  "symmetry": {
+   "polyhedron": "Ih",
+   "stellation": "Ih"
+  },
+  "arrangement": {
+   "planeDepth": -1
+  },
+  "cells": {
+   "selection": "{0,1,2,3,4}"
+  },
+  "display": {
+   "diagramFace": 0,
+   "showEdges": true,
+   "showAllFacets": true,
+   "spin": false,
+   "colorMode": "coset",
+   "faceOpacity": 1,
+   "edges": null,
+   "cosetSub": "Th"
+  },
+  "export": {
+   "lengthUnit": 0.01
+  }
+ }
+}

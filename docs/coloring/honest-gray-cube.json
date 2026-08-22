@@ -1,0 +1,36 @@
+{
+ "name": "What gray means: the cube under C4",
+ "appInfo": {
+  "appName": "Stellation.PolyhedronCatalog.PlaneArrangement.CellSelection_v1",
+  "fileFormatRelease": 1
+ },
+ "params": {
+  "polyhedron": {
+   "name": "cube",
+   "file": "u11"
+  },
+  "symmetry": {
+   "polyhedron": "Oh",
+   "stellation": "Oh"
+  },
+  "arrangement": {
+   "planeDepth": -1
+  },
+  "cells": {
+   "selection": "{0}"
+  },
+  "display": {
+   "diagramFace": 0,
+   "showEdges": true,
+   "showAllFacets": true,
+   "spin": false,
+   "colorMode": "coset",
+   "faceOpacity": 1,
+   "edges": null,
+   "cosetSub": "C4"
+  },
+  "export": {
+   "lengthUnit": 0.01
+  }
+ }
+}

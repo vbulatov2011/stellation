@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coloring by symmetry — Stellation</title>
+<meta name="description" content="How to color stellations by cosets, subgroup orbits, blends and mirror splits — with every classical picture one click from the live app.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/walkthrough.css">
+<script>
+  (() => {
+    const saved = localStorage.getItem('theme') || 'auto';
+    const dark = saved === 'dark' || (saved === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = saved;
+  })();
+</script>
+<style>
+  .ex {
+    border: 1px solid var(--line, rgba(128,128,128,0.25));
+    border-radius: 10px; padding: 14px 18px 12px; margin: 18px 0;
+  }
+  .ex h3 { margin: 0 0 6px; }
+  .ex p { margin: 0 0 8px; }
+  .ex .foot {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin-top: 10px;
+  }
+  .recipe {
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px;
+    border: 1px solid var(--line, rgba(128,128,128,0.3)); border-radius: 16px;
+    padding: 2px 10px; opacity: 0.85; white-space: nowrap;
+  }
+  .open {
+    margin-left: auto; font-weight: 600; text-decoration: none;
+    border: 1px solid currentColor; border-radius: 16px; padding: 3px 12px;
+  }
+  .sw {
+    display: inline-block; width: 0.85em; height: 0.85em; border-radius: 3px;
+    vertical-align: -0.06em; border: 1px solid rgba(0,0,0,0.25);
+  }
+  .swrow { white-space: nowrap; letter-spacing: 1px; }
+</style>
+</head>
+<body class="doc">
+
+<header class="doc-head">
+  <a class="brand" href="index.html">✦ Stellation</a>
+  <span class="crumb">Coloring</span>
+  <div class="spacer"></div>
+  <a class="ghost optional" href="controls.html">Controls</a>
+  <a class="ghost optional" href="examples.html">Examples</a>
+  <a class="ghost" href="stellation_app.html">Open the app →</a>
+  <button id="themeBtn" class="ghost icon" title="Light / dark">◐</button>
+</header>
+
+<main class="doc-body narrow">
+
+  <h1>Coloring by symmetry</h1>
+  <p class="standfirst">
+    Pick a subgroup of a solid's symmetry, and the app can turn it into color four
+    different ways. Each answers a different question, each has classical pictures it
+    exists for — and every example on this page opens in the live app with one click,
+    already set up.
+  </p>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="idea">
+    <h2>The four questions a subgroup can answer</h2>
+    <p>
+      Fix the polyhedron's symmetry group G and choose a subgroup H from the
+      <b>coset subgroup</b> menu (it appears under <b>face colors</b> whenever a
+      coset or orbit coloring is selected). Then:
+    </p>
+    <ul>
+      <li><b>By cosets</b> — <em>which copy of the sub-figure is this?</em> The pieces
+        fall into [G:H] classes, the translates of one H-symmetric sub-figure. This is
+        the compound coloring: one color per tetrahedron, per octahedron, per cube.
+        Offered <em>per plane</em> (whole face planes match — the classical plates),
+        <em>per facet</em> (single pieces of surface — needed whenever one plane
+        carries parts of two components), and <em>per facet, mirror-split</em>
+        (see below).</li>
+      <li><b>By subgroup orbits</b> — <em>what does H itself preserve?</em> Two pieces
+        share a color exactly when some motion of H carries one to the other. This
+        exists for every subgroup, never grays, and its smallest classes are the
+        sub-figures H holds invariant. Offered per plane, per facet, and per cell —
+        the cell being the piece a model painter actually holds.</li>
+      <li><b>Blends</b> happen on their own, inside the coset modes: a piece that no
+        single coset can name, but a small set can, wears the mix of that set instead
+        of gray.</li>
+      <li><b>Mirror-split</b> goes one further: it cuts such a piece along its own
+        mirror lines, and the halves take crisp colors — the classical
+        "one face, two colors, parted by a mirror".</li>
+    </ul>
+    <p>
+      Two things to know before the pictures. The coloring belongs to the
+      <em>polyhedron</em> symmetry, never the stellation symmetry — that one is only
+      how you edit, and changing it never repaints. And the selection on screen
+      steers the coloring where the group alone cannot decide: the twenty planes of
+      the icosahedron carry the five-tetrahedra partition once per hand, and the
+      figure you built chooses which. Saved documents keep the coloring, which is
+      how every link below works.
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="compounds">
+    <h2>Compounds: one color per component</h2>
+
+    <div class="ex">
+      <h3>The five tetrahedra</h3>
+      <p>
+        The founding picture. The icosahedron's twenty face planes fall into five
+        sets of four, each set the faces of a regular tetrahedron inscribed in the
+        solid — so coloring by cosets of <b>T</b> in <b>I</b> paints the compound of
+        five tetrahedra one color per tetrahedron, the way Escher colored his copy
+        of Brückner's plate. Whole planes match, so <em>per plane</em> is all it
+        takes.
+      </p>
+      <div class="foot">
+        <span class="recipe">icosahedron · I · T · cosets per plane</span>
+        <a class="open" href="stellation_app.html#doc=examples/compound-of-five-tetrahedra.json">Open in the app →</a>
+      </div>
+    </div>
+
+    <div class="ex">
+      <h3>The ten tetrahedra, by chiral pair</h3>
+      <p>
+        Add the other hand and the classical convention changes: five colors again,
+        but now one per <em>pair</em> — each right-handed tetrahedron sharing its
+        color with the left-handed one inscribed in the same cube, the two forming a
+        stella octangula. The subgroup that stabilizes one such pair is the
+        pyritohedral <b>T<sub>h</sub></b>, and since each face plane now carries
+        triangles of two different pairs, the coloring must go <em>per facet</em>.
+      </p>
+      <div class="foot">
+        <span class="recipe">icosahedron · Ih · Th · cosets per facet</span>
+        <a class="open" href="stellation_app.html#doc=coloring/ten-tetrahedra-pairs.json">Open in the app →</a>
+      </div>
+    </div>
+
+    <div class="ex">
+      <h3>Right compound against left</h3>
+      <p>
+        Same figure, subgroup <b>I</b> — index two in I<sub>h</sub> — and the ten
+        tetrahedra separate into their two compounds of five: everything
+        right-handed one color, everything left-handed the other. The cleanest
+        chirality picture the app can draw.
+      </p>
+      <div class="foot">
+        <span class="recipe">icosahedron · Ih · I · cosets per facet</span>
+        <a class="open" href="stellation_app.html#doc=coloring/two-hands.json">Open in the app →</a>
+      </div>
+    </div>
+
+    <div class="ex">
+      <h3>The five octahedra</h3>
+      <p>
+        Hess's compound of 1876, Wenninger's model 23 — and the picture that shows
+        why <em>per facet</em> is its own mode rather than a copy of
+        <em>per plane</em>. Every icosahedron plane carries a hexagram whose two
+        triangles belong to two <em>different</em> octahedra, so no coloring of
+        whole planes can separate the components. Per facet, with the compound
+        selected, each octahedron wears its own of the five colors.
+      </p>
+      <div class="foot">
+        <span class="recipe">icosahedron · I · T · cosets per facet</span>
+        <a class="open" href="stellation_app.html#doc=coloring/five-octahedra.json">Open in the app →</a>
+      </div>
+    </div>
+
+    <div class="ex">
+      <h3>The five cubes</h3>
+      <p>
+        Cundy &amp; Rollett's "Five Cubes in a Dodecahedron — ideally in five
+        colours". As a stellation it lives in the rhombic triacontahedron, whose
+        thirty face planes each carry exactly one cube's face — so here
+        <em>per plane</em> works perfectly: five colors, six planes each, no gray.
+        The subgroup is again <b>T<sub>h</sub></b>, the stabilizer of one cube.
+      </p>
+      <div class="foot">
+        <span class="recipe">triacontahedron · Ih · Th · cosets per plane</span>
+        <a class="open" href="stellation_app.html#doc=coloring/five-cubes.json">Open in the app →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="conventions">
+    <h2>Model builders' conventions</h2>
+
+    <div class="ex">
+      <h3>The five-color table, on the great icosahedron</h3>
+      <p>
+        Wenninger's multi-color icosahedral models keep one color per face plane,
+        arranged so all five colors meet around every five-fold vertex — and that
+        arrangement <em>is</em> the five-tetrahedra partition, applicable to any
+        icosahedral stellation, not just the compound. Here it dresses the great
+        icosahedron: every spike shows a fixed pattern of distinct colors, because
+        the coloring is one global function of the plane.
+      </p>
+      <div class="foot">
+        <span class="recipe">icosahedron · I · T · cosets per plane</span>
+        <a class="open" href="stellation_app.html#doc=coloring/great-icosahedron-table.json">Open in the app →</a>
+      </div>
+    </div>
+
+    <div class="ex">
+      <h3>Opposite faces alike</h3>
+      <p>
+        Paper modelers like to cut both faces of an opposite pair from one sheet.
+        Any subgroup containing the central inversion delivers exactly that: under
+        <b>D<sub>5d</sub></b> the dodecahedron's twelve planes pair antipodally
+        into six colors — shown here on the small stellated dodecahedron. The same
+        trick gives ten colors on icosahedral stellations
+        (<b>D<sub>3d</sub></b>) and fifteen on triacontahedral ones
+        (<b>D<sub>2h</sub></b>).
+      </p>
+      <div class="foot">
+        <span class="recipe">dodecahedron · Ih · D5d(I) · cosets per plane</span>
+        <a class="open" href="stellation_app.html#doc=coloring/six-color-dodecahedron.json">Open in the app →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="mirrors">
+    <h2>When the mirrors block the way</h2>
+    <p>
+      Under a full symmetry like I<sub>h</sub>, every face plane is held by mirrors —
+      and a chiral subgroup like <b>T</b> or <b>I</b> has none to offer, so no whole
+      plane can honestly take a single coset color. The app has two answers.
+    </p>
+
+    <div class="ex">
+      <h3>Twenty duotones: both compounds at once</h3>
+      <p>
+        The <em>blend</em>. Each icosahedron face lies in exactly one right-handed
+        and one left-handed tetrahedron of the ten, so instead of graying, it wears
+        the mix of those two coset colors — twenty distinct pastels, and both chiral
+        compounds of five legible on a single solid. A picture the crisp coloring
+        cannot draw at all.
+      </p>
+      <div class="foot">
+        <span class="recipe">icosahedron · Ih · T · cosets per plane (blended)</span>
+        <a class="open" href="stellation_app.html#doc=coloring/blend-duotones.json">Open in the app →</a>
+      </div>
+    </div>
+
+    <div class="ex">
+      <h3>One face, two colors, parted by a mirror</h3>
+      <p>
+        The <em>mirror-split</em>. A face grays because its own mirrors straddle the
+        cosets; cut it along those very mirror lines and the sectors have no
+        symmetry left to object — each takes a crisp color. Under I<sub>h</sub> by
+        cosets of <b>I</b> every face of the icosahedron splits into sectors
+        alternating the two hands' colors, the classical two-tone face. The cut is
+        purely visual: cells, selection and geometry are untouched.
+      </p>
+      <div class="foot">
+        <span class="recipe">icosahedron · Ih · I · cosets, mirror-split</span>
+        <a class="open" href="stellation_app.html#doc=coloring/mirror-split-faces.json">Open in the app →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="orbits">
+    <h2>Orbits: what the subgroup preserves</h2>
+
+    <div class="ex">
+      <h3>4 + 4 + 12: the invariant tetrahedra</h3>
+      <p>
+        Orbit coloring asks the other question. <b>T</b> acting on the twenty face
+        planes has three orbits — two of four planes and one of twelve — and the
+        two small ones are precisely the two tetrahedra T holds invariant. On the
+        full echidnahedron they light up against everything else: not the compound
+        coloring, but the "show me what this subgroup fixes" coloring, and it works
+        for <em>every</em> subgroup with no gray ever.
+      </p>
+      <div class="foot">
+        <span class="recipe">icosahedron · Ih · T · orbits per plane</span>
+        <a class="open" href="stellation_app.html#doc=coloring/invariant-tetrahedra.json">Open in the app →</a>
+      </div>
+    </div>
+
+    <div class="ex">
+      <h3>Cells a painter would match</h3>
+      <p>
+        Per cell, the orbit coloring paints whole solid pieces — the unit that gets
+        one color of paint or one spool of filament. The first stellation's twenty
+        cells fall into three orbits under <b>T</b> (4 + 4 + 12 again, one shell
+        up), plus the core: four colors that tell you exactly which pieces of a
+        physical model are interchangeable under that symmetry.
+      </p>
+      <div class="foot">
+        <span class="recipe">icosahedron · Ih · T · orbits per cell</span>
+        <a class="open" href="stellation_app.html#doc=coloring/painters-orbits.json">Open in the app →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="gray">
+    <h2>What gray means</h2>
+    <div class="ex">
+      <h3>The cube under C<sub>4</sub></h3>
+      <p>
+        Gray is never a failure — it is the coloring telling you something. A piece
+        the whole subgroup holds still <em>sits on</em> the symmetry rather than
+        being carried by it, and stays gray by instruction: under <b>C<sub>4</sub></b>
+        the cube's two axis faces are exactly that. The four equatorial faces are
+        the other case — no single coset can name them, but a pair can, so they
+        blend. One small solid, both meanings on display.
+      </p>
+      <div class="foot">
+        <span class="recipe">cube · Oh · C4 · cosets per plane</span>
+        <a class="open" href="stellation_app.html#doc=coloring/honest-gray-cube.json">Open in the app →</a>
+      </div>
+    </div>
+    <p>
+      The palette itself never runs out: coset i wears
+      <span class="swrow"><span class="sw" style="background:hsl(0,60%,55%)"></span><span class="sw" style="background:hsl(137.5,60%,55%)"></span><span class="sw" style="background:hsl(275,60%,55%)"></span><span class="sw" style="background:hsl(52.5,60%,55%)"></span><span class="sw" style="background:hsl(190,60%,55%)"></span><span class="sw" style="background:hsl(327.5,60%,55%)"></span></span>
+      … the golden angle around the color wheel, so two, five, ten or sixty classes
+      stay tellable apart — and <span class="sw" style="background:#9E9E9E"></span>
+      gray always means the same thing: no coset honestly fits.
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="recap">
+    <h2>All the recipes at a glance</h2>
+    <table class="keys-table">
+      <thead>
+        <tr><th>Picture</th><th>Solid · G · H</th><th>Mode</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Five tetrahedra, one color each</td><td>icosahedron · I · T</td><td>cosets, per plane</td><td><a href="stellation_app.html#doc=examples/compound-of-five-tetrahedra.json">open</a></td></tr>
+        <tr><td>Ten tetrahedra, by chiral pair</td><td>icosahedron · Ih · Th</td><td>cosets, per facet</td><td><a href="stellation_app.html#doc=coloring/ten-tetrahedra-pairs.json">open</a></td></tr>
+        <tr><td>Right compound vs left</td><td>icosahedron · Ih · I</td><td>cosets, per facet</td><td><a href="stellation_app.html#doc=coloring/two-hands.json">open</a></td></tr>
+        <tr><td>Five octahedra, one color each</td><td>icosahedron · I · T</td><td>cosets, per facet</td><td><a href="stellation_app.html#doc=coloring/five-octahedra.json">open</a></td></tr>
+        <tr><td>Five cubes, one color each</td><td>triacontahedron · Ih · Th</td><td>cosets, per plane</td><td><a href="stellation_app.html#doc=coloring/five-cubes.json">open</a></td></tr>
+        <tr><td>Wenninger's five-color table</td><td>icosahedron · I · T</td><td>cosets, per plane</td><td><a href="stellation_app.html#doc=coloring/great-icosahedron-table.json">open</a></td></tr>
+        <tr><td>Opposite faces alike, six colors</td><td>dodecahedron · Ih · D5d(I)</td><td>cosets, per plane</td><td><a href="stellation_app.html#doc=coloring/six-color-dodecahedron.json">open</a></td></tr>
+        <tr><td>Twenty duotones, both hands at once</td><td>icosahedron · Ih · T</td><td>cosets, per plane (blend)</td><td><a href="stellation_app.html#doc=coloring/blend-duotones.json">open</a></td></tr>
+        <tr><td>Two colors parted by a mirror</td><td>icosahedron · Ih · I</td><td>cosets, mirror-split</td><td><a href="stellation_app.html#doc=coloring/mirror-split-faces.json">open</a></td></tr>
+        <tr><td>The invariant tetrahedra, 4+4+12</td><td>icosahedron · Ih · T</td><td>orbits, per plane</td><td><a href="stellation_app.html#doc=coloring/invariant-tetrahedra.json">open</a></td></tr>
+        <tr><td>Painter's matching cells</td><td>icosahedron · Ih · T</td><td>orbits, per cell</td><td><a href="stellation_app.html#doc=coloring/painters-orbits.json">open</a></td></tr>
+        <tr><td>Honest gray, and a blend beside it</td><td>cube · Oh · C4</td><td>cosets, per plane</td><td><a href="stellation_app.html#doc=coloring/honest-gray-cube.json">open</a></td></tr>
+      </tbody>
+    </table>
+    <p>
+      Every link opens a saved document: change anything afterward and it is yours
+      to edit, save and export like any other. The <a href="controls.html">controls
+      page</a> documents each mode in the panel's own terms, and the
+      <a href="coset-coloring-report.html">design report</a> holds the mathematics —
+      why gray is sometimes forced, what exactly blends, and where each scheme's
+      limits are.
+    </p>
+  </section>
+
+  <p class="colophon">
+    A JavaScript port of the Stellation applet written by
+    <a href="http://bulatov.org/polyhedra/stellation_applet/" target="_blank" rel="noopener">Vladimir Bulatov</a>
+    between 1998 and 2001. See <a href="controls.html">controls &amp; views</a> for
+    the panel itself, and <a href="changes.html">what changed</a> for the current
+    round of work.
+  </p>
+
+</main>
+
+<script type="module">
+  import { labelKeys } from './lib/modules.js';
+  labelKeys();
+  const btn = document.querySelector('#themeBtn');
+  const apply = (pref) => {
+    const dark = pref === 'dark' || (pref === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePref = pref;
+    btn.textContent = pref === 'auto' ? '◐' : pref === 'dark' ? '●' : '○';
+  };
+  btn.onclick = () => {
+    const order = ['auto', 'light', 'dark'];
+    const cur = document.documentElement.dataset.themePref || 'auto';
+    const next = order[(order.indexOf(cur) + 1) % order.length];
+    localStorage.setItem('theme', next);
+    apply(next);
+  };
+  apply(localStorage.getItem('theme') || 'auto');
+</script>
+</body>
+</html>
