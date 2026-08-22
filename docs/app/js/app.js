@@ -50,6 +50,27 @@ const state = {
 let worker = null, msgId = 0;
 const pending = new Map();
 
+/*
+ * Stopping a build.
+ *
+ * The arrangement is one long synchronous run inside the worker — clipping
+ * polygons plane by plane — so there is nothing to poll and nothing to ask it
+ * to stop. Terminating the worker is the only interruption there is, and it
+ * takes the built arrangement with it: what the worker was holding is gone,
+ * which is why this leaves the app with nothing selected rather than pretending
+ * the previous figure is still there to go back to.
+ *
+ * Everything in flight is rejected first, so the awaits in build() and
+ * refresh() unwind instead of hanging on a worker that no longer exists.
+ */
+function stopBuild() {
+  if (!state.building) return;
+  buildStopped = true;
+  for (const [, p] of pending) p.reject(new Error('stopped'));
+  pending.clear();
+  startWorker();
+}
+
 function startWorker() {
   worker?.terminate();
   worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
@@ -101,6 +122,8 @@ let docLinkHash = null;
  */
 let pendingColors = null;
 let colorsDialog = null;
+/* set by stopBuild(), read by build()'s catch: a stop is not a failure */
+let buildStopped = false;
 
 /*
  * How the facets are colored. `class` groups the original faces under the
@@ -641,10 +664,13 @@ async function select(item, opts = {}) {
    * angle comes back but the size does not.
    */
   state.pendingScale = Renderer3D.viewModelScale(opts.view);
-  await build(opts.cells, opts.cellsIndexing || null);
+  // the result travels back to openDocument, which must not dress a figure
+  // that a stopped or failed build never produced
+  const ok = await build(opts.cells, opts.cellsIndexing || null);
   // after the build, so the mesh (and therefore the model scale) already exists
   if (opts.view && renderer?.setView(opts.view)) lastView = renderer.getView().join(',');
   syncOrient();
+  return ok;
 }
 
 /**
@@ -1052,6 +1078,8 @@ function refreshDiagramOverlay() {
 async function build(cellsString, cellsIndexing = null, preserve = false) {
   if (state.building) return;
   state.building = true;
+  buildStopped = false;
+  $('#stopBuild').hidden = false;
   setStatus('building the plane arrangement…', true);
 
   const g = state.customPlanes ? null : state.geometry[state.current.file];
@@ -1115,11 +1143,28 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
           'which this representation cannot hold (see notes/design/plane-representation.md)' : '')
       : '';
   } catch (err) {
-    setStatus('failed: ' + err.message, false);
-    startWorker();
+    if (buildStopped) {
+      /*
+       * The arrangement went with the worker, so nothing on screen can be
+       * trusted: the outline, the selection and the mesh all describe a
+       * figure this app no longer has. Clear them and say so.
+       */
+      state.outline = null;
+      state.selected = new Set();
+      state.mesh = null;
+      cells.setOutline([]);          // an empty table, not a missing one
+      renderer?.setMesh({ vertices: [], faces: [] }, []);
+      diagram.setData(null);
+      setStatus('build stopped — choose a solid again, lowering the depth first if it was slow', false);
+    } else {
+      setStatus('failed: ' + err.message, false);
+      startWorker();
+    }
     return false;
   } finally {
     state.building = false;
+    buildStopped = false;
+    $('#stopBuild').hidden = true;
   }
   return true;
 }
@@ -1614,6 +1659,8 @@ function wireControls() {
   });
   $('#exportSolidBtn').onclick = () => solidDialog?.open();
 
+  $('#stopBuild').onclick = stopBuild;
+
   colorsDialog = initColors({ state, renderer, diagram, onChange: mark });
   $('#editColorsBtn').onclick = () => colorsDialog?.open();
 
@@ -1925,11 +1972,31 @@ function pushEdgeStyle() {
  * forcing defaults on one would throw away whatever the user has set up.
  */
 function applyDisplaySettings(doc) {
-  if (doc.source !== 'json') return;
+  if (doc.source !== 'json') return () => {};
+  /*
+   * STAGED here, COMMITTED by the function this returns.
+   *
+   * A document's look used to be applied the moment the file was read, which
+   * meant it landed on the figure still on screen: open a 120-plane document
+   * and the OLD solid would restyle itself instantly, then sit there wearing
+   * the new document's colors until the arrangement finished — seconds later
+   * on a deep one — before finally becoming the right figure. The picture was
+   * never wrong for long, but it was wrong, and it looked like the app had
+   * misread the file.
+   *
+   * So the two halves are separated. Staged below is only what the BUILD has
+   * to see: values the worker's answers depend on, pushed the way boot pushes
+   * them — straight onto the objects, drawing nothing. Everything that changes
+   * what is on screen waits for the returned commit, which the caller runs once
+   * the new figure is there to receive it.
+   */
+  const mode = doc.colorMode || 'layer';
   $('#showAllFacets').checked = !!doc.showAllFacets;
-  $('#showAllFacets').dispatchEvent(new Event('change'));
-  $('#colorMode').value = doc.colorMode || 'layer';
-  $('#colorMode').dispatchEvent(new Event('change'));
+  $('#colorMode').value = mode;
+  // set before the first setMesh, exactly as boot does with a stored mode
+  if (renderer) renderer.colorMode = mode;
+  if (diagram) diagram.colorMode = mode;
+  $('#cosetSubRow').hidden = !(mode.startsWith('coset') || mode.startsWith('orbit'));
   /*
    * The coset subgroup cannot be set yet — its menu is refilled for the
    * document's polyhedron group later in the open — so the wish is parked on
@@ -1944,13 +2011,22 @@ function applyDisplaySettings(doc) {
    */
   setColorOverrides(null);
   pendingColors = doc.colors && doc.colors.length ? doc.colors.slice() : null;
-  $('#faceOpacity').value = String(Math.round((doc.faceOpacity ?? 1) * 100));
-  $('#faceOpacity').dispatchEvent(new Event('input'));
+  const opacity = Math.round((doc.faceOpacity ?? 1) * 100);
+  $('#faceOpacity').value = String(opacity);
   // a pre-split document has only `showEdges`, which drew both kinds alike
-  applyEdgeStyle(doc.edges || {
+  const edges = doc.edges || {
     face: { ...currentEdgeStyle().face, show: !!doc.showEdges },
     facet: { ...currentEdgeStyle().facet, show: !!doc.showEdges },
-  });
+  };
+
+  return () => {
+    $('#faceOpacity').dispatchEvent(new Event('input'));
+    diagram.showAll = $('#showAllFacets').checked;
+    applyEdgeStyle(edges);
+    try { localStorage.setItem('colorMode', mode); } catch { }
+    colorsDialog?.refresh();
+    diagram.draw();
+  };
 }
 
 /** open either our JSON preset or an original .stel file */
@@ -1979,7 +2055,7 @@ async function openDocument(text, filename = '') {
     // the display settings save the same way for custom documents as for
     // catalog ones, so they restore the same way too
     state.planeIndex = doc.diagramFace || 0;
-    applyDisplaySettings(doc);
+    const commit = applyDisplaySettings(doc);
     const ok = await buildCustomPlanes(doc.planeRows);
     if (ok && doc.cells) {
       const { selected } = await call('parseCells', { cells: doc.cells, indexing: doc.cellsIndexing || null });
@@ -1994,6 +2070,7 @@ async function openDocument(text, filename = '') {
       await applyCosetSub();
       await refresh();
     }
+    if (ok) commit();          // the look, once the figure is there to wear it
     if (ok && doc.view) renderer?.setView(doc.view);
     syncOrient();
     setStatus(ok ? `opened ${doc.name || filename} (custom planes)` : 'could not build that plane sheet', false);
@@ -2015,11 +2092,13 @@ async function openDocument(text, filename = '') {
   state.planeIndex = doc.diagramFace || 0;
   $('#planeIndex').value = state.planeIndex;
 
-  applyDisplaySettings(doc);
+  const commit = applyDisplaySettings(doc);
 
-  await select(item, { polySym: doc.polySymmetry, stellSym: doc.stellSymmetry, cells: doc.cells,
-                       cellsIndexing: doc.cellsIndexing || null,
+  const built = await select(item, { polySym: doc.polySymmetry, stellSym: doc.stellSymmetry,
+                       cells: doc.cells, cellsIndexing: doc.cellsIndexing || null,
                        depth: doc.planeDepth ?? undefined, view: doc.view });
+  if (built === false) return;      // stopped or failed: its own status stands
+  commit();
   setStatus(`opened ${doc.name || filename} (${doc.source === 'json' ? 'JSON' : '.stel'})`, false);
 }
 

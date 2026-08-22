@@ -185,12 +185,18 @@ main {
 
 .statusbar {
   flex: none;
+  /* the progress bar is absolutely positioned against this */
   position: relative;
+  /* a row, so the stop button can sit at the far end while the message grows */
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 12px;
   border-top: 1px solid var(--line);
   font: 11.5px var(--mono);
   color: var(--dim);
 }
+.statusbar #status { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #status.busy { color: var(--accent); }
 #progress {
   position: absolute; top: -1px; left: 0;
@@ -1059,6 +1065,25 @@ button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--
  * gets narrower than the row.
  */
 .row.buttons.nogrow button { flex: 0 1 auto; }
+
+/*
+ * The stop button in the status bar, shown only while an arrangement is being
+ * intersected. It sits at the right-hand end so the growing progress bar and
+ * the plane count never push it about.
+ */
+#stopBuild {
+  margin-left: auto;
+  flex: none;
+  padding: 1px 9px 2px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel-2);
+  color: var(--dim);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+#stopBuild:hover { border-color: var(--bad, #c0392b); color: var(--bad, #c0392b); }
 
 /* the turntable's axis field: monospace, and plainly wrong when it is wrong */
 #animAxis { flex: 1; min-width: 0; font: 12px var(--mono); }

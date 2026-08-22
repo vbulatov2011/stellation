@@ -69,6 +69,26 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Opening a document changes nothing until the figure is ready.</b> A
+      document's look — its colors, its opacity, its edge styles — used to be
+      applied the moment the file was read, which meant it landed on the figure
+      still on screen. Open a document built on a 120-plane solid and the OLD
+      solid restyled itself instantly, then sat there wearing the new
+      document's colors for as long as the arrangement took, seconds on a deep
+      one, before finally becoming the right figure. The two halves are
+      separated now: only what the calculation depends on is set beforehand,
+      and everything visible waits until the new figure is on screen to receive
+      it. The picture you are looking at simply stays as it was until it is
+      replaced by the right one.
+      <p>While an arrangement is being intersected the status bar counts the
+      planes as it always did, and now offers a <b>Stop</b> beside the count.
+      Stopping ends the calculation the only way a long synchronous run in a
+      worker can be ended — the worker is discarded and a fresh one started —
+      so the half-built arrangement goes with it and the app says so rather
+      than pretending the old figure is still there. Choosing a solid again
+      picks up immediately.</p>
+    </div></li>
+    <li><div>
       <b>The Files row keeps its buttons the size of their words.</b> Every
       button in that panel stretched to fill the width, so a row that wrapped
       left one or two buttons sprawling across the whole panel, looking like a
