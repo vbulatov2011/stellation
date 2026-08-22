@@ -25,6 +25,7 @@ import { createFileSelectionDialog } from '../../lib/uilib/FileSelectionDialog.j
 import { createSaveAsDialog } from '../../lib/uilib/SaveAsDialog.js';
 
 export function initDocManager({
+  onSaved,               // () -> called whenever a save actually succeeds
   currentPresetText,     // (docName) -> the serialized document
   makeThumbnail,         // (size)   -> HTMLCanvasElement
   openDocument,          // (text, fileName) -> Promise
@@ -66,6 +67,7 @@ export function initDocManager({
     if (!canFolders || !currentDoc.folderHandle) { saveAs(); return; }
     try {
       const fileName = await writePair(currentDoc.folderHandle, currentDoc.fileName || currentDoc.name);
+      onSaved?.();
       setStatus(`saved ${fileName}`, false);
       fileDialog?.reload(fileName.replace(/\.json$/, ''), currentDoc.folderHandle);
     } catch (e) {
@@ -87,6 +89,7 @@ export function initDocManager({
     if (!canFolders) {
       // the download path IS save-as on browsers without the API
       download(`${offered}.json`, currentPresetText(offered), 'application/json');
+      onSaved?.();
       return;
     }
     /*
@@ -118,6 +121,7 @@ export function initDocManager({
       onSave: async (name, folderHandle) => {
         try {
           const fileName = await writePair(folderHandle, name);
+          onSaved?.();
           setOrigin(name.replace(/\.json$/, ''), folderHandle, fileName);
           setStatus(`saved ${fileName}`, false);
           fileDialog?.reload(currentDoc.name, folderHandle);

@@ -43,6 +43,8 @@ const state = {
   selected: new Set(),
   planeIndex: 0,
   building: false,
+  // edited since the last save or open — see touch() and confirmDiscard()
+  dirty: false,
 };
 
 // ------------------------------------------------------------------ worker
@@ -124,6 +126,34 @@ let pendingColors = null;
 let colorsDialog = null;
 /* set by stopBuild(), read by build()'s catch: a stop is not a failure */
 let buildStopped = false;
+
+/* ---------------------------------------------------------------- unsaved work
+ *
+ * `state.dirty` means: the figure has been changed since it was last saved or
+ * opened, so throwing it away would throw away work. It gates the two doors
+ * out of a document — opening another one, and starting a new one from a
+ * solid — and the page's own unload, which is the third way to lose it.
+ *
+ * What counts as work is deliberately narrow: the cell selection, the colors,
+ * the symmetries, the depth, and a custom plane sheet. Not the camera, and not
+ * the view switches like facet opacity or edge width. Those are all saved in
+ * the document too, but they are a keystroke to redo, and a confirm box that
+ * fires because someone nudged a slider teaches people to click through it —
+ * which would cost more than the setting it was protecting.
+ */
+function touch() { state.dirty = true; }
+function markSaved() { state.dirty = false; }
+
+/**
+ * Ask before discarding unsaved work. `what` completes the sentence "this will
+ * discard …", and the answer is true when it is safe to go on.
+ */
+function confirmDiscard(what) {
+  if (!state.dirty) return true;
+  const name = currentDocName();
+  return window.confirm(
+    `${name} has unsaved changes.\n\n${what} will discard them.\n\nContinue?`);
+}
 
 /*
  * How the facets are colored. `class` groups the original faces under the
@@ -234,6 +264,18 @@ async function boot() {
   applyTheme(localStorage.getItem('theme') || 'auto');   // now that the views exist
 
   // handy from the console, and what the browser tests drive
+  /*
+   * Leaving the page — a reload, the back button, or one of the links in the
+   * header — is the third way to lose a figure. A browser will not show a
+   * message of ours here and has not for years; returning any value at all is
+   * the whole of the API, and the wording is the browser's own.
+   */
+  addEventListener('beforeunload', (e) => {
+    if (!state.dirty) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+
   window.stellation = { state, cells, diagram, renderer, call, select, refresh, applyToCell, openDocument,
                         currentPresetText, makeThumbnail, docsOrigin: () => docs?.current() };
 
@@ -367,6 +409,7 @@ function mark() {
    * strings instead meant racing refresh(), which fills them in later.
    */
   docLinkHash = null;
+  state.dirty = true;              // an edit is exactly what there is to lose
   undoStack.past.push(new Set(state.selected));
   if (undoStack.past.length > undoStack.limit) undoStack.past.shift();
   undoStack.future.length = 0;
@@ -604,6 +647,7 @@ function buildCatalog() {
       b.onmouseenter = () => showFoot(item, cat.category);
       b.onfocus = () => showFoot(item, cat.category);
       b.onclick = () => {
+        if (!confirmDiscard(`Starting a new document from ${item.name}`)) return;
         $('#catalogDialog').close();
         state.depthAuto = true;          // a new solid gets its own suggested depth
         /*
@@ -615,6 +659,7 @@ function buildCatalog() {
          * select() itself.
          */
         docs?.clearOrigin(null);
+        markSaved();                     // a new document has nothing in it yet
         select({ ...item, category: cat.category });
       };
       grid.appendChild(b);
@@ -1375,6 +1420,7 @@ function wireControls() {
   $('#newFromPlanes').onclick = () => { $('#catalogDialog').close(); $('#editPlanes').click(); };
 
   $('#polySym').onchange = (e) => {
+    touch();                       // a different grouping is a different document
     state.polySym = e.target.value;
     const allowed = subgroupsOf(state.polySym);
     if (!allowed.includes(state.stellSym)) state.stellSym = state.polySym;
@@ -1387,9 +1433,9 @@ function wireControls() {
    * what is already built. Build symmetric under the full group, drop to a
    * subgroup (E takes single cells) for the asymmetric touches, come back.
    */
-  $('#stellSym').onchange = (e) => { state.stellSym = e.target.value; changeStellSym(); };
+  $('#stellSym').onchange = (e) => { touch(); state.stellSym = e.target.value; changeStellSym(); };
   $('#depth').oninput = (e) => setDepth(Number(e.target.value), false);
-  $('#depth').onchange = () => build();
+  $('#depth').onchange = () => { touch(); build(); };
   $('#planeIndex').onchange = (e) => { state.planeIndex = Number(e.target.value) || 0; refresh(); };
 
   $('#selectCore').onclick = async () => {
@@ -1581,6 +1627,7 @@ function wireControls() {
   docs = initDocManager({
     currentPresetText, makeThumbnail, openDocument, newDocumentName, download, setStatus,
     onNameChange: syncDocBar,
+    onSaved: markSaved,
   });
   $('#saveJson').onclick = () => docs.save();
   $('#saveAsBtn').onclick = () => docs.saveAs();
@@ -1742,6 +1789,9 @@ function wireControls() {
  */
 
 async function buildCustomPlanes(planeRows) {
+  // a hand-built plane sheet IS the document; openDocument marks itself saved
+  // again straight after, so this only catches sheets applied from the editor
+  touch();
   const info = $('#planesInfo');
   let rows;
   try {
@@ -2040,6 +2090,17 @@ async function openDocument(text, filename = '') {
   }
 
   /*
+   * Asked here rather than at each button, because every road into another
+   * document — the file picker, a preset, the folder browser, a #doc= link —
+   * arrives at this one function. Asked AFTER the file parses, so a mistyped
+   * name never costs a prompt about work it was never going to touch.
+   */
+  if (!confirmDiscard(`Opening ${doc.name || filename || 'another document'}`)) {
+    setStatus('kept the current document', false);
+    return;
+  }
+
+  /*
    * Every open severs the tie to any previously-saved file: a preset or a
    * .stel must not silently overwrite whatever happened to be saved before
    * it. The one caller that DOES want an origin — the folder browser — sets
@@ -2071,6 +2132,7 @@ async function openDocument(text, filename = '') {
       await refresh();
     }
     if (ok) commit();          // the look, once the figure is there to wear it
+    if (ok) markSaved();       // freshly opened: nothing to lose yet
     if (ok && doc.view) renderer?.setView(doc.view);
     syncOrient();
     setStatus(ok ? `opened ${doc.name || filename} (custom planes)` : 'could not build that plane sheet', false);
@@ -2099,6 +2161,7 @@ async function openDocument(text, filename = '') {
                        depth: doc.planeDepth ?? undefined, view: doc.view });
   if (built === false) return;      // stopped or failed: its own status stands
   commit();
+  markSaved();                      // what is on screen IS the file on disk
   setStatus(`opened ${doc.name || filename} (${doc.source === 'json' ? 'JSON' : '.stel'})`, false);
 }
 
