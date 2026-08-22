@@ -1161,12 +1161,13 @@ async function changeStellSym() {
 async function refresh() {
   if (!state.outline) return;
   const selected = [...state.selected];
-  const { mesh, diagram: dia } = await call('both', { selected, planeIndex: state.planeIndex });
+  const { mesh, diagram: dia } = await call('both', { selected, planeIndex: state.planeIndex,
+    split: $('#colorMode')?.value === 'cosetM' });
 
   state.mesh = mesh;
   renderer?.setMesh(mesh, mesh.faceLayers,
     { classes: mesh.faceClasses, classesStell: mesh.faceClassesStell,
-      cosets: mesh.faceCosets, cosetsL: mesh.faceCosetsL,
+      cosets: mesh.faceCosets, cosetsL: mesh.faceCosetsL, cosetsM: mesh.faceCosetsM,
       orbitP: mesh.faceOrbitP, orbitF: mesh.faceOrbitF, orbitC: mesh.faceOrbitC,
       top: mesh.faceTop, planes: mesh.facePlanes });
   diagram.setData(dia);
@@ -1360,12 +1361,18 @@ function wireControls() {
     // weight or a shade against what you are actually looking at
     $(id).oninput = pushEdgeStyle;
   }
-  $('#colorMode').onchange = (e) => {
+  let lastColorMode = $('#colorMode').value;
+  $('#colorMode').onchange = async (e) => {
+    const wasSplit = lastColorMode === 'cosetM';
+    lastColorMode = e.target.value;
     localStorage.setItem('colorMode', e.target.value);
     renderer?.setColorMode(e.target.value);
     diagram?.setColorMode(e.target.value);
     $('#cosetSubRow').hidden =
       !(e.target.value.startsWith('coset') || e.target.value.startsWith('orbit'));
+    // the mirror-split mesh has different topology, so entering or leaving
+    // the split mode is the one color switch that refetches
+    if (wasSplit !== (e.target.value === 'cosetM')) await refresh();
   };
   $('#cosetSubRow').hidden = !($('#colorMode').value.startsWith('coset')
     || $('#colorMode').value.startsWith('orbit'));

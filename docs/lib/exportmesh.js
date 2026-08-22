@@ -43,6 +43,10 @@ export function faceColors(mesh, colorMode = 'layer') {
     return mesh.faces.map((_, i) =>
       cosetColor(mesh.faceCosetsL[i] ?? -1, mesh.faceTop ? mesh.faceTop[i] !== false : true));
   }
+  if (colorMode === 'cosetM' && mesh.faceCosetsM) {
+    return mesh.faces.map((_, i) =>
+      cosetColor(mesh.faceCosetsM[i] ?? -1, mesh.faceTop ? mesh.faceTop[i] !== false : true));
+  }
   if (colorMode.startsWith('orbit')) {
     const orb = colorMode === 'orbitP' ? mesh.faceOrbitP
               : colorMode === 'orbitF' ? mesh.faceOrbitF : mesh.faceOrbitC;

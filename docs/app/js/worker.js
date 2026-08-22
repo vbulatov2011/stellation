@@ -73,6 +73,13 @@ function cosetOfFacet(f) {
   const b = cosetsL.blends && cosetsL.blends.get(f);
   return b ? Array.from(b) : -1;
 }
+// the mirror-split mode's value for an UNSPLIT face: the crisp label or
+// gray — split faces carry their piece labels instead (see meshFor)
+function cosetOfFacetM(f) {
+  if (!cosetsL) return -1;
+  const k = cosetsL.of.get(f);
+  return k != null && k >= 0 ? k : -1;
+}
 
 function toPoly(g) {
   const vertices = [];
@@ -114,7 +121,7 @@ function outline() {
  * the sub-cells on either side of it. Those two references are what turns a
  * click on the solid into "grow here" or "carve this away".
  */
-function meshFor(selected) {
+function meshFor(selected, split = false) {
   const picked = selectedCells(stel, selected);
   const mesh = extractMesh([{ cells: picked }], stel.pool);
   /*
@@ -129,7 +136,7 @@ function meshFor(selected) {
     return mesh.facetTop[i] ? { inside: f.cellBelow, outside: f.cellAbove }
                             : { inside: f.cellAbove, outside: f.cellBelow };
   };
-  return {
+  const out = {
     vertices: mesh.vertices,
     faces: mesh.faces,
     faceLayers: mesh.facetRefs.map(f => f.layer),
@@ -157,6 +164,7 @@ function meshFor(selected) {
     // and by coset of the facet itself — the smallest piece, and the only one
     // that can tell two hands apart when both lie in the same plane
     faceCosetsL: mesh.facetRefs.map(f => cosetOfFacet(f)),
+    faceCosetsM: mesh.facetRefs.map(f => cosetOfFacetM(f)),
     // the same subgroup's plain orbits, at each of the three piece sizes;
     // the cell is the SOLID side of the face, the piece a model painter holds
     faceOrbitP: mesh.facetRefs.map(f => (orbits ? orbits.planes[f.plane] : 0)),
@@ -178,6 +186,52 @@ function meshFor(selected) {
       volume: picked.reduce((s, x) => s + x.volume, 0),
     },
   };
+  /*
+   * Mirror-split meshes replace each straddling facet's face by its cut
+   * pieces, every per-face array following along and faceCosetsM carrying
+   * the piece labels. Piece vertices are interned against the mesh's own,
+   * so the seams share vertices and the edge pass still pairs edges up.
+   * Requested only when the view is in the mirror-split mode — the mesh
+   * topology differs, so the app refetches on the way in and out.
+   */
+  if (split && cosetsL && cosetsL.splits && cosetsL.splits.size) {
+    const vkey = (p) => (Math.round(p.x * 1e6) / 1e6) + ',' +
+      (Math.round(p.y * 1e6) / 1e6) + ',' + (Math.round(p.z * 1e6) / 1e6);
+    const vertices = out.vertices.slice();
+    const vidx = new Map();
+    vertices.forEach((v, i) => { const k = vkey(v); if (!vidx.has(k)) vidx.set(k, i); });
+    const intern = (p) => {
+      const k = vkey(p);
+      let i = vidx.get(k);
+      if (i == null) { i = vertices.length; vertices.push({ x: p.x, y: p.y, z: p.z }); vidx.set(k, i); }
+      return i;
+    };
+    const arrays = ['faceLayers', 'faceClasses', 'faceClassesStell', 'faceTop', 'facePlanes',
+      'faceCosets', 'faceCosetsL', 'faceCosetsM', 'faceOrbitP', 'faceOrbitF', 'faceOrbitC',
+      'faceInside', 'faceOutside'];
+    const dst = {};
+    for (const a of arrays) dst[a] = [];
+    const faces = [];
+    mesh.facetRefs.forEach((ref, i) => {
+      const pieces = cosetsL.splits.get(ref);
+      if (!pieces) {
+        faces.push(out.faces[i]);
+        for (const a of arrays) dst[a].push(out[a][i]);
+        return;
+      }
+      for (const p of pieces) {
+        const ids = p.poly.map(intern);
+        // undersides are wound the other way in the mesh; follow them
+        faces.push(out.faceTop[i] === false ? ids.slice().reverse() : ids);
+        for (const a of arrays) dst[a].push(a === 'faceCosetsM' ? p.label : out[a][i]);
+      }
+    });
+    out.vertices = vertices;
+    out.faces = faces;
+    for (const a of arrays) out[a] = dst[a];
+    out.stats.faces = faces.length;
+  }
+  return out;
 }
 
 function diagramFor(planeIndex, selected) {
@@ -221,6 +275,21 @@ function diagramFor(planeIndex, selected) {
         // cell below made the diagram disagree with the solid on every
         // exposed underside. Unselected regions fall to the cell they would
         // toggle, the one below.
+        // the mirror-split labeling: the crisp label for whole regions, and
+        // the cut pieces (projected into the diagram's own frame) where the
+        // facet splits — carried on every payload so the export dialog's
+        // cached scans can draw the split mode without refetching
+        cosetM: cosetOfFacetM(f.facet),
+        pieces: (() => {
+          const ps = cosetsL && cosetsL.splits && cosetsL.splits.get(f.facet);
+          if (!ps) return null;
+          const R = d.frame.R, C = d.frame.center;
+          const prj = (p) => {
+            const x = p.x - C[0], y = p.y - C[1], z = p.z - C[2];
+            return [R[0] * x + R[1] * y + R[2] * z, R[3] * x + R[4] * y + R[5] * z];
+          };
+          return ps.map(p => ({ poly: p.poly.map(prj), label: p.label }));
+        })(),
         orbitP: orbits ? orbits.planes[d.planeIndex] : 0,
         orbitF: orbits ? (orbits.facets.get(f.facet) ?? 0) : 0,
         orbitC: (() => {
@@ -274,7 +343,7 @@ self.onmessage = (e) => {
         cosets = stel.planes.length
           ? cosetClasses(stel, cosetGroup, cosetGroup) : null;
         cosetsL = stel.planes.length
-          ? facetCosetClasses(stel, cosetGroup, cosetGroup) : null;
+          ? facetCosetClasses(stel, cosetGroup, cosetGroup, null, { split: true }) : null;
         orbits = stel.planes.length ? subgroupOrbits(stel, cosetGroup) : null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
@@ -310,7 +379,7 @@ self.onmessage = (e) => {
       }
 
       case 'mesh':
-        reply(meshFor(new Set(payload.selected)));
+        reply(meshFor(new Set(payload.selected), !!payload.split));
         break;
 
       case 'diagram':
@@ -319,7 +388,7 @@ self.onmessage = (e) => {
 
       case 'both':
         reply({
-          mesh: meshFor(new Set(payload.selected)),
+          mesh: meshFor(new Set(payload.selected), !!payload.split),
           diagram: diagramFor(payload.planeIndex, new Set(payload.selected)),
         });
         break;
@@ -391,7 +460,7 @@ self.onmessage = (e) => {
         cosets = (stel.planes.length && cosetGroup && payload.subMatrices)
           ? cosetClasses(stel, cosetGroup, payload.subMatrices, prefer) : null;
         cosetsL = (stel.planes.length && cosetGroup && payload.subMatrices)
-          ? facetCosetClasses(stel, cosetGroup, payload.subMatrices, prefer) : null;
+          ? facetCosetClasses(stel, cosetGroup, payload.subMatrices, prefer, { split: true }) : null;
         orbits = (stel.planes.length && payload.subMatrices)
           ? subgroupOrbits(stel, payload.subMatrices) : null;
         reply({ count: cosets ? cosets.count : 0,

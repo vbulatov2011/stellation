@@ -89,6 +89,7 @@ function facetColor(f, data, mode) {
   if (mode === 'stellClass') return classColor(data.faceClassStell || 0, outward);
   if (mode === 'coset') return cosetColor(f.coset ?? -1, outward);
   if (mode === 'cosetL') return cosetColor(f.cosetL ?? -1, outward);
+  if (mode === 'cosetM') return cosetColor(f.cosetM ?? -1, outward);
   if (mode === 'orbitP') return cosetColor(f.orbitP ?? 0, outward);
   if (mode === 'orbitF') return cosetColor(f.orbitF ?? 0, outward);
   if (mode === 'orbitC') return cosetColor(f.orbitC ?? 0, outward);
@@ -235,6 +236,13 @@ export function diagramSVG(data, options = {}) {
   // the fill first, so every line lies over it
   if (o.fill) {
     for (const f of chosen) {
+      if (o.colorMode === 'cosetM' && f.pieces) {
+        for (const pc of f.pieces) {
+          out.push(`  <path d="${path(pc.poly)}" ` +
+                   `fill="${rgb(cosetColor(pc.label ?? -1, f.facing !== 0))}"/>`);
+        }
+        continue;
+      }
       out.push(`  <path d="${path(f.poly)}" fill="${rgb(facetColor(f, data, o.colorMode))}"/>`);
     }
   }

@@ -825,6 +825,7 @@ export class Renderer3D {
     // ride on the planes, left cosets on the cells' H-orbits.
     const cosets = this.colorMode === 'coset' ? faceClass?.cosets
                  : this.colorMode === 'cosetL' ? faceClass?.cosetsL
+                 : this.colorMode === 'cosetM' ? faceClass?.cosetsM
                  : this.colorMode === 'orbitP' ? faceClass?.orbitP
                  : this.colorMode === 'orbitF' ? faceClass?.orbitF
                  : this.colorMode === 'orbitC' ? faceClass?.orbitC

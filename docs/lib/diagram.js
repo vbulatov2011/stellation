@@ -192,6 +192,7 @@ export class DiagramView {
     // by coset: right cosets ride the plane, left the cell this region caps
     if (this.colorMode === 'coset') return cosetColor(facet.coset ?? -1, outward);
     if (this.colorMode === 'cosetL') return cosetColor(facet.cosetL ?? -1, outward);
+    if (this.colorMode === 'cosetM') return cosetColor(facet.cosetM ?? -1, outward);
     if (this.colorMode === 'orbitP') return cosetColor(facet.orbitP ?? 0, outward);
     if (this.colorMode === 'orbitF') return cosetColor(facet.orbitF ?? 0, outward);
     if (this.colorMode === 'orbitC') return cosetColor(facet.orbitC ?? 0, outward);
@@ -320,6 +321,15 @@ export class DiagramView {
     // 1. every facet, filled faintly by layer, so the arrangement reads as depth
     if (this.showAll) {
       for (const facet of facets) {
+        if (this.colorMode === 'cosetM' && facet.pieces) {
+          for (const pc of facet.pieces) {
+            const c = cosetColor(pc.label ?? -1, true);
+            ctx.fillStyle = `rgba(${c.map(v => Math.round(v * 255)).join(',')},${dark ? 0.17 : 0.13})`;
+            this._path(ctx, pc.poly, f);
+            ctx.fill();
+          }
+          continue;
+        }
         const c = this._color(facet);
         ctx.fillStyle = `rgba(${c.map(v => Math.round(v * 255)).join(',')},${dark ? 0.17 : 0.13})`;
         this._path(ctx, facet.poly, f);
@@ -347,6 +357,18 @@ export class DiagramView {
     for (const facet of facets) {
       if (!facet.selected) continue;
       const inward = facet.facing === 0;
+      if (this.colorMode === 'cosetM' && facet.pieces) {
+        // the mirror-split pieces, each with its own crisp color
+        for (const pc of facet.pieces) {
+          const c = cosetColor(pc.label ?? -1, !inward).map(v => Math.round(v * 255));
+          ctx.fillStyle = inward
+            ? `rgba(${c.join(',')},${dark ? 0.42 : 0.34})`
+            : `rgb(${c.join(',')})`;
+          this._path(ctx, pc.poly, f);
+          ctx.fill();
+        }
+        continue;
+      }
       const c = this._color(facet, !inward).map(v => Math.round(v * 255));
       // inward faces were pale enough to be missed entirely at the old alpha.
       // Still clearly lighter than an outward face, but readable.
