@@ -16,6 +16,8 @@ import { initDocManager } from './docmanager.js';
 import { initPlanesDialog } from './planesdialog.js';
 import { initExportDialog } from './exportdialog.js';
 import { initExportSolid } from './exportsolid.js';
+import { initColors, colorsArray, applyColorsArray } from './colors.js';
+import { hasColorOverrides, setColorOverrides } from '../../lib/palette.js';
 import { initAnimation } from './animation.js';
 
 const $ = sel => document.querySelector(sel);
@@ -91,6 +93,14 @@ let renderer, diagram, cells, docs, presets, workspace;
  * a silent fall back to the icosahedron.
  */
 let docLinkHash = null;
+/*
+ * A palette read from a document, waiting for the figure to be built: its rows
+ * line up with the groups the MESH wears, and until there is a mesh there is
+ * nothing to line them up with. Consumed by the first refresh() after the
+ * open, then dropped.
+ */
+let pendingColors = null;
+let colorsDialog = null;
 
 /*
  * How the facets are colored. `class` groups the original faces under the
@@ -1170,10 +1180,25 @@ async function refresh() {
       cosets: mesh.faceCosets, cosetsL: mesh.faceCosetsL, cosetsM: mesh.faceCosetsM,
       orbitP: mesh.faceOrbitP, orbitF: mesh.faceOrbitF, orbitC: mesh.faceOrbitC,
       top: mesh.faceTop, planes: mesh.facePlanes });
+  /*
+   * A document's own palette, now that there is a figure to apply it to. It
+   * goes on BEFORE the first paint of this mesh — setMesh above uploaded the
+   * default colors, so the refresh below is what puts the document's on
+   * screen, and doing it here rather than at open time is what lets the rows
+   * line up with the groups actually built.
+   */
+  if (pendingColors) {
+    applyColorsArray(mesh, $('#colorMode').value, pendingColors);
+    pendingColors = null;
+    renderer?.refreshColors();
+    const mark = $('#colorsEdited');
+    if (mark) mark.hidden = !hasColorOverrides($('#colorMode').value);
+  }
   diagram.setData(dia);
   state.diagramFrame = dia?.frame || null;
   refreshDiagramOverlay();
   cells.setSelected(state.selected);
+  colorsDialog?.refresh();
 
   const { cells: str, aligned } = await call('formatCells', { selected });
   state.cellsString = str;
@@ -1353,7 +1378,6 @@ function wireControls() {
     else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); }
   });
 
-  $('#autoRotate').onchange = (e) => { if (renderer) renderer.autoRotate = e.target.checked; };
   for (const id of ['#showFaceEdges', '#faceEdgeColor', '#faceEdgeWidth', '#faceEdgeTubes',
                     '#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth', '#facetEdgeTubes']) {
     // `input` rather than `change` so dragging a slider or scrubbing the color
@@ -1370,6 +1394,11 @@ function wireControls() {
     diagram?.setColorMode(e.target.value);
     $('#cosetSubRow').hidden =
       !(e.target.value.startsWith('coset') || e.target.value.startsWith('orbit'));
+    // each mode keeps its own overrides, so the mark and the panel both
+    // answer for the mode now in force
+    const mark = $('#colorsEdited');
+    if (mark) mark.hidden = !hasColorOverrides(e.target.value);
+    colorsDialog?.refresh();
     // the mirror-split mesh has different topology, so entering or leaving
     // the split mode is the one color switch that refetches
     if (wasSplit !== (e.target.value === 'cosetM')) await refresh();
@@ -1581,6 +1610,9 @@ function wireControls() {
   });
   $('#exportSolidBtn').onclick = () => solidDialog?.open();
 
+  colorsDialog = initColors({ state, renderer, diagram, onChange: mark });
+  $('#editColorsBtn').onclick = () => colorsDialog?.open();
+
   $('#loadDoc').onchange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1760,8 +1792,10 @@ function currentPresetText(docName) {
     // the master flag, for readers that predate the face/facet split
     showEdges: $('#showFaceEdges').checked || $('#showFacetEdges').checked,
     showAllFacets: $('#showAllFacets').checked,
-    spin: $('#autoRotate').checked,
     colorMode: $('#colorMode').value,
+    // the figure's own palette, if it has one — see writePreset
+    colors: hasColorOverrides($('#colorMode').value)
+      ? colorsArray(state.mesh, $('#colorMode').value) : null,
     cosetSub: $('#cosetSub').value || null,
     faceOpacity: Number($('#faceOpacity').value) / 100,
     view: renderer?.getView() || null,
@@ -1886,11 +1920,8 @@ function pushEdgeStyle() {
  */
 function applyDisplaySettings(doc) {
   if (doc.source !== 'json') return;
-  for (const [id, val] of [['#showAllFacets', doc.showAllFacets],
-                           ['#autoRotate', doc.spin]]) {
-    $(id).checked = !!val;
-    $(id).dispatchEvent(new Event('change'));
-  }
+  $('#showAllFacets').checked = !!doc.showAllFacets;
+  $('#showAllFacets').dispatchEvent(new Event('change'));
   $('#colorMode').value = doc.colorMode || 'layer';
   $('#colorMode').dispatchEvent(new Event('change'));
   /*
@@ -1899,6 +1930,14 @@ function applyDisplaySettings(doc) {
    * the element and fillCosetSub() honors it when the options exist.
    */
   if (doc.cosetSub) $('#cosetSub').dataset.want = doc.cosetSub;
+  /*
+   * The palette is parked for the same reason the coset subgroup is: its rows
+   * are the groups the built figure wears, and nothing is built yet. A
+   * document that carries no colors CLEARS whatever the last one set, or its
+   * figure would open wearing the previous document's palette.
+   */
+  setColorOverrides(null);
+  pendingColors = doc.colors && doc.colors.length ? doc.colors.slice() : null;
   $('#faceOpacity').value = String(Math.round((doc.faceOpacity ?? 1) * 100));
   $('#faceOpacity').dispatchEvent(new Event('input'));
   // a pre-split document has only `showEdges`, which drew both kinds alike

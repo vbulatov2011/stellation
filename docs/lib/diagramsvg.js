@@ -17,7 +17,7 @@
  * for every plane in an export, not wherever the view happened to be left.
  */
 
-import { layerColor, classColor, cosetColor } from './palette.js';
+import { layerColor, classColor, cosetColor, faceColor } from './palette.js';
 
 /*
  * Four kinds of ink, each switched and weighted on its own.
@@ -81,20 +81,29 @@ export const DIAGRAM_DEFAULTS = {
 };
 
 const fmt = (n) => (Math.abs(n) < 1e-9 ? '0' : +n.toFixed(2));
-const rgb = (c) => `rgb(${c.map(v => Math.round(v * 255)).join(',')})`;
+const rgb = (c) => `rgb(${c.slice(0, 3).map(v => Math.round(v * 255)).join(',')})`;
+/** the fill-opacity attribute a group's alpha asks for, or nothing at full */
+const op = (c) => (c[3] == null || c[3] >= 1 ? '' : ` fill-opacity="${fmt(c[3])}"`);
 
+function facetGroup(f, data, mode) {
+  switch (mode) {
+    case 'class': return data.faceClass || 0;
+    case 'stellClass': return data.faceClassStell || 0;
+    case 'coset': return f.coset ?? -1;
+    case 'cosetL': return f.cosetL ?? -1;
+    case 'cosetM': return f.cosetM ?? -1;
+    case 'orbitP': return f.orbitP ?? 0;
+    case 'orbitF': return f.orbitF ?? 0;
+    case 'orbitC': return f.orbitC ?? 0;
+    default: return f.layer;
+  }
+}
+
+/** [r, g, b, a] for one region — the Colors panel's overrides included */
 function facetColor(f, data, mode) {
   const outward = f.facing !== 0;
-  if (mode === 'class') return classColor(data.faceClass || 0, outward);
-  if (mode === 'stellClass') return classColor(data.faceClassStell || 0, outward);
-  if (mode === 'coset') return cosetColor(f.coset ?? -1, outward);
-  if (mode === 'cosetL') return cosetColor(f.cosetL ?? -1, outward);
-  if (mode === 'cosetM') return cosetColor(f.cosetM ?? -1, outward);
-  if (mode === 'orbitP') return cosetColor(f.orbitP ?? 0, outward);
-  if (mode === 'orbitF') return cosetColor(f.orbitF ?? 0, outward);
-  if (mode === 'orbitC') return cosetColor(f.orbitC ?? 0, outward);
-  if (mode === 'none') return outward ? [1, 1, 1] : [0.82, 0.82, 0.82];
-  return layerColor(f.layer);
+  if (mode === 'none') return outward ? [1, 1, 1, 1] : [0.82, 0.82, 0.82, 1];
+  return faceColor(mode, facetGroup(f, data, mode), outward);
 }
 
 /**
@@ -238,12 +247,14 @@ export function diagramSVG(data, options = {}) {
     for (const f of chosen) {
       if (o.colorMode === 'cosetM' && f.pieces) {
         for (const pc of f.pieces) {
-          out.push(`  <path d="${path(pc.poly)}" ` +
-                   `fill="${rgb(cosetColor(pc.label ?? -1, f.facing !== 0))}"/>`);
+          const c = faceColor(o.colorMode, pc.label ?? -1, f.facing !== 0);
+          if (c[3] <= 0) continue;
+          out.push(`  <path d="${path(pc.poly)}" fill="${rgb(c)}"${op(c)}/>`);
         }
         continue;
       }
-      out.push(`  <path d="${path(f.poly)}" fill="${rgb(facetColor(f, data, o.colorMode))}"/>`);
+      const c = facetColor(f, data, o.colorMode);
+      if (c[3] > 0) out.push(`  <path d="${path(f.poly)}" fill="${rgb(c)}"${op(c)}/>`);
     }
   }
 

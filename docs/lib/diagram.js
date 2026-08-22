@@ -6,7 +6,7 @@
  */
 
 import { ACTION } from './render3d.js';
-import { layerColor, classColor, cosetColor } from './palette.js';
+import { layerColor, classColor, cosetColor, faceColor } from './palette.js';
 import { diagramSVG } from './diagramsvg.js';
 
 export class DiagramView {
@@ -186,17 +186,29 @@ export class DiagramView {
   /** either of the two face-class modes, as against coloring by shell */
   _byClass() { return this.colorMode === 'class' || this.colorMode === 'stellClass'; }
 
+  /*
+   * The group this region belongs to under the mode in force. A diagram is one
+   * plane, so the two class modes read the whole picture's class; everything
+   * else is per region.
+   */
+  _group(facet) {
+    switch (this.colorMode) {
+      case 'class': return this.data?.faceClass || 0;
+      case 'stellClass': return this.data?.faceClassStell || 0;
+      // by coset: the plane's own coset, or the region's, or its split pieces
+      case 'coset': return facet.coset ?? -1;
+      case 'cosetL': return facet.cosetL ?? -1;
+      case 'cosetM': return facet.cosetM ?? -1;
+      case 'orbitP': return facet.orbitP ?? 0;
+      case 'orbitF': return facet.orbitF ?? 0;
+      case 'orbitC': return facet.orbitC ?? 0;
+      default: return facet.layer;
+    }
+  }
+
+  /** [r, g, b, a] — overrides from the Colors panel included */
   _color(facet, outward = true) {
-    if (this.colorMode === 'class') return classColor(this.data?.faceClass || 0, outward);
-    if (this.colorMode === 'stellClass') return classColor(this.data?.faceClassStell || 0, outward);
-    // by coset: right cosets ride the plane, left the cell this region caps
-    if (this.colorMode === 'coset') return cosetColor(facet.coset ?? -1, outward);
-    if (this.colorMode === 'cosetL') return cosetColor(facet.cosetL ?? -1, outward);
-    if (this.colorMode === 'cosetM') return cosetColor(facet.cosetM ?? -1, outward);
-    if (this.colorMode === 'orbitP') return cosetColor(facet.orbitP ?? 0, outward);
-    if (this.colorMode === 'orbitF') return cosetColor(facet.orbitF ?? 0, outward);
-    if (this.colorMode === 'orbitC') return cosetColor(facet.orbitC ?? 0, outward);
-    return layerColor(facet.layer);
+    return faceColor(this.colorMode, this._group(facet), outward);
   }
 
   /** symmetry-element marks: [{kind:'point'|'line', p:[x,y], q?, color}] or null */
@@ -222,6 +234,12 @@ export class DiagramView {
     const extent = (this.data?.extent || 1);
     const scale = (Math.min(w, h) * 0.46 / extent) * this.zoom;
     return { w, h, dpr, scale, cx: w / 2 + this.pan.x, cy: h / 2 + this.pan.y };
+  }
+
+  /** a css color from [r,g,b,a?], at the alpha given */
+  _rgba(c, alpha) {
+    const v = c.slice(0, 3).map(x => Math.round(x * 255));
+    return alpha >= 1 ? `rgb(${v.join(',')})` : `rgba(${v.join(',')},${alpha.toFixed(3)})`;
   }
 
   _path(ctx, poly, f) {
@@ -323,15 +341,15 @@ export class DiagramView {
       for (const facet of facets) {
         if (this.colorMode === 'cosetM' && facet.pieces) {
           for (const pc of facet.pieces) {
-            const c = cosetColor(pc.label ?? -1, true);
-            ctx.fillStyle = `rgba(${c.map(v => Math.round(v * 255)).join(',')},${dark ? 0.17 : 0.13})`;
+            const c = faceColor(this.colorMode, pc.label ?? -1, true);
+            ctx.fillStyle = this._rgba(c, (dark ? 0.17 : 0.13) * c[3]);
             this._path(ctx, pc.poly, f);
             ctx.fill();
           }
           continue;
         }
         const c = this._color(facet);
-        ctx.fillStyle = `rgba(${c.map(v => Math.round(v * 255)).join(',')},${dark ? 0.17 : 0.13})`;
+        ctx.fillStyle = this._rgba(c, (dark ? 0.17 : 0.13) * c[3]);
         this._path(ctx, facet.poly, f);
         ctx.fill();
       }
@@ -360,23 +378,20 @@ export class DiagramView {
       if (this.colorMode === 'cosetM' && facet.pieces) {
         // the mirror-split pieces, each with its own crisp color
         for (const pc of facet.pieces) {
-          const c = cosetColor(pc.label ?? -1, !inward).map(v => Math.round(v * 255));
-          ctx.fillStyle = inward
-            ? `rgba(${c.join(',')},${dark ? 0.42 : 0.34})`
-            : `rgb(${c.join(',')})`;
+          const c = faceColor(this.colorMode, pc.label ?? -1, !inward);
+          ctx.fillStyle = this._rgba(c, (inward ? (dark ? 0.42 : 0.34) : 1) * c[3]);
           this._path(ctx, pc.poly, f);
           ctx.fill();
         }
         continue;
       }
-      const c = this._color(facet, !inward).map(v => Math.round(v * 255));
+      const c = this._color(facet, !inward);
       // inward faces were pale enough to be missed entirely at the old alpha.
       // Still clearly lighter than an outward face, but readable.
       // by class, either class, the underside already has its own darkened
       // hue — fading it as well would say the same thing twice
-      ctx.fillStyle = (inward && !this._byClass())
-        ? `rgba(${c.join(',')},${dark ? 0.42 : 0.34})`
-        : `rgb(${c.join(',')})`;
+      const fade = (inward && !this._byClass()) ? (dark ? 0.42 : 0.34) : 1;
+      ctx.fillStyle = this._rgba(c, fade * c[3]);
       this._path(ctx, facet.poly, f);
       ctx.fill();
     }

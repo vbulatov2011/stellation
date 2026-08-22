@@ -315,6 +315,11 @@
           <option value="orbitC">by subgroup orbits — per cell</option>
         </select>
       </label>
+      <div class="row">
+        <button id="editColorsBtn" type="button"
+                title="Give any group of facets a color of its own, and an opacity of its own — the shells, the face classes, the cosets, whichever the menu above is reading. Colors are saved with the document.">Edit colors…</button>
+        <span id="colorsEdited" class="dim" hidden>edited</span>
+      </div>
       <!-- shown only in coset mode: the subgroup of the POLYHEDRON group whose
            cosets do the coloring — a property of the figure, not of the
            editing symmetry -->
@@ -327,7 +332,6 @@
         <span>facet opacity <b id="faceOpacityLabel">100</b>%</span>
         <input id="faceOpacity" type="range" min="0" max="100" step="1" value="100">
       </label>
-      <label class="check"><input id="autoRotate" type="checkbox"> spin the solid</label>
       <fieldset class="edge-kinds">
         <legend title="Every facet lies in one of the original face planes. Where two facets of DIFFERENT planes meet there is a real crease — an edge of the solid. Where two facets of the SAME plane meet the surface runs flat across the join and the line is just how the plane arrangement was cut up. Drawing the two the same buries the shape of the solid in the arrangement that produced it.">edges</legend>
         <label class="check" title="The creases: where facets lying in different face planes meet"><input id="showFaceEdges" type="checkbox" checked> face edges</label>
@@ -495,6 +499,45 @@
     <button id="planesCancel">Cancel</button>
   </div>
 </dialog>
+
+<template id="colorsBody">
+  <div class="ex-body">
+  <h2>Colors</h2>
+  <p class="note" id="colWhat">
+    One row per group of facets, under the reading the view is using. The swatch
+    is the group's color and the slider its opacity — at 0 the group is not drawn
+    at all, so you can look past it at what it hides.
+  </p>
+
+  <div class="ex-section">
+    <div class="row">
+      <span class="dim" id="colMode"></span>
+      <button id="colReset" type="button" class="pushright"
+              title="Give every group back the palette's own color">Reset all</button>
+    </div>
+  </div>
+
+  <div id="colList" class="col-list"></div>
+
+  <div class="ex-section">
+    <b>Copy and paste</b>
+    <p class="note">
+      The colors as hex, in row order — the same array the document saves. Paste
+      one from another figure to wear its colors.
+    </p>
+    <div class="row">
+      <input type="text" id="colHex" class="grow mono" spellcheck="false"
+             aria-label="Colors as hex">
+      <button id="colApply" type="button">Apply</button>
+    </div>
+    <p id="colInfo" class="note"></p>
+  </div>
+
+  <div class="row buttons">
+    <button id="colClose" class="primary">Close</button>
+  </div>
+  </div>
+</template>
 
 <template id="exportSolidBody">
   <div class="ex-body">

@@ -225,11 +225,12 @@ ok(indices.BYTES_PER_ELEMENT === 4, 'indices are 32-bit, so a deep stellation ca
 const colors = faceColors(mesh, 'layer');
 {
   ok(colors.length === mesh.faces.length, 'every face gets a color');
-  ok(colors.every(c => c.length >= 3 && c.every(v => v >= 0 && v <= 1)),
-     'each of them three numbers in 0..1');
+  ok(colors.every(c => c.length === 4 && c.every(v => v >= 0 && v <= 1)),
+     'each of them four numbers in 0..1 — rgb, then the alpha of its group');
   // the mesh is colored by shell, so a face in shell n wears the shell color
   const want = layerColor(mesh.faceLayers[0]);
-  ok(colors[0].every((v, i) => v === want[i]), 'and it is the shell palette the view uses');
+  ok(want.every((v, i) => v === colors[0][i]), 'and it is the shell palette the view uses');
+  ok(colors.every(c => c[3] === 1), 'opaque until the Colors panel says otherwise');
   const distinct = new Set(colors.map(c => c.join()));
   ok(distinct.size > 1 && distinct.size <= 10,
      `${distinct.size} distinct colors, one per shell reached — not one per face`);

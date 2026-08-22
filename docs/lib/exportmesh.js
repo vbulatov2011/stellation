@@ -24,7 +24,7 @@
  */
 
 import { makeZip } from './uilib/zip.js';
-import { layerColor, classColor, cosetColor } from './palette.js';
+import { faceColor } from './palette.js';
 
 /**
  * What color each face is, by the same rule the 3-D view and the diagram use.
@@ -35,30 +35,25 @@ import { layerColor, classColor, cosetColor } from './palette.js';
  * thing that has to be passed is which of those readings is wanted.
  */
 export function faceColors(mesh, colorMode = 'layer') {
-  if (colorMode === 'coset' && mesh.faceCosets) {
-    return mesh.faces.map((_, i) =>
-      cosetColor(mesh.faceCosets[i] ?? -1, mesh.faceTop ? mesh.faceTop[i] !== false : true));
+  const top = (i) => (mesh.faceTop ? mesh.faceTop[i] !== false : true);
+  /*
+   * Which per-face array this mode reads. The color then comes from
+   * faceColor(), so a file carries exactly the colors on screen — the Colors
+   * panel's overrides and their alpha included.
+   */
+  const GROUPS = {
+    coset: mesh.faceCosets, cosetL: mesh.faceCosetsL, cosetM: mesh.faceCosetsM,
+    orbitP: mesh.faceOrbitP, orbitF: mesh.faceOrbitF, orbitC: mesh.faceOrbitC,
+    class: mesh.faceClasses, stellClass: mesh.faceClassesStell,
+  };
+  const g = GROUPS[colorMode];
+  if (g) {
+    const dflt = colorMode === 'class' || colorMode === 'stellClass' ? 0 : -1;
+    return mesh.faces.map((_, i) => faceColor(colorMode, g[i] ?? dflt, top(i)));
   }
-  if (colorMode === 'cosetL' && mesh.faceCosetsL) {
-    return mesh.faces.map((_, i) =>
-      cosetColor(mesh.faceCosetsL[i] ?? -1, mesh.faceTop ? mesh.faceTop[i] !== false : true));
-  }
-  if (colorMode === 'cosetM' && mesh.faceCosetsM) {
-    return mesh.faces.map((_, i) =>
-      cosetColor(mesh.faceCosetsM[i] ?? -1, mesh.faceTop ? mesh.faceTop[i] !== false : true));
-  }
-  if (colorMode.startsWith('orbit')) {
-    const orb = colorMode === 'orbitP' ? mesh.faceOrbitP
-              : colorMode === 'orbitF' ? mesh.faceOrbitF : mesh.faceOrbitC;
-    if (orb) return mesh.faces.map((_, i) =>
-      cosetColor(orb[i] ?? 0, mesh.faceTop ? mesh.faceTop[i] !== false : true));
-  }
-  const classes = colorMode === 'class' ? mesh.faceClasses
-                : colorMode === 'stellClass' ? mesh.faceClassesStell
-                : null;
-  return mesh.faces.map((_, i) => classes
-    ? classColor(classes[i] || 0, mesh.faceTop ? mesh.faceTop[i] !== false : true)
-    : layerColor(mesh.faceLayers ? mesh.faceLayers[i] : 0));
+  // by shell, the one mode that reads no group array of its own
+  return mesh.faces.map((_, i) =>
+    faceColor('layer', mesh.faceLayers ? mesh.faceLayers[i] : 0, top(i)));
 }
 
 /**

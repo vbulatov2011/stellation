@@ -128,3 +128,124 @@ export function cosetColor(i, top = true) {
   const rgb = hslRgb((i * 137.508) % 360, 0.60, 0.55);
   return top ? rgb : rgb.map(v => v * UNDERSIDE);
 }
+
+/* ------------------------------------------------------------------ overrides
+ *
+ * Every color above is a FUNCTION of a group index — which shell, which face
+ * class, which coset. That is what makes a stellation's coloring reproducible
+ * and a saved document reopenable. But the palettes are one person's taste,
+ * and a figure built for a particular picture often wants its own: this cell
+ * red because the paper model is red, that group of facets glass so the core
+ * shows through.
+ *
+ * So each (mode, group) may carry an override — an RGBA quadruple that stands
+ * in for the computed color. The overrides live here, next to the defaults
+ * they replace, because all four things that color a facet (the 3-D view, the
+ * diagram, the diagram's SVG export and the mesh exporters) already import
+ * this module, and a coloring that differed between the screen and the file
+ * would be worse than no override at all.
+ *
+ * Alpha rides along with the color rather than beside it. A group that is
+ * glass is glass in every view, and the one number the app already had — the
+ * global facet opacity — stays what it always was: a modifier over the lot.
+ */
+const OVERRIDES = new Map();      // 'mode:index' | 'mode:gray' -> [r, g, b, a]
+
+/** the key a (mode, group) pair is stored under; `gray` is a group like any other */
+export const colorKey = (mode, i) =>
+  `${mode}:${i == null || i < 0 ? 'gray' : i}`;
+
+/** '#rrggbb' or '#rrggbbaa' -> [r, g, b, a] in 0..1, or null if unreadable */
+export function hexToRgba(hex) {
+  const s = String(hex || '').trim().replace(/^#/, '');
+  if (!/^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(s)) return null;
+  const n = (k) => parseInt(s.slice(k, k + 2), 16) / 255;
+  return [n(0), n(2), n(4), s.length === 8 ? n(6) : 1];
+}
+
+/** [r, g, b, a] in 0..1 -> '#rrggbbaa', always eight digits so alpha survives */
+export function rgbaToHex(c) {
+  const h = (v) => Math.max(0, Math.min(255, Math.round((v ?? 0) * 255)))
+    .toString(16).padStart(2, '0');
+  return '#' + h(c[0]) + h(c[1]) + h(c[2]) + h(c[3] == null ? 1 : c[3]);
+}
+
+/**
+ * Replace the whole override table. `entries` is anything Map-like or a plain
+ * object of key -> '#rrggbbaa' | [r,g,b,a]; null or empty clears it.
+ */
+export function setColorOverrides(entries) {
+  OVERRIDES.clear();
+  if (!entries) return;
+  const pairs = entries instanceof Map ? entries : Object.entries(entries);
+  for (const [k, v] of pairs) {
+    const c = typeof v === 'string' ? hexToRgba(v) : v;
+    if (c) OVERRIDES.set(k, [c[0], c[1], c[2], c[3] == null ? 1 : c[3]]);
+  }
+}
+
+/** the override table, as a fresh Map of key -> [r,g,b,a] */
+export const colorOverrides = () => new Map(OVERRIDES);
+
+/** set or clear one group's color; `c` is a hex string, an rgba array, or null */
+export function setColorOverride(mode, i, c) {
+  const k = colorKey(mode, i);
+  const rgba = typeof c === 'string' ? hexToRgba(c) : c;
+  if (!rgba) OVERRIDES.delete(k);
+  else OVERRIDES.set(k, [rgba[0], rgba[1], rgba[2], rgba[3] == null ? 1 : rgba[3]]);
+}
+
+/** whether any group of `mode` — or of anything, with no argument — is overridden */
+export function hasColorOverrides(mode) {
+  if (!mode) return OVERRIDES.size > 0;
+  for (const k of OVERRIDES.keys()) if (k.startsWith(mode + ':')) return true;
+  return false;
+}
+
+/** the DEFAULT color of one group, ignoring any override: [r, g, b, a] */
+export function defaultColor(mode, i) {
+  if (mode === 'class' || mode === 'stellClass') {
+    const c = CLASS_COLORS[(i || 0) % CLASS_COLORS.length];
+    return [c[0], c[1], c[2], 1];
+  }
+  if (mode === 'layer') {
+    const c = layerColor(i || 0);
+    return [c[0], c[1], c[2], 1];
+  }
+  // every coset and orbit mode shares the golden-angle palette and its gray
+  const c = cosetColor(i, true);
+  return [c[0], c[1], c[2], 1];
+}
+
+/**
+ * THE color of a facet: the group's override if it has one, else the palette's
+ * own answer, darkened when this is an underside. `i` is a group index, -1 or
+ * null for gray, or an ARRAY of indices — a blend, which mixes its members in
+ * Oklab exactly as before, overrides and all, and averages their alphas.
+ *
+ * Returns [r, g, b, a]; callers that want only rgb can ignore the fourth.
+ */
+export function faceColor(mode, i, top = true) {
+  let c;
+  if (Array.isArray(i) || ArrayBuffer.isView(i)) {
+    let L = 0, A = 0, B = 0, al = 0;
+    for (const k of i) {
+      const m = OVERRIDES.get(colorKey(mode, k)) || defaultColor(mode, k);
+      const [l, a, b] = rgbOklab(m);
+      L += l; A += a; B += b; al += m[3];
+    }
+    const n = i.length || 1;
+    c = [...oklabRgb([L / n, A / n, B / n]), al / n];
+  } else {
+    c = OVERRIDES.get(colorKey(mode, i)) || defaultColor(mode, i);
+  }
+  /*
+   * Shell coloring is the one mode that does NOT darken its undersides: hue
+   * is already spent on depth there, so the 3-D view leaves the difference to
+   * the shading and the diagram carries it in alpha instead. Every other mode
+   * has hue to spare and uses the darkened twin — which is the whole point of
+   * the class palette, two colors for one kind of face.
+   */
+  if (top || mode === 'layer') return [c[0], c[1], c[2], c[3]];
+  return [c[0] * UNDERSIDE, c[1] * UNDERSIDE, c[2] * UNDERSIDE, c[3]];
+}

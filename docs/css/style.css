@@ -775,6 +775,24 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
  * interior, which is why the padding lives here and not on a fixed height.
  */
 .ex-body { padding: 11px 13px 13px; }
+
+/* the Colors panel: one row per group of facets — swatch, name, opacity */
+.col-list { padding: 0 13px; max-height: 46vh; overflow-y: auto; }
+.col-row {
+  display: grid; grid-template-columns: 28px 1fr 84px 30px;
+  gap: 8px; align-items: center; padding: 3px 0;
+}
+.col-row input[type="color"] {
+  width: 28px; height: 22px; padding: 0; border: 1px solid var(--line);
+  border-radius: 4px; background: none; cursor: pointer;
+}
+.col-name { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.col-alpha { width: 84px; }
+.col-pct {
+  font-size: 11.5px; text-align: right; font-variant-numeric: tabular-nums;
+  color: var(--dim); font-weight: 500;
+}
+.pushright { margin-left: auto; }
 .ex-body .note { margin: 0 0 4px; }
 .ex-section {
   border-top: 1px solid var(--line);

@@ -64,8 +64,8 @@ export function newDocumentName(date = new Date()) {
 export function writePreset({
   name, polyhedron, file, polySymmetry, stellSymmetry,
   planeDepth, cells, cellsIndexing = null, diagramFace,
-  showEdges = true, showAllFacets = true, spin = false, colorMode = 'layer',
-  cosetSub = null, faceOpacity = 1, edges = null,
+  showEdges = true, showAllFacets = true, colorMode = 'layer',
+  cosetSub = null, faceOpacity = 1, edges = null, colors = null,
   view = null, planeRows = null,
   exportLengthUnit = 0.01,
 }) {
@@ -92,7 +92,16 @@ export function writePreset({
        * beside it, as the master "any edges at all", so a document saved now
        * still opens sensibly in a build that predates the split.
        */
-      display: { diagramFace, showEdges, showAllFacets, spin, colorMode, cosetSub, faceOpacity, edges },
+      /*
+       * `colors` is the figure's own palette, when it has one: the color of
+       * each group under `colorMode`, as hex with alpha, in the panel's row
+       * order — numbered groups ascending, then gray. Written flat so it can
+       * be lifted out of one document and pasted into another, which is what
+       * the Colors panel's copy box is for. Absent when nothing was edited,
+       * so a document that never touched colors reads exactly as before.
+       */
+      display: { diagramFace, showEdges, showAllFacets, colorMode, cosetSub,
+                 faceOpacity, edges, colors: colors?.length ? colors : undefined },
       camera: view ? { view } : undefined,
       /*
        * A custom arrangement's plane set, structured: one object per row,
@@ -274,7 +283,13 @@ export function readPreset(doc) {
     diagramFace: p.display?.diagramFace ?? 0,
     showEdges: p.display?.showEdges ?? true,
     showAllFacets: p.display?.showAllFacets ?? true,
-    spin: p.display?.spin ?? false,
+    /*
+     * The saved palette, kept as written. It cannot be applied until the
+     * figure is built — the rows it lines up with are the groups the mesh
+     * actually wears — so the app parks it and applies it after the build.
+     */
+    colors: Array.isArray(p.display?.colors)
+      ? p.display.colors.filter(c => typeof c === 'string') : null,
     /*
      * Documents written before face-class coloring existed have no setting;
      * they were all drawn by shell, so that is what they should reopen as.

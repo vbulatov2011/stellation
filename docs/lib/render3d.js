@@ -15,11 +15,13 @@ const VERT = /*glsl*/`#version 300 es
 precision highp float;
 in vec3 aPos;
 in vec3 aNormal;
-in vec3 aColor;
+// rgbA: the fourth component is the group's own opacity. Buffers that upload
+// only three (edges, cylinders, mirror discs, axes) get w = 1 by GL default.
+in vec4 aColor;
 uniform mat4 uProj;
 uniform mat4 uView;
 out vec3 vNormal;
-out vec3 vColor;
+out vec4 vColor;
 out vec3 vEye;
 void main() {
   vec4 p = uView * vec4(aPos, 1.0);
@@ -32,10 +34,10 @@ void main() {
 const FRAG = /*glsl*/`#version 300 es
 precision highp float;
 in vec3 vNormal;
-in vec3 vColor;
+in vec4 vColor;
 in vec3 vEye;
 uniform float uEdgeDark;
-uniform float uAlpha;      // 1 for solids; mirror-plane discs draw translucent
+uniform float uAlpha;      // the global facet opacity: a modifier over every color
 out vec4 fragColor;
 void main() {
   vec3 n = normalize(vNormal);
@@ -47,10 +49,10 @@ void main() {
   vec3 V = normalize(-vEye);
   vec3 H = normalize(L1 + V);
   float spec = pow(max(dot(n, H), 0.0), 48.0) * 0.35;
-  vec3 c = vColor * (0.34 + d) + spec;   // keep shadowed faces light enough that black edges still read
+  vec3 c = vColor.rgb * (0.34 + d) + spec;   // keep shadowed faces light enough that black edges still read
   // slight rim to separate touching facets
   float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0) * 0.12;
-  fragColor = vec4(c + rim, uAlpha);
+  fragColor = vec4(c + rim, vColor.a * uAlpha);
 }`;
 
 /*
@@ -97,7 +99,7 @@ void main() { fragColor = uColor; }`;
  * every caller has always imported them from.
  */
 export { LAYER_COLORS, layerColor, CLASS_COLORS, UNDERSIDE, classColor } from './palette.js';
-import { layerColor, classColor, cosetColor } from './palette.js';
+import { layerColor, classColor, cosetColor, faceColor } from './palette.js';
 
 /*
  * When a new selection is allowed to re-fit the frame — see setMesh().
@@ -896,11 +898,29 @@ export class Renderer3D {
     }
     const s = this.modelScale;
 
+    /*
+     * Which group each facet belongs to, under the mode in force. The color
+     * itself comes from faceColor(), which is where a group's override — if
+     * the Colors panel gave it one — stands in for the palette's own answer.
+     */
+    const groupOf = cosets ? (fi) => cosets[fi] ?? -1
+      : byClass ? (fi) => classes[fi] || 0
+      : (fi) => (faceLayers ? faceLayers[fi] : 0);
+    this._anyFaceAlpha = false;
+
     mesh.faces.forEach((face, fi) => {
       const top = faceClass?.top ? faceClass.top[fi] !== false : true;
-      const c = cosets ? cosetColor(cosets[fi] ?? -1, top)
-        : byClass ? classColor(classes[fi] || 0, top)
-        : layerColor(faceLayers ? faceLayers[fi] : 0);
+      const c = faceColor(this.colorMode, groupOf(fi), top);
+      /*
+       * A group turned all the way down is not drawn at all — not as glass,
+       * not as an outline, and not as something a click can land on. Leaving
+       * its edges in would trace a ghost of the very thing being hidden, and
+       * leaving it pickable would put an invisible sheet in front of what the
+       * user turned it off to see. Edges shared with a visible facet survive
+       * as that facet's own rim, which is what they now are.
+       */
+      if (c[3] <= 0) { this._anyFaceAlpha = true; return; }
+      if (c[3] < 1) this._anyFaceAlpha = true;
       const p = face.map(i => mesh.vertices[i]);
       // flat normal from the first non-degenerate corner
       let nx = 0, ny = 0, nz = 0;
@@ -918,7 +938,7 @@ export class Renderer3D {
         for (const v of tri) {
           pos.push(v.x * s, v.y * s, v.z * s);
           norm.push(nx, ny, nz);
-          col.push(c[0], c[1], c[2]);
+          col.push(c[0], c[1], c[2], c[3]);
         }
         this.pickTris.push({
           a: [tri[0].x * s, tri[0].y * s, tri[0].z * s],
@@ -978,7 +998,7 @@ export class Renderer3D {
 
     upload(this.vao, this.posBuf, 'aPos', pos, 3, this.prog);
     upload(this.vao, this.normBuf, 'aNormal', norm, 3, this.prog);
-    upload(this.vao, this.colBuf, 'aColor', col, 3, this.prog);
+    upload(this.vao, this.colBuf, 'aColor', col, 4, this.prog);
     this.count = pos.length / 3;
     this._sortData = null;         // new geometry: the translucency order tables are stale
     // kept for the cylinder edges, built lazily so line mode never pays for them
@@ -1009,6 +1029,16 @@ export class Renderer3D {
   setColorMode(mode) {
     if (mode === this.colorMode) return;
     this.colorMode = mode;
+    if (this.mesh) this.setMesh(this.mesh, this.lastFaceLayers, this.lastFaceClass);
+  }
+
+  /**
+   * Re-read the palette without changing mode — what the Colors panel calls
+   * after every edit. Same rebuild as a mode switch, for the same reason:
+   * only the color attribute changes, and the geometry it rides on is
+   * identical, so the framing is untouched.
+   */
+  refreshColors() {
     if (this.mesh) this.setMesh(this.mesh, this.lastFaceLayers, this.lastFaceClass);
   }
 
@@ -1294,7 +1324,9 @@ export class Renderer3D {
      * solid.) At 0 the glass is skipped and the ink alone is a wireframe.
      */
     const alpha = Math.max(0, Math.min(1, this.faceOpacity ?? 1));
-    if (alpha >= 1) {
+    // per-face alpha needs the same back-to-front compositing the global
+    // opacity does, so one translucent group puts the whole pass on that path
+    if (alpha >= 1 && !this._anyFaceAlpha) {
       gl.enable(gl.POLYGON_OFFSET_FILL);
       gl.polygonOffset(1.2, 1.2);    // sink the faces so the ink sits cleanly on top
       gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
