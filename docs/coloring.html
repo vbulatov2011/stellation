@@ -21,6 +21,12 @@
     border: 1px solid var(--line, rgba(128,128,128,0.25));
     border-radius: 10px; padding: 14px 18px 12px; margin: 18px 0;
   }
+  .ex::after { content: ''; display: block; clear: both; }
+  .ex .shot {
+    float: right; width: 150px; height: 150px; margin: 2px 0 10px 16px;
+    border-radius: 8px; border: 1px solid var(--line, rgba(128,128,128,0.25));
+  }
+  @media (max-width: 560px) { .ex .shot { width: 108px; height: 108px; } }
   .ex h3 { margin: 0 0 6px; }
   .ex p { margin: 0 0 8px; }
   .ex .foot {
@@ -109,6 +115,7 @@
     <h2>Compounds: one color per component</h2>
 
     <div class="ex">
+      <img class="shot" src="examples/compound-of-five-tetrahedra.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>The five tetrahedra</h3>
       <p>
         The founding picture. The icosahedron's twenty face planes fall into five
@@ -125,6 +132,7 @@
     </div>
 
     <div class="ex">
+      <img class="shot" src="coloring/ten-tetrahedra-pairs.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>The ten tetrahedra, by chiral pair</h3>
       <p>
         Add the other hand and the classical convention changes: five colors again,
@@ -141,6 +149,7 @@
     </div>
 
     <div class="ex">
+      <img class="shot" src="coloring/two-hands.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>Right compound against left</h3>
       <p>
         Same figure, subgroup <b>I</b> — index two in I<sub>h</sub> — and the ten
@@ -155,6 +164,7 @@
     </div>
 
     <div class="ex">
+      <img class="shot" src="coloring/five-octahedra.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>The five octahedra</h3>
       <p>
         Hess's compound of 1876, Wenninger's model 23 — and the picture that shows
@@ -171,6 +181,7 @@
     </div>
 
     <div class="ex">
+      <img class="shot" src="coloring/five-cubes.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>The five cubes</h3>
       <p>
         Cundy &amp; Rollett's "Five Cubes in a Dodecahedron — ideally in five
@@ -191,6 +202,7 @@
     <h2>Model builders' conventions</h2>
 
     <div class="ex">
+      <img class="shot" src="coloring/great-icosahedron-table.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>The five-color table, on the great icosahedron</h3>
       <p>
         Wenninger's multi-color icosahedral models keep one color per face plane,
@@ -207,6 +219,7 @@
     </div>
 
     <div class="ex">
+      <img class="shot" src="coloring/six-color-dodecahedron.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>Opposite faces alike</h3>
       <p>
         Paper modelers like to cut both faces of an opposite pair from one sheet.
@@ -234,6 +247,7 @@
     </p>
 
     <div class="ex">
+      <img class="shot" src="coloring/blend-duotones.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>Twenty duotones: both compounds at once</h3>
       <p>
         The <em>blend</em>. Each icosahedron face lies in exactly one right-handed
@@ -249,6 +263,7 @@
     </div>
 
     <div class="ex">
+      <img class="shot" src="coloring/mirror-split-faces.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>One face, two colors, parted by a mirror</h3>
       <p>
         The <em>mirror-split</em>. A face grays because its own mirrors straddle the
@@ -270,6 +285,7 @@
     <h2>Orbits: what the subgroup preserves</h2>
 
     <div class="ex">
+      <img class="shot" src="coloring/invariant-tetrahedra.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>4 + 4 + 12: the invariant tetrahedra</h3>
       <p>
         Orbit coloring asks the other question. <b>T</b> acting on the twenty face
@@ -286,6 +302,7 @@
     </div>
 
     <div class="ex">
+      <img class="shot" src="coloring/painters-orbits.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>Cells a painter would match</h3>
       <p>
         Per cell, the orbit coloring paints whole solid pieces — the unit that gets
@@ -305,6 +322,7 @@
   <section id="gray">
     <h2>What gray means</h2>
     <div class="ex">
+      <img class="shot" src="coloring/honest-gray-cube.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>The cube under C<sub>4</sub></h3>
       <p>
         Gray is never a failure — it is the coloring telling you something. A piece
