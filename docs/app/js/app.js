@@ -499,11 +499,14 @@ function onPick3D(hit, mod) {
 /*
  * What a click here would do, said in color before it is spent.
  *
- * Green adds, red removes — the natural reading of the two colors. When the
- * gesture has nothing to work on the outline is dimmed rather than dropped: a
- * highlight should mean the click will do something, but you still want to see
- * which face you are pointing at, so it stays visible and stops looking like a
- * live target.
+ * Green adds, red removes — the natural reading of the two colors. Where the
+ * gesture has nothing to work on there is NO outline: the outermost facets of
+ * the arrangement have nothing further out to add, and outlining them in green
+ * invited a click that could only report failure. The outline was dimmed there
+ * once, on the reasoning that you still want to see which face you are
+ * pointing at — but a faint green outline is still a green outline, and it
+ * still says "add here". Its absence is the honest answer, and the status line
+ * beside it says why.
  */
 function onHover3D(hit, mod) {
   const mesh = state.mesh;
@@ -514,8 +517,9 @@ function onHover3D(hit, mod) {
   }
   const action = mod?.shift ? 'add' : (mod?.ctrl ? 'remove' : null);
   const key = mod?.shift ? mesh.faceOutside[hit.face] : mesh.faceInside[hit.face];
-  const live = !!key && !!action;
-  renderer?.setHighlight(hit.face, action, live || !action);
+  // an action with nothing to act on gets no outline; a bare hover still
+  // outlines neutrally, because pointing at a face is not a promise
+  renderer?.setHighlight(action && !key ? -1 : hit.face, action);
   // name the box the panel shows, not the raw atom — that is what the click's
   // orbit expansion will actually toggle
   const shown = key && (state.subOf?.get(key) || key);

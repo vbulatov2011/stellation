@@ -1483,13 +1483,16 @@ export class Renderer3D {
   /**
    * Outline one face, or clear with -1.
    *
-   * `action` is 'add' | 'remove' | null and picks the color; `enabled` false
-   * dims it, meaning "you are pointing at this, but the click would do nothing".
+   * `action` is 'add' | 'remove' | null and picks the color. An outline in an
+   * action color is a promise that the click will do that thing; a neutral one
+   * says only "this is the face you are pointing at". The caller keeps that
+   * promise by asking for no outline at all where the gesture has nothing to
+   * act on — see onHover3D.
    */
-  setHighlight(faceIndex, action = null, enabled = true) {
-    const want = `${faceIndex}|${action}|${enabled ? 1 : 0}`;
+  setHighlight(faceIndex, action = null) {
+    const want = `${faceIndex}|${action}`;
     const a = ACTION[action] || ACTION.none;
-    this.hlColor = enabled ? [...a.rgb, 1.0] : [...a.rgb, 0.34];
+    this.hlColor = [...a.rgb, 1.0];
     if (this._hl === want) { this.draw(); return; }
     this._hl = want;
     const gl = this.gl;
