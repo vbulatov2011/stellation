@@ -912,14 +912,15 @@ export class Renderer3D {
       const top = faceClass?.top ? faceClass.top[fi] !== false : true;
       const c = faceColor(this.colorMode, groupOf(fi), top);
       /*
-       * A group turned all the way down is not drawn at all — not as glass,
-       * not as an outline, and not as something a click can land on. Leaving
-       * its edges in would trace a ghost of the very thing being hidden, and
-       * leaving it pickable would put an invisible sheet in front of what the
-       * user turned it off to see. Edges shared with a visible facet survive
-       * as that facet's own rim, which is what they now are.
+       * A group at zero opacity is invisible, not absent. Its triangles are
+       * still built and still uploaded — they simply composite to nothing —
+       * so its edges go on being drawn and the structure keeps its shape as
+       * you take the fill away. Dropping the facets instead, which this did
+       * at first, made the edges vanish with them: the whole figure changed
+       * appearance at the last step of the slider rather than fading to a
+       * wireframe of itself. The same reasoning keeps them pickable, so a
+       * click behaves the same at 0 as it does at 0.01.
        */
-      if (c[3] <= 0) { this._anyFaceAlpha = true; return; }
       if (c[3] < 1) this._anyFaceAlpha = true;
       const p = face.map(i => mesh.vertices[i]);
       // flat normal from the first non-degenerate corner
