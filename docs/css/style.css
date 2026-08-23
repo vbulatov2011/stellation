@@ -427,11 +427,21 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); 
   background: var(--line);
 }
 
-/* the specimen grid: thumbnails only, names live in the footer */
+/*
+ * The specimen grid: thumbnails only, names live in the footer.
+ *
+ * 128px to the tile, and the 10px gap that goes with it, so a solid here is
+ * the same size as a document in the Files window — the two shelves of
+ * pictures are read the same way, and one of them showing stamps while the
+ * other showed postcards was the only thing telling them apart.
+ */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(auto-fill, 128px);
+  gap: 10px;
+  /* fixed tiles leave a remainder; split it evenly rather than banking
+     it all against the right edge, where it reads as a missing column */
+  justify-content: center;
 }
 
 .poly {

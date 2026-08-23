@@ -702,7 +702,7 @@ function buildCatalog() {
       b.dataset.sym = item.symmetry;
       b.dataset.cat = cat.category;
       b.setAttribute('aria-label', item.name);
-      b.innerHTML = `<img src="img/poly/${item.file}_tmb.png" alt="" width="46" height="46">`;
+      b.innerHTML = `<img src="img/poly/${item.file}_tmb.png" alt="" width="128" height="128">`;
       b.onmouseenter = () => showFoot(item, cat.category);
       b.onfocus = () => showFoot(item, cat.category);
       b.onclick = () => {
