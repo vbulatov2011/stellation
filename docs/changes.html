@@ -151,6 +151,18 @@
       lives — and so has the note about the preset shape.
     </div></li>
     <li><div>
+      <b>No green outline where there is nothing to add.</b> Holding
+      <kbd>shift</kbd> over the outermost facets outlined them green, and green
+      means "this click adds a cell" — but those facets have nothing further
+      out, so the click could only report failure. The outline was dimmed there
+      rather than dropped, on the reasoning that you still want to see which
+      face you are pointing at; a faint green outline is still a green outline,
+      and it still makes the promise. Now a gesture with nothing to act on
+      draws no outline at all, and the status line beside it says why. A bare
+      hover with no modifier still outlines neutrally, because pointing at a
+      face is not a promise about a click.
+    </div></li>
+    <li><div>
       <b>Any group of facets can take a color of its own — and an opacity.</b>
       Every coloring the app offers is a function of a group: which shell,
       which face class, which coset, which orbit. <b>Edit colors…</b>, beside
