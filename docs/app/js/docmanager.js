@@ -141,6 +141,16 @@ export function initDocManager({
       container: document.querySelector('main'),
       onError: (msg) => setStatus(msg, false),
       onNotice: (msg) => setStatus(msg, false),
+      /*
+       * Renaming the document that is currently open moves the file Save
+       * writes to. Without this the next Save would recreate the old name and
+       * leave two copies, one of them stale.
+       */
+      onRenamed: ({ folderHandle, oldFileName, name, fileName }) => {
+        if (currentDoc.fileName !== oldFileName) return;
+        if (currentDoc.folderHandle && currentDoc.folderHandle !== folderHandle) return;
+        setOrigin(name, currentDoc.folderHandle || folderHandle, fileName);
+      },
       onSelect: async (data) => {
         try {
           const file = await data.jsonHandle.getFile();

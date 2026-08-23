@@ -24,7 +24,7 @@
  */
 
 import { createImageSelector, DEFAULT_THUMB, showThumbMenu, copyText } from './imageSelector.js';
-import { getHandle, setHandle, restoreHandle } from './files.js';
+import { getHandle, setHandle, restoreHandle, writeFile } from './files.js';
 
 const EXT_JSON = '.json';
 const EXT_PNG = '.png';
@@ -230,6 +230,7 @@ export function createFileSelectionDialog(options = {}) {
           } catch (e) { options.onError?.('could not delete: ' + e.message); }
         },
       },
+      isDoc && { label: 'rename…', run: () => renameDoc(data) },
       data && {
         label: 'copy path',
         run: async () => {
@@ -244,6 +245,72 @@ export function createFileSelectionDialog(options = {}) {
 
   /** a plain message, distinct from an error; falls back to the error channel */
   const notice = (msg) => (options.onNotice || options.onError)?.(msg);
+
+  /**
+   * Rename a document: its .json, its thumbnail, and the name written INSIDE
+   * the json.
+   *
+   * That last one is not decoration. The name in the file is what the header
+   * shows and what Save As offers, for every way into a document except this
+   * browser — which overrides it with the filename right after opening. Leave
+   * it behind on a rename and a document reopened from a link or the file
+   * picker announces itself by its old name.
+   *
+   * There is no rename in the File System Access API, so this writes the pair
+   * under the new names and removes the old. The json is rewritten anyway to
+   * carry the new name; the thumbnail is copied byte for byte.
+   */
+  async function renameDoc(data) {
+    if (!curHandle || !data?.fileName) return;
+    const oldBase = data.getName();
+    const raw = prompt('New name for this document:', oldBase);
+    if (raw == null) return;
+    const base = raw.trim().replace(/\.json$/i, '');
+    if (!base || base === oldBase) return;
+    if (/[\\/:*?"<>|]/.test(base)) {
+      options.onError?.('a file name cannot contain \\ / : * ? " < > |');
+      return;
+    }
+    const newJson = base + EXT_JSON;
+    let clash = false;
+    try { await curHandle.getFileHandle(newJson); clash = true; } catch { /* free */ }
+    if (clash && !confirm(`${newJson} already exists here. Replace it?`)) return;
+
+    try {
+      const text = await (await data.jsonHandle.getFile()).text();
+      /*
+       * Rewritten through JSON so the name inside matches the name outside.
+       * A file this app did not write, or one it cannot parse, is moved
+       * unchanged rather than mangled on the way past.
+       */
+      let out = text;
+      try {
+        const doc = JSON.parse(text);
+        if (doc && typeof doc === 'object') { doc.name = base; out = JSON.stringify(doc, null, 4); }
+      } catch { /* not our shape: carry the bytes across untouched */ }
+      await writeFile(curHandle, newJson, out);
+
+      if (data.tmbHandle) {
+        const png = await data.tmbHandle.getFile();
+        await writeFile(curHandle, newJson + EXT_PNG, await png.arrayBuffer());
+      }
+      // only once the new pair is safely written
+      await curHandle.removeEntry(data.fileName);
+      if (data.tmbHandle) {
+        try { await curHandle.removeEntry(data.fileName + EXT_PNG); } catch { /* none */ }
+      }
+
+      options.onRenamed?.({ folderHandle: curHandle, oldFileName: data.fileName,
+                            name: base, fileName: newJson });
+      // the name decides the order, so the listing is redrawn rather than patched
+      await populate();
+      const item = selector.findItem({ getName: () => base }, true);
+      if (item) revealItem(item);
+      notice(`renamed to ${newJson}`);
+    } catch (e) {
+      options.onError?.('could not rename: ' + e.message);
+    }
+  }
 
   /**
    * Make a folder here, under a name the user types.
