@@ -68,6 +68,9 @@ export function createFileSelectionDialog(options = {}) {
         options.onSelect?.(data);
       },
       onContextMenu: showItemMenu,
+      // a document is opened deliberately, with a double click; a single one
+      // selects it, which is what the context menu and the eye both want
+      activateOn: 'dblclick',
     });
     const mkBtn = (label, title, fn) => {
       const b = document.createElement('button');
@@ -193,30 +196,70 @@ export function createFileSelectionDialog(options = {}) {
 
   // ---- context menu -------------------------------------------------------
 
+  /**
+   * The right-button menu, for a document, a folder, or the empty space
+   * between them — `data` is null for the last. New folder is offered
+   * everywhere, because it is about the folder you are IN rather than about
+   * whatever the pointer happened to be over; delete is offered only over a
+   * document, which is the only thing here that can be deleted.
+   */
   function showItemMenu(data, event) {
-    if (data.isFolder) return;
     document.querySelector('.iw-menu')?.remove();
     const menu = document.createElement('div');
     menu.className = 'iw-menu';
     menu.style.left = event.clientX + 'px';
     menu.style.top = event.clientY + 'px';
-    const del = document.createElement('button');
-    del.textContent = 'delete ' + data.fileName + '…';
-    del.onclick = async () => {
-      menu.remove();
-      if (!confirm(`Delete ${data.fileName} and its thumbnail?`)) return;
-      try {
-        await curHandle.removeEntry(data.fileName);
-        if (data.tmbHandle) await curHandle.removeEntry(data.fileName + EXT_PNG);
-        selector.removeItem(data);
-      } catch (e) { options.onError?.('could not delete: ' + e.message); }
+
+    const add = (label, fn) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.onclick = async () => { menu.remove(); await fn(); };
+      menu.appendChild(b);
     };
-    menu.appendChild(del);
+
+    if (data && !data.isFolder) {
+      add('delete ' + data.fileName + '…', async () => {
+        if (!confirm(`Delete ${data.fileName} and its thumbnail?`)) return;
+        try {
+          await curHandle.removeEntry(data.fileName);
+          if (data.tmbHandle) await curHandle.removeEntry(data.fileName + EXT_PNG);
+          selector.removeItem(data);
+        } catch (e) { options.onError?.('could not delete: ' + e.message); }
+      });
+    }
+    add('new folder…', newFolder);
+
     document.body.appendChild(menu);
     setTimeout(() => addEventListener('pointerdown', function dismiss(e) {
       if (!menu.contains(e.target)) menu.remove();
       removeEventListener('pointerdown', dismiss);
     }));
+  }
+
+  /**
+   * Make a folder here, under a name the user types.
+   *
+   * The listing is redrawn rather than added to: a folder does not go at the
+   * end like a saved document — folders come before documents — so there is no
+   * place to append it to that would be the place it belongs.
+   */
+  async function newFolder() {
+    if (!curHandle) return;
+    const raw = prompt('Name for the new folder:', 'new folder');
+    if (raw == null) return;
+    const name = raw.trim();
+    if (!name) return;
+    // the characters a folder name cannot carry on the platforms this runs on
+    if (/[\\/:*?"<>|]/.test(name)) {
+      options.onError?.('a folder name cannot contain \\ / : * ? " < > |');
+      return;
+    }
+    try {
+      await curHandle.getDirectoryHandle(name, { create: true });
+      await populate();
+    } catch (e) {
+      options.onError?.('could not create the folder: ' + e.message);
+    }
   }
 
   // ---- API ---------------------------------------------------------------

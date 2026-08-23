@@ -53,6 +53,15 @@ export const DEFAULT_THUMB =
 export function createImageSelector(param = {}) {
   const onSelect = param.onSelect || (() => {});
   const onContextMenu = param.onContextMenu || null;
+  /*
+   * What opens an item: a single click, or a double click with the single one
+   * demoted to selecting. Default 'click', so pickers that are lists of things
+   * to choose (the presets sheet) keep working the way they read; the file
+   * browser asks for 'dblclick', because there a click also means "this is the
+   * one I mean" for a menu or a second gesture, and opening a document by
+   * brushing past it is how the wrong file gets opened.
+   */
+  const activateOn = param.activateOn === 'dblclick' ? 'dblclick' : 'click';
   const filesFilter = param.filesFilter || createDefaultImageFilesFilter();
 
   const intWin = createInternalWindow({
@@ -73,6 +82,21 @@ export function createImageSelector(param = {}) {
   const grid = document.createElement('div');
   grid.className = 'thumbnail-grid';
   intWin.interior.appendChild(grid);
+
+  /*
+   * The whole interior answers the right button, not just the tiles. Clicking
+   * the gap between them used to raise the browser's own menu — reload, view
+   * source, save image — which belongs to a web page and not to a folder. The
+   * item's own handler takes the ones over a tile; this takes the rest, and
+   * reports no item.
+   */
+  if (onContextMenu) {
+    intWin.interior.addEventListener('contextmenu', (e) => {
+      if (e.target.closest('.thumbnail-container')) return;
+      e.preventDefault();
+      onContextMenu(null, e);
+    });
+  }
 
   let items = [];            // the live item wrappers, in DOM order
   let selected = null;
@@ -127,6 +151,7 @@ export function createImageSelector(param = {}) {
         url: it.url, tmb: it.tmb, file: it.file,
         userData: it.data,
         onClick: pick,
+        onActivate: activate,
         onContextMenu: onContextMenu
           ? (w, e) => onContextMenu(w.getUserData(), e)
           : null,
@@ -136,11 +161,16 @@ export function createImageSelector(param = {}) {
     }
   }
 
+  /** a single click: always selects, and opens only where that is the gesture */
   function pick(wrap) {
-    selected?.setSelected(false);
-    selected = wrap;
-    wrap.setSelected(true);
-    onSelect(wrap.getUserData());
+    selectItem(wrap);
+    if (activateOn === 'click') onSelect(wrap.getUserData());
+  }
+
+  /** a double click: opens where that is the gesture, having selected anyway */
+  function activate(wrap) {
+    selectItem(wrap);
+    if (activateOn === 'dblclick') onSelect(wrap.getUserData());
   }
 
   function selectItem(wrap) {
@@ -245,6 +275,8 @@ function createImageItemElem(options) {
   };
 
   img.addEventListener('click', () => options.onClick?.(myself));
+  // the caption counts as the item too, which is what a double click expects
+  container.addEventListener('dblclick', () => options.onActivate?.(myself));
   if (options.onContextMenu) {
     container.addEventListener('contextmenu', (e) => {
       e.preventDefault();
