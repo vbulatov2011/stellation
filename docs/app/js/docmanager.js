@@ -162,7 +162,14 @@ export function initDocManager({
            * next Save wrote the kept document over the one merely clicked.
            * openDocument() says whether it actually opened; believe it.
            */
-          if (!await openDocument(await file.text(), data.fileName)) return;
+          /*
+           * The URL remembers where this came from, so a reload opens it
+           * again. `file=` rather than `doc=` because it names a place on
+           * this machine: nobody else can follow it, and the app says so by
+           * failing quietly when it cannot.
+           */
+          const hash = 'file=' + fileDialog.pathBelowRoot(data.fileName);
+          if (!await openDocument(await file.text(), data.fileName, { hash })) return;
           // origin points at the folder the file was IN, which is the
           // browser's current folder — saved-over, not saved-next-to
           setOrigin(data.getName(), fileDialog.getWriteHandle(), data.fileName);
@@ -187,6 +194,19 @@ export function initDocManager({
     setBrowserOpen: (v) => { if (v) ensureFileDialog().show(); else fileDialog?.setVisible(false); },
     /** any non-folder open (preset, .stel, file input) clears the origin */
     clearOrigin: (name) => setOrigin(name || null, null, null),
+    /**
+     * Reopen a document by its path below the granted root, for a page that
+     * loaded with a `file=` fragment. Silent when the folder permission has
+     * lapsed — a reload is not a gesture to spend on a permission chip.
+     */
+    reopenPath: async (path, opts = {}) => {
+      if (!canFolders) return false;
+      const found = await ensureFileDialog().openPath(path);
+      if (!found) return false;
+      if (!await openDocument(found.text, found.fileName, opts)) return false;
+      setOrigin(found.name, found.folderHandle, found.fileName);
+      return true;
+    },
     current: () => ({ ...currentDoc }),
   };
 }

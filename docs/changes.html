@@ -69,6 +69,23 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>A reload comes back to the document you opened.</b> The address bar
+      carried the geometry — solid, groups, depth, camera, cells — which is
+      what makes the app drivable from a web page, but it meant that opening a
+      preset or one of your own files and then reloading gave you the figure
+      without the document: its coloring, its subgroup, its edge style all
+      reverted, and its name with them. A gallery link already knew better, and
+      now every way in does. Open a preset and the address becomes
+      <code>#doc=presets/TD-4.json</code>, which is a link anyone can follow.
+      Open a file of your own and it becomes <code>#file=</code> and the path
+      below the folder you granted — not a link anyone else can follow, since
+      it names a place on your machine, and it says so by falling back to the
+      default figure with a word about why when the folder permission has
+      lapsed. Editing drops the link, as it always did: at the first change it
+      stops being that document and the address goes back to describing what is
+      on screen.
+    </div></li>
+    <li><div>
       <b>Both thumbnail shelves open on a double click, and both own the right
       button.</b> A single click selects a tile and nothing more; opening takes
       a double click, the way a folder of files behaves everywhere else — and

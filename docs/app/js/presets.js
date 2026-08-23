@@ -60,7 +60,9 @@ export function initPresets({ openDocument, setStatus }) {
         take(text, name);
         return;
       }
-      await openDocument(text, name);
+      // a preset has a real address, so the URL can keep it and a reload
+      // opens the same preset again
+      await openDocument(text, name, { hash: 'doc=' + data.jsonUrl });
     } catch (err) {
       setStatus?.('could not open the preset: ' + err.message, false);
       endPick();

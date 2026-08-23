@@ -187,6 +187,33 @@ export function createFileSelectionDialog(options = {}) {
     }
   }
 
+  /**
+   * Find a document by its path below the remembered root, WITHOUT asking for
+   * anything.
+   *
+   * This runs on a page load, where there is no user gesture to spend, so it
+   * only takes a permission the browser is still holding — queryPermission,
+   * never requestPermission. Where the grant has lapsed it returns null and
+   * the caller carries on with its default rather than throwing a permission
+   * chip at someone who only pressed reload.
+   */
+  async function openPath(path) {
+    try {
+      const root = await getHandle(ROOT_KEY);
+      if (!root) return null;
+      if (await root.queryPermission({ mode: 'readwrite' }) !== 'granted') return null;
+      const segs = String(path).split('/').filter(Boolean);
+      const fileName = segs.pop();
+      if (!fileName) return null;
+      let dir = root;
+      for (const seg of segs) dir = await dir.getDirectoryHandle(seg);
+      const handle = await dir.getFileHandle(fileName);
+      const text = await (await handle.getFile()).text();
+      return { text, fileName, folderHandle: dir,
+               name: fileName.replace(/\.json$/i, '') };
+    } catch { return null; }
+  }
+
   /** stored root -> permission chip -> null. Must run inside a user gesture. */
   async function loadRootHandle() {
     if (rootHandle) return rootHandle;
@@ -459,6 +486,9 @@ export function createFileSelectionDialog(options = {}) {
     refresh,
     loadRootHandle,
     getRootHandle: () => rootHandle,
+    /** a document's path below the granted root — what the URL remembers */
+    pathBelowRoot: (fileName) => [...curPath, fileName].filter(Boolean).join('/'),
+    openPath,
     getWriteHandle: () => curHandle,
     getWriteHandlePath: () => '/' + curPath.join('/'),
   };

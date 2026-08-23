@@ -307,36 +307,43 @@ async function boot() {
    * this one must not be able to fetch an arbitrary host.
    */
   const docLink = hash.match(/^doc=([\w./-]+\.(?:json|stel|txt))$/);
+  /*
+   * `file=<path>` is the same idea for a document of your own: it names a file
+   * below the folder you granted, so a reload comes back to what you were
+   * working on. It is not a link anyone else can follow, and it works only
+   * while the browser still holds the folder permission — see reopenPath.
+   */
+  const fileLink = hash.match(/^file=([^?#]+\.json)$/);
   // the cells segment allows the c{…} member-indexed form — an unaligned
   // selection, which parseCellsAny recognizes by the prefix
   const m = hash.match(
     /^([\w]+)(?:\/([\w()]+))?(?:\/([\w()]+))?(?:\/d(\d+))?(?:\/v([-\d.,eE]+))?(?:\/(c?\{.*\}))?$/);
-  if (docLink && !docLink[1].includes('..')) {
+  if (fileLink && !fileLink[1].includes('..')) {
+    const path = fileLink[1];
+    if (await docs?.reopenPath(path, { hash })) {
+      // opened, and openDocument has already put the link back in the URL
+    } else {
+      // the message goes AFTER the fallback build, whose own status would
+      // otherwise write over the only explanation of what just happened
+      await select(findItem('u27'));
+      setStatus(`${path.split('/').pop()} — reopen it from Files… (the folder permission has lapsed)`, false);
+    }
+  } else if (docLink && !docLink[1].includes('..')) {
     try {
       const r = await fetch(docLink[1]);
       if (!r.ok) throw new Error(r.statusText);
-      await openDocument(await r.text(), docLink[1].split('/').pop());
       /*
-       * Keep the link that opened this. The state hash below describes the
-       * geometry — solid, groups, depth, camera, cells — and nothing else, so
-       * overwriting a #doc= link with it silently threw away everything the
-       * document says about how to DRAW the figure: which coloring, which
-       * coset subgroup, the edge style. Open the compound of five tetrahedra
-       * from the gallery, reload, and it came back gray. So while the
-       * selection is still the document's own, the URL stays the document's
-       * own; see syncHash.
+       * The link is kept by openDocument itself, through keepLink: the load's
+       * own refreshes write the state hash over it on the way, and that hash
+       * describes the geometry alone — so leaving it would silently discard
+       * everything the document says about how to DRAW the figure. Open the
+       * compound of five tetrahedra from the gallery, reload, and it came
+       * back gray.
        */
-      docLinkHash = hash;
-      /*
-       * And put it back now. The load's own refreshes have already written
-       * the state hash over it, and the only other caller is the camera
-       * watcher, which does nothing while the view sits still — so without
-       * this the link is restored only if you happen to turn the solid.
-       */
-      syncHash();
+      await openDocument(await r.text(), docLink[1].split('/').pop(), { hash });
     } catch (err) {
-      setStatus(`could not open ${docLink[1]}: ${err.message}`, false);
       await select(findItem('u27'));
+      setStatus(`could not open ${docLink[1]}: ${err.message}`, false);
     }
   } else if (m && geometry[m[1]]) {
     await select(findItem(m[1]) || { file: m[1], name: m[1], symmetry: m[2] || 'Ih' },
@@ -370,6 +377,19 @@ async function boot() {
 }
 
 let lastView = '';
+
+/**
+ * Adopt the link that reopens the document just opened, and put it in the URL
+ * now. The state hash written by syncHash() describes the geometry alone —
+ * solid, groups, depth, camera, cells — so it cannot say which coloring or
+ * which coset subgroup a document asked for; the document's own link can.
+ * mark() drops it again at the first edit, when it stops being that document.
+ */
+function keepLink(hash) {
+  if (!hash) return;
+  docLinkHash = hash;
+  syncHash();
+}
 
 function syncHash() {
   if (!state.current) return;
@@ -2130,8 +2150,15 @@ function applyDisplaySettings(doc) {
  * kept over the document you had not opened — losing the file you clicked by
  * accident. Anything that changes where Save goes must ask first whether the
  * open actually happened.
+ *
+ * `opts.hash` is the URL fragment that would open this document again — the
+ * whole point of which is that a reload lands you back where you were. A
+ * preset and a gallery link carry `doc=<path>`, which anyone can follow; a
+ * document from your own folder carries `file=<path below the root>`, which
+ * only this browser on this machine can follow, and which is honest about
+ * that by failing gracefully rather than fetching something wrong.
  */
-async function openDocument(text, filename = '') {
+async function openDocument(text, filename = '', opts = {}) {
   let doc;
   try {
     doc = readDocument(text);
@@ -2184,6 +2211,7 @@ async function openDocument(text, filename = '') {
     }
     if (ok) commit();          // the look, once the figure is there to wear it
     if (ok) markSaved();       // freshly opened: nothing to lose yet
+    if (ok) keepLink(opts.hash);
     if (ok && doc.view) renderer?.setView(doc.view);
     syncOrient();
     setStatus(ok ? `opened ${doc.name || filename} (custom planes)` : 'could not build that plane sheet', false);
@@ -2213,6 +2241,7 @@ async function openDocument(text, filename = '') {
   if (built === false) return false;   // stopped or failed: its own status stands
   commit();
   markSaved();                      // what is on screen IS the file on disk
+  keepLink(opts.hash);
   setStatus(`opened ${doc.name || filename} (${doc.source === 'json' ? 'JSON' : '.stel'})`, false);
   return true;
 }
