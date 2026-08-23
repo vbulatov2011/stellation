@@ -14,6 +14,7 @@
 export { createInternalWindow } from './internalWindow.js';
 export {
   createImageSelector, createPresetsFilesFilter, createDefaultImageFilesFilter,
+  showThumbMenu, copyText,
   DEFAULT_THUMB,
 } from './imageSelector.js';
 export {

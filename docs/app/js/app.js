@@ -268,7 +268,7 @@ async function boot() {
   }
   workspace.register({ title: 'Presets', isOpen: presets.isOpen, setOpen: presets.setOpen });
   if (docs.canFolders) {
-    workspace.register({ title: 'Documents', isOpen: docs.isBrowserOpen, setOpen: docs.setBrowserOpen });
+    workspace.register({ title: 'Files', isOpen: docs.isBrowserOpen, setOpen: docs.setBrowserOpen });
   }
   applyTheme(localStorage.getItem('theme') || 'auto');   // now that the views exist
 

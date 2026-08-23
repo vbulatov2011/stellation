@@ -16,7 +16,7 @@
  * for documents, wherever they come from.
  */
 
-import { createImageSelector } from '../../lib/uilib/modules.js';
+import { createImageSelector, showThumbMenu, copyText } from '../../lib/uilib/modules.js';
 
 export function initPresets({ openDocument, setStatus }) {
   let selector = null;
@@ -84,6 +84,23 @@ export function initPresets({ openDocument, setStatus }) {
         role: 'dialog',
         transient: true,          // near-fullscreen sheet on narrow screens
         onSelect: open,
+        /*
+         * The same right-button menu the file browser has, so the two shelves
+         * of tiles answer the button the same way. A preset is read-only and
+         * lives on the server, so the one thing worth taking from it is where
+         * it is: the address that fetches it, which is what you paste to send
+         * someone the preset you are looking at.
+         */
+        onContextMenu: (data, event) => showThumbMenu([
+          data && {
+            label: 'copy path',
+            run: async () => {
+              const path = new URL(data.jsonUrl, location.href).href;
+              const ok = await copyText(path);
+              setStatus?.(ok ? 'copied ' + path : 'could not reach the clipboard', false);
+            },
+          },
+        ], event),
       });
       load(selector);
     }

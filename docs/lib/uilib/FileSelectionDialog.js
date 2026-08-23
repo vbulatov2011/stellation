@@ -23,7 +23,7 @@
  * browsers without the API.
  */
 
-import { createImageSelector, DEFAULT_THUMB } from './imageSelector.js';
+import { createImageSelector, DEFAULT_THUMB, showThumbMenu, copyText } from './imageSelector.js';
 import { getHandle, setHandle, restoreHandle } from './files.js';
 
 const EXT_JSON = '.json';
@@ -56,7 +56,7 @@ export function createFileSelectionDialog(options = {}) {
   function ensureSelector() {
     if (selector) return;
     selector = createImageSelector({
-      title: options.title || 'Documents',
+      title: options.title || 'Files',
       width: options.width || '520px', height: options.height || '420px',
       left: options.left || '60px', top: options.top || '60px',
       storageId,
@@ -86,7 +86,7 @@ export function createFileSelectionDialog(options = {}) {
   }
 
   function setTitle() {
-    selector?.setTitle((options.title || 'Documents') + ' — /' + curPath.join('/'));
+    selector?.setTitle((options.title || 'Files') + ' — /' + curPath.join('/'));
   }
 
   // ---- the folder listing -------------------------------------------------
@@ -203,38 +203,47 @@ export function createFileSelectionDialog(options = {}) {
    * whatever the pointer happened to be over; delete is offered only over a
    * document, which is the only thing here that can be deleted.
    */
-  function showItemMenu(data, event) {
-    document.querySelector('.iw-menu')?.remove();
-    const menu = document.createElement('div');
-    menu.className = 'iw-menu';
-    menu.style.left = event.clientX + 'px';
-    menu.style.top = event.clientY + 'px';
-
-    const add = (label, fn) => {
-      const b = document.createElement('button');
-      b.textContent = label;
-      b.onclick = async () => { menu.remove(); await fn(); };
-      menu.appendChild(b);
-    };
-
-    if (data && !data.isFolder) {
-      add('delete ' + data.fileName + '…', async () => {
-        if (!confirm(`Delete ${data.fileName} and its thumbnail?`)) return;
-        try {
-          await curHandle.removeEntry(data.fileName);
-          if (data.tmbHandle) await curHandle.removeEntry(data.fileName + EXT_PNG);
-          selector.removeItem(data);
-        } catch (e) { options.onError?.('could not delete: ' + e.message); }
-      });
-    }
-    add('new folder…', newFolder);
-
-    document.body.appendChild(menu);
-    setTimeout(() => addEventListener('pointerdown', function dismiss(e) {
-      if (!menu.contains(e.target)) menu.remove();
-      removeEventListener('pointerdown', dismiss);
-    }));
+  /**
+   * Where a document sits, as far as this app can honestly say.
+   *
+   * The File System Access API never hands out a real filesystem path — that
+   * is the point of it — so the most that can be said is the granted folder's
+   * own name and the way down from it. That is what a person needs to find the
+   * file again, and it is not a lie about being an absolute path.
+   */
+  function pathOf(data) {
+    return [rootHandle?.name, ...curPath, data.fileName || data.getName()]
+      .filter(Boolean).join('/');
   }
+
+  function showItemMenu(data, event) {
+    const isDoc = data && !data.isFolder;
+    showThumbMenu([
+      isDoc && {
+        label: 'delete ' + data.fileName + '…',
+        run: async () => {
+          if (!confirm(`Delete ${data.fileName} and its thumbnail?`)) return;
+          try {
+            await curHandle.removeEntry(data.fileName);
+            if (data.tmbHandle) await curHandle.removeEntry(data.fileName + EXT_PNG);
+            selector.removeItem(data);
+          } catch (e) { options.onError?.('could not delete: ' + e.message); }
+        },
+      },
+      data && {
+        label: 'copy path',
+        run: async () => {
+          const path = pathOf(data);
+          const ok = await copyText(path);
+          (ok ? notice : options.onError)?.(ok ? 'copied ' + path : 'could not reach the clipboard');
+        },
+      },
+      { label: 'new folder…', run: newFolder },
+    ], event);
+  }
+
+  /** a plain message, distinct from an error; falls back to the error channel */
+  const notice = (msg) => (options.onNotice || options.onError)?.(msg);
 
   /**
    * Make a folder here, under a name the user types.

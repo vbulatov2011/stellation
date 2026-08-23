@@ -151,6 +151,7 @@ export function createImageSelector(param = {}) {
         userData: it.data,
         onClick: pick,
         onActivate: activate,
+        onSelectItem: selectItem,
         onContextMenu: onContextMenu
           ? (w, e) => onContextMenu(w.getUserData(), e)
           : null,
@@ -279,6 +280,9 @@ function createImageItemElem(options) {
   if (options.onContextMenu) {
     container.addEventListener('contextmenu', (e) => {
       e.preventDefault();
+      // the right button also chooses: a menu should act on the tile under the
+      // pointer, and "the selected one" should be the one you just aimed at
+      options.onSelectItem?.(myself);
       options.onContextMenu(myself, e);
     });
   }
@@ -335,4 +339,61 @@ export function createPresetsFilesFilter() {
       return items;
     },
   };
+}
+
+
+// ------------------------------------------------------------- menu furniture
+
+/**
+ * The little right-button menu both thumbnail pickers raise.
+ *
+ * Shared so the two cannot drift: they are the same furniture, and a menu that
+ * looked different in one of them would be the same confusion the click
+ * gesture caused. `entries` is [{ label, run }], falsy entries skipped so a
+ * caller can offer an item conditionally; nothing is shown for an empty list.
+ */
+export function showThumbMenu(entries, event) {
+  document.querySelector('.iw-menu')?.remove();
+  const menu = document.createElement('div');
+  menu.className = 'iw-menu';
+  menu.style.left = event.clientX + 'px';
+  menu.style.top = event.clientY + 'px';
+  for (const e of entries) {
+    if (!e) continue;
+    const b = document.createElement('button');
+    b.textContent = e.label;
+    b.onclick = async () => { menu.remove(); await e.run(); };
+    menu.appendChild(b);
+  }
+  if (!menu.children.length) return null;
+  document.body.appendChild(menu);
+  setTimeout(() => addEventListener('pointerdown', function dismiss(ev) {
+    if (!menu.contains(ev.target)) menu.remove();
+    removeEventListener('pointerdown', dismiss);
+  }));
+  return menu;
+}
+
+/**
+ * Put text on the clipboard. True if it went.
+ *
+ * The modern call needs a secure context and a user gesture; a menu click is a
+ * gesture, but the page may not be secure — opened over plain http on another
+ * machine, say — so the old selection trick stands behind it rather than
+ * leaving the menu item silently doing nothing.
+ */
+export async function copyText(text) {
+  try {
+    if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true; }
+  } catch { /* fall through to the old way */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch { return false; }
 }

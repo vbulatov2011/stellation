@@ -136,10 +136,11 @@ export function initDocManager({
 
   function ensureFileDialog() {
     fileDialog ||= createFileSelectionDialog({
-      title: 'Documents',
+      title: 'Files',
       storageId: 'stell.fileDialog',
       container: document.querySelector('main'),
       onError: (msg) => setStatus(msg, false),
+      onNotice: (msg) => setStatus(msg, false),
       onSelect: async (data) => {
         try {
           const file = await data.jsonHandle.getFile();
