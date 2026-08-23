@@ -112,7 +112,9 @@ export function initPlanesDialog(deps) {
   function reduceSolid(file, groupName) {
     const g = state.geometry[file];
     if (!g) return null;
-    const planes = facePlanes(deps.toPoly(g));
+    // central faces come along as rows — whether they join the arrangement
+    // is the checkbox's decision, but the sheet must show what the solid has
+    const planes = facePlanes(deps.toPoly(g), { central: true });
     if (!planes.length) return null;
     const items = planes.map(p => ({ n: [p.n.x, p.n.y, p.n.z], d: p.d }));
     const M = state.symmetry[groupName]?.matrices;

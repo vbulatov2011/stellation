@@ -653,9 +653,9 @@ function onHover3D(hit, mod) {
 /*
  * The catalog is a specimen sheet: nothing but thumbnails, densely packed, with
  * the name of whatever you are pointing at spelled out along the bottom. Names
- * under every tile would triple the height and turn 121 solids into a scroll.
+ * under every tile would triple the height and turn 131 solids into a scroll.
  *
- * It is built the first time the picker opens rather than at start-up — 121
+ * It is built the first time the picker opens rather than at start-up — 131
  * thumbnails is about half a megabyte, which has no business delaying the first
  * render of the solid. Built that late, the images can load eagerly, so the
  * sheet never shows the half-filled grid lazy loading gives you inside a dialog.
@@ -734,8 +734,9 @@ function showFoot(item, category) {
 }
 
 function updateCatCount() {
+  const total = state.catalog.reduce((n, c) => n + c.items.length, 0);
   const vis = $$('.poly').filter(b => b.style.display !== 'none').length;
-  $('#footCount').textContent = vis === 121 ? '121 solids' : `${vis} of 121`;
+  $('#footCount').textContent = vis === total ? `${total} solids` : `${vis} of ${total}`;
 }
 
 // ------------------------------------------------------------------ selection
@@ -743,8 +744,13 @@ function updateCatCount() {
 async function select(item, opts = {}) {
   if (!item) return;
   state.customPlanes = null;         // picking a solid leaves custom-plane mode
-  // a document brings its own answer; a plain pick starts plain
-  state.centralPlanes = !!opts.centralPlanes;
+  /*
+   * A document brings its own answer; a plain pick starts plain — except the
+   * hemipolyhedra, whose central faces ARE the solid: without them what gets
+   * stellated is a different polyhedron, so their catalog entries carry
+   * central: true and the flag comes on with the solid.
+   */
+  state.centralPlanes = !!opts.centralPlanes || !!item.central;
   state.current = item;
   state.polySym = opts.polySym || item.symmetry || 'Ih';
   state.stellSym = opts.stellSym || defaultStellSym(state.polySym);
@@ -754,7 +760,10 @@ async function select(item, opts = {}) {
   if (opts.depth != null) {
     setDepth(opts.depth, false);           // an opened document or a link fixes it
   } else if (state.depthAuto) {
-    setDepth(suggestDepth(facePlanes(toPoly(state.geometry[item.file]))), true);
+    // suggest from the planes that will actually be in the arrangement —
+    // central planes cut everything, so their presence caps the depth
+    setDepth(suggestDepth(facePlanes(toPoly(state.geometry[item.file]),
+                                     { central: state.centralPlanes })), true);
   }
 
   syncSymmetrySelects();

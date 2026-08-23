@@ -25,7 +25,7 @@ import {
   buildStellation, facePlanes, planesFromList, planeClasses, subgroupOrbits,
   cosetClasses, extractMesh, selectedCells, formatCells, parseCells,
   formatCellsAtoms, parseCellsAny, atomKeyOf, regroupSubCells, supportSet, createDiagram,
-  selKey, v3, matMul,
+  selKey, v3, matMul, VertexPool,
 } from '../lib/core.js';
 
 let passed = 0, failed = 0;
@@ -253,6 +253,38 @@ const allAtoms = (stel) => {
 
   const pc = planeClasses(stel, symmetry.Ih.matrices);
   ok(pc.reps.length === 2, `Ih: faces one class, cuts another (got ${pc.reps.length})`);
+}
+
+// --------------------------------- the catalog's own solids with central faces
+
+{
+  const catalog = JSON.parse(readFileSync(join(DOCS, 'data', 'catalog.json'), 'utf8'));
+  const marked = [];
+  for (const cat of catalog) for (const it of cat.items) if (it.central) marked.push(it);
+  ok(marked.length === 10, `ten catalog solids carry central: true (got ${marked.length})`);
+
+  for (const it of marked) {
+    const g = geometry[it.file];
+    const M = symmetry[it.symmetry]?.matrices;
+    if (!g || !M) { ok(false, `${it.file}: geometry or group missing`); continue; }
+    const stel = buildStellation(toPoly(g), M,
+      { subMatrices: M, central: true, maxIntersection: 2 });
+    let bad = null;
+    if (!(stel.planes.centralKept > 0)) bad = 'no central planes kept';
+    for (const layer of stel.cellLayers) {
+      const pool = new VertexPool(1e-6);
+      const ids = new Set();
+      for (const o of layer) for (const c of o.cells) ids.add(pool.intern(c.center));
+      for (const o of layer) {
+        if (M.length % o.cells.length !== 0) bad ||= `orbit of ${o.cells.length} under a group of ${M.length}`;
+        for (const c of o.cells)
+          for (const m of M)
+            if (!ids.has(pool.intern(matMul(m, c.center)))) bad ||= 'a shell fails to close';
+      }
+    }
+    ok(!bad, `${it.file} ${it.name}: ${stel.planes.length} planes ` +
+             `(${stel.planes.centralKept} central), every shell closes` + (bad ? ` — ${bad}` : ''));
+  }
 }
 
 // ------------------------------------------------------------- the verdict

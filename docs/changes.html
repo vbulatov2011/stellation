@@ -69,6 +69,30 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>The hemipolyhedra join the catalog.</b> Ten uniform polyhedra were
+      missing from the solid picker — the nine whose faces pass through the
+      center, tetrahemihexahedron to great icosihemidodecahedron, and the
+      great dirhombicosidodecahedron, whose sixty squares do too. Their
+      geometry was in the data all along; what they needed was the central
+      planes those faces lie in, so picking one now switches the cuts on by
+      itself and the statusline says so ("7 planes (3 central)"). Making them
+      build correctly took one more engine change: cell growing used to sweep
+      a cell's whole ceiling first and then the floors that touch it, which is
+      sound when "up" means away from the center — but a cut cell can wear
+      ceilings and floors <em>alternating</em> around its boundary, and such a
+      cell could never assemble; one member of a sixty-fold orbit simply
+      failed to exist. The walk is now a boundary crawl by edges: each open
+      edge is closed by the facet reached by the smallest turn around it,
+      ceiling or floor, and a crawl that cannot close gives every facet back
+      for the right cell to collect. A pleasant side effect: the crawl
+      refuses the impossible, and a few three-faceted "cells" that used to
+      appear in the outermost shell of the snub-family solids — rubble from
+      the depth cap, never geometrically real — are gone; a selection saved
+      on those solids by an earlier build may need re-picking in that one
+      outermost shell, and nothing in the shipped presets or examples is
+      affected.
+    </div></li>
+    <li><div>
       <b>Planes through the center.</b> A plane with d&nbsp;=&nbsp;0 was always
       skipped — with a warning, but skipped — because "oriented away from the
       origin" says nothing about a plane the origin sits on. The plane editor
