@@ -566,73 +566,140 @@ export function makeLayers(arrangement) {
 
 /**
  * Grow the 3D cells sitting between layer L-1 (below) and layer L (above).
- * Faithful to Stellation.makeCellsFromLayers2.
+ * Successor to Stellation.makeCellsFromLayers2, rebuilt as a boundary crawl.
+ *
+ * The original grew a cell in two sweeps — the whole ceiling by facet
+ * adjacency first, then the floors that touch it — and for a classic
+ * arrangement that is sound: "up" there means away from the origin, so a
+ * cell's ceilings always form one connected sheet. A plane through the
+ * center breaks exactly that: its arbitrary orientation makes the mechanical
+ * count a false height, and a cell can wear ceilings and floors ALTERNATING
+ * around its boundary — five ceilings joined only through five floors, on
+ * the hemipolyhedra, literally. The ceiling sweep then collects one facet,
+ * stalls, and the cell can never assemble; one member of a sixty-fold orbit
+ * simply failed to exist, and which member depended on hash order.
+ *
+ * So the crawl works by EDGES, the thing a closed surface is actually made
+ * of. Absorbing a facet contributes its effective directed edges — tops as
+ * wound, bottoms reversed — and matching pairs cancel; each remaining open
+ * edge is then closed by its geometric mate: of every facet in either batch
+ * that traverses the edge the right way round, the one reached by the
+ * SMALLEST turn about the edge from the anchor's plane into the cell. The
+ * cell is convex, so its own facet sits in the immediate wedge and anything
+ * past it belongs to a neighbor — at a classic two-plane edge the wedge
+ * offers exactly one facet and this reduces to what the two sweeps did. The
+ * turn is capped strictly under π: an arrangement cell never continues flat
+ * across its own plane, so a COPLANAR piece beyond the edge — which a
+ * central plane running along a polyhedron edge serves up in the same batch
+ * at the same count — is never the mate, and stops deciding cells by float
+ * noise. The surface is closed when no open edge remains.
+ *
+ * A crawl that stalls — an open edge with no mate left — is a fragment of a
+ * region whose rest was dropped as unbounded, which planes through the
+ * center park UNDER bounded facets (classically that never happens: every
+ * plane's up points away from the origin, so nothing unbounded sits below
+ * anything bounded, and within the buildable shells every crawl closes).
+ * The fragment sits among real cells and may hold facets a real cell still
+ * needs, so it gives everything back; only its seed is barred from seeding
+ * again — its own crawl is what just failed — while staying absorbable.
+ * Each facet seeds at most once, so this terminates, and a committed cell
+ * never releases, so nothing built is ever unbuilt.
  */
 export function makeCellsBetween(bottomFaces, topFaces, layer, pool) {
-  const vertexFaces = new Map();       // vertexId -> facets touching it
-  const indexByVertex = (list) => {
+  // every facet of each batch, by each stored directed edge it traverses
+  const dirOf = (list) => {
     const m = new Map();
-    for (const f of list)
-      for (const id of f.v) {
-        let a = m.get(id);
-        if (!a) m.set(id, a = []);
-        a.push(f);
+    for (const f of list) {
+      const L = f.v.length;
+      for (let i = 0; i < L; i++) {
+        const k = f.v[i] + '_' + f.v[(i + 1) % L];
+        let arr = m.get(k);
+        if (!arr) m.set(k, arr = []);
+        arr.push(f);
       }
+    }
     return m;
   };
-  const tvtable = indexByVertex(topFaces);
-  const bvtable = indexByVertex(bottomFaces);
+  const tDir = dirOf(topFaces);
+  const bDir = dirOf(bottomFaces);
 
   const ttable = new Set(topFaces);
   const btable = new Set(bottomFaces);
   const remaining = new Set(topFaces);   // facets not yet consumed by a cell
+  const failedSeed = new Set();          // crawled open once: never seeds again
 
   const cells = [];
 
   while (remaining.size > 0) {
-    const face = remaining.values().next().value;
-    remaining.delete(face);
-    ttable.delete(face);
+    const seed = remaining.values().next().value;
+    remaining.delete(seed);
+    ttable.delete(seed);
 
-    const vertTable = new Set();
-    const tAdj = new Set();
-    const bAdj = new Set();
-
-    const absorbVertex = (id) => {
-      if (vertTable.has(id)) return;
-      vertTable.add(id);
-      for (const f of (tvtable.get(id) || [])) if (ttable.has(f)) tAdj.add(f);
-      for (const f of (bvtable.get(id) || [])) if (btable.has(f)) bAdj.add(f);
-    };
-    for (const id of face.v) absorbVertex(id);
-
-    // --- top surface of the cell: walk same-winding neighbors
-    const tfaces = [face];
-    let iface;
-    while ((iface = findAdjacentFace(tAdj, tfaces, 1, pool)) !== null) {
-      tfaces.push(iface);
-      ttable.delete(iface);
-      remaining.delete(iface);
-      tAdj.delete(iface);
-      for (const id of iface.v) absorbVertex(id);
-    }
-
-    // --- bottom surface: opposite winding
+    const tfaces = [seed];
     const bfaces = [];
-    while ((iface = findAdjacentFace(bAdj, tfaces, -1, pool)) !== null) {
-      bfaces.push(iface);
-      btable.delete(iface);
-      bAdj.delete(iface);
-      for (const id of iface.v) {
-        if (vertTable.has(id)) continue;
-        vertTable.add(id);
-        for (const f of (bvtable.get(id) || [])) if (btable.has(f)) bAdj.add(f);
+    // open effective edges of the growing boundary, each with the facet that
+    // contributed it and that facet's effective outward normal
+    const open = new Map();
+    const addFacet = (f, isTop) => {
+      const n0 = normalize(facetArea(f, pool));
+      const n = isTop ? n0 : mul(n0, -1);
+      const L = f.v.length;
+      for (let i = 0; i < L; i++) {
+        const a = isTop ? f.v[i] : f.v[(i + 1) % L];
+        const b = isTop ? f.v[(i + 1) % L] : f.v[i];
+        const back = b + '_' + a;
+        if (open.has(back)) open.delete(back);
+        else open.set(a + '_' + b, { a, b, facet: f, n });
       }
+    };
+    addFacet(seed, true);
+
+    let stalled = false;
+    while (open.size > 0) {
+      const e = open.values().next().value;
+      // the mate traverses the edge the other way round: a top against its
+      // stored (b,a), a bottom — stored reversed — against its stored (a,b)
+      const tc = tDir.get(e.b + '_' + e.a);
+      const bc = bDir.get(e.a + '_' + e.b);
+
+      const p0 = pool.get(e.a);
+      const axis = normalize(sub(pool.get(e.b), p0));
+      const inPlane = (c) => {
+        const r = sub(c, p0);
+        const t = dot(r, axis);
+        return normalize(v3(r.x - axis.x * t, r.y - axis.y * t, r.z - axis.z * t));
+      };
+      const uf = inPlane(facetCenter(e.facet, pool));
+      // {u_anchor, -n} is an orthonormal frame of the plane perpendicular to
+      // the edge, so the turn down into the cell reads off directly; a facet
+      // is flat, so its whole extent sits at one angle exactly
+      const turnOf = (f) => {
+        const uc = inPlane(facetCenter(f, pool));
+        return Math.atan2(-dot(uc, e.n), dot(uc, uf));
+      };
+
+      let best = null, bestTop = false, bestTurn = Math.PI - 1e-9;
+      if (tc) for (const f of tc) {
+        if (!ttable.has(f)) continue;
+        const t = turnOf(f);
+        if (t > 1e-12 && t < bestTurn) { bestTurn = t; best = f; bestTop = true; }
+      }
+      if (bc) for (const f of bc) {
+        if (!btable.has(f)) continue;
+        const t = turnOf(f);
+        if (t > 1e-12 && t < bestTurn) { bestTurn = t; best = f; bestTop = false; }
+      }
+      if (!best) { stalled = true; break; }
+
+      if (bestTop) { ttable.delete(best); remaining.delete(best); tfaces.push(best); }
+      else btable.delete(best);
+      if (!bestTop) bfaces.push(best);
+      addFacet(best, bestTop);
     }
 
     const cell = { top: tfaces, bottom: bfaces, layer };
     cell.volume = cellVolume(cell, pool);
-    if (cell.volume > 0) {
+    if (!stalled && cell.volume > 0) {
       cell.center = cellCenter(cell, pool);
       // Back-links, as in the SCell constructor: a facet knows the cell it caps
       // (cellBelow) and the cell it floors (cellAbove). The diagram uses these
@@ -640,39 +707,16 @@ export function makeCellsBetween(bottomFaces, topFaces, layer, pool) {
       for (const f of tfaces) f.cellBelow = cell;
       for (const f of bfaces) f.cellAbove = cell;
       cells.push(cell);
+    } else {
+      for (const f of tfaces) {
+        ttable.add(f);
+        if (f !== seed && !failedSeed.has(f)) remaining.add(f);
+      }
+      for (const f of bfaces) btable.add(f);
+      failedSeed.add(seed);
     }
-    // volume <= 0 means an unbounded cell; the original discards it too
   }
   return cells;
-}
-
-function findAdjacentFace(pool_, faces, direction, pool) {
-  for (const face of faces) {
-    const n = normalize(facetArea(face, pool));
-    const d = dot(n, facetCenter(face, pool));
-    for (const pface of pool_) {
-      /*
-       * The candidate must lie STRICTLY below the plane of the face it
-       * continues — the cell is convex, so every other facet of its boundary
-       * does. The margin is not decoration: a candidate lying IN that plane
-       * scores zero here, and zero decided by float noise. Classically that
-       * case cannot arise — two coplanar facets one clip apart differ by one
-       * mechanical layer and are never offered together — but a plane through
-       * the center passing along a polyhedron edge crosses the facet's plane
-       * THERE, the two memberships cancel, and the coplanar piece beyond the
-       * edge arrives in the same batch at the same count: a spike's cap,
-       * edge-adjacent and perfectly wound. Half the time the noise came out
-       * negative and the walk sailed across the edge, stitching neighboring
-       * cells into one — the octahedron with the coordinate planes came out
-       * as six cells instead of sixteen. Coplanar is never the same cell;
-       * say so deterministically.
-       */
-      if (dot(n, facetCenter(pface, pool)) - d < -1e-9 && adjacent(pface, face, direction)) {
-        return pface;
-      }
-    }
-  }
-  return null;
 }
 
 export function cellVolume(cell, pool) {
