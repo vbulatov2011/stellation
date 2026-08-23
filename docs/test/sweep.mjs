@@ -8,7 +8,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { buildStellation, extractMesh } from '../lib/modules.js';
+import { buildStellation, extractMesh, facePlanes, suggestDepth } from '../lib/modules.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DATA = join(here, '..', 'data');
@@ -35,7 +35,17 @@ for (const cat of catalog) {
 
     const t0 = Date.now();
     try {
-      const stel = buildStellation(poly, sym.matrices, { maxLayer: 1000 });
+      /*
+       * The classic solids build to their full depth, as they always have.
+       * A solid marked central needs its cuts — without them this would
+       * sweep a different polyhedron — and cuts slice every cell they
+       * cross, so those build at the depth the app itself would suggest,
+       * which is also what a user picking the solid actually gets.
+       */
+      const stel = item.central
+        ? buildStellation(poly, sym.matrices, { maxLayer: 1000, central: true,
+            maxIntersection: suggestDepth(facePlanes(poly, { central: true })) })
+        : buildStellation(poly, sym.matrices, { maxLayer: 1000 });
       const ms = Date.now() - t0;
       const layer0 = stel.cellLayers[0] || [];
       const mesh = extractMesh(layer0, stel.pool);
