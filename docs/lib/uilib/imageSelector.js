@@ -54,14 +54,14 @@ export function createImageSelector(param = {}) {
   const onSelect = param.onSelect || (() => {});
   const onContextMenu = param.onContextMenu || null;
   /*
-   * What opens an item: a single click, or a double click with the single one
-   * demoted to selecting. Default 'click', so pickers that are lists of things
-   * to choose (the presets sheet) keep working the way they read; the file
-   * browser asks for 'dblclick', because there a click also means "this is the
-   * one I mean" for a menu or a second gesture, and opening a document by
-   * brushing past it is how the wrong file gets opened.
+   * What opens an item: a double click, with the single one demoted to
+   * selecting. That is the DEFAULT, and deliberately not a per-picker choice
+   * made twice: the presets sheet and the document browser are the same
+   * furniture with the same tiles, and having one open on a click while the
+   * other wanted two was confusing precisely because they look identical.
+   * A picker that genuinely wants one click can still say so.
    */
-  const activateOn = param.activateOn === 'dblclick' ? 'dblclick' : 'click';
+  const activateOn = param.activateOn === 'click' ? 'click' : 'dblclick';
   const filesFilter = param.filesFilter || createDefaultImageFilesFilter();
 
   const intWin = createInternalWindow({
@@ -84,19 +84,18 @@ export function createImageSelector(param = {}) {
   intWin.interior.appendChild(grid);
 
   /*
-   * The whole interior answers the right button, not just the tiles. Clicking
-   * the gap between them used to raise the browser's own menu — reload, view
-   * source, save image — which belongs to a web page and not to a folder. The
-   * item's own handler takes the ones over a tile; this takes the rest, and
-   * reports no item.
+   * The whole interior answers the right button, tiles and gaps alike, whether
+   * or not this picker has a menu to offer. The page's own menu — reload, view
+   * source, save image — is about a document in a browser, and inside a shelf
+   * of thumbnails it is never the menu anyone wanted. Where there IS a menu,
+   * the item's own handler takes the clicks over a tile and this takes the
+   * rest, reporting no item.
    */
-  if (onContextMenu) {
-    intWin.interior.addEventListener('contextmenu', (e) => {
-      if (e.target.closest('.thumbnail-container')) return;
-      e.preventDefault();
-      onContextMenu(null, e);
-    });
-  }
+  intWin.interior.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (e.target.closest('.thumbnail-container')) return;
+    onContextMenu?.(null, e);
+  });
 
   let items = [];            // the live item wrappers, in DOM order
   let selected = null;

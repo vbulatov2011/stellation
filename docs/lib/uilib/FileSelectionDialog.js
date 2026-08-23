@@ -67,10 +67,10 @@ export function createFileSelectionDialog(options = {}) {
         if (data.isFolder) { openFolder(data.handle); return; }
         options.onSelect?.(data);
       },
+      // opening takes a double click and a single one selects — the module's
+      // default, shared with the presets sheet so the two identical-looking
+      // shelves of tiles behave identically
       onContextMenu: showItemMenu,
-      // a document is opened deliberately, with a double click; a single one
-      // selects it, which is what the context menu and the eye both want
-      activateOn: 'dblclick',
     });
     const mkBtn = (label, title, fn) => {
       const b = document.createElement('button');
