@@ -24,7 +24,7 @@ import { dirname, join } from 'node:path';
 import {
   buildStellation, facePlanes, planesFromList, planeClasses, subgroupOrbits,
   cosetClasses, extractMesh, selectedCells, formatCells, parseCells,
-  formatCellsAtoms, parseCellsAny, atomKeyOf, regroupSubCells, supportSet,
+  formatCellsAtoms, parseCellsAny, atomKeyOf, regroupSubCells, supportSet, createDiagram,
   selKey, v3, matMul,
 } from '../lib/core.js';
 
@@ -174,6 +174,28 @@ const allAtoms = (stel) => {
   ok(total === 8 && spikeSubs.length > 1,
      `under C4 the spike orbit re-splits (${spikeSubs.length} sub-cells, ${total} cells)`);
   ok(allAtoms(stel).size === atoms.size, 'regrouping never touches the atoms');
+}
+
+// ------------------------------------------- the cut's own diagram is centered
+
+{
+  const stel = buildStellation(null, symmetry.Oh.matrices,
+    { planes: octaPlusCentral(), subMatrices: symmetry.Oh.matrices, central: true });
+  const ci = stel.planes.findIndex(p => p.central);
+  const dia = createDiagram(stel, ci, [{ cells: selectedCells(stel, allAtoms(stel)) }]);
+  const c = dia.frame.center;
+  ok(Math.hypot(c[0], c[1], c[2]) < 1e-9,
+     'a central cut diagram is framed on the origin, not on a wedge');
+  let lo = [Infinity, Infinity], hi = [-Infinity, -Infinity], nan = false;
+  for (const f of dia.facets)
+    for (const [x, y] of f.poly) {
+      if (!Number.isFinite(x) || !Number.isFinite(y)) nan = true;
+      lo[0] = Math.min(lo[0], x); lo[1] = Math.min(lo[1], y);
+      hi[0] = Math.max(hi[0], x); hi[1] = Math.max(hi[1], y);
+    }
+  ok(!nan, 'no coordinate went NaN despite a wedge vertex at the center');
+  ok(Math.abs(lo[0] + hi[0]) < 1e-6 && Math.abs(lo[1] + hi[1]) < 1e-6,
+     `the cross-section sits symmetric about the center (x ${lo[0].toFixed(2)}..${hi[0].toFixed(2)}, y ${lo[1].toFixed(2)}..${hi[1].toFixed(2)})`);
 }
 
 // -------------------------------------------- the depth cap cuts by rank

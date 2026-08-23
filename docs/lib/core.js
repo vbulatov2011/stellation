@@ -1571,8 +1571,18 @@ export function createDiagram(stel, planeIndex, selectedOrbits, vertexUp = 0) {
     if (r < rmin) { rmin = r; inner = f; }
   }
 
-  const center = facetCenter(inner, pool);
-  const normal = normalize(facetArea(inner, pool));
+  /*
+   * The diagram is drawn around the plane's point nearest the origin. For a
+   * face plane the innermost facet is the solid's own polygon and its center
+   * IS that point, which is why centering on the facet was always right. A
+   * central plane holds the origin itself, and its innermost facet is one
+   * wedge of the cross-section — centering on the wedge's centroid shoved
+   * the whole picture off toward whichever wedge happened to be innermost.
+   * The origin is the center, exactly.
+   */
+  const plane = stel.planes?.[planeIndex];
+  const center = plane?.central ? v3() : facetCenter(inner, pool);
+  const normal = plane?.central ? plane.n : normalize(facetArea(inner, pool));
 
   // rotation taking `normal` to +Z
   const R1 = rotationBetween(normal, v3(0, 0, 1));
@@ -1580,8 +1590,13 @@ export function createDiagram(stel, planeIndex, selectedOrbits, vertexUp = 0) {
   let R = R1;
   if (vertexUp < inner.v.length) {
     const p = matMul(R1, sub(pool.get(inner.v[vertexUp]), center));
-    const R2 = rotationBetween(normalize(v3(p.x, p.y, 0)), v3(0, 1, 0));
-    R = mat3mul(R2, R1);
+    // a wedge of a central cut has a vertex AT the center — there is no
+    // direction to spin up, and normalizing nothing would poison every
+    // coordinate downstream with NaN
+    if (p.x * p.x + p.y * p.y > 1e-12) {
+      const R2 = rotationBetween(normalize(v3(p.x, p.y, 0)), v3(0, 1, 0));
+      R = mat3mul(R2, R1);
+    }
   }
 
   const project = (id) => {
