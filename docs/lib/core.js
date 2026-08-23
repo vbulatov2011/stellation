@@ -121,6 +121,22 @@ export class VertexPool {
 
 // ---------------------------------------------------------------- planes
 
+/**
+ * The deterministic orientation of a plane through the center.
+ *
+ * "Away from the origin" says nothing when the distance is zero, and the
+ * choice cannot be left to chance: which side counts as above decides the
+ * order cells are grown in, and with it every atom key in every saved
+ * selection. So: the first component of the normal that is clearly not zero
+ * is made positive. The 1e-6 slack is deliberate — real normals have
+ * components of order one, and a component within float noise of zero must
+ * not be the one that decides the sign.
+ */
+function orientCentral(n) {
+  const s = Math.abs(n.x) > 1e-6 ? n.x : Math.abs(n.y) > 1e-6 ? n.y : n.z;
+  return s < 0 ? mul(n, -1) : n;
+}
+
 /** Plane through the point closest to the origin: {n (unit), d} with n·x = d */
 export function planeFromPoint(p) {
   const d = len(p);
@@ -131,11 +147,17 @@ export function planeFromPoint(p) {
  * Face planes of a polyhedron, deduplicated.
  * Mirrors Stellation.getPlane(poly, i): the plane normal is the polygon normal,
  * oriented outward, and d is its distance from the origin.
+ *
+ * Planes through the center are skipped by default, as they always were; pass
+ * { central: true } to keep them instead, marked with plane.central and given
+ * the deterministic orientation of orientCentral. What was kept is counted in
+ * out.centralKept, what was dropped in out.central, so the UI can say either.
  */
-export function facePlanes(poly) {
+export function facePlanes(poly, opts = null) {
+  const keepCentral = !!(opts && opts.central);
   const out = [];
   const seen = [];
-  let central = 0, degenerate = 0, duplicate = 0;
+  let central = 0, centralKept = 0, degenerate = 0, duplicate = 0;
 
   for (const face of poly.faces) {
     // Newell's method — robust for non-planar-ish polygons
@@ -188,13 +210,19 @@ export function facePlanes(poly) {
     // so this is unaffected by the crossing above
     let d = dot(n, c);
     if (d < 0) { n = mul(n, -1); d = -d; }   // orient away from the origin
-    if (Math.abs(d) < 1e-9) { central++; continue; }   // through the center: skip
+    let isCentral = false;
+    if (d < 1e-9) {                          // through the center
+      if (!keepCentral) { central++; continue; }
+      d = 0; n = orientCentral(n); isCentral = true;
+    }
 
     const dup = seen.some(p => Math.abs(p.d - d) < 1e-6 &&
                                Math.abs(dot(p.n, n) - 1) < 1e-9);
     if (dup) { duplicate++; continue; }
     seen.push({ n, d });
-    out.push({ n, d, index: out.length });
+    const plane = { n, d, index: out.length };
+    if (isCentral) { plane.central = true; centralKept++; }
+    out.push(plane);
   }
 
   /*
@@ -207,6 +235,7 @@ export function facePlanes(poly) {
    */
   out.total = poly.faces.length;
   out.central = central;
+  out.centralKept = centralKept;
   out.degenerate = degenerate;
   out.duplicate = duplicate;
   return out;
@@ -219,14 +248,16 @@ export function facePlanes(poly) {
  * group to each, stellate the result. The engine below never cared where its
  * planes came from; this is the front door for handing it a list directly.
  * Input rows are {n:[x,y,z], d} (or {n:{x,y,z}, d}); the same hygiene as
- * facePlanes applies — normalize, orient away from the origin, skip planes
- * through the center (this representation cannot hold them), dedupe — and the
- * same accounting rides along so the UI can say what was dropped.
+ * facePlanes applies — normalize, orient away from the origin, dedupe — and
+ * the same accounting rides along so the UI can say what was dropped. Planes
+ * through the center are skipped unless { central: true } asks to keep them;
+ * see facePlanes for what keeping entails.
  */
-export function planesFromList(rows) {
+export function planesFromList(rows, opts = null) {
+  const keepCentral = !!(opts && opts.central);
   const out = [];
   const seen = [];
-  let central = 0, degenerate = 0, duplicate = 0;
+  let central = 0, centralKept = 0, degenerate = 0, duplicate = 0;
   for (const row of rows) {
     let n = Array.isArray(row.n) ? v3(row.n[0], row.n[1], row.n[2]) : v3(row.n.x, row.n.y, row.n.z);
     const L = len(n);
@@ -235,15 +266,22 @@ export function planesFromList(rows) {
     let d = Number(row.d);
     if (!Number.isFinite(d)) { degenerate++; continue; }
     if (d < 0) { n = mul(n, -1); d = -d; }
-    if (Math.abs(d) < 1e-9) { central++; continue; }
+    let isCentral = false;
+    if (d < 1e-9) {
+      if (!keepCentral) { central++; continue; }
+      d = 0; n = orientCentral(n); isCentral = true;
+    }
     const dup = seen.some(p => Math.abs(p.d - d) < 1e-6 &&
                                Math.abs(dot(p.n, n) - 1) < 1e-9);
     if (dup) { duplicate++; continue; }
     seen.push({ n, d });
-    out.push({ n, d, index: out.length });
+    const plane = { n, d, index: out.length };
+    if (isCentral) { plane.central = true; centralKept++; }
+    out.push(plane);
   }
   out.total = rows.length;
   out.central = central;
+  out.centralKept = centralKept;
   out.degenerate = degenerate;
   out.duplicate = duplicate;
   return out;
@@ -372,6 +410,16 @@ function seedFace(plane, pool) {
  * Facets entirely outside get layer+1; straddling facets are split, the outer
  * piece becoming a new facet at layer+1.
  * Faithful to Stellation.intersectFacesWithPlane.
+ *
+ * Two counts ride on each facet once planes through the center are in play.
+ * `layer` is mechanical — every plane crossed is one step up, central or not —
+ * and it is what pairs a cell's floors with its ceilings, a pairing that is
+ * exact for central planes too. `rank` counts only the planes that are NOT
+ * central: the orientation of a central plane is an arbitrary choice, so the
+ * mechanical count puts a cell one step above its own mirror image, while the
+ * rank is the same on both sides — it is the shell the user sees, and the
+ * depth cap tests it so the cap cuts symmetrically. Without central planes
+ * the two are equal and nothing here changes.
  */
 function clipAgainstPlane(faces, plane, pool, maxIntersection) {
   const fsize = faces.length;
@@ -388,7 +436,7 @@ function clipAgainstPlane(faces, plane, pool, maxIntersection) {
       if (val < THRESHOLD) nminus++; else nplus++;
     }
 
-    if (nminus === 0) { f.layer++; continue; }  // entirely outside
+    if (nminus === 0) { f.layer++; f.rank += plane.central ? 0 : 1; continue; }  // entirely outside
     if (nplus === 0) continue;                  // entirely inside
 
     const polysize = vs.length;
@@ -414,8 +462,9 @@ function clipAgainstPlane(faces, plane, pool, maxIntersection) {
     while (fval[outside] >= THRESHOLD) { vout.push(vs[outside]); outside = (outside + 1) % polysize; }
 
     f.v = vins;
-    const nf = { v: vout, layer: f.layer + 1, plane: f.plane };
-    if (maxIntersection < 0 || nf.layer < maxIntersection) faces.push(nf);
+    const nf = { v: vout, layer: f.layer + 1,
+                 rank: f.rank + (plane.central ? 0 : 1), plane: f.plane };
+    if (maxIntersection < 0 || nf.rank < maxIntersection) faces.push(nf);
   }
 }
 
@@ -450,7 +499,7 @@ export function makeArrangement(planes, pool, maxIntersection = -1, onProgress =
     // The original sorts the other planes by angle for numerical stability.
     const order = planes.map((p, k) => ({ k, val: -dot(planes[i].n, p.n) }))
                         .sort((a, b) => a.val - b.val);
-    let faces = [{ v: seedFace(planes[i], pool), layer: 0, plane: i }];
+    let faces = [{ v: seedFace(planes[i], pool), layer: 0, rank: 0, plane: i }];
     for (const { k } of order) {
       if (k === i) continue;
       clipAgainstPlane(faces, planes[k], pool, maxIntersection);
@@ -602,7 +651,23 @@ function findAdjacentFace(pool_, faces, direction, pool) {
     const n = normalize(facetArea(face, pool));
     const d = dot(n, facetCenter(face, pool));
     for (const pface of pool_) {
-      if (dot(n, facetCenter(pface, pool)) - d < 0 && adjacent(pface, face, direction)) {
+      /*
+       * The candidate must lie STRICTLY below the plane of the face it
+       * continues — the cell is convex, so every other facet of its boundary
+       * does. The margin is not decoration: a candidate lying IN that plane
+       * scores zero here, and zero decided by float noise. Classically that
+       * case cannot arise — two coplanar facets one clip apart differ by one
+       * mechanical layer and are never offered together — but a plane through
+       * the center passing along a polyhedron edge crosses the facet's plane
+       * THERE, the two memberships cancel, and the coplanar piece beyond the
+       * edge arrives in the same batch at the same count: a spike's cap,
+       * edge-adjacent and perfectly wound. Half the time the noise came out
+       * negative and the walk sailed across the edge, stitching neighboring
+       * cells into one — the octahedron with the coordinate planes came out
+       * as six cells instead of sixteen. Coplanar is never the same cell;
+       * say so deterministically.
+       */
+      if (dot(n, facetCenter(pface, pool)) - d < -1e-9 && adjacent(pface, face, direction)) {
         return pface;
       }
     }
@@ -817,11 +882,12 @@ export function extractMesh(selectedOrbits, pool) {
  */
 export function buildStellation(poly, matrices, opts = {}) {
   const { maxLayer = 1000, maxIntersection = -1, onProgress = null,
-          subMatrices = null, planes: customPlanes = null } = opts;
+          subMatrices = null, planes: customPlanes = null, central = false } = opts;
 
   const pool = new VertexPool();
   // a custom plane list (the plane editor) takes the polyhedron's place entirely
-  const planes = customPlanes ? planesFromList(customPlanes) : facePlanes(poly);
+  const planes = customPlanes ? planesFromList(customPlanes, { central })
+                              : facePlanes(poly, { central });
   const arrangement = makeArrangement(planes, pool, maxIntersection, onProgress);
   const layers = makeLayers(arrangement);
 
@@ -846,14 +912,49 @@ export function buildStellation(poly, matrices, opts = {}) {
    * "every") builds the arrangement further and returns them.
    */
   const supported = maxIntersection >= 0 ? maxIntersection : Infinity;
-  const n = Math.min(layers.length, maxLayer, supported);
-  for (let l = 0; l < n; l++) {
-    const cells = makeCellsBetween(l === 0 ? [] : layers[l - 1], layers[l], l, pool);
-    const orbits = makeSymmetricCells(cells, matrices, l);
+  /*
+   * Cells are GROWN by mechanical layer and SHELVED by rank — see the note on
+   * clipAgainstPlane for what the two counts are. The growing needs the
+   * mechanical count: a cell's floor facets sit exactly one mechanical step
+   * below its ceilings, central planes included, so makeCellsBetween runs
+   * unchanged. The shelving needs the rank: the mechanical count is lopsided
+   * around every central plane, and orbits taken per mechanical layer would
+   * never close — a cell and its mirror image would sit on different shelves.
+   * Ranked shelves are the same on both sides, so makeSymmetricCells, the
+   * atom keys, the cells strings and the layer controls all read as before.
+   *
+   * A cell of rank r can sit as deep as mechanical layer r + nCentral, so the
+   * growing runs that much further than the cap; and a facet whose rank is
+   * past the cap belongs only to cells past it — rubble, not walls — so both
+   * facet lists are filtered before growing, which is exactly the old
+   * "stop at the supported shell" trim restated in rank terms.
+   *
+   * Without central planes rank equals layer, every guard here is a no-op,
+   * and the cells come out in the identical order — the atom keys of every
+   * existing document depend on that.
+   */
+  const nCentral = planes.reduce((s, p) => s + (p.central ? 1 : 0), 0);
+  const rankCap = Math.min(maxLayer, supported);
+  const mechCap = Math.min(layers.length,
+                           rankCap === Infinity ? Infinity : rankCap + nCentral);
+  const byRank = [];
+  for (let l = 0; l < mechCap; l++) {
+    const keep = (list) => nCentral ? list.filter(f => f.rank < rankCap) : list;
+    const cells = makeCellsBetween(l === 0 ? [] : keep(layers[l - 1]), keep(layers[l]), l, pool);
+    for (const c of cells) {
+      // every top facet lies outside exactly the planes the cell does
+      const r = c.top.length ? c.top[0].rank : l;
+      c.mech = l;            // the mechanical count, kept for the record
+      c.layer = r;           // the shell the user sees
+      (byRank[r] ||= []).push(c);
+    }
+  }
+  for (let r = 0; r < byRank.length; r++) {
+    const orbits = makeSymmetricCells(byRank[r] || [], matrices, r);
     for (const o of orbits) {
       o.subCells = subMatrices ? makeSubCells(o, subMatrices)
                                : [{ cells: o.cells, volume: o.volume, parent: o,
-                                    index: 0, layer: l, cellIndex: o.index }];
+                                    index: 0, layer: r, cellIndex: o.index }];
       // let every primitive cell name the sub-cell that owns it
       for (const s of o.subCells) for (const c of s.cells) c.owner = s;
     }
@@ -883,6 +984,38 @@ export function buildStellation(poly, matrices, opts = {}) {
 }
 
 /**
+ * Planes matched under a motion — one rule for every consumer.
+ *
+ * A plane away from the center is named by its pole n·d, the point of it
+ * nearest the origin, and the pole moves exactly as the plane does. Every
+ * plane THROUGH the center has the same pole — the origin — so poles say
+ * nothing there; those are matched by unit normal instead, in a pool of
+ * their own, and unoriented: a motion is free to carry n to −n_j, which is
+ * the same plane seen from its other side.
+ */
+export function planeMatcher(planes) {
+  const pool = new VertexPool(1e-6);
+  const idOf = new Map();
+  const cpool = new VertexPool(1e-6);
+  const cidOf = new Map();
+  const canon = (v) => {
+    const s = Math.abs(v.x) > 1e-6 ? v.x : Math.abs(v.y) > 1e-6 ? v.y : v.z;
+    return s < 0 ? mul(v, -1) : v;
+  };
+  planes.forEach((p, i) => {
+    if (p.central) { const id = cpool.intern(canon(p.n)); if (!cidOf.has(id)) cidOf.set(id, i); }
+    else { const id = pool.intern(mul(p.n, p.d)); if (!idOf.has(id)) idOf.set(id, i); }
+  });
+  return (g, i) => {
+    const p = planes[i];
+    const j = p.central
+      ? cidOf.get(cpool.intern(canon(matMul(g, p.n))))
+      : idOf.get(pool.intern(matMul(g, mul(p.n, p.d))));
+    return j == null ? -1 : j;
+  };
+}
+
+/**
  * Which face planes give a genuinely different diagram.
  *
  * A diagram is drawn on one plane of the arrangement. Two planes that the
@@ -903,13 +1036,7 @@ export function buildStellation(poly, matrices, opts = {}) {
  */
 export function planeClasses(stel, matrices) {
   const { planes } = stel;
-  const pool = new VertexPool(1e-6);
-  const idOf = new Map();
-  planes.forEach((p, i) => {
-    const id = pool.intern(mul(p.n, p.d));
-    if (!idOf.has(id)) idOf.set(id, i);
-  });
-
+  const mapPlane = planeMatcher(planes);
   const group = new Int32Array(planes.length).fill(-1);
   const reps = [];
   for (let i = 0; i < planes.length; i++) {
@@ -917,10 +1044,9 @@ export function planeClasses(stel, matrices) {
     const g = reps.length;
     group[i] = g;
     reps.push(i);
-    const p0 = mul(planes[i].n, planes[i].d);
     for (const m of (matrices || [])) {
-      const j = idOf.get(pool.intern(matMul(m, p0)));
-      if (j != null && group[j] < 0) group[j] = g;
+      const j = mapPlane(m, i);
+      if (j >= 0 && group[j] < 0) group[j] = g;
     }
   }
   return { group, reps };
@@ -934,7 +1060,7 @@ export function diagramFaces(stel, matrices) {
     // the facet of this plane nearest the origin — the original polygon face
     let core = null, rmin = Infinity;
     for (const f of (arrangement[i] || [])) {
-      if (f.layer !== 0) continue;
+      if ((f.rank ?? f.layer) !== 0) continue;
       const c = facetCenter(f, stel.pool);
       const r = dot(c, c);
       if (r < rmin) { rmin = r; core = f; }
@@ -1424,7 +1550,10 @@ export function createDiagram(stel, planeIndex, selectedOrbits, vertexUp = 0) {
    * the frame either.
    */
   const depth = stel.cellLayers ? stel.cellLayers.length : Infinity;
-  const facets = all.length && depth < Infinity ? all.filter(f => f.layer < depth) : all;
+  // the rank is the shell a facet belongs to; without central planes it is
+  // the same number f.layer always was
+  const facets = all.length && depth < Infinity
+    ? all.filter(f => (f.rank ?? f.layer) < depth) : all;
   if (!facets.length) return null;
 
   // the facet nearest the origin defines the frame
@@ -1478,7 +1607,7 @@ export function createDiagram(stel, planeIndex, selectedOrbits, vertexUp = 0) {
     frame,
     facets: facets.map(f => ({
       facet: f,
-      layer: f.layer,
+      layer: f.rank ?? f.layer,
       selected: selected.has(f),
       // 1 = this face of the solid looks outward, 0 = it looks inward (it lines
       // a cavity). The diagram shows the surface, not the volume, so the two
@@ -2101,21 +2230,16 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
 export function subgroupOrbits(stel, subMatrices) {
   const { planes } = stel;
 
-  // planes, matched by n·d as everywhere else
-  const pool = new VertexPool(1e-6);
-  const idOf = new Map();
-  planes.forEach((q, i) => {
-    const id = pool.intern(mul(q.n, q.d));
-    if (!idOf.has(id)) idOf.set(id, i);
-  });
+  // planes, matched the one way every consumer matches them — see planeMatcher
+  const mapPlane = planeMatcher(planes);
   const planeOf = new Int32Array(planes.length).fill(-1);
   let planeCount = 0;
   for (let i = 0; i < planes.length; i++) {
     if (planeOf[i] >= 0) continue;
     const k = planeCount++;
     for (const h of subMatrices) {
-      const j = idOf.get(pool.intern(matMul(h, mul(planes[i].n, planes[i].d))));
-      if (j != null && planeOf[j] < 0) planeOf[j] = k;
+      const j = mapPlane(h, i);
+      if (j >= 0 && planeOf[j] < 0) planeOf[j] = k;
     }
   }
 
@@ -2196,18 +2320,9 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
     return reps.length - 1;
   });
 
-  // planes matched the way planeClasses matches them: by n·d, interned
+  // planes matched the way planeClasses matches them — see planeMatcher
   const { planes } = stel;
-  const pool = new VertexPool(1e-6);
-  const idOf = new Map();
-  planes.forEach((q, i) => {
-    const id = pool.intern(mul(q.n, q.d));
-    if (!idOf.has(id)) idOf.set(id, i);
-  });
-  const mapPlane = (g, i) => {
-    const j = idOf.get(pool.intern(matMul(g, mul(planes[i].n, planes[i].d))));
-    return j == null ? -1 : j;
-  };
+  const mapPlane = planeMatcher(planes);
 
   const label = new Int32Array(planes.length).fill(-2);   // -2: not yet reached
   const blends = new Array(planes.length).fill(null);
