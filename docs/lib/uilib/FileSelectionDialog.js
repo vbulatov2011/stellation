@@ -234,13 +234,72 @@ export function createFileSelectionDialog(options = {}) {
     await populate();
   }
 
-  /** refresh after a save, selecting the saved document */
+  /**
+   * Refresh after a save, selecting the saved document.
+   *
+   * Saving over a document that is already listed touches exactly one tile, so
+   * that is all this re-reads. It used to call populate() for every save, which
+   * empties the grid, re-enumerates the folder, re-reads EVERY thumbnail into a
+   * data URL and rebuilds every tile — a folder of fifty documents did fifty
+   * file reads and threw away fifty elements to put back forty-nine identical
+   * ones, and the grid visibly blinked each time you pressed Save.
+   *
+   * The full pass is still right when the folder itself changed, and when the
+   * name is new: a new document has to take its place in the sorted order, and
+   * the grid is built in one shot rather than by insertion.
+   */
   async function reload(name, folderHandle) {
     if (!selector) return;
+    const sameFolder = !folderHandle || folderHandle === curHandle ||
+      (curHandle && await folderHandle.isSameEntry?.(curHandle).catch(() => false));
     if (folderHandle) curHandle = folderHandle;
+
+    const existing = sameFolder ? selector.findItem({ getName: () => name }, true) : null;
+    if (existing && await refreshOne(name)) {
+      selector.selectItem(existing);
+      return;
+    }
+
     await populate();
     const item = selector.findItem({ getName: () => name }, true);
     if (item) selector.selectItem(item);
+  }
+
+  /**
+   * Re-read one document's pair and update its tile in place. Returns false if
+   * the document is not where it should be, which puts the caller back on the
+   * full pass rather than leaving a stale tile behind.
+   *
+   * The new thumbnail is decoded BEFORE it is handed over: an <img> given a
+   * fresh source paints nothing until it has decoded one, and swapping the
+   * source of a visible tile without waiting is its own small flash.
+   */
+  async function refreshOne(name) {
+    const jsonName = name + EXT_JSON;
+    let jsonHandle = null, tmbHandle = null, tmb = DEFAULT_THUMB;
+    try { jsonHandle = await curHandle.getFileHandle(jsonName); } catch { return false; }
+    try {
+      tmbHandle = await curHandle.getFileHandle(jsonName + EXT_PNG);
+      tmb = await fileToDataUrl(tmbHandle);
+      /*
+       * Decoding is a courtesy, not a requirement, so it is given a moment and
+       * no more: decode() is not obliged to settle promptly for an image that
+       * is never painted — a window put away, a tab in the background — and a
+       * save must not wait on it.
+       */
+      if (!document.hidden) {
+        const img = new Image();
+        img.src = tmb;
+        if (img.decode) {
+          await Promise.race([
+            img.decode().catch(() => { }),
+            new Promise((r) => setTimeout(r, 250)),
+          ]);
+        }
+      }
+    } catch { /* a document may have no thumbnail; the pictogram stands in */ }
+    selector.updateItem({ tmb, data: { getName: () => name, jsonHandle, tmbHandle, fileName: jsonName } });
+    return true;
   }
 
   return {

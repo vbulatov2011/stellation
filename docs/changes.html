@@ -69,6 +69,18 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Saving no longer makes the document browser blink.</b> Every save
+      re-read the whole folder: the grid was emptied, the folder enumerated
+      again, and every thumbnail in it decoded afresh — fifty documents meant
+      fifty file reads and fifty tiles thrown away to put back forty-nine
+      identical ones, which is what the flicker was. Saving over a document
+      that is already listed now re-reads that one document and repaints its
+      tile in place: one file read, no tiles replaced at all. The full pass
+      still runs where it earns its keep — when the save went to a different
+      folder, or created a document that has to take its place in the sorted
+      order.
+    </div></li>
+    <li><div>
       <b>New and the plane editor are windows now.</b> They were the last two
       <code>&lt;dialog&gt;</code> elements in the app, which put them in the
       browser's own top layer: they could not be moved aside to look at the
