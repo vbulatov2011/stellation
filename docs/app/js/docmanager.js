@@ -143,7 +143,15 @@ export function initDocManager({
       onSelect: async (data) => {
         try {
           const file = await data.jsonHandle.getFile();
-          await openDocument(await file.text(), data.fileName);
+          /*
+           * ONLY on a real open. Clicking a thumbnail while the current
+           * document has unsaved changes raises the discard prompt, and
+           * declining it leaves that document on screen — but this used to
+           * re-aim the save target at the clicked file regardless, so the
+           * next Save wrote the kept document over the one merely clicked.
+           * openDocument() says whether it actually opened; believe it.
+           */
+          if (!await openDocument(await file.text(), data.fileName)) return;
           // origin points at the folder the file was IN, which is the
           // browser's current folder — saved-over, not saved-next-to
           setOrigin(data.getName(), fileDialog.getWriteHandle(), data.fileName);

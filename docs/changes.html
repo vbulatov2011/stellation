@@ -69,6 +69,17 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Declining to open a document no longer aims Save at it.</b> Clicking a
+      thumbnail in the document browser while your own work was unsaved raised
+      the "discard your changes?" prompt, as it should — but declining only
+      stopped the <em>opening</em>. The browser went on to point <b>Save</b> at
+      the file that had merely been clicked, so the next Save wrote the
+      document you had kept over the document you had not opened, destroying
+      the file touched by accident. Opening now reports whether it actually
+      happened, and the save target moves only when it did. Accepting the
+      prompt still moves it, as it always should have.
+    </div></li>
+    <li><div>
       <b>Saving no longer makes the document browser blink.</b> Every save
       re-read the whole folder: the grid was emptied, the folder enumerated
       again, and every thumbnail in it decoded afresh — fifty documents meant

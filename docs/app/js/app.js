@@ -2119,13 +2119,25 @@ function applyDisplaySettings(doc) {
 }
 
 /** open either our JSON preset or an original .stel file */
+/**
+ * Open a document. TRUE only if the figure on screen is now that document.
+ *
+ * The return value is load-bearing, not decoration. The file browser follows
+ * an open by pointing the save target at the file it just opened, and it used
+ * to do that whatever happened in here: decline the "discard your changes?"
+ * prompt and the open stopped, but the browser still re-aimed Save at the
+ * file that was merely CLICKED. The next Save then wrote the document you had
+ * kept over the document you had not opened — losing the file you clicked by
+ * accident. Anything that changes where Save goes must ask first whether the
+ * open actually happened.
+ */
 async function openDocument(text, filename = '') {
   let doc;
   try {
     doc = readDocument(text);
   } catch (err) {
     setStatus(`could not read ${filename || 'that file'}: ${err.message}`, false);
-    return;
+    return false;
   }
 
   /*
@@ -2136,7 +2148,7 @@ async function openDocument(text, filename = '') {
    */
   if (!confirmDiscard(`Opening ${doc.name || filename || 'another document'}`)) {
     setStatus('kept the current document', false);
-    return;
+    return false;
   }
 
   /*
@@ -2175,7 +2187,7 @@ async function openDocument(text, filename = '') {
     if (ok && doc.view) renderer?.setView(doc.view);
     syncOrient();
     setStatus(ok ? `opened ${doc.name || filename} (custom planes)` : 'could not build that plane sheet', false);
-    return;
+    return !!ok;
   }
 
   // JSON records the catalog file id; .stel only has the human name
@@ -2187,7 +2199,7 @@ async function openDocument(text, filename = '') {
   }
   if (!item) {
     setStatus(`${filename || 'that file'} names "${doc.polyhedron}", which is not in the catalog`, false);
-    return;
+    return false;
   }
 
   state.planeIndex = doc.diagramFace || 0;
@@ -2198,10 +2210,11 @@ async function openDocument(text, filename = '') {
   const built = await select(item, { polySym: doc.polySymmetry, stellSym: doc.stellSymmetry,
                        cells: doc.cells, cellsIndexing: doc.cellsIndexing || null,
                        depth: doc.planeDepth ?? undefined, view: doc.view });
-  if (built === false) return;      // stopped or failed: its own status stands
+  if (built === false) return false;   // stopped or failed: its own status stands
   commit();
   markSaved();                      // what is on screen IS the file on disk
   setStatus(`opened ${doc.name || filename} (${doc.source === 'json' ? 'JSON' : '.stel'})`, false);
+  return true;
 }
 
 function download(filename, text, mime = 'text/plain') {
