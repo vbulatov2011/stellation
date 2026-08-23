@@ -656,9 +656,14 @@ function onHover3D(hit, mod) {
  * under every tile would triple the height and turn 131 solids into a scroll.
  *
  * It is built the first time the picker opens rather than at start-up — 131
- * thumbnails is about half a megabyte, which has no business delaying the first
- * render of the solid. Built that late, the images can load eagerly, so the
- * sheet never shows the half-filled grid lazy loading gives you inside a dialog.
+ * thumbnails is four megabytes of PNG, which has no business delaying the
+ * first render of the solid. Built that late, the images can load eagerly, so
+ * the sheet never shows the half-filled grid lazy loading gives you inside a
+ * dialog.
+ *
+ * Four megabytes because the tiles are the 256-pixel renders, shown at 46: the
+ * headroom is for high-density screens, and it is the same picture the POV-Ray
+ * sources produce, not a separate downscaled copy to keep in step.
  */
 let catalogBuilt = false;
 function ensureCatalog() {
@@ -697,7 +702,7 @@ function buildCatalog() {
       b.dataset.sym = item.symmetry;
       b.dataset.cat = cat.category;
       b.setAttribute('aria-label', item.name);
-      b.innerHTML = `<img src="img/poly/${item.file}_tmb.gif" alt="" width="46" height="46">`;
+      b.innerHTML = `<img src="img/poly/${item.file}_tmb.png" alt="" width="46" height="46">`;
       b.onmouseenter = () => showFoot(item, cat.category);
       b.onfocus = () => showFoot(item, cat.category);
       b.onclick = () => {
@@ -728,7 +733,7 @@ function buildCatalog() {
 
 function showFoot(item, category) {
   if (!item) return;
-  $('#footThumb').src = `img/poly/${item.file}_tmb.gif`;
+  $('#footThumb').src = `img/poly/${item.file}_tmb.png`;
   $('#footName').textContent = item.name;
   $('#footMeta').textContent = `${item.file} · ${item.symmetry} · ${category || ''}`;
 }
