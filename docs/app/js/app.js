@@ -7,6 +7,7 @@ import {
   Renderer3D, DiagramView, CellsPanel, labelKeys,
   writeStel, facePlanes, suggestDepth,
 } from '../../lib/modules.js';
+import { createInternalWindow } from '../../lib/uilib/modules.js';
 import { writePreset, readDocument, newDocumentName, normalizePlaneRows,
          expandPlaneRows } from './preset.js';
 import { initWorkspace } from './workspace.js';
@@ -124,6 +125,8 @@ let docLinkHash = null;
  */
 let pendingColors = null;
 let colorsDialog = null;
+let catalogWin = null;
+let planesWin = null;
 /* set by stopBuild(), read by build()'s catch: a stop is not a failure */
 let buildStopped = false;
 
@@ -257,6 +260,12 @@ async function boot() {
    * also keep their buttons in Save & export; the menu is the path that stays
    * reachable when the settings window itself is closed.
    */
+  // the two pickers, listed like every other window so a closed one can come back
+  workspace.register({ title: 'New', isOpen: () => !!catalogWin?.isVisible(),
+                       setOpen: (v) => (v ? openCatalog() : catalogWin?.setVisible(false)) });
+  if (planesWin) {
+    workspace.register({ title: 'Plane set', isOpen: planesWin.isOpen, setOpen: planesWin.setOpen });
+  }
   workspace.register({ title: 'Presets', isOpen: presets.isOpen, setOpen: presets.setOpen });
   if (docs.canFolders) {
     workspace.register({ title: 'Documents', isOpen: docs.isBrowserOpen, setOpen: docs.setBrowserOpen });
@@ -648,7 +657,7 @@ function buildCatalog() {
       b.onfocus = () => showFoot(item, cat.category);
       b.onclick = () => {
         if (!confirmDiscard(`Starting a new document from ${item.name}`)) return;
-        $('#catalogDialog').close();
+        catalogWin.setVisible(false);
         state.depthAuto = true;          // a new solid gets its own suggested depth
         /*
          * Starting from a solid starts a NEW document, so it inherits
@@ -1400,14 +1409,46 @@ function renderLegend() {
  */
 function openCatalog() {
   ensureCatalog();
-  $('#catalogDialog').showModal();
+  /*
+   * Cleared on the way IN rather than on the way out. Clearing it on close
+   * would have to run while the window is being built — setVisible(false) is
+   * part of construction — and at that moment the search machinery below is
+   * still in its temporal dead zone. Opening unfiltered is the same promise
+   * from the other end.
+   */
+  $('#search').value = '';
+  // through the input event, because the search machinery is wireControls's
+  // own and this function is not inside it
+  $('#search').dispatchEvent(new Event('input'));
+  catalogWin.setVisible(true);
   showFoot(state.current, state.current?.category);
   $('#search').focus();
   document.querySelector('.poly.active')?.scrollIntoView({ block: 'center' });
 }
 
 function wireControls() {
-  $('#catalogClose').onclick = () => $('#catalogDialog').close();
+  /*
+   * The New picker and the plane editor are built FIRST, because their
+   * contents live in <template> elements and everything below reaches into
+   * them by id — the search box, the grid, the preview canvas. Nothing that
+   * is still in a template is in the document, so the windows have to be
+   * cloned out before a single handler is hung on anything inside them.
+   *
+   * They are internal windows rather than <dialog> elements: the browser's
+   * top layer cannot be moved aside to look at the figure behind it, and a
+   * dismissed <dialog> leaves no entry anywhere to bring it back.
+   */
+  catalogWin = createInternalWindow({
+    title: 'New', width: 'min(860px, 94vw)', height: 'min(600px, 88vh)',
+    left: 'calc(50% - min(430px, 47vw))', top: '6%',
+    canClose: true, canResize: true, modal: true, role: 'dialog',
+    storageId: 'stell.catalog',
+  });
+  catalogWin.wnd.classList.add('transient');
+  catalogWin.interior.appendChild($('#catalogBody').content.cloneNode(true));
+  catalogWin.setVisible(false);
+
+  $('#catalogClose').onclick = () => catalogWin.setVisible(false);
 
   /*
    * The New dialog is the one front door. Its own content is the catalog;
@@ -1415,9 +1456,9 @@ function wireControls() {
    * the file input, the plane editor — so it closes and hands over rather
    * than growing copies of them.
    */
-  $('#newFromPreset').onclick = () => { $('#catalogDialog').close(); presets.show(); };
-  $('#newFromFile').onclick = () => { $('#catalogDialog').close(); $('#loadDoc').click(); };
-  $('#newFromPlanes').onclick = () => { $('#catalogDialog').close(); $('#editPlanes').click(); };
+  $('#newFromPreset').onclick = () => { catalogWin.setVisible(false); presets.show(); };
+  $('#newFromFile').onclick = () => { catalogWin.setVisible(false); $('#loadDoc').click(); };
+  $('#newFromPlanes').onclick = () => { catalogWin.setVisible(false); $('#editPlanes').click(); };
 
   $('#polySym').onchange = (e) => {
     touch();                       // a different grouping is a different document
@@ -1731,7 +1772,7 @@ function wireControls() {
    * current solid reduced to one row per symmetry class; Build funnels into
    * the same buildCustomPlanes every other path uses.
    */
-  initPlanesDialog({ state, toPoly, buildCustomPlanes, presets, setStatus });
+  planesWin = initPlanesDialog({ state, toPoly, buildCustomPlanes, presets, setStatus });
 
   $('#help').onclick = () => {
     const b = $('#buildStamp');
@@ -1770,8 +1811,6 @@ function wireControls() {
     first?.click();
   };
 
-  $('#catalogDialog').addEventListener('close', () => { $('#search').value = ''; runSearch(); });
-  $('#catalogDialog').addEventListener('cancel', () => { $('#search').value = ''; });
 }
 
 // ------------------------------------------------------------------ edit planes

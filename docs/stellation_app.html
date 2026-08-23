@@ -436,7 +436,13 @@
 </main>
 
 <!-- ------------------------------------------------ catalog drawer -->
-<dialog id="catalogDialog">
+<!-- The New picker and the plane editor are internal windows like every
+     other panel: movable, resizable, remembered, and listed in the windows
+     menu. They were <dialog> elements, which put them in the browser's own
+     top layer where they could be neither moved aside to look at the figure
+     nor reopened from the menu when dismissed. -->
+<template id="catalogBody">
+  <div class="cat-body">
   <!-- the four ways to start something: the catalog below, and the three
        that live elsewhere and are reached from here -->
   <div class="cat-sources">
@@ -462,9 +468,11 @@
     </div>
     <span id="footCount" class="dim"></span>
   </footer>
-</dialog>
+  </div>
+</template>
 
-<dialog id="planesDialog" class="planes-dialog">
+<template id="planesBody">
+  <div class="planes-body">
   <h2>Edit planes</h2>
   <p class="note">
     Each row is one plane — <code>nx&nbsp;ny&nbsp;nz&nbsp;d</code>, four numbers,
@@ -502,7 +510,8 @@
     <button id="planesBuild" class="primary">Build</button>
     <button id="planesCancel">Cancel</button>
   </div>
-</dialog>
+  </div>
+</template>
 
 <template id="colorsBody">
   <div class="ex-body">

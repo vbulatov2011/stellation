@@ -21,12 +21,30 @@
 
 import { Renderer3D, LAYER_COLORS, facePlanes, matMul } from '../../lib/modules.js';
 import { readDocument } from './preset.js';
+import { createInternalWindow } from '../../lib/uilib/modules.js';
 
 const $ = (q) => document.querySelector(q);
 
 export function initPlanesDialog(deps) {
   // deps: { state, toPoly, buildCustomPlanes, presets, setStatus }
   const { state } = deps;
+
+  /*
+   * The plane editor is an internal window, like every other panel here. As a
+   * <dialog> it sat in the browser's top layer, where it could not be moved
+   * aside to watch the preview against the figure behind it, and once
+   * dismissed there was no entry anywhere to bring it back.
+   */
+  const win = createInternalWindow({
+    title: 'Plane set', width: 'min(880px, 94vw)', height: 'min(640px, 88vh)',
+    left: 'calc(50% - min(440px, 47vw))', top: '6%',
+    canClose: true, canResize: true, modal: true, role: 'dialog',
+    storageId: 'stell.planes',
+  });
+  win.wnd.classList.add('transient');
+  win.interior.appendChild($('#planesBody').content.cloneNode(true));
+  win.setVisible(false);
+
   let rows = [];               // [{ text, group, factor }]
   let preview = null;
   let previewTimer = 0;
@@ -329,7 +347,7 @@ export function initPlanesDialog(deps) {
     fillImport();
     $('#planesInfo').textContent = '';
     render();
-    $('#planesDialog').showModal();
+    win.setVisible(true);
   }
 
   function fillImport() {
@@ -401,10 +419,13 @@ export function initPlanesDialog(deps) {
   $('#planesClear').onclick = () => { rows = []; render(); update(true); };
 
   $('#planesBuild').onclick = async () => {
-    if (await deps.buildCustomPlanes(toRows())) $('#planesDialog').close();
+    if (await deps.buildCustomPlanes(toRows())) win.setVisible(false);
   };
-  $('#planesCancel').onclick = () => $('#planesDialog').close();
+  $('#planesCancel').onclick = () => win.setVisible(false);
   $('#editPlanes').onclick = open;
 
-  return { open };
+  // the window handles go back to the app, which registers them in the
+  // windows menu once the workspace exists
+  return { open, isOpen: () => win.isVisible(),
+           setOpen: (v) => (v ? open() : win.setVisible(false)) };
 }

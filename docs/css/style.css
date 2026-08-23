@@ -356,14 +356,9 @@ dialog {
 }
 dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); }
 
-/* Only style the open state with `display`: a bare `display: flex` here would
-   beat the UA's `dialog:not([open]) { display: none }` and leave it always up. */
-#catalogDialog {
-  width: min(860px, 94vw);
-  height: min(600px, 88vh);
-  overflow: hidden;
-}
-#catalogDialog[open] { display: flex; flex-direction: column; }
+/* The New picker fills its window: a column of source bar, search, chips, the
+   scrolling grid, and the footer. The window itself carries the size. */
+.cat-body { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
 /* the New dialog's source bar: the catalog is this dialog's own content,
    the other three hand off to where they already live */
@@ -886,7 +881,7 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 }
 
 /* the plane editor: rows on the left, the preview on the right */
-#planesDialog { width: min(880px, 94vw); }
+.planes-body { padding: 12px 14px 14px; }
 .planes-layout { display: grid; grid-template-columns: 1fr 280px; gap: 14px; }
 .planes-right { min-width: 0; }
 #planesPreview {

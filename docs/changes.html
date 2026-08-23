@@ -69,6 +69,18 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>New and the plane editor are windows now.</b> They were the last two
+      <code>&lt;dialog&gt;</code> elements in the app, which put them in the
+      browser's own top layer: they could not be moved aside to look at the
+      figure behind them, they could not be resized, they forgot their size and
+      place between openings, and once dismissed there was nothing anywhere to
+      bring them back. Both are internal windows like every other panel —
+      draggable, resizable, remembered, and listed in the <b>windows menu</b> as
+      <em>New</em> and <em>Plane set</em>. The plane editor in particular is
+      better for it: its preview can now sit beside the solid it is describing
+      rather than on top of it.
+    </div></li>
+    <li><div>
       <b>Unsaved work is not thrown away without asking.</b> Editing a figure
       and then opening another document, or starting a new one from a solid,
       used to discard the first silently — and so did closing the tab or
