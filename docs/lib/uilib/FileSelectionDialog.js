@@ -188,6 +188,34 @@ export function createFileSelectionDialog(options = {}) {
   }
 
   /**
+   * Reopen the window as the last session left it, asking for nothing.
+   *
+   * show() is the gesture path: it will put up the OS folder picker when there
+   * is no root to work from, which is exactly right for a button press and
+   * exactly wrong for a page load — nobody pressing reload asked to be shown a
+   * folder chooser. So this takes a permission the browser is still holding
+   * and otherwise opens the window empty, with a line saying which button
+   * brings the folder back.
+   */
+  async function restore() {
+    ensureSelector();
+    selector.setVisible(true);
+    setTitle();
+    try {
+      const root = await getHandle(ROOT_KEY);
+      if (!root) return;
+      if (await root.queryPermission({ mode: 'readwrite' }) !== 'granted') {
+        (options.onNotice || options.onError)?.(
+          'the folder permission has lapsed — press folder… to grant it again');
+        return;
+      }
+      rootHandle = root;
+      await restoreSubfolder();
+      await populate();
+    } catch { /* an empty window says more than a thrown page */ }
+  }
+
+  /**
    * Find a document by its path below the remembered root, WITHOUT asking for
    * anything.
    *
@@ -489,6 +517,7 @@ export function createFileSelectionDialog(options = {}) {
     /** a document's path below the granted root — what the URL remembers */
     pathBelowRoot: (fileName) => [...curPath, fileName].filter(Boolean).join('/'),
     openPath,
+    restore,
     getWriteHandle: () => curHandle,
     getWriteHandlePath: () => '/' + curPath.join('/'),
   };

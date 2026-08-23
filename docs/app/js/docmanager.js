@@ -190,6 +190,11 @@ export function initDocManager({
      * show and hide it. Only listed where folders exist at all — see
      * canFolders, which is what gates every entry point into this file.
      */
+    /**
+     * Put the browser back on screen as the last session left it, without the
+     * OS picker a page load has no gesture to justify.
+     */
+    restoreBrowser: async () => { if (canFolders) await ensureFileDialog().restore(); },
     isBrowserOpen: () => !!fileDialog && fileDialog.isVisible(),
     setBrowserOpen: (v) => { if (v) ensureFileDialog().show(); else fileDialog?.setVisible(false); },
     /** any non-folder open (preset, .stel, file input) clears the origin */

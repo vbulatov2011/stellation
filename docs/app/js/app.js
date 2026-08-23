@@ -267,6 +267,18 @@ async function boot() {
     workspace.register({ title: 'Plane set', isOpen: planesWin.isOpen, setOpen: planesWin.setOpen });
   }
   workspace.register({ title: 'Presets', isOpen: presets.isOpen, setOpen: presets.setOpen });
+  /*
+   * Both of these windows are built the first time they are asked for, which
+   * is what kept them from coming back: internalWindow restores a window's
+   * visibility when it is CREATED, and a window nobody creates is a window
+   * nobody restores. So a session that left one open opens it again here.
+   *
+   * The Files browser gets its own restore rather than show(), because show()
+   * would raise the OS folder picker when there is no root to work from, and a
+   * page load is not a request for that.
+   */
+  if (windowWasOpen('stell.win.presets')) presets.show();
+  if (windowWasOpen('stell.fileDialog')) docs.restoreBrowser();
   if (docs.canFolders) {
     workspace.register({ title: 'Files', isOpen: docs.isBrowserOpen, setOpen: docs.setBrowserOpen });
   }
@@ -377,6 +389,12 @@ async function boot() {
 }
 
 let lastView = '';
+
+/** did the last session leave this window open? internalWindow stores it */
+function windowWasOpen(storageId) {
+  try { return localStorage.getItem(storageId + '_visible') === 'true'; }
+  catch { return false; }
+}
 
 /**
  * Adopt the link that reopens the document just opened, and put it in the URL
