@@ -12,7 +12,7 @@
  * A saved document is the json + png pair: <name>.json and <name>.json.png,
  * the same convention the presets folder and the file browser read, so a
  * folder written by this app browses with previews. The thumbnail blob is
- * awaited before save resolves — reload() re-reads the folder immediately,
+ * awaited before save resolves — refresh() re-reads the folder immediately,
  * and must find the png already there.
  *
  * Everything File-System-Access-shaped stays behind hasFSAccess(): on
@@ -69,7 +69,7 @@ export function initDocManager({
       const fileName = await writePair(currentDoc.folderHandle, currentDoc.fileName || currentDoc.name);
       onSaved?.();
       setStatus(`saved ${fileName}`, false);
-      fileDialog?.reload(fileName.replace(/\.json$/, ''), currentDoc.folderHandle);
+      fileDialog?.refresh(fileName.replace(/\.json$/, ''), currentDoc.folderHandle);
     } catch (e) {
       setStatus('could not save: ' + e.message, false);
     }
@@ -124,7 +124,7 @@ export function initDocManager({
           onSaved?.();
           setOrigin(name.replace(/\.json$/, ''), folderHandle, fileName);
           setStatus(`saved ${fileName}`, false);
-          fileDialog?.reload(currentDoc.name, folderHandle);
+          fileDialog?.refresh(currentDoc.name, folderHandle);
         } catch (e) {
           setStatus('could not save: ' + e.message, false);
         }

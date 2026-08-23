@@ -15,7 +15,7 @@
  * FileReader into data URLs; folders of tens of documents are the design
  * point, not thousands.
  *
- * What the original hung off a dat.gui hamburger menu — re-pick root, reload —
+ * What the original hung off a dat.gui hamburger menu — re-pick root, refresh —
  * is two plain header buttons here, which severs uilib's only dependency on
  * the param system. Right-click on a document offers delete (json + png).
  *
@@ -79,7 +79,7 @@ export function createFileSelectionDialog(options = {}) {
       selector.getHeader().insertBefore(b, selector.getHeader().lastChild);
     };
     mkBtn('folder…', 'Choose a different root folder', () => selectFolder());
-    mkBtn('reload', 'Re-read the current folder', () => populate());
+    mkBtn('refresh', 'Re-read the current folder, sorting it afresh', () => populate());
   }
 
   function setTitle() {
@@ -237,55 +237,66 @@ export function createFileSelectionDialog(options = {}) {
   /**
    * Refresh after a save, selecting the saved document.
    *
-   * Saving over a document that is already listed touches exactly one tile, so
-   * that is all this re-reads. It used to call populate() for every save, which
-   * empties the grid, re-enumerates the folder, re-reads EVERY thumbnail into a
-   * data URL and rebuilds every tile — a folder of fifty documents did fifty
-   * file reads and threw away fifty elements to put back forty-nine identical
-   * ones, and the grid visibly blinked each time you pressed Save.
+   * A save touches one document, so this touches one tile. It used to call
+   * populate() every time, which empties the grid, re-enumerates the folder,
+   * re-reads EVERY thumbnail into a data URL and rebuilds every tile — fifty
+   * documents meant fifty file reads and fifty elements thrown away to put
+   * back forty-nine identical ones. That is what blinked, and what threw the
+   * scroll position back to the top.
    *
-   * The full pass is still right when the folder itself changed, and when the
-   * name is new: a new document has to take its place in the sorted order, and
-   * the grid is built in one shot rather than by insertion.
+   * A document already listed has its own tile repainted where it stands. A
+   * new one is APPENDED, at the end, and scrolled to — deliberately not
+   * sorted into place: a file that appears where you are looking is easier to
+   * find than one that has been filed away correctly somewhere off-screen,
+   * and the grid re-sorts on the next `refresh`. Only a save into a different
+   * folder redraws the lot, because then the lot really is different.
    */
-  async function reload(name, folderHandle) {
+  async function refresh(name, folderHandle) {
     if (!selector) return;
     const sameFolder = !folderHandle || folderHandle === curHandle ||
       (curHandle && await folderHandle.isSameEntry?.(curHandle).catch(() => false));
-    if (folderHandle) curHandle = folderHandle;
 
-    const existing = sameFolder ? selector.findItem({ getName: () => name }, true) : null;
-    if (existing && await refreshOne(name)) {
-      selector.selectItem(existing);
-      return;
+    if (sameFolder) {
+      if (folderHandle) curHandle = folderHandle;
+      const existing = selector.findItem({ getName: () => name }, true);
+      if (existing) {
+        if (await refreshOne(name)) { revealItem(existing); return; }
+      } else {
+        const added = await appendOne(name);
+        if (added) { revealItem(added); return; }
+      }
     }
 
+    if (folderHandle) curHandle = folderHandle;
     await populate();
     const item = selector.findItem({ getName: () => name }, true);
-    if (item) selector.selectItem(item);
+    if (item) revealItem(item);
   }
 
-  /**
-   * Re-read one document's pair and update its tile in place. Returns false if
-   * the document is not where it should be, which puts the caller back on the
-   * full pass rather than leaving a stale tile behind.
-   *
-   * The new thumbnail is decoded BEFORE it is handed over: an <img> given a
-   * fresh source paints nothing until it has decoded one, and swapping the
-   * source of a visible tile without waiting is its own small flash.
+  /*
+   * Select a tile and bring it into view, without moving the page itself.
+   * NOT called show(): this module already has a show(), the one that opens
+   * the window, and a second declaration of that name in the same scope
+   * quietly replaces it.
    */
-  async function refreshOne(name) {
+  function revealItem(item) {
+    selector.selectItem(item);
+    item?.elem?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  }
+
+  /** read one document's pair: { tmb, data } for the selector, or null */
+  async function readPair(name) {
     const jsonName = name + EXT_JSON;
     let jsonHandle = null, tmbHandle = null, tmb = DEFAULT_THUMB;
-    try { jsonHandle = await curHandle.getFileHandle(jsonName); } catch { return false; }
+    try { jsonHandle = await curHandle.getFileHandle(jsonName); } catch { return null; }
     try {
       tmbHandle = await curHandle.getFileHandle(jsonName + EXT_PNG);
       tmb = await fileToDataUrl(tmbHandle);
       /*
        * Decoding is a courtesy, not a requirement, so it is given a moment and
-       * no more: decode() is not obliged to settle promptly for an image that
-       * is never painted — a window put away, a tab in the background — and a
-       * save must not wait on it.
+       * no more, and skipped for a window nobody is painting: decode() is not
+       * obliged to settle for an image that is never drawn — in a window put
+       * away it does not — and a save must not wait on it.
        */
       if (!document.hidden) {
         const img = new Image();
@@ -298,8 +309,27 @@ export function createFileSelectionDialog(options = {}) {
         }
       }
     } catch { /* a document may have no thumbnail; the pictogram stands in */ }
-    selector.updateItem({ tmb, data: { getName: () => name, jsonHandle, tmbHandle, fileName: jsonName } });
+    return { tmb, data: { getName: () => name, jsonHandle, tmbHandle, fileName: jsonName } };
+  }
+
+  /**
+   * Repaint the tile of a document already listed. False if it is not where it
+   * should be, which puts the caller back on the full pass rather than leaving
+   * a stale tile behind.
+   */
+  async function refreshOne(name) {
+    const pair = await readPair(name);
+    if (!pair) return false;
+    selector.updateItem(pair);
     return true;
+  }
+
+  /** add a newly saved document to the end of the grid; the tile, or null */
+  async function appendOne(name) {
+    const pair = await readPair(name);
+    if (!pair) return null;
+    selector.addItems([pair], { noSort: true });
+    return selector.findItem({ getName: () => name }, true);
   }
 
   return {
@@ -307,7 +337,7 @@ export function createFileSelectionDialog(options = {}) {
     setVisible: (v) => selector?.setVisible(v),
     isVisible: () => !!selector && selector.isVisible(),
     selectFolder,
-    reload,
+    refresh,
     loadRootHandle,
     getRootHandle: () => rootHandle,
     getWriteHandle: () => curHandle,

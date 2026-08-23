@@ -75,10 +75,14 @@
       fifty file reads and fifty tiles thrown away to put back forty-nine
       identical ones, which is what the flicker was. Saving over a document
       that is already listed now re-reads that one document and repaints its
-      tile in place: one file read, no tiles replaced at all. The full pass
-      still runs where it earns its keep — when the save went to a different
-      folder, or created a document that has to take its place in the sorted
-      order.
+      tile in place: one file read, no tiles replaced at all. A document saved
+      under a new name is <em>appended</em>, at the end, and scrolled to — on
+      purpose, rather than filed into the sorted order where it might land
+      off-screen: a file you have just made should be where you are looking.
+      The grid sorts itself afresh on the next <b>refresh</b>, the header
+      button that used to be called <em>reload</em>. Only a save into a
+      different folder redraws the lot, because then the lot really is
+      different.
     </div></li>
     <li><div>
       <b>New and the plane editor are windows now.</b> They were the last two

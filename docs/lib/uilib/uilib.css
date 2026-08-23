@@ -65,7 +65,7 @@
 .iw-close:hover { color: #fff; background: #c42b1c; }
 .iw-close svg.ic { width: 13px; height: 13px; }
 
-/* extra header buttons a dialog may inject ("folder…", "reload") */
+/* extra header buttons a dialog may inject ("folder…", "refresh") */
 .iw-hbtn {
   flex: none;
   height: calc(var(--iw-header) - 8px);
