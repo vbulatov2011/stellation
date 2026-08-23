@@ -120,6 +120,22 @@ const base = {
      'seventeen significant digits round-trip bit-exactly');
 }
 
+// central planes: the flag rides in arrangement, forces release 4, reads back
+{
+  const planeRows = [
+    { normal: [0, 0, 1], distance: 1, symmetry: 'Oh' },
+    { normal: [1, 0, 0], distance: 0, symmetry: 'Oh' },
+  ];
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}', planeRows, centralPlanes: true }));
+  ok(doc.appInfo.fileFormatRelease === 4, 'keeping central planes writes release 4');
+  ok(doc.params.arrangement.centralPlanes === true, 'the flag rides in arrangement');
+  ok(readPreset(doc).centralPlanes === true, 'and reads back true');
+  const off = JSON.parse(writePreset({ ...base, cells: '{0}', planeRows }));
+  ok(off.appInfo.fileFormatRelease === 3 && off.params.arrangement.centralPlanes === undefined,
+     'without it nothing changes: release 3, no flag written');
+  ok(readPreset(off).centralPlanes === false, 'absent reads as false');
+}
+
 // the old text form still opens, and migrates to rows
 {
   const legacy = {

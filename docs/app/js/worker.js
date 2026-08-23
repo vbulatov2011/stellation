@@ -316,11 +316,13 @@ self.onmessage = (e) => {
     switch (type) {
 
       case 'build': {
-        const { geometry, customPlanes, matrices, subMatrices, maxIntersection, maxLayer } = payload;
+        const { geometry, customPlanes, matrices, subMatrices, maxIntersection,
+                maxLayer, centralPlanes } = payload;
         const t0 = performance.now();
         // an explicit plane list replaces the polyhedron entirely
         stel = buildStellation(customPlanes ? null : toPoly(geometry), matrices, {
           planes: customPlanes || null,
+          central: !!centralPlanes,
           subMatrices, maxIntersection, maxLayer,
           onProgress: (done, total) =>
             self.postMessage({ id, progress: { done, total } }),
@@ -348,7 +350,11 @@ self.onmessage = (e) => {
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
-            (c ? ` — all ${c} pass through the center, which this representation cannot hold` : ''));
+            (c ? ` — all ${c} pass through the center; turn on "planes through the center" to keep them` : ''));
+        }
+        // a sheet of nothing but central planes builds fine and bounds nothing
+        if (!stel.cellLayers.length || !stel.cellLayers[0].length) {
+          throw new Error('the planes bound no cells — planes through the center alone enclose nothing');
         }
         reply({
           planes: stel.planes.length,
@@ -362,6 +368,7 @@ self.onmessage = (e) => {
            */
           planesTotal: stel.planes.total ?? stel.planes.length,
           planesCentral: stel.planes.central ?? 0,
+          planesCentralKept: stel.planes.centralKept ?? 0,
           planesDegenerate: stel.planes.degenerate ?? 0,
           planesDuplicate: stel.planes.duplicate ?? 0,
           // the inequivalent faces to offer as diagram planes

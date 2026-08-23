@@ -43,6 +43,13 @@ const state = {
   outline: null,
   selected: new Set(),
   planeIndex: 0,
+  /*
+   * Keep planes through the center in the arrangement. Off by default and
+   * saved with the document (format release 4): a build that dropped the
+   * d=0 rows would resolve the same cells string against a different
+   * arrangement, so old builds must refuse such documents, not misread them.
+   */
+  centralPlanes: false,
   building: false,
   // edited since the last save or open — see touch() and confirmDiscard()
   dirty: false,
@@ -736,6 +743,8 @@ function updateCatCount() {
 async function select(item, opts = {}) {
   if (!item) return;
   state.customPlanes = null;         // picking a solid leaves custom-plane mode
+  // a document brings its own answer; a plain pick starts plain
+  state.centralPlanes = !!opts.centralPlanes;
   state.current = item;
   state.polySym = opts.polySym || item.symmetry || 'Ih';
   state.stellSym = opts.stellSym || defaultStellSym(state.polySym);
@@ -1196,6 +1205,7 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
   try {
     const info = await call('build', {
       geometry: g, customPlanes: state.customPlanes || null,
+      centralPlanes: state.centralPlanes || false,
       matrices: polyM, subMatrices: subM,
       maxIntersection: state.depth >= NO_LIMIT ? -1 : state.depth, maxLayer: 1000,
     }, ({ done, total }) => setStatus(`intersecting plane ${done} of ${total}…`, true, done / total));
@@ -1370,8 +1380,11 @@ async function refresh() {
 function planeReport(info) {
   const total = info.planesTotal ?? info.planes;
   const dropped = (info.planesCentral || 0) + (info.planesDegenerate || 0);
-  if (!dropped) return `${info.planes} planes`;
-  return `⚠ ${info.planes} of ${total} planes`;
+  const kept = info.planesCentralKept || 0;
+  if (dropped) return `⚠ ${info.planes} of ${total} planes`;
+  // cuts change what the same sheet builds, so the count says they are in
+  if (kept) return `${info.planes} planes (${kept} central)`;
+  return `${info.planes} planes`;
 }
 
 /*
@@ -1395,7 +1408,8 @@ function fillFaceSelect(faces) {
   }
   if (!state.faces.some(f => f.index === state.planeIndex)) state.planeIndex = state.faces[0].index;
   sel.innerHTML = state.faces.map(f => {
-    const shape = POLYGON[f.sides] || (f.sides ? `${f.sides}-gon` : 'face');
+    const shape = f.central ? 'central cut'
+                : POLYGON[f.sides] || (f.sides ? `${f.sides}-gon` : 'face');
     return `<option value="${f.index}"${f.index === state.planeIndex ? ' selected' : ''}>` +
            `${shape} · ${f.count} plane${f.count === 1 ? '' : 's'}</option>`;
   }).join('');
@@ -1882,7 +1896,8 @@ async function buildCustomPlanes(planeRows) {
   if (unknown) { info.textContent = `no symmetry group named "${unknown.symmetry}"`; return false; }
   const expanded = expandPlaneRows(rows, state.symmetry);
   info.textContent = '';
-  const prev = { planeRows: state.planeRows, customPlanes: state.customPlanes, current: state.current };
+  const prev = { planeRows: state.planeRows, customPlanes: state.customPlanes,
+                 current: state.current, centralPlanes: state.centralPlanes };
   state.planeRows = rows;
   state.customPlanes = expanded;
   state.current = { file: 'custom', name: `custom planes (${rows.length} rows → ${expanded.length})`, symmetry: null };
@@ -1980,6 +1995,7 @@ function currentPresetText(docName) {
     faceOpacity: Number($('#faceOpacity').value) / 100,
     view: renderer?.getView() || null,
     planeRows: state.customPlanes ? state.planeRows : null,
+    centralPlanes: state.centralPlanes || false,
   });
 }
 
@@ -2208,6 +2224,7 @@ async function openDocument(text, filename = '', opts = {}) {
   if (doc.planeRows) {
     if (doc.polySymmetry) state.polySym = doc.polySymmetry;
     if (doc.stellSymmetry) state.stellSym = doc.stellSymmetry;
+    state.centralPlanes = !!doc.centralPlanes;
     if (doc.planeDepth != null) setDepth(doc.planeDepth, false);
     // the display settings save the same way for custom documents as for
     // catalog ones, so they restore the same way too
@@ -2255,6 +2272,7 @@ async function openDocument(text, filename = '', opts = {}) {
 
   const built = await select(item, { polySym: doc.polySymmetry, stellSym: doc.stellSymmetry,
                        cells: doc.cells, cellsIndexing: doc.cellsIndexing || null,
+                       centralPlanes: doc.centralPlanes,
                        depth: doc.planeDepth ?? undefined, view: doc.view });
   if (built === false) return false;   // stopped or failed: its own status stands
   commit();

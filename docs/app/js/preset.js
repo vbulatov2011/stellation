@@ -33,7 +33,7 @@ export const APP_NAME = 'Stellation.PolyhedronCatalog.PlaneArrangement.CellSelec
  * anything an old build handles still says 1, and what it would misread it
  * refuses instead ("this file is format release 3…").
  */
-export const FILE_FORMAT_RELEASE = 3;
+export const FILE_FORMAT_RELEASE = 4;
 /*
  * The prefix on a generated document name. SymmHub's own apps write `par`
  * (for "parameters"); this one writes `stel`, because what it saves is a
@@ -66,19 +66,27 @@ export function writePreset({
   planeDepth, cells, cellsIndexing = null, diagramFace,
   showEdges = true, showAllFacets = true, colorMode = 'layer',
   cosetSub = null, faceOpacity = 1, edges = null, colors = null,
-  view = null, planeRows = null,
+  view = null, planeRows = null, centralPlanes = false,
   exportLengthUnit = 0.01,
 }) {
   const planes = planeRows?.length ? normalizePlaneRows(planeRows) : null;
   return JSON.stringify({
     name: name || newDocumentName(),
-    // the lowest release that reads this document correctly — see the constant
+    /*
+     * The lowest release that reads this document correctly — see the
+     * constant. Central planes force release 4: a build without them would
+     * quietly drop the d=0 rows, rebuild a different arrangement, and then
+     * resolve the same cells string against it — the exact silent-wrong-
+     * figure failure the release check exists to refuse.
+     */
     appInfo: { appName: APP_NAME,
-               fileFormatRelease: planes ? 3 : cellsIndexing === 'cells' ? 2 : 1 },
+               fileFormatRelease: centralPlanes ? 4
+                 : planes ? 3 : cellsIndexing === 'cells' ? 2 : 1 },
     params: {
       polyhedron: { name: polyhedron, file },
       symmetry: { polyhedron: polySymmetry, stellation: stellSymmetry },
-      arrangement: { planeDepth },
+      arrangement: centralPlanes ? { planeDepth, centralPlanes: true }
+                                 : { planeDepth },
       cells: cellsIndexing === 'cells'
         ? { selection: cells, indexing: 'cells' }
         : { selection: cells },
@@ -280,6 +288,8 @@ export function readPreset(doc) {
     // else is the classic sub-index notation under the stellation symmetry
     cellsIndexing: p.cells?.indexing === 'cells' ? 'cells' : null,
     planeDepth: p.arrangement?.planeDepth ?? null,
+    // keep planes through the center in the arrangement (release 4)
+    centralPlanes: p.arrangement?.centralPlanes === true,
     diagramFace: p.display?.diagramFace ?? 0,
     showEdges: p.display?.showEdges ?? true,
     showAllFacets: p.display?.showAllFacets ?? true,

@@ -430,6 +430,8 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     // two custom plane sheets are both `current.file === 'custom'`, so the
     // sheet itself has to be in the signature or they are indistinguishable
     state.customPlanes ? state.planeRows : null,
+    // the same sheet builds a different arrangement with the cuts kept
+    state.centralPlanes || false,
     // the coset/orbit colorings are baked into the cached diagram payloads
     // at fetch time, so a change of coloring subgroup must invalidate the
     // scan or a multi-plane export mixes two subgroups' labels

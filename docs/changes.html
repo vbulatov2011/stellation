@@ -69,6 +69,28 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Planes through the center.</b> A plane with d&nbsp;=&nbsp;0 was always
+      skipped — with a warning, but skipped — because "oriented away from the
+      origin" says nothing about a plane the origin sits on. The plane editor
+      now has <i>keep planes through the center</i>: on, such planes join the
+      arrangement and cut every cell they cross, so the core splits into
+      pieces, a figure can be halved along a mirror, and the cross-section
+      shows as faces lying in the cut. The engine counts shells by the planes
+      that are <em>not</em> central, which is the same on both sides of every
+      cut — so a piece and its mirror image sit in the same shell, symmetry
+      orbits close, and the cells notation, the depth control and saved
+      selections all read exactly as before. The statusline says when cuts are
+      in ("11 planes (3 central)"), the face chooser lists the cut's own
+      diagram as <i>central cut</i>, and such documents save as format
+      release&nbsp;4 — older builds refuse them cleanly instead of silently
+      rebuilding a different figure under the same cells string. Behind it all
+      sits one hard-won fix: a central plane running along a polyhedron edge
+      lets two coplanar facets meet at the same count, and the cell-growing
+      walk used to sail across that edge on float noise, stitching neighboring
+      cells into one; a strict margin now says coplanar is never the same
+      cell.
+    </div></li>
+    <li><div>
       <b>Presets and Files stay open across a reload.</b> Both windows already
       remembered where you put them and how big you made them; what they forgot
       was whether they were on screen at all, so every reload started with the

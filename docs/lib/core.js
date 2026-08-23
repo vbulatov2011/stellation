@@ -1065,7 +1065,14 @@ export function diagramFaces(stel, matrices) {
       const r = dot(c, c);
       if (r < rmin) { rmin = r; core = f; }
     }
-    return { index: i, sides: core ? core.v.length : 0, count: 0 };
+    /*
+     * A central plane has no polygon of its own to be named after — its
+     * innermost facet is one wedge of the cross-section, and calling the
+     * class "triangle" after the wedge would name the plane for an accident
+     * of how the other cuts sliced it. Say what it is instead.
+     */
+    return { index: i, sides: core ? core.v.length : 0, count: 0,
+             central: !!stel.planes[i].central };
   });
   for (const g of group) if (g >= 0) out[g].count++;
   return out;

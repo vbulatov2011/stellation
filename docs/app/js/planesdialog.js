@@ -85,6 +85,13 @@ export function initPlanesDialog(deps) {
       const v = matMul(m, { x: plane.n[0], y: plane.n[1], z: plane.n[2] });
       let n = [v.x, v.y, v.z], d = plane.d;
       if (d < 0) { n = [-n[0], -n[1], -n[2]]; d = -d; }
+      if (d < 1e-9) {
+        // a plane through the center: its mirror image has the negated
+        // normal and IS the same plane — orient it the way the engine does,
+        // or the row would count every central plane twice
+        const s = Math.abs(n[0]) > 1e-6 ? n[0] : Math.abs(n[1]) > 1e-6 ? n[1] : n[2];
+        if (s < 0) n = [-n[0], -n[1], -n[2]];
+      }
       const dup = out.some(p => Math.abs(p.d - d) < 1e-6 &&
         p.n[0] * n[0] + p.n[1] * n[1] + p.n[2] * n[2] > 1 - 1e-7);
       if (!dup) out.push({ n, d });
@@ -345,6 +352,7 @@ export function initPlanesDialog(deps) {
       rows = [];
     }
     fillImport();
+    $('#planesCentral').checked = !!state.centralPlanes;
     $('#planesInfo').textContent = '';
     render();
     win.setVisible(true);
@@ -419,6 +427,7 @@ export function initPlanesDialog(deps) {
   $('#planesClear').onclick = () => { rows = []; render(); update(true); };
 
   $('#planesBuild').onclick = async () => {
+    state.centralPlanes = $('#planesCentral').checked;
     if (await deps.buildCustomPlanes(toRows())) win.setVisible(false);
   };
   $('#planesCancel').onclick = () => win.setVisible(false);
