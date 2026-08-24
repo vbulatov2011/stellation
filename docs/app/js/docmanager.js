@@ -204,6 +204,23 @@ export function initDocManager({
      * loaded with a `file=` fragment. Silent when the folder permission has
      * lapsed — a reload is not a gesture to spend on a permission chip.
      */
+    /*
+     * Point Save back at a file WITHOUT reading it.
+     *
+     * The restored session already holds the document — a newer version of it
+     * than the file does — so loading the file would undo exactly the edits
+     * being restored. All that is wanted is the handle, so that Save writes
+     * where it wrote before instead of offering Save As on a document that
+     * plainly came from somewhere. Silent when the grant has lapsed: then it
+     * really is a document with nowhere to go, and Save says so in its own way.
+     */
+    attachOrigin: async (path) => {
+      if (!canFolders) return false;
+      const found = await ensureFileDialog().openPath(path);
+      if (!found) return false;
+      setOrigin(found.name, found.folderHandle, found.fileName);
+      return true;
+    },
     reopenPath: async (path, opts = {}) => {
       if (!canFolders) return false;
       const found = await ensureFileDialog().openPath(path);

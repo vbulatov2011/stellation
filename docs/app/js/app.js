@@ -159,8 +159,77 @@ let buildStopped = false;
  * fires because someone nudged a slider teaches people to click through it —
  * which would cost more than the setting it was protecting.
  */
-function touch() { state.dirty = true; }
-function markSaved() { state.dirty = false; }
+function touch() { state.dirty = true; scheduleAutosave(); }
+function markSaved() { state.dirty = false; scheduleAutosave(); }
+
+/*
+ * The working document, kept in this browser so that a reload does not cost
+ * you it.
+ *
+ * The URL alone cannot carry the answer. A link to a document — a preset, or a
+ * file of your own — names it and nothing more, so it stops describing what is
+ * on screen the moment you change anything; and the state hash that replaces
+ * it carries the geometry only, not the colours, the opacities, the line
+ * weights or the coset subgroup. So a reload after editing came back to the
+ * same solid wearing a different face, which is what this is for. The whole
+ * document is written here instead, in the same JSON a file would hold.
+ *
+ * Keyed by the hash it belongs to, and restored only when the hash still
+ * agrees. Open something else and that link wins, as it should: the URL is
+ * where someone says which document they want, and this is only a memory of
+ * what they were doing to it.
+ */
+const AUTOSAVE_KEY = 'stell.autosave';
+let autosaveTimer = 0;
+/*
+ * The hash the APP last wrote, which is not always the one in the address bar.
+ *
+ * The backup is filed under the document it holds, and the address bar is not
+ * a reliable name for that: type a different hash and reload, and the unload
+ * would otherwise file the old document under the new name — so the reload
+ * restored the old work over the document that had just been asked for. What
+ * syncHash last wrote is what the document in memory actually is.
+ */
+let ownHash = '';
+/*
+ * The file this document came from, remembered apart from the URL.
+ *
+ * The `file=` link is dropped at the first edit — it names the file, and after
+ * an edit the thing on screen is no longer what the file holds. But the
+ * document still BELONGS to that file, and Save should still write there, so
+ * the path is kept here where editing cannot clear it.
+ */
+let originPath = null;
+
+function writeAutosave() {
+  clearTimeout(autosaveTimer);
+  try {
+    if (!state.current || state.building) return;
+    const doc = currentPresetText();
+    if (!doc) return;
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({
+      hash: ownHash,
+      name: currentDocName(),
+      dirty: !!state.dirty,
+      originPath,
+      doc,
+    }));
+  } catch { /* storage full or unavailable: the session is simply not backed up */ }
+}
+
+/** written a moment after things settle, so a drag does not write per frame */
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(writeAutosave, 600);
+}
+
+/*
+ * And once more on the way out, which is the case that matters: a reload fires
+ * pagehide, so whatever the timer has not yet written is written now. Settings
+ * that never touch the hash or the dirty flag — a colour, an opacity, a line
+ * weight — are carried by this alone.
+ */
+addEventListener('pagehide', writeAutosave);
 
 /**
  * Ask before discarding unsaved work. `what` completes the sentence "this will
@@ -365,7 +434,44 @@ async function boot() {
   // selection, which parseCellsAny recognizes by the prefix
   const m = hash.match(
     /^([\w]+)(?:\/([\w()]+))?(?:\/([\w()]+))?(?:\/d(\d+))?(?:\/v([-\d.,eE]+))?(?:\/(c?\{.*\}))?$/);
-  if (fileLink && !fileLink[1].includes('..')) {
+  /*
+   * The session before this one, if it was the same document.
+   *
+   * Tried before the link is followed, because it IS that link's document,
+   * only newer — following the link would fetch the file and quietly undo
+   * whatever had been done to it since. A hash naming something else means
+   * someone asked for something else, and this steps aside.
+   */
+  const saved = readJSON(localStorage.getItem(AUTOSAVE_KEY));
+  let restored = false;
+  if (saved?.doc && saved.hash === hash) {
+    if (await openDocument(saved.doc, saved.name || 'your last session', { hash })) {
+      /*
+       * Point Save back where it pointed. The document is already in hand, so
+       * only the handle is wanted; reading the file would undo the restore.
+       */
+      if (saved.originPath && !String(saved.originPath).includes('..')) {
+        originPath = saved.originPath;
+        await docs?.attachOrigin(saved.originPath);
+      }
+      // it was unsaved when the tab closed, and it still is
+      if (saved.dirty) touch(); else markSaved();
+      setStatus(saved.dirty
+        ? `${saved.name || 'your work'} — restored, with changes still unsaved`
+        : `${saved.name || 'your work'} — restored`, false);
+      restored = true;
+    }
+  }
+
+  /*
+   * Not a `return`: the camera watcher and the listeners that keep the URL and
+   * the backup current are set up below, and a restored session needs them as
+   * much as an opened one — leaving early once meant the angle stopped being
+   * remembered for the rest of the session.
+   */
+  if (restored) {
+    /* the session is already on screen */
+  } else if (fileLink && !fileLink[1].includes('..')) {
     const path = fileLink[1];
     if (await docs?.reopenPath(path, { hash })) {
       // opened, and openDocument has already put the link back in the URL
@@ -448,15 +554,18 @@ function keepLink(hash) {
 
 function syncHash() {
   if (!state.current) return;
+  scheduleAutosave();
   // still the document that was linked: keep its link, which carries the
   // display settings the state hash has no room for. mark() drops it.
   if (docLinkHash) {
+    ownHash = docLinkHash;
     try { history.replaceState(null, '', '#' + docLinkHash); } catch { }
     return;
   }
   const v = renderer ? `/v${renderer.getView().join(',')}` : '';
   const h = `${state.current.file}/${state.polySym}/${state.stellSym}` +
             `/d${state.depth}${v}/${state.cellsString || ''}`;
+  ownHash = h;
   try { history.replaceState(null, '', '#' + h); }
   catch { location.hash = h; }     // file:// URLs reject replaceState
 }
@@ -2541,6 +2650,10 @@ function applyDisplaySettings(doc) {
  * that by failing gracefully rather than fetching something wrong.
  */
 async function openDocument(text, filename = '', opts = {}) {
+  // a document opened from a folder keeps its path; anything else clears it,
+  // since a preset or a dropped file is not somewhere Save may write
+  const fromFile = /^file=([^?#]+\.json)$/.exec(opts.hash || '');
+  originPath = fromFile && !fromFile[1].includes('..') ? fromFile[1] : null;
   let doc;
   try {
     doc = readDocument(text);
