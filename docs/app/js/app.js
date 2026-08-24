@@ -220,14 +220,12 @@ async function boot() {
     if (savedElemW > 0) {
       renderer.elemWidth = savedElemW;       // before the first setElements
       $('#elemWidth').value = String(savedElemW);
-      $('#elemWidthLabel').textContent = savedElemW.toFixed(1);
     }
     const savedAxes = readJSON(localStorage.getItem('coordAxes'));
     if (savedAxes) {
       $('#showCoordAxes').checked = !!savedAxes.show;
       if (savedAxes.width > 0) {
         $('#coordAxesWidth').value = String(savedAxes.width);
-        $('#coordAxesWidthLabel').textContent = Number(savedAxes.width).toFixed(1);
       }
       // the geometry is sized to the scene, so it is built after the first mesh
       renderer.showCoordAxes = !!savedAxes.show;
@@ -265,7 +263,6 @@ async function boot() {
     if (typeof elemPref.mirrors === 'boolean') $('#dgMirrors').checked = elemPref.mirrors;
     if (elemPref.width > 0) $('#dgElemWidth').value = elemPref.width;
   }
-  $('#dgElemWidthLabel').textContent = Number($('#dgElemWidth').value).toFixed(1);
 
   cells = new CellsPanel($('#cells'), {
     onBeforeChange: () => mark(),
@@ -1783,8 +1780,7 @@ function wireControls() {
     if (diagram) { diagram.faceOpacity = pct / 100; diagram.draw(); }
   };
   const pushCoordAxes = () => {
-    const w = Number($('#coordAxesWidth').value);
-    $('#coordAxesWidthLabel').textContent = w.toFixed(1);
+    const w = typedWidth('#coordAxesWidth', 0.1, 5, 1);
     localStorage.setItem('coordAxes', JSON.stringify({ show: $('#showCoordAxes').checked, width: w }));
     renderer?.setCoordAxes($('#showCoordAxes').checked, w);
   };
@@ -1792,9 +1788,8 @@ function wireControls() {
   $('#coordAxesWidth').oninput = pushCoordAxes;
 
   // like the edge widths: tuned against what you are looking at, so live
-  $('#elemWidth').oninput = (e) => {
-    const w = Number(e.target.value);
-    $('#elemWidthLabel').textContent = w.toFixed(1);
+  $('#elemWidth').oninput = () => {
+    const w = typedWidth('#elemWidth', 0.1, 5, 1);
     localStorage.setItem('elemWidth', String(w));
     renderer?.setElemWidth(w);
   };
@@ -1863,7 +1858,6 @@ function wireControls() {
 
   for (const id of ['#dgAxes', '#dgMirrors', '#dgElemWidth']) {
     $(id).oninput = () => {
-      $('#dgElemWidthLabel').textContent = Number($('#dgElemWidth').value).toFixed(1);
       try {
         localStorage.setItem('diagramElems', JSON.stringify({
           axes: $('#dgAxes').checked, mirrors: $('#dgMirrors').checked,
@@ -2242,19 +2236,34 @@ const hexToRgba = (hex) => {
  * is what an <input type="color"> speaks and what survives a JSON round trip
  * legibly.
  */
+/*
+ * A weight typed into a number box, kept sane.
+ *
+ * These were sliders, which cannot produce a bad value; a box can be empty
+ * halfway through retyping, and Number('') is 0 — which would push a width of
+ * zero at the renderer, drawing nothing, for as long as the box stayed empty.
+ * An unreadable box falls back to `dflt` — the kind's ordinary weight, not the
+ * last one typed — so what is drawn mid-edit is a sensible line rather than no
+ * line, and the box's own value is left alone for the typing to continue.
+ */
+const typedWidth = (id, lo, hi, dflt) => {
+  const v = Number($(id).value);
+  return Number.isFinite(v) && v > 0 ? Math.max(lo, Math.min(hi, v)) : dflt;
+};
+
 function currentEdgeStyle() {
   return {
     face: {
       show: $('#showFaceEdges').checked,
       color: $('#faceEdgeColor').value,
-      width: Number($('#faceEdgeWidth').value),
+      width: typedWidth('#faceEdgeWidth', 0.1, 8, 1),
       // this kind drawn as thin lit cylinders instead of flat lines
       tubes: $('#faceEdgeTubes').checked,
     },
     facet: {
       show: $('#showFacetEdges').checked,
       color: $('#facetEdgeColor').value,
-      width: Number($('#facetEdgeWidth').value),
+      width: typedWidth('#facetEdgeWidth', 0.1, 8, 1),
       tubes: $('#facetEdgeTubes').checked,
     },
   };
@@ -2293,13 +2302,13 @@ function applyEdgeStyle(style) {
  */
 const DIAGRAM_LINE_KINDS = [
   { key: 'intersection', on: '#dgIntersect',   w: '#dgIntersectWidth',
-    out: '#dgIntersectWidthLabel',   color: '#dgIntersectColor' },
+    color: '#dgIntersectColor' },
   { key: 'arrangement',  on: '#dgArrangement', w: '#dgArrangementWidth',
-    out: '#dgArrangementWidthLabel', color: '#dgArrangementColor' },
+    color: '#dgArrangementColor' },
   { key: 'facet',        on: '#dgFacet',       w: '#dgFacetWidth',
-    out: '#dgFacetWidthLabel',       color: '#dgFacetColor', shares: '#facetEdgeColor' },
+    color: '#dgFacetColor', shares: '#facetEdgeColor' },
   { key: 'face',         on: '#dgFace',        w: '#dgFaceWidth',
-    out: '#dgFaceWidthLabel',        color: '#dgFaceColor',  shares: '#faceEdgeColor' },
+    color: '#dgFaceColor',  shares: '#faceEdgeColor' },
 ];
 
 /*
@@ -2318,9 +2327,8 @@ function diagramStyleChanged() {
 function pushDiagramLines() {
   const style = {};
   for (const k of DIAGRAM_LINE_KINDS) {
-    const width = Number($(k.w).value);
+    const width = typedWidth(k.w, 0.1, 8, 0.6);
     style[k.key] = { show: $(k.on).checked, width, color: $(k.color).value };
-    $(k.out).textContent = width.toFixed(1);
     $(k.w).disabled = !$(k.on).checked;
   }
   try { localStorage.setItem('diagramLines', JSON.stringify(style)); } catch { }
@@ -2356,8 +2364,6 @@ function applyDiagramLines(style) {
 /** controls -> renderer, and remember it for next time */
 function pushEdgeStyle() {
   const style = currentEdgeStyle();
-  $('#faceEdgeWidthLabel').textContent = style.face.width.toFixed(1);
-  $('#facetEdgeWidthLabel').textContent = style.facet.width.toFixed(1);
   localStorage.setItem('edgeStyle', JSON.stringify(style));
   if (!renderer) return;
   renderer.faceEdges = { show: style.face.show, color: hexToRgba(style.face.color),

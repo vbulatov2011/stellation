@@ -335,40 +335,39 @@
       <summary><h2>Solid</h2></summary>
       <fieldset class="edge-kinds">
         <legend title="Every facet lies in one of the original face planes. Where two facets of DIFFERENT planes meet there is a real crease — an edge of the solid. Where two facets of the SAME plane meet the surface runs flat across the join and the line is just how the plane arrangement was cut up. Drawing the two the same buries the shape of the solid in the arrangement that produced it.">edges</legend>
-        <label class="check" title="The creases: where facets lying in different face planes meet"><input id="showFaceEdges" type="checkbox" checked> face edges</label>
-        <div class="row edge-style">
+        <div class="ctl-line">
+          <label class="check grow" title="The creases: where facets lying in different face planes meet"><input id="showFaceEdges" type="checkbox" checked> face edges</label>
           <input id="faceEdgeColor" type="color" value="#000000" title="Color of the face edges">
-          <input id="faceEdgeWidth" type="range" min="0.1" max="8" step="0.1" value="1" title="Thickness — pixels for lines, scaled radius for cylinders">
-          <b id="faceEdgeWidthLabel">1.0</b>
+          <input id="faceEdgeWidth" type="number" min="0.1" max="8" step="0.1" value="1" title="Thickness — pixels for lines, scaled radius for cylinders">
         </div>
-        <label class="check" title="Draw the face edges as thin lit cylinders — real geometry that shades round and thickens as you zoom — instead of flat lines of constant screen width. Very thin cylinders can shimmer; lines stay clean at any width."><input id="faceEdgeTubes" type="checkbox"> as cylinders</label>
-        <label class="check" title="The subdivision: where facets lying in the same face plane meet, with no crease between them"><input id="showFacetEdges" type="checkbox" checked> facet edges</label>
-        <div class="row edge-style">
+        <label class="check sub" title="Draw the face edges as thin lit cylinders — real geometry that shades round and thickens as you zoom — instead of flat lines of constant screen width. Very thin cylinders can shimmer; lines stay clean at any width."><input id="faceEdgeTubes" type="checkbox"> as cylinders</label>
+        <div class="ctl-line">
+          <label class="check grow" title="The subdivision: where facets lying in the same face plane meet, with no crease between them"><input id="showFacetEdges" type="checkbox" checked> facet edges</label>
           <input id="facetEdgeColor" type="color" value="#6b7080" title="Color of the facet edges">
-          <input id="facetEdgeWidth" type="range" min="0.1" max="8" step="0.1" value="1" title="Thickness — pixels for lines, scaled radius for cylinders">
-          <b id="facetEdgeWidthLabel">1.0</b>
+          <input id="facetEdgeWidth" type="number" min="0.1" max="8" step="0.1" value="1" title="Thickness — pixels for lines, scaled radius for cylinders">
         </div>
-        <label class="check" title="Draw the facet edges as thin lit cylinders — real geometry that shades round and thickens as you zoom — instead of flat lines of constant screen width. Very thin cylinders can shimmer; lines stay clean at any width."><input id="facetEdgeTubes" type="checkbox"> as cylinders</label>
+        <label class="check sub" title="Draw the facet edges as thin lit cylinders — real geometry that shades round and thickens as you zoom — instead of flat lines of constant screen width. Very thin cylinders can shimmer; lines stay clean at any width."><input id="facetEdgeTubes" type="checkbox"> as cylinders</label>
       </fieldset>
       <fieldset class="sym-elems">
         <legend title="The symmetry elements of the stellation group, drawn through the origin as real geometry so the solid hides the parts behind it. Inequivalent elements get different colors — the legend below names them.">symmetry elements</legend>
-        <label class="check"><input id="showAxes" type="checkbox"> rotation axes</label>
-        <label class="check" title="Each mirror plane as a rim the thickness of the axes, with a faint translucent fill"><input id="showMirrors" type="checkbox"> mirror planes</label>
-        <label class="check" title="Rotoreflection (Sₙ) axes — turn, then reflect. The three-dimensional cousin of a glide reflection."><input id="showImproper" type="checkbox"> rotoreflection axes</label>
-        <label class="field" title="Thickness of the axis tubes and mirror rims, as a multiple of their normal size">
-          <span>thickness <b id="elemWidthLabel">1.0</b>×</span>
-          <input id="elemWidth" type="range" min="0.1" max="5" step="0.1" value="1">
-        </label>
+        <div class="ctl-line wrap">
+          <label class="check" title="The rotation axes of the stellation group, drawn through the origin"><input id="showAxes" type="checkbox"> axes</label>
+          <label class="check" title="Each mirror plane as a rim the thickness of the axes, with a faint translucent fill"><input id="showMirrors" type="checkbox"> mirrors</label>
+          <label class="check" title="Rotoreflection (Sₙ) axes — turn, then reflect. The three-dimensional cousin of a glide reflection."><input id="showImproper" type="checkbox"> rotoreflections</label>
+        </div>
+        <div class="ctl-line" title="Thickness of the axis tubes and mirror rims, as a multiple of their normal size">
+          <span class="dim grow">thickness ×</span>
+          <input id="elemWidth" type="number" min="0.1" max="5" step="0.1" value="1">
+        </div>
         <div id="elemLegend" class="legend elem-legend"></div>
       </fieldset>
       <fieldset class="sym-elems">
         <legend title="The x, y and z axes through the origin, as arrows spanning the solid — the frame the symmetry groups' matrices are written in. In the front view x points right, y up and z toward you.">coordinate axes</legend>
-        <label class="check"><input id="showCoordAxes" type="checkbox">
-          show <b class="ax-x">x</b>, <b class="ax-y">y</b>, <b class="ax-z">z</b></label>
-        <label class="field" title="Thickness of the three arrows, as a multiple of their normal size">
-          <span>thickness <b id="coordAxesWidthLabel">1.0</b>×</span>
-          <input id="coordAxesWidth" type="range" min="0.1" max="5" step="0.1" value="1">
-        </label>
+        <div class="ctl-line">
+          <label class="check grow"><input id="showCoordAxes" type="checkbox">
+            show <b class="ax-x">x</b>, <b class="ax-y">y</b>, <b class="ax-z">z</b></label>
+          <input id="coordAxesWidth" type="number" min="0.1" max="5" step="0.1" value="1" title="Thickness of the three arrows, as a multiple of their normal size">
+        </div>
       </fieldset>
     </details>
 
@@ -391,32 +390,28 @@
       <fieldset class="edge-kinds">
         <legend title="The diagram is one face plane cut by all the others. These are the four kinds of line that draws, each with its own switch, thickness and color — the same four the export writes.">lines</legend>
 
-        <label class="check" title="Where every other plane cuts this one, drawn right across the picture rather than chopped into the regions it bounds — the engraved look of the printed plates"><input id="dgIntersect" type="checkbox"> intersections</label>
-        <div class="row edge-style">
+        <div class="ctl-line">
+          <label class="check grow" title="Where every other plane cuts this one, drawn right across the picture rather than chopped into the regions it bounds — the engraved look of the printed plates"><input id="dgIntersect" type="checkbox"> intersections</label>
           <input id="dgIntersectColor" type="color" value="#8a8fa0" title="Color of the intersection lines">
-          <input id="dgIntersectWidth" type="range" min="0.1" max="8" step="0.1" value="0.6" title="Thickness, in pixels of the drawing">
-          <b id="dgIntersectWidthLabel">0.6</b>
+          <input id="dgIntersectWidth" type="number" min="0.1" max="8" step="0.1" value="0.6" title="Thickness, in pixels of the drawing">
         </div>
 
-        <label class="check" title="The same cuts, chopped into the little regions they bound — the web the stellation was chosen out of"><input id="dgArrangement" type="checkbox" checked> diagram lines</label>
-        <div class="row edge-style">
+        <div class="ctl-line">
+          <label class="check grow" title="The same cuts, chopped into the little regions they bound — the web the stellation was chosen out of"><input id="dgArrangement" type="checkbox" checked> diagram lines</label>
           <input id="dgArrangementColor" type="color" value="#9198a8" title="Color of the arrangement">
-          <input id="dgArrangementWidth" type="range" min="0.1" max="8" step="0.1" value="0.6" title="Thickness, in pixels of the drawing">
-          <b id="dgArrangementWidthLabel">0.6</b>
+          <input id="dgArrangementWidth" type="number" min="0.1" max="8" step="0.1" value="0.6" title="Thickness, in pixels of the drawing">
         </div>
 
-        <label class="check" title="The divisions inside the figure — where two chosen regions meet. Its color is the solid's facet edges, above."><input id="dgFacet" type="checkbox" checked> facets outline</label>
-        <div class="row edge-style">
+        <div class="ctl-line">
+          <label class="check grow" title="The divisions inside the figure — where two chosen regions meet. Its color is the solid's facet edges, above."><input id="dgFacet" type="checkbox" checked> facets outline</label>
           <input id="dgFacetColor" type="color" value="#6b7080" title="Color of the facet outlines — shared with the solid's facet edges">
-          <input id="dgFacetWidth" type="range" min="0.1" max="8" step="0.1" value="1.1" title="Thickness, in pixels of the drawing">
-          <b id="dgFacetWidthLabel">1.1</b>
+          <input id="dgFacetWidth" type="number" min="0.1" max="8" step="0.1" value="1.1" title="Thickness, in pixels of the drawing">
         </div>
 
-        <label class="check" title="The outline of the figure — an edge with the figure on one side and nothing on the other. Dashed where it is the rim of a cavity. Its color is the solid's face edges, above."><input id="dgFace" type="checkbox" checked> faces outline</label>
-        <div class="row edge-style">
+        <div class="ctl-line">
+          <label class="check grow" title="The outline of the figure — an edge with the figure on one side and nothing on the other. Dashed where it is the rim of a cavity. Its color is the solid's face edges, above."><input id="dgFace" type="checkbox" checked> faces outline</label>
           <input id="dgFaceColor" type="color" value="#000000" title="Color of the figure's outline — shared with the solid's face edges">
-          <input id="dgFaceWidth" type="range" min="0.1" max="8" step="0.1" value="1.1" title="Thickness, in pixels of the drawing">
-          <b id="dgFaceWidthLabel">1.1</b>
+          <input id="dgFaceWidth" type="number" min="0.1" max="8" step="0.1" value="1.1" title="Thickness, in pixels of the drawing">
         </div>
       </fieldset>
       <!-- The elements of the stellation symmetry where they meet this plane:
@@ -428,11 +423,13 @@
            dot here and a cylinder there read as one object. -->
       <fieldset class="edge-kinds">
         <legend title="The stellation symmetry marked on the drawing plane, in the same colors the solid uses for the same elements">symmetry elements</legend>
-        <label class="check" title="A dot where each rotation or rotoreflection axis pierces the drawing plane"><input id="dgAxes" type="checkbox"> axis marks</label>
-        <label class="check" title="A dashed line where each mirror plane crosses the drawing plane"><input id="dgMirrors" type="checkbox"> mirror lines</label>
-        <div class="row edge-style">
-          <input id="dgElemWidth" type="range" min="0.4" max="6" step="0.1" value="1.1" title="Thickness of the marks">
-          <b id="dgElemWidthLabel">1.1</b>
+        <div class="ctl-line wrap">
+          <label class="check" title="A dot where each rotation or rotoreflection axis pierces the drawing plane"><input id="dgAxes" type="checkbox"> axis marks</label>
+          <label class="check" title="A dashed line where each mirror plane crosses the drawing plane"><input id="dgMirrors" type="checkbox"> mirror lines</label>
+        </div>
+        <div class="ctl-line" title="Thickness of the marks">
+          <span class="dim grow">thickness</span>
+          <input id="dgElemWidth" type="number" min="0.4" max="6" step="0.1" value="1.1">
         </div>
       </fieldset>
       <label class="check" title="Tint the cells you have not chosen, so you can see what else is available on this plane">
