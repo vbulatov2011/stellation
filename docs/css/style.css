@@ -329,6 +329,18 @@ details.group[open] > summary { margin-bottom: 7px; }
 }
 .field input[type="range"] { flex: 1; accent-color: var(--accent); }
 
+/*
+ * The symmetry section sizes its controls to their own contents.
+ *
+ * Everywhere else a field stretches, which is right for a slider or a long
+ * list of colorings. Here the contents are short — a group symbol and its
+ * order, a shell count of one or two digits — and a menu pulled across the
+ * whole panel to hold "I (60)" reads as a text box waiting to be typed in,
+ * not as a choice among a few. They may still shrink if the panel is narrow.
+ */
+#symGroup .field select { flex: 0 1 auto; }
+#symGroup .field input[type="number"] { flex: none; width: 4.5em; }
+
 .check {
   display: flex; align-items: center; gap: 6px;
   padding: 2px 0;
