@@ -211,6 +211,7 @@ async function boot() {
     const savedOpacity = storedOpacity === null ? NaN : Number(storedOpacity);
     if (Number.isFinite(savedOpacity) && savedOpacity >= 0 && savedOpacity < 100) {
       renderer.faceOpacity = savedOpacity / 100;
+      if (diagram) diagram.faceOpacity = savedOpacity / 100;
       $('#faceOpacity').value = String(savedOpacity);
       $('#faceOpacityLabel').textContent = savedOpacity;
     }
@@ -1660,6 +1661,8 @@ function wireControls() {
     $('#faceOpacityLabel').textContent = pct;
     localStorage.setItem('faceOpacity', String(pct));
     renderer?.setFaceOpacity(pct / 100);
+    // the diagram is a view of the same facets and follows the same opacity
+    if (diagram) { diagram.faceOpacity = pct / 100; diagram.draw(); }
   };
   const pushCoordAxes = () => {
     const w = Number($('#coordAxesWidth').value);

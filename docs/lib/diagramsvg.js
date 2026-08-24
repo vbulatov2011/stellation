@@ -67,6 +67,13 @@ export const DIAGRAM_DEFAULTS = {
 
   fill: true,           // the chosen regions, shaded
   colorMode: 'layer',   // 'layer' | 'class' | 'stellClass' | 'none'
+  /*
+   * The global facet opacity, the same number the 3D view applies over every
+   * facet colour. It multiplies each fill's own alpha, so a figure exported
+   * at half opacity is half transparent on the page it is placed on — which
+   * is only visible at all when `background` is null.
+   */
+  faceOpacity: 1,
 
   facetLines: true,     // divisions inside the figure
   facetWidth: 0.7,
@@ -82,8 +89,11 @@ export const DIAGRAM_DEFAULTS = {
 
 const fmt = (n) => (Math.abs(n) < 1e-9 ? '0' : +n.toFixed(2));
 const rgb = (c) => `rgb(${c.slice(0, 3).map(v => Math.round(v * 255)).join(',')})`;
-/** the fill-opacity attribute a group's alpha asks for, or nothing at full */
-const op = (c) => (c[3] == null || c[3] >= 1 ? '' : ` fill-opacity="${fmt(c[3])}"`);
+/** the fill-opacity a group's alpha asks for, under the global one, or nothing at full */
+const op = (c, g = 1) => {
+  const a = (c[3] == null ? 1 : c[3]) * (g == null ? 1 : g);
+  return a >= 1 ? '' : ` fill-opacity="${fmt(a)}"`;
+};
 
 function facetGroup(f, data, mode) {
   switch (mode) {
@@ -241,20 +251,21 @@ export function diagramSVG(data, options = {}) {
   if (o.background) out.push(`  <rect width="${W}" height="${H}" fill="${o.background}"/>`);
 
   const chosen = data.facets.filter(f => f.selected);
+  const gA = Math.max(0, Math.min(1, o.faceOpacity ?? 1));
 
   // the fill first, so every line lies over it
-  if (o.fill) {
+  if (o.fill && gA > 0) {
     for (const f of chosen) {
       if (o.colorMode === 'cosetM' && f.pieces) {
         for (const pc of f.pieces) {
           const c = faceColor(o.colorMode, pc.label ?? -1, f.facing !== 0);
           if (c[3] <= 0) continue;
-          out.push(`  <path d="${path(pc.poly)}" fill="${rgb(c)}"${op(c)}/>`);
+          out.push(`  <path d="${path(pc.poly)}" fill="${rgb(c)}"${op(c, gA)}/>`);
         }
         continue;
       }
       const c = facetColor(f, data, o.colorMode);
-      if (c[3] > 0) out.push(`  <path d="${path(f.poly)}" fill="${rgb(c)}"${op(c)}/>`);
+      if (c[3] > 0) out.push(`  <path d="${path(f.poly)}" fill="${rgb(c)}"${op(c, gA)}/>`);
     }
   }
 

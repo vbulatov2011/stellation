@@ -69,6 +69,20 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>The diagram too, and it now carries the figure's opacity.</b> The
+      stellation diagram is drawn on nothing, like the solid beside it: its
+      backdrop moved to the canvas element, so what a snapshot holds is the
+      drawing and the transparency of its regions, with no paper baked behind
+      it. The SVG could already be written without a background — the export
+      dialog has had the box for it — and now the file says the rest of the
+      truth as well: the facet opacity slider reaches the diagram, on screen
+      and in the file, so a figure shown half transparent is exported half
+      transparent instead of arriving fully painted. A region given an alpha
+      of its own in the Colors panel multiplies with it rather than being
+      overridden by it, and at full opacity nothing extra is written at all —
+      an ordinary opaque diagram is byte for byte the file it always was.
+    </div></li>
+    <li><div>
       <b>The 3D view renders with an alpha channel, and saves one.</b> The
       figure is drawn onto nothing now: the drawing buffer is cleared fully
       transparent, so what it holds is the solid and only the solid. Every

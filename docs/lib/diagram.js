@@ -25,6 +25,22 @@ export class DiagramView {
     this.lineOnly = false;
     // 'layer' | 'class' — matches the 3D view; see _color()
     this.colorMode = 'layer';
+    /*
+     * The same global facet opacity the 3D view carries, applied to the
+     * facets of the FIGURE — the chosen ones. The arrangement behind them is
+     * not the solid and keeps its own faint tint, exactly as the 3D view
+     * draws no facet that is not selected.
+     */
+    this.faceOpacity = 1;
+    /*
+     * The backdrop is the canvas element's CSS, not paint.
+     *
+     * The drawing itself is laid on nothing, so a snapshot of this canvas
+     * carries the diagram and the transparency of its facets, with no
+     * background baked in. What a viewer sees behind it is this colour, set
+     * on the element, which no toDataURL() or drawImage() can reach.
+     */
+    this.background = null;
 
     // Drag pans, a click without meaningful movement selects. Without the
     // distinction you cannot pan at all without toggling whatever is underneath.
@@ -313,9 +329,16 @@ export class DiagramView {
                  document.documentElement.dataset.theme === 'dark';
 
     ctx.clearRect(0, 0, f.w, f.h);
-    ctx.fillStyle = dark ? '#0e1014' : '#ffffff';
-    ctx.fillRect(0, 0, f.w, f.h);
+    // the backdrop lives on the element (see the constructor), so the picture
+    // itself stays transparent wherever nothing is drawn
+    const backdrop = this.background || (dark ? '#0e1014' : '#ffffff');
+    if (this.canvas.style.backgroundColor !== backdrop) {
+      this.canvas.style.backgroundColor = backdrop;
+    }
     if (!this.data) return;
+
+    // the global facet opacity, over every fill the figure gets
+    const gA = Math.max(0, Math.min(1, this.faceOpacity ?? 1));
 
     const facets = this.data.facets;
 
@@ -379,7 +402,7 @@ export class DiagramView {
         // the mirror-split pieces, each with its own crisp color
         for (const pc of facet.pieces) {
           const c = faceColor(this.colorMode, pc.label ?? -1, !inward);
-          ctx.fillStyle = this._rgba(c, (inward ? (dark ? 0.42 : 0.34) : 1) * c[3]);
+          ctx.fillStyle = this._rgba(c, (inward ? (dark ? 0.42 : 0.34) : 1) * c[3] * gA);
           this._path(ctx, pc.poly, f);
           ctx.fill();
         }
@@ -391,7 +414,7 @@ export class DiagramView {
       // by class, either class, the underside already has its own darkened
       // hue — fading it as well would say the same thing twice
       const fade = (inward && !this._byClass()) ? (dark ? 0.42 : 0.34) : 1;
-      ctx.fillStyle = this._rgba(c, fade * c[3]);
+      ctx.fillStyle = this._rgba(c, fade * c[3] * gA);
       this._path(ctx, facet.poly, f);
       ctx.fill();
     }
@@ -503,6 +526,7 @@ export class DiagramView {
   }
 
   /** PNG data URL of the diagram as drawn */
+  /** a PNG data URL of the diagram, transparent where nothing is drawn */
   snapshot() { this.draw(); return this.canvas.toDataURL('image/png'); }
 
   /** standalone SVG of the diagram, for printing or laser cutting */
