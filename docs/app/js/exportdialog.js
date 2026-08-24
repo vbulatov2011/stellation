@@ -165,18 +165,18 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     scale: scaleOf(),
     // the look, exactly as the Diagram panel has it — see the note above
     ...(diagram?.styleOptions?.() || {}),
-    // the picture has no paper unless one is asked for
-    // the paper, and what colour it is. Off, the picture has none at all —
-    // which is the only setting under which the figure's own transparency
-    // means anything in the file
-    background: background.checked ? bgColor.value : null,
     /*
-     * The figure's opacity, as the app is showing it. It only tells on a
-     * transparent background — over white, half-opacity paint is simply a
-     * paler colour — but that is exactly when it matters, and a diagram that
-     * did not match the solid beside it would be the odd one out.
+     * The paper, and what colour it is. Off, the picture has none at all —
+     * which is the only setting under which the figure's own transparency
+     * means anything in the file.
+     *
+     * The opacity is NOT read here: it comes with styleOptions above, from
+     * the diagram's own faces control. It used to be taken from the solid's,
+     * which was the same number until the two were separated — after which
+     * this line would have quietly exported the solid's paint on the
+     * diagram's drawing.
      */
-    faceOpacity: Number(document.querySelector('#faceOpacity')?.value ?? 100) / 100,
+    background: background.checked ? bgColor.value : null,
   });
 
   /**

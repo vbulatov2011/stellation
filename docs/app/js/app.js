@@ -210,12 +210,13 @@ async function boot() {
      */
     const storedOpacity = localStorage.getItem('faceOpacity');
     const savedOpacity = storedOpacity === null ? NaN : Number(storedOpacity);
-    if (Number.isFinite(savedOpacity) && savedOpacity >= 0 && savedOpacity < 100) {
-      renderer.faceOpacity = savedOpacity / 100;
-      if (diagram) diagram.faceOpacity = savedOpacity / 100;
+    if (Number.isFinite(savedOpacity) && savedOpacity >= 0 && savedOpacity <= 100) {
       $('#faceOpacity').value = String(savedOpacity);
-      $('#faceOpacityLabel').textContent = savedOpacity;
     }
+    if (localStorage.getItem('showFaces') === '0') $('#showFaces').checked = false;
+    // before the first setMesh, so the first frame is already right
+    renderer.faceOpacity = solidFaceOpacity();
+    $('#faceOpacity').disabled = !$('#showFaces').checked;
     const savedElemW = Number(localStorage.getItem('elemWidth'));
     if (savedElemW > 0) {
       renderer.elemWidth = savedElemW;       // before the first setElements
@@ -257,6 +258,12 @@ async function boot() {
    * this exists — and a style pushed at nothing is a style silently lost.
    */
   applyDiagramLines(readJSON(localStorage.getItem('diagramLines')));
+  const facePref = readJSON(localStorage.getItem('diagramFaces'));
+  if (facePref) {
+    if (typeof facePref.show === 'boolean') $('#dgShowFaces').checked = facePref.show;
+    if (Number.isFinite(facePref.opacity)) $('#dgFaceOpacity').value = String(facePref.opacity);
+  }
+  pushDiagramFaces();
   const elemPref = readJSON(localStorage.getItem('diagramElems'));
   if (elemPref) {
     if (typeof elemPref.axes === 'boolean') $('#dgAxes').checked = elemPref.axes;
@@ -1771,14 +1778,10 @@ function wireControls() {
    * so the solid has to fade under the thumb. It is only a redraw — no rebuild
    * — so dragging the slider is as cheap as turning the model.
    */
-  $('#faceOpacity').oninput = (e) => {
-    const pct = Number(e.target.value);
-    $('#faceOpacityLabel').textContent = pct;
-    localStorage.setItem('faceOpacity', String(pct));
-    renderer?.setFaceOpacity(pct / 100);
-    // the diagram is a view of the same facets and follows the same opacity
-    if (diagram) { diagram.faceOpacity = pct / 100; diagram.draw(); }
-  };
+  $('#faceOpacity').oninput = pushFaces;
+  $('#showFaces').onchange = pushFaces;
+  $('#dgFaceOpacity').oninput = pushDiagramFaces;
+  $('#dgShowFaces').onchange = pushDiagramFaces;
   const pushCoordAxes = () => {
     const w = typedWidth('#coordAxesWidth', 0.1, 5, 1);
     localStorage.setItem('coordAxes', JSON.stringify({ show: $('#showCoordAxes').checked, width: w }));
@@ -2178,7 +2181,7 @@ function currentPresetText(docName) {
     colors: hasColorOverrides($('#colorMode').value)
       ? colorsArray(state.mesh, $('#colorMode').value) : null,
     cosetSub: $('#cosetSub').value || null,
-    faceOpacity: Number($('#faceOpacity').value) / 100,
+    faceOpacity: solidFaceOpacity(),
     view: renderer?.getView() || null,
     planeRows: state.customPlanes ? state.planeRows : null,
     centralPlanes: state.centralPlanes || false,
@@ -2347,6 +2350,48 @@ function syncSharedEdgeColors(from) {
   }
 }
 
+/*
+ * How solid the painted surfaces are, in percent, with a switch for "not at
+ * all".
+ *
+ * The solid and the diagram keep their own: a lit solid turned to glass and a
+ * drawing on paper want different weights of paint, and before this one slider
+ * drove both, so thinning the solid to look inside it faded the diagram beside
+ * it for no reason. The colors are still shared — only the paint is not.
+ *
+ * The switch is not the same as typing 0. Zero is a wireframe you asked for
+ * and the box remembers it; the switch is "put the faces away for a moment"
+ * and gives back the number you had when you turn it on again.
+ */
+const facePct = (id, dflt = 100) => {
+  const v = Number($(id).value);
+  return Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : dflt;
+};
+const solidFaceOpacity = () => ($('#showFaces').checked ? facePct('#faceOpacity') / 100 : 0);
+const diagramFaceOpacity = () => ($('#dgShowFaces').checked ? facePct('#dgFaceOpacity') / 100 : 0);
+
+/** the solid's faces -> the renderer, and remembered */
+function pushFaces() {
+  const on = $('#showFaces').checked;
+  $('#faceOpacity').disabled = !on;
+  try {
+    localStorage.setItem('faceOpacity', String(facePct('#faceOpacity')));
+    localStorage.setItem('showFaces', on ? '1' : '0');
+  } catch { }
+  renderer?.setFaceOpacity(solidFaceOpacity());
+}
+
+/** the diagram's regions -> the diagram, and remembered */
+function pushDiagramFaces() {
+  const on = $('#dgShowFaces').checked;
+  $('#dgFaceOpacity').disabled = !on;
+  try {
+    localStorage.setItem('diagramFaces', JSON.stringify(
+      { show: on, opacity: facePct('#dgFaceOpacity') }));
+  } catch { }
+  if (diagram) { diagram.faceOpacity = diagramFaceOpacity(); diagramStyleChanged(); }
+}
+
 /** the remembered line style, or the markup's own defaults */
 function applyDiagramLines(style) {
   if (style) {
@@ -2438,8 +2483,14 @@ function applyDisplaySettings(doc) {
    */
   setColorOverrides(null);
   pendingColors = doc.colors && doc.colors.length ? doc.colors.slice() : null;
+  /*
+   * A document stores one number, as it always did. Zero means the faces were
+   * put away, which is the switch here — and the box keeps a number to come
+   * back to rather than being left at zero.
+   */
   const opacity = Math.round((doc.faceOpacity ?? 1) * 100);
-  $('#faceOpacity').value = String(opacity);
+  $('#showFaces').checked = opacity > 0;
+  if (opacity > 0) $('#faceOpacity').value = String(opacity);
   // a pre-split document has only `showEdges`, which drew both kinds alike
   const edges = doc.edges || {
     face: { ...currentEdgeStyle().face, show: !!doc.showEdges },

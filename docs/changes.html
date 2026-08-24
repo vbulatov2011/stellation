@@ -69,6 +69,27 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Coloring folds into Construction; each view gets its own faces.</b>
+      The Coloring section held three things that wanted to be in three
+      different places. The reading the colours carry, and the palette editor,
+      are a <i>coloring</i> box in Construction, beside the symmetry the
+      colouring divides by — they describe the figure, not the view. The
+      opacity went the other way: it is a <i>faces</i> box in Solid, and a
+      second one in Diagram, each a switch and a number.
+      <p>
+      Splitting it was the point. One slider used to drive both, so thinning
+      the solid to glass to look inside it faded the diagram beside it for no
+      reason — and a lit solid and a drawing on paper do not want the same
+      weight of paint. The colours are still shared; only the paint is not, and
+      an exported diagram now carries the diagram's opacity rather than the
+      solid's. The switch is not the same as typing zero: zero is a wireframe
+      you asked for and the box keeps it, while the switch puts the faces away
+      and hands the number back when you turn it on again. The document still
+      stores one figure for the solid, as it always did.
+      <p>
+      And <i>shade unchosen cells</i> is now <i>shade unused cells</i>.
+    </div></li>
+    <li><div>
       <b>The style controls fit on one line each.</b> A switch, its colour and
       its weight were three rows deep — a checkbox, then an indented row with a
       swatch and a slider, then the reading of the slider — so a boxed group of

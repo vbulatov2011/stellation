@@ -317,6 +317,28 @@
         </label>
       </fieldset>
       <fieldset class="subsection">
+        <legend title="How the pieces are painted — the reading the colors carry, and any colors given by hand. Both views wear it: the solid and the diagram are one figure seen two ways.">coloring</legend>
+        <label class="field" title="How the facets are colored. By shell: one color per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one color per kind of face of the ORIGINAL polyhedron — an icosahedron has one kind however you stellate it, so it takes one color (two with the darkened undersides). By stellation face class: the same, but grouped under the stellation symmetry, so dropping to a subgroup splits those faces into the several kinds that symmetry can still tell apart — an icosahedron under a subgroup shows more than one color.">
+          <span>face colors</span>
+          <select id="colorMode">
+            <option value="layer">by shell</option>
+            <option value="class">by face class</option>
+            <option value="stellClass">by stellation face class</option>
+            <option value="coset">by cosets of a subgroup — per plane</option>
+            <option value="cosetL">by cosets of a subgroup — per facet</option>
+            <option value="cosetM">by cosets of a subgroup — per facet, mirror-split</option>
+            <option value="orbitP">by subgroup orbits — per plane</option>
+            <option value="orbitF">by subgroup orbits — per facet</option>
+            <option value="orbitC">by subgroup orbits — per cell</option>
+          </select>
+        </label>
+        <div class="row">
+          <button id="editColorsBtn" type="button"
+                  title="Give any group of facets a color of its own, and an opacity of its own — the shells, the face classes, the cosets, whichever the menu above is reading. Colors are saved with the document.">Edit colors…</button>
+          <span id="colorsEdited" class="dim" hidden>edited</span>
+        </div>
+      </fieldset>
+      <fieldset class="subsection">
         <legend title="How much of the arrangement to build, and which planes it is cut from.">build</legend>
         <label class="field" title="How many shells of cells to build outward from the core. Chosen automatically per solid — most build every shell there is; the few with planes passing near the center are capped to stay quick. Type a number to override; 60 means every shell there is.">
           <span>shells count <b id="depthLabel" class="dim"></b></span>
@@ -333,6 +355,19 @@
 
     <details class="group">
       <summary><h2>Solid</h2></summary>
+      <!-- The faces themselves, before the lines drawn on them: whether they
+           are painted at all, and how solid. Below 100 the solid turns to
+           glass and its hidden edges come through, which is the only way to
+           see the inside of a stellation; switched off it is a wireframe of
+           the whole arrangement. -->
+      <fieldset class="subsection">
+        <legend title="The painted surfaces of the solid, as opposed to the lines drawn on them">faces</legend>
+        <div class="ctl-line">
+          <label class="check grow" title="Paint the facets at all. Off is a wireframe: the edges alone, with the whole arrangement showing through."><input id="showFaces" type="checkbox" checked> faces</label>
+          <span class="dim">opacity</span>
+          <input id="faceOpacity" type="number" min="0" max="100" step="1" value="100" title="How solid the facets are, in percent. Below 100 the solid turns to glass and its hidden edges come through — the interior of a stellation is otherwise the one thing you cannot see.">
+        </div>
+      </fieldset>
       <fieldset class="edge-kinds">
         <legend title="Every facet lies in one of the original face planes. Where two facets of DIFFERENT planes meet there is a real crease — an edge of the solid. Where two facets of the SAME plane meet the surface runs flat across the join and the line is just how the plane arrangement was cut up. Drawing the two the same buries the shape of the solid in the arrangement that produced it.">edges</legend>
         <div class="ctl-line">
@@ -393,6 +428,17 @@
            because a facet edge is the same thing seen two ways; the weights
            are not, because a line measured in screen pixels on a flat drawing
            and a cylinder in a lit 3-D scene do not want the same number. -->
+      <!-- The diagram's own regions, with their own switch and opacity: it is a
+           drawing on paper rather than a lit solid, and wants its own weight of
+           paint. The colors themselves are shared — see Construction. -->
+      <fieldset class="subsection">
+        <legend title="The filled regions of the diagram, as opposed to the lines drawn on them">faces</legend>
+        <div class="ctl-line">
+          <label class="check grow" title="Fill the chosen regions at all. Off leaves the lines alone, which is how the plates were engraved."><input id="dgShowFaces" type="checkbox" checked> faces</label>
+          <span class="dim">opacity</span>
+          <input id="dgFaceOpacity" type="number" min="0" max="100" step="1" value="100" title="How solid the filled regions are, in percent. It is the diagram's own, not the solid's — a drawing on paper wants a different weight of paint from a lit solid.">
+        </div>
+      </fieldset>
       <fieldset class="edge-kinds">
         <legend title="The diagram is one face plane cut by all the others. These are the four kinds of line that draws, each with its own switch, thickness and color — the same four the export writes.">lines</legend>
 
@@ -439,33 +485,7 @@
         </div>
       </fieldset>
       <label class="check" title="Tint the cells you have not chosen, so you can see what else is available on this plane">
-        <input id="showAllFacets" type="checkbox" checked> shade unchosen cells
-      </label>
-    </details>
-    <details class="group">
-      <summary><h2>Coloring</h2></summary>
-      <label class="field" title="How the facets are colored. By shell: one color per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one color per kind of face of the ORIGINAL polyhedron — an icosahedron has one kind however you stellate it, so it takes one color (two with the darkened undersides). By stellation face class: the same, but grouped under the stellation symmetry, so dropping to a subgroup splits those faces into the several kinds that symmetry can still tell apart — an icosahedron under a subgroup shows more than one color.">
-        <span>face colors</span>
-        <select id="colorMode">
-          <option value="layer">by shell</option>
-          <option value="class">by face class</option>
-          <option value="stellClass">by stellation face class</option>
-          <option value="coset">by cosets of a subgroup — per plane</option>
-          <option value="cosetL">by cosets of a subgroup — per facet</option>
-          <option value="cosetM">by cosets of a subgroup — per facet, mirror-split</option>
-          <option value="orbitP">by subgroup orbits — per plane</option>
-          <option value="orbitF">by subgroup orbits — per facet</option>
-          <option value="orbitC">by subgroup orbits — per cell</option>
-        </select>
-      </label>
-      <div class="row">
-        <button id="editColorsBtn" type="button"
-                title="Give any group of facets a color of its own, and an opacity of its own — the shells, the face classes, the cosets, whichever the menu above is reading. Colors are saved with the document.">Edit colors…</button>
-        <span id="colorsEdited" class="dim" hidden>edited</span>
-      </div>
-      <label class="field" title="How solid the facets are. Below 100% the solid turns to glass and its hidden edges come through, so you can look at the cells inside it — the interior of a stellation is otherwise the one thing you cannot see. At 0% only the edges are left, which is a wireframe of the whole arrangement.">
-        <span>facet opacity <b id="faceOpacityLabel">100</b>%</span>
-        <input id="faceOpacity" type="range" min="0" max="100" step="1" value="100">
+        <input id="showAllFacets" type="checkbox" checked> shade unused cells
       </label>
     </details>
 
