@@ -2257,14 +2257,16 @@ function currentEdgeStyle() {
       show: $('#showFaceEdges').checked,
       color: $('#faceEdgeColor').value,
       width: typedWidth('#faceEdgeWidth', 0.1, 8, 1),
-      // this kind drawn as thin lit cylinders instead of flat lines
-      tubes: $('#faceEdgeTubes').checked,
+      // this kind drawn as thin lit cylinders instead of flat lines. The
+      // control is a two-way choice; the document has always stored a flag,
+      // and goes on doing so
+      tubes: $('#faceEdgeTubes').value === 'cylinders',
     },
     facet: {
       show: $('#showFacetEdges').checked,
       color: $('#facetEdgeColor').value,
       width: typedWidth('#facetEdgeWidth', 0.1, 8, 1),
-      tubes: $('#facetEdgeTubes').checked,
+      tubes: $('#facetEdgeTubes').value === 'cylinders',
     },
   };
 }
@@ -2281,11 +2283,11 @@ function applyEdgeStyle(style) {
     if (s.width > 0) $(ids[2]).value = s.width;
     // per kind since the two are often best drawn differently; a document
     // from the brief spell when this was one flag sets both below
-    if (typeof s.tubes === 'boolean') $(ids[3]).checked = s.tubes;
+    if (typeof s.tubes === 'boolean') $(ids[3]).value = s.tubes ? 'cylinders' : 'lines';
   }
   if (typeof style.tubes === 'boolean') {
-    $('#faceEdgeTubes').checked = style.tubes;
-    $('#facetEdgeTubes').checked = style.tubes;
+    $('#faceEdgeTubes').value = style.tubes ? 'cylinders' : 'lines';
+    $('#facetEdgeTubes').value = style.tubes ? 'cylinders' : 'lines';
   }
   pushEdgeStyle();
 }
