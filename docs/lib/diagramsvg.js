@@ -111,6 +111,14 @@ export const DIAGRAM_DEFAULTS = {
   diagramColor: null,
   faceLineColor: null,
   facetLineColor: null,
+  /*
+   * The symmetry elements marked on this plane, as the view marks them:
+   * [{ kind: 'point', p: [x, y], color }] for an axis piercing the drawing,
+   * [{ kind: 'line', p, q, color }] for a mirror crossing it. Given in the
+   * diagram's own coordinates, so nothing here has to know what they mean.
+   */
+  elements: null,
+  elementWidth: 1.1,
   metadata: null,       // {…} describing the document, written into the file
 };
 
@@ -372,6 +380,41 @@ export function diagramSVG(data, options = {}) {
                `stroke-linecap="round" stroke-linejoin="round">`);
       for (const e of edges) out.push(seg(e));
       out.push('  </g>');
+    }
+  }
+
+  /*
+   * Last, over everything: the symmetry elements where they meet this plane.
+   *
+   * A mirror crosses the drawing in a line, and it is drawn right across the
+   * picture the way the intersections are — the same chord about the point of
+   * it nearest the middle, long enough to leave the box from there whatever
+   * its angle. An axis pierces the drawing at a point, and gets a dot with a
+   * ring of the background around it so it stays legible over ink. Dashed,
+   * because it is an annotation and not part of the figure.
+   */
+  const marks = Array.isArray(o.elements) ? o.elements : [];
+  if (marks.length) {
+    const w = o.elementWidth > 0 ? o.elementWidth : 1.1;
+    const half = Math.hypot(W, H) / 2;
+    const lines = marks.filter(m => m.kind === 'line');
+    const dots = marks.filter(m => m.kind !== 'line');
+    for (const m of lines) {
+      const x1 = X(m.p[0]), y1 = Y(m.p[1]);
+      const x2 = X(m.q[0]), y2 = Y(m.q[1]);
+      let dx = x2 - x1, dy = y2 - y1;
+      const len = Math.hypot(dx, dy) || 1;
+      dx /= len; dy /= len;
+      const R = Math.hypot(x1 - W / 2, y1 - H / 2) + half;
+      out.push(`  <path d="M${fmt(x1 - dx * R)},${fmt(y1 - dy * R)}` +
+               `L${fmt(x1 + dx * R)},${fmt(y1 + dy * R)}" fill="none" ` +
+               `stroke="${m.color}" stroke-width="${fmt(w)}" ` +
+               `stroke-dasharray="${fmt(w * 6)},${fmt(w * 4)}"/>`);
+    }
+    for (const m of dots) {
+      out.push(`  <circle cx="${X(m.p[0])}" cy="${Y(m.p[1])}" r="${fmt(3.4 * w)}" ` +
+               `fill="${m.color}"${o.background ? ` stroke="${o.background}" ` +
+               `stroke-width="${fmt(w)}"` : ''}/>`);
     }
   }
 

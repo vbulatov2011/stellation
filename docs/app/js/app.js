@@ -259,6 +259,13 @@ async function boot() {
    * this exists — and a style pushed at nothing is a style silently lost.
    */
   applyDiagramLines(readJSON(localStorage.getItem('diagramLines')));
+  const elemPref = readJSON(localStorage.getItem('diagramElems'));
+  if (elemPref) {
+    if (typeof elemPref.axes === 'boolean') $('#dgAxes').checked = elemPref.axes;
+    if (typeof elemPref.mirrors === 'boolean') $('#dgMirrors').checked = elemPref.mirrors;
+    if (elemPref.width > 0) $('#dgElemWidth').value = elemPref.width;
+  }
+  $('#dgElemWidthLabel').textContent = Number($('#dgElemWidth').value).toFixed(1);
 
   cells = new CellsPanel($('#cells'), {
     onBeforeChange: () => mark(),
@@ -411,6 +418,8 @@ async function boot() {
 }
 
 let lastView = '';
+/** the diagram export dialog, so a change in the panel can refresh its preview */
+let diagramExport = null;
 
 /** did the last session leave this window open? internalWindow stores it */
 function windowWasOpen(storageId) {
@@ -1193,7 +1202,9 @@ function refreshElements() {
 function refreshDiagramOverlay() {
   if (!diagram) return;
   const frame = state.diagramFrame;
-  if (!frame || !$('#showDiagElems')?.checked) { diagram.setOverlay(null); return; }
+  const wantAxes = !!$('#dgAxes')?.checked, wantMirrors = !!$('#dgMirrors')?.checked;
+  diagram.overlayWidth = Number($('#dgElemWidth')?.value) || 1.1;
+  if (!frame || (!wantAxes && !wantMirrors)) { diagram.setOverlay(null); return; }
 
   const R = frame.R, c = frame.center;
   const n = [R[6], R[7], R[8]];                       // the drawing plane's normal
@@ -1205,7 +1216,15 @@ function refreshDiagramOverlay() {
             R[3] * q[0] + R[4] * q[1] + R[5] * q[2]];
   };
 
-  const el = shownElements();
+  /*
+   * The group's own elements, not the ones the SOLID happens to be drawing.
+   * The two views ask separately — a diagram marked with its mirrors is
+   * useful whether or not the solid is wearing them — so this reads the
+   * symmetry directly and the Diagram section's switches choose from it.
+   */
+  const all = state.elements || symmetryElements(state.stellSym);
+  const el = { axes: wantAxes ? all.axes : [], improper: wantAxes ? all.improper : [],
+               mirrors: wantMirrors ? all.mirrors : [] };
   const out = [];
   for (const a of [...(el.axes || []), ...(el.improper || [])]) {
     const nd = dotv(n, a.dir);
@@ -1765,7 +1784,20 @@ function wireControls() {
     if (i >= 0) showOrient(renderer?.goToView(i));
   };
 
-  for (const id of ['#showAxes', '#showMirrors', '#showImproper', '#showDiagElems']) {
+  for (const id of ['#dgAxes', '#dgMirrors', '#dgElemWidth']) {
+    $(id).oninput = () => {
+      $('#dgElemWidthLabel').textContent = Number($('#dgElemWidth').value).toFixed(1);
+      try {
+        localStorage.setItem('diagramElems', JSON.stringify({
+          axes: $('#dgAxes').checked, mirrors: $('#dgMirrors').checked,
+          width: Number($('#dgElemWidth').value),
+        }));
+      } catch { }
+      refreshDiagramOverlay();
+      diagramStyleChanged();
+    };
+  }
+  for (const id of ['#showAxes', '#showMirrors', '#showImproper']) {
     const el = $(id);
     if (el) el.onchange = refreshElements;
   }
@@ -1848,7 +1880,7 @@ function wireControls() {
    * of face and the old button saved whichever was on screen, in one style,
    * with nothing in the file to say what it was a picture of.
    */
-  const exportDialog = initExportDialog({
+  const exportDialog = diagramExport = initExportDialog({
     state, call, diagram, download, setStatus,
     currentName: currentDocName,
   });
@@ -2193,6 +2225,18 @@ const DIAGRAM_LINE_KINDS = [
     out: '#dgFaceWidthLabel',        color: '#dgFaceColor',  shares: '#faceEdgeColor' },
 ];
 
+/*
+ * The diagram's look has changed: redraw it, and tell the export.
+ *
+ * The export dialog previews the file it would write, and the file is now
+ * this view — so a weight or a color changed in the panel has to reach the
+ * cards, or the preview goes on promising the picture it was opened with.
+ */
+function diagramStyleChanged() {
+  diagram?.draw();
+  diagramExport?.refresh?.();
+}
+
 /** controls -> the diagram, and remember it for next time */
 function pushDiagramLines() {
   const style = {};
@@ -2203,7 +2247,7 @@ function pushDiagramLines() {
     $(k.w).disabled = !$(k.on).checked;
   }
   try { localStorage.setItem('diagramLines', JSON.stringify(style)); } catch { }
-  if (diagram) { diagram.lines = style; diagram.draw(); }
+  if (diagram) { diagram.lines = style; diagramStyleChanged(); }
 }
 
 /** the shared colors, in whichever direction they were just changed */

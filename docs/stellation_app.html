@@ -340,7 +340,6 @@
           <span>thickness <b id="elemWidthLabel">1.0</b>×</span>
           <input id="elemWidth" type="range" min="0.1" max="5" step="0.1" value="1">
         </label>
-        <label class="check" title="Mark the same elements on the stellation diagram: a dot where an axis pierces the drawing plane, a dashed line where a mirror plane crosses it"><input id="showDiagElems" type="checkbox"> mark on the diagram</label>
         <div id="elemLegend" class="legend elem-legend"></div>
       </fieldset>
       <fieldset class="sym-elems">
@@ -399,6 +398,22 @@
           <input id="dgFaceColor" type="color" value="#000000" title="Color of the figure's outline — shared with the solid's face edges">
           <input id="dgFaceWidth" type="range" min="0.1" max="8" step="0.1" value="1.1" title="Thickness, in pixels of the drawing">
           <b id="dgFaceWidthLabel">1.1</b>
+        </div>
+      </fieldset>
+      <!-- The elements of the stellation symmetry where they meet this plane:
+           a dot where an axis pierces it, a line where a mirror crosses it.
+           Which elements exist is the group's business — the Solid section's
+           switches say what the SOLID draws, and these say what the DIAGRAM
+           draws, so either can be marked without the other. Colors are the
+           per-class colors of the elements themselves, which is what makes a
+           dot here and a cylinder there read as one object. -->
+      <fieldset class="edge-kinds">
+        <legend title="The stellation symmetry marked on the drawing plane, in the same colors the solid uses for the same elements">symmetry elements</legend>
+        <label class="check" title="A dot where each rotation or rotoreflection axis pierces the drawing plane"><input id="dgAxes" type="checkbox"> axis marks</label>
+        <label class="check" title="A dashed line where each mirror plane crosses the drawing plane"><input id="dgMirrors" type="checkbox"> mirror lines</label>
+        <div class="row edge-style">
+          <input id="dgElemWidth" type="range" min="0.4" max="6" step="0.1" value="1.1" title="Thickness of the marks">
+          <b id="dgElemWidthLabel">1.1</b>
         </div>
       </fieldset>
       <label class="check" title="Tint the cells you have not chosen, so you can see what else is available on this plane">
@@ -800,6 +815,7 @@
     -->
     <div class="row">
       <label title="Paint the paper behind the drawing. Off, the picture has no background at all and whatever it is placed on shows through."><input type="checkbox" id="exBackground"> Background</label>
+      <input type="color" id="exBgColor" value="#ffffff" title="The colour of the paper, when there is any">
     </div>
 
   </div>

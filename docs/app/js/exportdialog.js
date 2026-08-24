@@ -81,7 +81,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   const MIME = { png: 'image/png', webp: 'image/webp' };
   const WEBP_QUALITY = 1;   // the encoder's best; still lossy, see above
   const scaleIn = el('#exScale'), widthIn = el('#exWidth'), heightIn = el('#exHeight');
-  const background = el('#exBackground');
+  const background = el('#exBackground'), bgColor = el('#exBgColor');
   const nameOut = el('#exName'), info = el('#exInfo'), go = el('#exGo');
 
   /*
@@ -166,7 +166,10 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     // the look, exactly as the Diagram panel has it — see the note above
     ...(diagram?.styleOptions?.() || {}),
     // the picture has no paper unless one is asked for
-    background: background.checked ? 'white' : null,
+    // the paper, and what colour it is. Off, the picture has none at all —
+    // which is the only setting under which the figure's own transparency
+    // means anything in the file
+    background: background.checked ? bgColor.value : null,
     /*
      * The figure's opacity, as the app is showing it. It only tells on a
      * transparent background — over white, half-opacity paint is simply a
@@ -369,7 +372,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
 
   // every control redraws the preview, which is the whole point of having one
   for (const c of [fmtSvg, fmtPng, fmtWebp, scaleIn, widthIn, heightIn,
-                   background]) {
+                   background, bgColor]) {
     c.addEventListener('input', sync);
   }
   el('#exPickAll').onclick = () => { for (const f of classes()) picked.add(f.index); sync(); };
@@ -735,6 +738,14 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
       showFolder();
       scanFaces();          // re-reads only if the document has moved
     },
+    /*
+     * Redraw the cards because something OUTSIDE this dialog changed the way
+     * the diagram looks. The preview promises the picture that will be saved
+     * and the picture is now the panel's, so a weight or a colour set there
+     * has to arrive here — otherwise the promise quietly stops being true
+     * while the dialog sits open beside the diagram it disagrees with.
+     */
+    refresh: () => { if (win.isVisible()) sync(); },
   };
 }
 

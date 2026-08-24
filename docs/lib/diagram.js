@@ -39,6 +39,9 @@ export class DiagramView {
      * they could be set at all; a color given here overrides that for both
      * themes, because a color chosen deliberately is not a theme's business.
      */
+    // the symmetry elements marked on this plane, and how heavily — the
+    // overlay itself is built by the app, which knows the group
+    this.overlayWidth = 1.1;
     this.lines = {
       intersection: { show: false, width: 0.55, color: null },
       arrangement:  { show: true,  width: 0.6,  color: null },
@@ -521,7 +524,7 @@ export class DiagramView {
           dx /= L; dy /= L;
           const R = Math.hypot(f.w, f.h);
           ctx.strokeStyle = el.color;
-          ctx.lineWidth = Math.max(1.1, f.dpr * 1.1);
+          ctx.lineWidth = Math.max(1, f.dpr * this.overlayWidth);
           ctx.setLineDash([7 * f.dpr, 5 * f.dpr]);
           ctx.beginPath();
           ctx.moveTo(x1 - dx * R, y1 - dy * R);
@@ -531,7 +534,7 @@ export class DiagramView {
         } else {
           const x = f.cx + el.p[0] * f.scale, y = f.cy - el.p[1] * f.scale;
           ctx.beginPath();
-          ctx.arc(x, y, 4.2 * f.dpr, 0, Math.PI * 2);
+          ctx.arc(x, y, 3.8 * f.dpr * this.overlayWidth, 0, Math.PI * 2);
           ctx.fillStyle = el.color;
           ctx.fill();
           ctx.lineWidth = 1.4 * f.dpr;
@@ -620,6 +623,14 @@ export class DiagramView {
     return {
       colorMode: this.colorMode,
       faceOpacity: this.faceOpacity,
+      /*
+       * The symmetry elements as this plane sees them — a dot where an axis
+       * pierces it, a line where a mirror crosses it. Already in the diagram's
+       * own 2-D coordinates, so the export draws them without knowing what a
+       * symmetry group is.
+       */
+      elements: this.overlay || null,
+      elementWidth: this.overlayWidth,
       ...line,
       intersectionColor: L.intersection.color || undefined,
       diagramColor: L.arrangement.color || undefined,

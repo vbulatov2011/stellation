@@ -140,6 +140,50 @@ const opacityOf = (tag) => {
   ok(widths(legacyOff).length === 0, "and traces:'full' still answers to the diagram switch");
 }
 
+// ------------------------------------------- the symmetry elements, marked
+/*
+ * A dot where an axis pierces the drawing plane, a line where a mirror
+ * crosses it. Handed over in the diagram's own coordinates, so nothing here
+ * has to know what a symmetry group is — and drawn last, over the figure,
+ * because they annotate it rather than belong to it.
+ */
+{
+  const marks = [
+    { kind: 'point', p: [0, 0], color: '#4da3f5' },
+    { kind: 'line', p: [0, 0], q: [1, 1], color: '#f2646c' },
+  ];
+  const none = build({ background: null });
+  ok(!/<circle/.test(none) && !/stroke-dasharray/.test(none),
+     'no elements given, none drawn — the picture is unchanged');
+
+  const some = build({ background: null, elements: marks });
+  ok((some.match(/<circle /g) || []).length === 1, 'an axis becomes one circle');
+  ok(/<circle[^>]*fill="#4da3f5"/.test(some), 'in the color the element itself wears');
+  ok((some.match(/stroke-dasharray/g) || []).length === 1, 'a mirror becomes one dashed line');
+  ok(/stroke="#f2646c"/.test(some), 'in its own color too');
+
+  /*
+   * The two points given are a point on the mirror and a direction, not the
+   * ends of anything: the line is drawn right across the picture the way the
+   * intersections are. A 45-degree line through the middle of a square leaves
+   * exactly at the corners, so "past the frame" is the wrong test — the right
+   * one is that it spans the box rather than the short segment handed in.
+   */
+  const d = some.match(/<path d="M([-\d.]+),([-\d.]+)L([-\d.]+),([-\d.]+)"[^>]*dasharray/);
+  const span = d && Math.hypot(Number(d[3]) - Number(d[1]), Number(d[4]) - Number(d[2]));
+  ok(span >= 200, `and spans the whole picture rather than the two points (${Math.round(span)}px across 200)`);
+
+  const fat = build({ background: null, elements: marks, elementWidth: 3 });
+  const r = Number((fat.match(/<circle[^>]*r="([\d.]+)"/) || [])[1]);
+  ok(r > Number((some.match(/<circle[^>]*r="([\d.]+)"/) || [])[1]),
+     `the weight scales the marks (r ${r} at width 3)`);
+
+  // over paper, a dot gets a ring of it so it stays legible on top of ink
+  const paper = build({ background: '#ffeecc', elements: marks });
+  ok(/<circle[^>]*stroke="#ffeecc"/.test(paper), 'on paper the dot is ringed with the paper');
+  ok(!/<circle[^>]*stroke=/.test(some), 'and with no paper there is nothing to ring it with');
+}
+
 // ------------------------------------------------------------- the verdict
 
 console.log(`\n${passed} passed, ${failed} failed`);
