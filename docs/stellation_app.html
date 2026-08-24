@@ -312,7 +312,9 @@
         <span>shells count <b id="depthLabel" class="dim"></b></span>
         <input id="depth" type="number" min="2" max="60" step="1" value="20">
       </label>
-      <div class="row buttons">
+      <!-- nogrow: one verb on its own, so it keeps the width its text asks
+           for rather than stretching the way a dialog's action does -->
+      <div class="row buttons nogrow">
         <button id="editPlanes" title="Edit the plane set of the figure on screen. It opens with the current solid's own planes, reduced to one row per symmetry class, and you add to them, drop them or move them — so this is how to stellate something the catalog does not have, starting from something it does. Clear the rows to start from nothing. (The original program's plane editor.)">Edit planes…</button>
       </div>
     </details>
