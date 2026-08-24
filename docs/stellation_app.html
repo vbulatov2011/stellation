@@ -298,14 +298,18 @@
         <span>stellation</span>
         <select id="stellSym"></select>
       </label>
-      <label class="field" title="How many shells of cells to build outward from the core. Chosen automatically per solid — most build every shell there is; the few with planes passing near the center are capped to stay quick. Move it to override.">
-        <span>build out to <b id="depthLabel">20</b> shells</span>
-        <input id="depth" type="range" min="2" max="60" value="20">
+      <!-- The third symmetry choice, and it belongs with the other two: the
+           subgroup whose cosets or orbits do the coloring. Shown only when the
+           face colors are reading one, since otherwise it decides nothing. -->
+      <label class="field" id="cosetSubRow" hidden
+             title="The subgroup whose cosets color the figure — a subgroup of the polyhedron symmetry, independent of the editing symmetry, so regrouping never repaints. A mirror-free subgroup counts its cosets among the rotations. Faces the cosets cannot label are gray. The five tetrahedra: coloring subgroup T on the icosahedron.">
+        <span>coloring</span>
+        <select id="cosetSub"></select>
       </label>
-      <p class="note">
-        Cells are grouped into orbits of the first group, then split by the second —
-        that split is what lets a chiral cell offer just one of its two hands.
-      </p>
+      <label class="field" title="How many shells of cells to build outward from the core. Chosen automatically per solid — most build every shell there is; the few with planes passing near the center are capped to stay quick. Type a number to override; 60 means every shell there is.">
+        <span>build out to <b id="depthLabel" class="dim"></b></span>
+        <input id="depth" type="number" min="2" max="60" step="1" value="20">
+      </label>
       <div class="row buttons">
         <button id="editPlanes" title="Stellate an arbitrary set of planes instead of a catalog solid — the original program's plane editor">Edit planes…</button>
       </div>
@@ -441,14 +445,6 @@
                 title="Give any group of facets a color of its own, and an opacity of its own — the shells, the face classes, the cosets, whichever the menu above is reading. Colors are saved with the document.">Edit colors…</button>
         <span id="colorsEdited" class="dim" hidden>edited</span>
       </div>
-      <!-- shown only in coset mode: the subgroup of the POLYHEDRON group whose
-           cosets do the coloring — a property of the figure, not of the
-           editing symmetry -->
-      <label class="field" id="cosetSubRow" hidden
-             title="The subgroup whose cosets color the figure — a subgroup of the polyhedron symmetry, independent of the editing symmetry, so regrouping never repaints. A mirror-free subgroup counts its cosets among the rotations. Faces the cosets cannot label are gray. The five tetrahedra: coset subgroup T on the icosahedron.">
-        <span>coset subgroup</span>
-        <select id="cosetSub"></select>
-      </label>
       <label class="field" title="How solid the facets are. Below 100% the solid turns to glass and its hidden edges come through, so you can look at the cells inside it — the interior of a stellation is otherwise the one thing you cannot see. At 0% only the edges are left, which is a wireframe of the whole arrangement.">
         <span>facet opacity <b id="faceOpacityLabel">100</b>%</span>
         <input id="faceOpacity" type="range" min="0" max="100" step="1" value="100">

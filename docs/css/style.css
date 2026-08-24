@@ -236,7 +236,14 @@ details.group > summary {
   user-select: none;
 }
 details.group > summary::-webkit-details-marker { display: none; }
-details.group > summary::before { content: "▸"; font-size: 9px; color: var(--dim); }
+/* the disclosure arrow: small enough to be furniture, big enough to aim at */
+details.group > summary::before {
+  content: "▸";
+  font-size: 15px;
+  line-height: 1;
+  width: 11px;
+  color: var(--dim);
+}
 details.group[open] > summary::before { content: "▾"; }
 details.group > summary:hover h2 { color: var(--text); }
 details.group[open] > summary { margin-bottom: 7px; }

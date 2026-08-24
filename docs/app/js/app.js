@@ -865,7 +865,9 @@ function setDepth(depth, auto) {
   state.depth = depth < 0 ? NO_LIMIT : depth;
   state.depthAuto = !!auto;
   $('#depth').value = state.depth;
-  $('#depthLabel').textContent = state.depth >= NO_LIMIT ? 'every' : state.depth;
+  // the box shows the number; the label is left to say the one thing it
+  // cannot, which is that the top of the range means "as many as there are"
+  $('#depthLabel').textContent = state.depth >= NO_LIMIT ? '(every shell)' : '';
 }
 
 /** the rotation-only subgroup is the usual choice for building stellations */
@@ -917,10 +919,70 @@ function subgroupsOf(parent) {
   return out;
 }
 
+/*
+ * What a Schoenflies symbol means, in a sentence.
+ *
+ * The three symmetry menus offer up to ninety groups between them, named in a
+ * notation that says everything to someone who already knows it and nothing to
+ * anyone else. The note under them used to explain what the two menus did to
+ * each other, which is the smaller half of the question — this answers the
+ * larger half, on the option itself, where it is asked.
+ *
+ * A parenthesised frame — C2(O), D5d(I) — is the same abstract group sitting
+ * in a particular orientation: the (O) copies are aligned to the cube's axes
+ * and the (I) copies to the icosahedron's, which is why a solid offers one and
+ * not the other.
+ */
+function describeGroup(name) {
+  // the frame comes off first, so the base symbol can be read whole
+  const fm = /^(.*?)(?:\((\w+)\))?$/.exec(name);
+  const base = fm[1], frame = fm[2];
+  const m = /^([A-Z])(\d+)?([a-z]*)$/.exec(base) || [];
+  const letter = m[1], n = m[2] ? Number(m[2]) : 0, tail = m[3] || '';
+  const turn = n ? 360 / n : 0;
+
+  let what;
+  if (base === 'E') what = 'no symmetry at all — every cell stands alone';
+  else if (base === 'Ci') what = 'a centre of inversion, and nothing else';
+  else if (base === 'Cs') what = 'a single mirror plane';
+  else if (base === 'T') what = 'the rotations of the tetrahedron';
+  else if (base === 'Td') what = 'the full symmetry of the tetrahedron, reflections included';
+  else if (base === 'Th') what = 'the tetrahedral rotations together with inversion';
+  else if (base === 'O') what = 'the rotations of the cube and octahedron';
+  else if (base === 'Oh') what = 'the full symmetry of the cube and octahedron';
+  else if (base === 'I') what = 'the rotations of the icosahedron and dodecahedron';
+  else if (base === 'Ih') what = 'the full symmetry of the icosahedron and dodecahedron';
+  else if (letter === 'S' && n) what = `a ${n}-fold rotoreflection axis — turn by ${turn}°, then reflect`;
+  else if (letter === 'C' && n && tail === 'v') what = `a ${n}-fold axis with ${n} mirror planes through it`;
+  else if (letter === 'C' && n && tail === 'h') what = `a ${n}-fold axis with a mirror plane across it`;
+  else if (letter === 'C' && n) what = `one ${n}-fold rotation axis — turns of ${turn}°, and nothing else`;
+  else if (letter === 'D' && n && tail === 'd') what = `a ${n}-fold axis, ${n} 2-fold axes across it, and diagonal mirrors`;
+  else if (letter === 'D' && n && tail === 'h') what = `a ${n}-fold axis, ${n} 2-fold axes across it, and a mirror through them all`;
+  else if (letter === 'D' && n) what = `a ${n}-fold axis with ${n} 2-fold axes across it — rotations only`;
+  else what = 'a point group';
+
+  const where = frame === 'O' ? ', set in the cube’s frame'
+              : frame === 'I' ? ', set in the icosahedron’s frame' : '';
+  const order = state.symmetry?.[name]?.order;
+  const count = order === 1 ? ' — one symmetry, the identity'
+              : order ? ` — ${order} symmetries in all` : '';
+  return `${name}: ${what}${where}${count}`;
+}
+
 function fillSelect(id, names, value) {
   $(id).innerHTML = names.map(n =>
-    `<option value="${n}"${n === value ? ' selected' : ''}>${n} (${state.symmetry[n].order})</option>`
+    `<option value="${n}"${n === value ? ' selected' : ''} title="${describeGroup(n)}">` +
+    `${n} (${state.symmetry[n].order})</option>`
   ).join('');
+  // and on the menu itself, so the current choice explains itself without
+  // having to be opened — an option's own tooltip is not shown by every browser
+  syncGroupTitle(id);
+}
+
+/** the chosen group's meaning, on the select that chose it */
+function syncGroupTitle(id) {
+  const sel = $(id);
+  if (sel && sel.value) sel.title = describeGroup(sel.value);
 }
 
 function syncSymmetrySelects() {
@@ -1602,7 +1664,19 @@ function wireControls() {
    * subgroup (E takes single cells) for the asymmetric touches, come back.
    */
   $('#stellSym').onchange = (e) => { touch(); state.stellSym = e.target.value; changeStellSym(); };
-  $('#depth').oninput = (e) => setDepth(Number(e.target.value), false);
+  /*
+   * Typed, not dragged. Every keystroke is read, so a half-typed "6" on the
+   * way to "60" would otherwise be taken as a depth of six — clamped here to
+   * the range the box declares, and left alone until it parses at all, so
+   * emptying the box to retype does not rebuild at depth zero.
+   */
+  $('#depth').oninput = (e) => {
+    const raw = e.target.value.trim();
+    if (raw === '') return;                       // mid-edit: nothing to say yet
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return;
+    setDepth(Math.max(2, Math.min(NO_LIMIT, Math.round(n))), false);
+  };
   $('#depth').onchange = () => { touch(); build(); };
   $('#planeIndex').onchange = (e) => { state.planeIndex = Number(e.target.value) || 0; refresh(); };
 
@@ -1683,6 +1757,9 @@ function wireControls() {
   };
   $('#cosetSubRow').hidden = !($('#colorMode').value.startsWith('coset')
     || $('#colorMode').value.startsWith('orbit'));
+  $('#polySym').addEventListener('change', () => syncGroupTitle('#polySym'));
+  $('#stellSym').addEventListener('change', () => syncGroupTitle('#stellSym'));
+  $('#cosetSub').addEventListener('change', () => syncGroupTitle('#cosetSub'));
   $('#cosetSub').onchange = async () => {
     if (state.building) return;
     const name = $('#cosetSub').value;
