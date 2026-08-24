@@ -552,22 +552,30 @@ function keepLink(hash) {
   syncHash();
 }
 
+/*
+ * The URL names the document, and says nothing else.
+ *
+ * It used to be rewritten on every change with a description of the figure —
+ * solid, groups, depth, camera, cells — which was always a partial account:
+ * it had no room for the colouring, the coset subgroup, the opacities or the
+ * line weights, so reopening one gave the same solid wearing a different
+ * face. Now that the working document is kept in the browser, the URL is
+ * relieved of a job it could not do. A document opened from a preset or a
+ * file keeps that link, whether or not it has since been edited — the link
+ * says where this came from, and the backup says what it has become — and
+ * anything else leaves the URL empty.
+ *
+ * Reading a full state hash is untouched: a page can still drive the app with
+ * one, which is what they were for.
+ */
 function syncHash() {
   if (!state.current) return;
   scheduleAutosave();
-  // still the document that was linked: keep its link, which carries the
-  // display settings the state hash has no room for. mark() drops it.
-  if (docLinkHash) {
-    ownHash = docLinkHash;
-    try { history.replaceState(null, '', '#' + docLinkHash); } catch { }
-    return;
-  }
-  const v = renderer ? `/v${renderer.getView().join(',')}` : '';
-  const h = `${state.current.file}/${state.polySym}/${state.stellSym}` +
-            `/d${state.depth}${v}/${state.cellsString || ''}`;
-  ownHash = h;
-  try { history.replaceState(null, '', '#' + h); }
-  catch { location.hash = h; }     // file:// URLs reject replaceState
+  ownHash = docLinkHash || '';
+  try {
+    history.replaceState(null, '',
+      docLinkHash ? '#' + docLinkHash : location.pathname + location.search);
+  } catch { /* file:// URLs reject replaceState; the URL simply stays put */ }
 }
 
 /**
@@ -619,12 +627,12 @@ const undoStack = { past: [], future: [], limit: 100 };
 
 function mark() {
   /*
-   * The first edit is where a linked document stops being that document, so
-   * it is where its URL gives way to the state hash. Hung on mark() because
-   * mark() IS "the user is about to change the figure" — comparing cell
-   * strings instead meant racing refresh(), which fills them in later.
+   * An edit no longer disowns the link. It used to: the URL was about to be
+   * overwritten with a description of the figure, and a link that still named
+   * the untouched preset would have been the wrong one of the two. Now the
+   * URL only ever names where the document came from, which an edit does not
+   * change — and the edit itself is in the backup, under that same name.
    */
-  docLinkHash = null;
   state.dirty = true;              // an edit is exactly what there is to lose
   undoStack.past.push(new Set(state.selected));
   if (undoStack.past.length > undoStack.limit) undoStack.past.shift();
@@ -910,6 +918,13 @@ function updateCatCount() {
 
 async function select(item, opts = {}) {
   if (!item) return;
+  /*
+   * A fresh pick has no document behind it, so it has no link. openDocument
+   * calls this on its way and puts its own link back afterwards, through
+   * keepLink — so clearing here and setting there leaves the URL naming
+   * exactly the documents that have a name to be known by.
+   */
+  docLinkHash = null;
   state.customPlanes = null;         // picking a solid leaves custom-plane mode
   state.polarPlanes = polarOf(item); // a dual built from its primal's vertices
   /*
@@ -2203,6 +2218,9 @@ async function buildCustomPlanes(planeRows) {
   state.planeRows = rows;
   state.customPlanes = expanded;
   state.polarPlanes = null;          // an edited sheet is nobody's dual
+  // and nobody's preset either: a sheet built by hand has no link, though a
+  // plane-sheet DOCUMENT gets its own back through keepLink afterwards
+  docLinkHash = null;
   state.current = { file: 'custom', name: `custom planes (${rows.length} rows → ${expanded.length})`, symmetry: null };
   syncSymmetrySelects();
   const ok = await build();
