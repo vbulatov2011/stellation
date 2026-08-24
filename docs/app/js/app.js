@@ -17,6 +17,7 @@ import { initDocManager } from './docmanager.js';
 import { initPlanesDialog } from './planesdialog.js';
 import { initExportDialog } from './exportdialog.js';
 import { initExportSolid } from './exportsolid.js';
+import { initExportImage } from './exportimage.js';
 import { initColors, colorsArray, applyColorsArray } from './colors.js';
 import { hasColorOverrides, setColorOverrides } from '../../lib/palette.js';
 import { initAnimation } from './animation.js';
@@ -1849,6 +1850,14 @@ function wireControls() {
     currentName: currentDocName,
   });
   $('#exportSolidBtn').onclick = () => solidDialog?.open();
+
+  // the same figure as a picture rather than a shape — its own dialog, because
+  // none of the questions above it are about a picture
+  const imageDialog = initExportImage({
+    state, renderer, download, setStatus,
+    currentName: currentDocName,
+  });
+  $('#exportImageBtn').onclick = () => imageDialog?.open();
 
   $('#stopBuild').onclick = stopBuild;
 

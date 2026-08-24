@@ -186,21 +186,33 @@
            them when the browser has it, so no dead buttons anywhere else.
            Files… is always here: with the API it browses a folder, and without
            one it falls back to the plain file picker, which is the only way
-           into a document there. The two export buttons open dialogs that ask
-           the same three questions: which format, what the file is called, and
-           which folder it goes in. -->
+           into a document there. Taking the figure OUT of the app is its own
+           section below: those are three different questions about what you
+           want a copy of, not more ways to save the document. -->
       <div class="row buttons tight files nogrow">
         <button id="newBtn" title="Start a new document — from a polyhedron, a preset, a file, or your own plane set">New…</button>
         <button id="browseBtn" title="Open a document — browsing a folder with previews where the browser allows it">Files…</button>
         <button id="saveJson" class="primary" title="Save the document — over its file when it has one, else as a download">Save</button>
         <button id="saveAsBtn" title="Save as a json + thumbnail pair, under a name and into a folder you choose" hidden>Save As…</button>
         <button id="saveNewBtn" title="Save as a new document — the same dialog, offering a fresh generated name instead of this document's" hidden>Save New…</button>
-        <button id="exportSolidBtn" title="The solid as a mesh or a picture — STL, OBJ, OFF, 3MF, glTF, GLB, PNG, or the original program's .stel">Export Solid…</button>
-        <button id="exportSvg" title="The stellation diagrams as vector art, for printing or cutting">Export Diagram…</button>
       </div>
       <!-- the picker behind Files…, kept out of the button row so it cannot
            come between two of them the way it once came between two rows -->
       <input id="loadDoc" type="file" accept=".json,.stel,.txt" hidden>
+    </details>
+
+    <!-- Taking the figure out of the app, as opposed to saving the document.
+         Three of them, because a solid to print, a picture of a solid and the
+         diagram it was chosen on are three different things wanted for three
+         different reasons — and each dialog asks the same three questions:
+         which format, what the file is called, and which folder. -->
+    <details class="group" open>
+      <summary><h2>Exports</h2></summary>
+      <div class="row buttons tight files nogrow">
+        <button id="exportSolidBtn" title="The solid as a mesh, for printing or for anything that displays models — STL, OBJ, OFF, 3MF, glTF, GLB, VRML, X3D, or the original program's .stel">solid 3D…</button>
+        <button id="exportImageBtn" title="A picture of the 3-D view as it stands, on a transparent background — PNG or WebP">solid 2D…</button>
+        <button id="exportSvg" title="The stellation diagrams as vector art, for printing or cutting">Diagram…</button>
+      </div>
     </details>
 
     <div class="group cells-group">
@@ -557,11 +569,12 @@
 
 <template id="exportSolidBody">
   <div class="ex-body">
-  <h2>Export solid</h2>
+  <h2>Export solid — 3D</h2>
   <p class="note">
-    The figure itself, in whichever format the thing you are taking it to
-    wants. Every mesh format carries the same geometry, and every one that has
-    somewhere to put a color carries the coloring you are looking at.
+    The figure itself as a mesh, in whichever format the thing you are taking
+    it to wants. Every one carries the same geometry, and every one that has
+    somewhere to put a color carries the coloring you are looking at. For a
+    picture of it rather than the shape, see <b>solid 2D</b>.
   </p>
 
   <div class="ex-section">
@@ -609,6 +622,60 @@
   <div class="row buttons">
     <button id="esGo" class="primary">Export</button>
     <button id="esCancel">Cancel</button>
+  </div>
+  </div>
+</template>
+
+<template id="exportImageBody">
+  <div class="ex-body">
+  <h2>Export solid — 2D</h2>
+  <p class="note">
+    The 3-D view as it stands — the same turn, zoom and coloring — written as
+    a picture. The background is left out, so what you get is the solid alone
+    on transparency, ready to be placed on anything.
+  </p>
+
+  <div class="ex-section">
+    <b>Format</b>
+    <div class="row">
+      <select id="eiFormat" class="grow" aria-label="Format"></select>
+    </div>
+    <p id="eiNote" class="note"></p>
+  </div>
+
+  <div class="ex-section">
+    <b>Size</b>
+    <div class="row">
+      <label class="check" title="Write the picture square at a size you choose, rather than at the shape and size the view happens to be on screen">
+        <input type="checkbox" id="eiSquare"> square
+      </label>
+      <input type="number" id="eiSize" min="16" max="4096" step="1" value="1024" class="num" aria-label="Pixels">
+      <span class="dim">px</span>
+    </div>
+    <p id="eiSizeOut" class="note"></p>
+  </div>
+
+  <div class="ex-section">
+    <b>Name</b>
+    <div class="row">
+      <input type="text" id="eiName" class="grow" spellcheck="false" aria-label="File name">
+    </div>
+    <p id="eiFile" class="note mono"></p>
+  </div>
+
+  <div class="ex-section" id="eiWhereRow">
+    <b>Where</b>
+    <div class="row">
+      <span class="dim">folder:</span>
+      <span id="eiWhere" class="dim">you will be asked once</span>
+      <button id="eiChangeFolder" type="button">change…</button>
+    </div>
+  </div>
+
+  <p id="eiInfo" class="note"></p>
+  <div class="row buttons">
+    <button id="eiGo" class="primary">Export</button>
+    <button id="eiCancel">Cancel</button>
   </div>
   </div>
 </template>

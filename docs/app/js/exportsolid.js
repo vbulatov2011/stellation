@@ -1,11 +1,16 @@
 /*
- * Exporting the solid.
+ * Exporting the solid as a mesh.
  *
  * The formats used to be a row of buttons — STL, OBJ, OFF, .stel, view PNG —
  * each of which downloaded immediately under a name you did not choose, into
  * the downloads folder whatever the browser could do. Six formats is already
  * too many buttons, and the three that were missing (3MF for a slicer, glTF
  * and GLB for anything that displays models) would have made nine.
+ *
+ * The picture of the view has since left for a dialog of its own — see
+ * exportimage.js — because a mesh and a picture are wanted for different
+ * reasons, and every question this dialog asks below the format (colors, edge
+ * tubes, symmetry elements, orientation) is a question about a mesh.
  *
  * So: one dialog. Pick the format, say what the file is called, and — where
  * the browser has the File System Access API — say once which folder it goes
@@ -50,15 +55,6 @@ const FORMATS = [
     make: (mesh, stem, colors) => toVRML(mesh, stem, colors) },
   { id: 'x3d', label: 'X3D — scene graph, XML', ext: 'x3d', color: true,
     make: (mesh, stem, colors) => toX3D(mesh, stem, colors) },
-  { id: 'png', label: 'PNG — a picture of the view', ext: 'png', view: true,
-    mime: 'image/png' },
-  /*
-   * The same picture, transparency included, in about half the bytes. Its
-   * colours are very slightly lossy — see Renderer3D.snapshot — so PNG stays
-   * the one to reach for when the pixels have to match exactly.
-   */
-  { id: 'webp', label: 'WebP — a picture of the view, smaller', ext: 'webp', view: true,
-    mime: 'image/webp', quality: 1 },
   { id: 'stel', label: '.stel — for the original Java program', ext: 'stel', doc: true },
 ];
 
@@ -67,7 +63,7 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
   if (!template) return null;
 
   const win = createInternalWindow({
-    title: 'Export solid',
+    title: 'Export solid — 3D',
     /*
      * A real height, not `auto`. A resizable window persists the size it
      * measures, and this one is built empty and hidden — so `auto` measured
@@ -211,17 +207,14 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
     el('#esElementsWhy').textContent = kinds.length
       ? kinds.join(', ') : 'none are shown in the view';
     /*
-     * What each format actually gets. A PNG is the view as it stands — its
-     * angle, its colors, its zoom — where every other format is the mesh,
-     * which carries none of that; and .stel is the document rather than the
-     * solid. Saying so here saves exporting one to find out.
+     * What each format actually gets. Every one here is the mesh, except
+     * .stel, which is the document rather than the solid. Saying so saves
+     * exporting one to find out.
      */
-    if (f.view || f.doc || !state.mesh) {
-      el('#esNote').textContent = f.view
-        ? 'the 3-D view exactly as it stands — angle, colors and all'
-        : f.doc
-          ? 'the document in the original Java program’s format, not a mesh'
-          : 'there is no mesh to write';
+    if (f.doc || !state.mesh) {
+      el('#esNote').textContent = f.doc
+        ? 'the document in the original Java program’s format, not a mesh'
+        : 'there is no mesh to write';
     } else {
       // the real count, everything included, because that is what will be written
       const { mesh, tubes, elements } = content();
@@ -231,7 +224,7 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
         `${mesh.vertices.length} vertices, ${mesh.faces.length} faces` +
         (extra ? `, ${extra} among them` : '');
     }
-    go.disabled = busy || (!f.view && !f.doc && !state.mesh);
+    go.disabled = busy || (!f.doc && !state.mesh);
   }
 
   for (const c of [fmtSel, nameIn, wantColor, wantTubes, wantElements, wantOrient]) {
@@ -244,21 +237,6 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
     showFolder();
   };
   el('#esCancel').onclick = () => win.setVisible(false);
-
-  /** the picture, as bytes rather than a data URL, so it writes like the rest */
-  async function viewImage(f) {
-    const url = renderer.snapshot(f.mime || 'image/png', f.quality);
-    const blob = await (await fetch(url)).blob();
-    /*
-     * A browser that cannot encode the type hands back a PNG under the name
-     * it was asked for, without a word. Better to say so than to write a
-     * file whose bytes disagree with its extension.
-     */
-    if (f.mime && blob.type !== f.mime) {
-      throw new Error(`this browser cannot write ${f.ext.toUpperCase()} — choose PNG`);
-    }
-    return blob;
-  }
 
   async function run() {
     const f = format();
@@ -284,8 +262,7 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
 
     info.textContent = 'writing…';
     let data;
-    if (f.view) data = await viewImage(f);
-    else if (f.doc) {
+    if (f.doc) {
       data = await writeStelText();
       if (!data) return;                  // the caller has already said why
     } else {
