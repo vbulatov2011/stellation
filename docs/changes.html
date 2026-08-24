@@ -69,6 +69,26 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>The diagram export: no paper unless you ask, intersections of its
+      own, and WebP.</b> The background is a switch now rather than its
+      negation, and it starts off — a diagram comes out as the drawing alone,
+      to be laid on whatever it is going onto, and ticking <b>Background</b>
+      paints the paper back. What used to be "traces right across the plane"
+      is <b>Intersections</b>, moved to the head of the ink list and given the
+      switch and weight every other kind has: it was a style the arrangement
+      could be drawn in, and it is really a different drawing — where the
+      other planes cut this one, run right across the picture — so it can now
+      be had with the arrangement, instead of it, or on its own at its own
+      thickness. Documents that still ask for the old single switch get
+      exactly the picture they always got.
+      <p>
+      And WebP joins SVG and PNG, in both export dialogs. It keeps the alpha
+      channel exactly and lands at about half the bytes of the PNG; its
+      colours are very slightly lossy on the antialiased edges — a canvas
+      offers no lossless setting, whatever quality it is asked for — so PNG
+      remains the one to reach for when the pixels have to match.
+    </div></li>
+    <li><div>
       <b>The diagram too, and it now carries the figure's opacity.</b> The
       stellation diagram is drawn on nothing, like the solid beside it: its
       backdrop moved to the canvas element, so what a snapshot holds is the

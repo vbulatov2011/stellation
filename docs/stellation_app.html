@@ -645,6 +645,7 @@
     <div class="row">
       <label><input type="radio" name="exFmt" id="exSvg" checked> SVG</label>
       <label><input type="radio" name="exFmt" id="exPng"> PNG</label>
+      <label title="About half the size of the PNG, transparency included. The colours are very slightly lossy on the antialiased edges — choose PNG when the pixels have to match exactly."><input type="radio" name="exFmt" id="exWebp"> WebP</label>
     </div>
     <!--
       Resolution and framing are two different questions and get two different
@@ -675,6 +676,12 @@
       the arrangement gone. The preview is the picture that will be saved.
     -->
     <div class="ex-kinds">
+      <label class="ex-kind" title="Where every other plane cuts this one, drawn right across the picture rather than chopped into the regions it bounds — the engraved look of the printed plates">
+        <input type="checkbox" id="exTrace">
+        <span>Intersections</span>
+        <input type="range" id="exTraceW" min="1" max="100" value="7">
+        <b id="exTraceOut">0.7</b>
+      </label>
       <label class="ex-kind" title="Every plane's trace across the face — the web the stellation was chosen out of">
         <input type="checkbox" id="exDiagram" checked>
         <span>Diagram lines</span>
@@ -711,8 +718,7 @@
       </label>
     </div>
     <div class="row">
-      <label><input type="checkbox" id="exTransparent"> Transparent background</label>
-      <label><input type="checkbox" id="exFullTraces"> Traces right across the plane</label>
+      <label title="Paint the paper behind the drawing. Off, the picture has no background at all and whatever it is placed on shows through."><input type="checkbox" id="exBackground"> Background</label>
     </div>
 
   </div>

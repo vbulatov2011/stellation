@@ -61,9 +61,26 @@ export const DIAGRAM_DEFAULTS = {
   scale: 1,             // how much of the frame the figure fills; 1 = fit
   margin: 0.05,         // fraction of the extent left as air around the drawing
 
-  diagramLines: true,   // the arrangement
+  /*
+   * The intersections: where every other plane of the arrangement cuts this
+   * one, drawn as a line right across the picture rather than chopped into
+   * the little regions it bounds. That is how Brückner and Hess engraved
+   * their plates, and it is a different drawing from the arrangement below,
+   * not a style of it — so it is its own kind of ink, with its own switch and
+   * weight, and the two can be drawn together or apart.
+   */
+  intersectionLines: false,
+  intersectionWidth: 0.7,
+
+  diagramLines: true,   // the arrangement, facet by facet
   diagramWidth: 0.7,    // every width is in pixels of the finished picture
-  traces: 'facets',     // 'facets' — facet by facet | 'full' — whole plane traces
+  /*
+   * Superseded by intersectionLines, and still read: 'full' used to mean
+   * "draw the arrangement as whole-plane traces INSTEAD of facet outlines",
+   * which is the two kinds above with the first on and the second off. A
+   * caller that still says it gets exactly the picture it always got.
+   */
+  traces: 'facets',
 
   fill: true,           // the chosen regions, shaded
   colorMode: 'layer',   // 'layer' | 'class' | 'stellClass' | 'none'
@@ -200,6 +217,15 @@ function metadataBlock(meta) {
 /** a kind of ink is drawn when it is switched on and has a width to draw with */
 const on = (o, kind) => o[`${kind}Lines`] && o[`${kind}Width`] > 0;
 
+/*
+ * `traces: 'full'` is the old single switch, and it said two things at once:
+ * draw the whole-plane traces, and do not draw the facet outlines. Split in
+ * two so the picture can have either, both or neither, with the legacy value
+ * still meaning exactly what it meant.
+ */
+const drawTraces = (o) => (o.traces === 'full' ? on(o, 'diagram') : on(o, 'intersection'));
+const drawArrangement = (o) => o.traces !== 'full' && on(o, 'diagram');
+
 /**
  * Would diagramSVG() draw anything at all with these options?
  *
@@ -212,7 +238,8 @@ const on = (o, kind) => o[`${kind}Lines`] && o[`${kind}Width`] > 0;
 export function diagramHasInk(data, options = {}) {
   if (!data || !data.facets?.length) return false;
   const o = { ...DIAGRAM_DEFAULTS, ...options };
-  if (on(o, 'diagram')) return true;              // the arrangement is always there
+  // the arrangement and the intersections are there whatever is chosen
+  if (drawTraces(o) || drawArrangement(o)) return true;
   // everything else is the figure, so with nothing chosen there is nothing
   const chosen = data.facets.filter(f => f.selected);
   if (!chosen.length) return false;
@@ -275,38 +302,42 @@ export function diagramSVG(data, options = {}) {
    * so its stroke is stated once: a deep arrangement runs to thousands of
    * paths and repeating the stroke on every one roughly doubles the file.
    */
-  if (on(o, 'diagram')) {
+  // the intersections, and the arrangement — see legacyFull
+  if (drawTraces(o)) {
+    /*
+     * Each trace is drawn as a chord about its own closest point to the
+     * center, long enough to leave the box from there whatever its angle:
+     * that distance plus the half-diagonal is an upper bound on the way out
+     * to any corner. A single fixed length was enough only while the picture
+     * was square and the figure always fitted it.
+     */
+    const width = o.traces === 'full' ? o.diagramWidth : o.intersectionWidth;
+    out.push(`  <g fill="none" stroke="${o.ink}" stroke-width="${width}" ` +
+             `stroke-linejoin="round">`);
+    const half = Math.hypot(W, H) / 2;
+    for (const [a, b, c] of traceLines(data)) {
+      const x0 = -a * c, y0 = -b * c;
+      const px = W / 2 + x0 * k, py = H / 2 - y0 * k;
+      const R = Math.hypot(px - W / 2, py - H / 2) + half;
+      const dx = -b, dy = a;
+      out.push(`    <path d="M${fmt(px - dx * R)},${fmt(py + dy * R)}` +
+               `L${fmt(px + dx * R)},${fmt(py - dy * R)}"/>`);
+    }
+    out.push('  </g>');
+  }
+  if (drawArrangement(o)) {
     out.push(`  <g fill="none" stroke="${o.ink}" stroke-width="${o.diagramWidth}" ` +
              `stroke-linejoin="round">`);
-    if (o.traces === 'full') {
-      /*
-       * Each trace is drawn as a chord about its own closest point to the
-       * center, long enough to leave the box from there whatever its angle:
-       * that distance plus the half-diagonal is an upper bound on the way out
-       * to any corner. A single fixed length was enough only while the picture
-       * was square and the figure always fitted it.
-       */
-      const half = Math.hypot(W, H) / 2;
-      for (const [a, b, c] of traceLines(data)) {
-        const x0 = -a * c, y0 = -b * c;
-        const px = W / 2 + x0 * k, py = H / 2 - y0 * k;
-        const R = Math.hypot(px - W / 2, py - H / 2) + half;
-        const dx = -b, dy = a;
-        out.push(`    <path d="M${fmt(px - dx * R)},${fmt(py + dy * R)}` +
-                 `L${fmt(px + dx * R)},${fmt(py - dy * R)}"/>`);
-      }
-    } else {
-      /*
-       * Facet by facet — and the chosen ones are left out whenever the figure
-       * is drawing its own edges below, so nothing is stroked twice. At equal
-       * widths the groups together are the outline of every facet, which is
-       * what this drew before the kinds were separated.
-       */
-      const mine = (on(o, 'facet') || on(o, 'face'))
-        ? data.facets.filter(f => !f.selected)
-        : data.facets;
-      for (const f of mine) out.push(`    <path d="${path(f.poly)}"/>`);
-    }
+    /*
+     * Facet by facet — and the chosen ones are left out whenever the figure
+     * is drawing its own edges below, so nothing is stroked twice. At equal
+     * widths the groups together are the outline of every facet, which is
+     * what this drew before the kinds were separated.
+     */
+    const mine = (on(o, 'facet') || on(o, 'face'))
+      ? data.facets.filter(f => !f.selected)
+      : data.facets;
+    for (const f of mine) out.push(`    <path d="${path(f.poly)}"/>`);
     out.push('  </g>');
   }
 

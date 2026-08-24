@@ -1900,10 +1900,18 @@ export class Renderer3D {
 
   get background() { return this._background; }
 
-  /** a PNG data URL of the current view, transparent where the figure is not */
-  snapshot() {
+  /**
+   * A data URL of the current view, transparent where the figure is not.
+   *
+   * PNG by default and exact. 'image/webp' is the other one worth asking for:
+   * it keeps the alpha channel just as exactly and packs the picture into
+   * roughly half the bytes, at the cost of colours that are very slightly
+   * lossy — a canvas has no lossless WebP setting to offer, so quality 1 is
+   * simply the best of them.
+   */
+  snapshot(type = 'image/png', quality) {
     this.draw();
-    return this.canvas.toDataURL('image/png');
+    return this.canvas.toDataURL(type, quality);
   }
 }
 

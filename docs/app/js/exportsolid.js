@@ -50,7 +50,15 @@ const FORMATS = [
     make: (mesh, stem, colors) => toVRML(mesh, stem, colors) },
   { id: 'x3d', label: 'X3D — scene graph, XML', ext: 'x3d', color: true,
     make: (mesh, stem, colors) => toX3D(mesh, stem, colors) },
-  { id: 'png', label: 'PNG — a picture of the view', ext: 'png', view: true },
+  { id: 'png', label: 'PNG — a picture of the view', ext: 'png', view: true,
+    mime: 'image/png' },
+  /*
+   * The same picture, transparency included, in about half the bytes. Its
+   * colours are very slightly lossy — see Renderer3D.snapshot — so PNG stays
+   * the one to reach for when the pixels have to match exactly.
+   */
+  { id: 'webp', label: 'WebP — a picture of the view, smaller', ext: 'webp', view: true,
+    mime: 'image/webp', quality: 1 },
   { id: 'stel', label: '.stel — for the original Java program', ext: 'stel', doc: true },
 ];
 
@@ -238,9 +246,18 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
   el('#esCancel').onclick = () => win.setVisible(false);
 
   /** the picture, as bytes rather than a data URL, so it writes like the rest */
-  async function viewPNG() {
-    const url = renderer.snapshot();
-    return await (await fetch(url)).blob();
+  async function viewImage(f) {
+    const url = renderer.snapshot(f.mime || 'image/png', f.quality);
+    const blob = await (await fetch(url)).blob();
+    /*
+     * A browser that cannot encode the type hands back a PNG under the name
+     * it was asked for, without a word. Better to say so than to write a
+     * file whose bytes disagree with its extension.
+     */
+    if (f.mime && blob.type !== f.mime) {
+      throw new Error(`this browser cannot write ${f.ext.toUpperCase()} — choose PNG`);
+    }
+    return blob;
   }
 
   async function run() {
@@ -267,7 +284,7 @@ export function initExportSolid({ state, renderer, currentName, download, setSta
 
     info.textContent = 'writing…';
     let data;
-    if (f.view) data = await viewPNG();
+    if (f.view) data = await viewImage(f);
     else if (f.doc) {
       data = await writeStelText();
       if (!data) return;                  // the caller has already said why

@@ -99,6 +99,47 @@ const opacityOf = (tag) => {
   }
 }
 
+// ------------------------------------------- intersections and arrangement
+/*
+ * Two kinds of ink over the same plane, and they are different drawings:
+ * the intersections run right across the picture, the arrangement is the
+ * facets outlined one by one. Either, both or neither, each with its own
+ * weight — and the single `traces: 'full'` switch they replaced still says
+ * what it always said.
+ */
+{
+  const widths = (svg) => (svg.match(/<g fill="none"[^>]*stroke-width="[\d.]+"/g) || [])
+    .map(g => Number(g.match(/stroke-width="([\d.]+)"/)[1]));
+  const opts = { background: null, faceLines: false, facetLines: false, fill: false };
+
+  const arrangementOnly = build({ ...opts });
+  ok(widths(arrangementOnly).length === 1 && widths(arrangementOnly)[0] === 0.7,
+     'by default the arrangement is drawn and the intersections are not');
+
+  const both = build({ ...opts, intersectionLines: true, intersectionWidth: 2.5 });
+  ok(JSON.stringify(widths(both)) === JSON.stringify([2.5, 0.7]),
+     'switched on, the intersections are their own group at their own weight, drawn first');
+
+  const traceOnly = build({ ...opts, intersectionLines: true, intersectionWidth: 2.5,
+                            diagramLines: false });
+  ok(JSON.stringify(widths(traceOnly)) === JSON.stringify([2.5]),
+     'and the arrangement can be turned off under them');
+
+  const neither = build({ ...opts, diagramLines: false });
+  ok(widths(neither).length === 0, 'with both off there is no arrangement ink at all');
+
+  const zeroWidth = build({ ...opts, intersectionLines: true, intersectionWidth: 0 });
+  ok(widths(zeroWidth).length === 1,
+     'a weight of zero is off, the same as for every other kind');
+
+  // the switch they replaced
+  const legacy = build({ ...opts, traces: 'full', diagramWidth: 1.4 });
+  ok(JSON.stringify(widths(legacy)) === JSON.stringify([1.4]),
+     "traces:'full' still means whole-plane traces INSTEAD of facet outlines");
+  const legacyOff = build({ ...opts, traces: 'full', diagramLines: false });
+  ok(widths(legacyOff).length === 0, "and traces:'full' still answers to the diagram switch");
+}
+
 // ------------------------------------------------------------- the verdict
 
 console.log(`\n${passed} passed, ${failed} failed`);

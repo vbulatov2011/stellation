@@ -64,10 +64,25 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   const el = (id) => dlg.querySelector(id);
   const close = () => win.setVisible(false);
   const picksBox = el('#exPicks');
-  const fmtSvg = el('#exSvg'), fmtPng = el('#exPng');
+  const fmtSvg = el('#exSvg'), fmtPng = el('#exPng'), fmtWebp = el('#exWebp');
+  /*
+   * Which raster is wanted, or null for the vector.
+   *
+   * Both carry the alpha channel, which is the point of being able to export
+   * without a background at all. They differ in the colours: PNG is exact,
+   * and WebP — as the canvas encodes it — is not. There is no lossless
+   * setting to ask for; a canvas writes VP8 at every quality, so 1 is simply
+   * the highest fidelity on offer. Measured on a 500px diagram it lands about
+   * half the size of the PNG with the worst channel off by 42 of 255 on the
+   * antialiased edges, and the alpha channel exactly preserved. So: WebP for
+   * a picture to look at, PNG when the pixels have to match.
+   */
+  const raster = () => (fmtPng.checked ? 'png' : fmtWebp.checked ? 'webp' : null);
+  const MIME = { png: 'image/png', webp: 'image/webp' };
+  const WEBP_QUALITY = 1;   // the encoder's best; still lossy, see above
   const scaleIn = el('#exScale'), widthIn = el('#exWidth'), heightIn = el('#exHeight');
   const colorBy = el('#exColor');
-  const transparent = el('#exTransparent'), fullTraces = el('#exFullTraces');
+  const background = el('#exBackground');
   const nameOut = el('#exName'), info = el('#exInfo'), go = el('#exGo');
 
   /*
@@ -86,6 +101,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
    * away the weights on the way. A fixed range cannot lose anything.
    */
   const KINDS = [
+    { key: 'intersection', on: el('#exTrace'), w: el('#exTraceW'), out: el('#exTraceOut') },
     { key: 'diagram', on: el('#exDiagram'), w: el('#exDiagramW'), out: el('#exDiagramOut') },
     { key: 'face', on: el('#exFace'), w: el('#exFaceW'), out: el('#exFaceOut') },
     { key: 'facet', on: el('#exFacet'), w: el('#exFacetW'), out: el('#exFacetOut') },
@@ -152,6 +168,8 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     width: outW(),
     height: outH(),
     scale: scaleOf(),
+    intersectionLines: kind('intersection').on.checked,
+    intersectionWidth: Number(kind('intersection').w.value) / 10,
     diagramLines: kind('diagram').on.checked,
     diagramWidth: Number(kind('diagram').w.value) / 10,
     faceLines: kind('face').on.checked,
@@ -160,8 +178,8 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     facetWidth: Number(kind('facet').w.value) / 10,
     fill: kind('fill').on.checked,
     colorMode: colorBy.value,
-    traces: fullTraces.checked ? 'full' : 'facets',
-    background: transparent.checked ? null : 'white',
+    // the picture has no paper unless one is asked for
+    background: background.checked ? 'white' : null,
     /*
      * The figure's opacity, as the app is showing it. It only tells on a
      * transparent background — over white, half-opacity paint is simply a
@@ -191,7 +209,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     if (staleSince() && scanFailedFor !== signature()) scanFaces();
     const asked = facesToExport();
     const o = options();
-    const ext = fmtPng.checked ? 'png' : 'svg';
+    const ext = raster() || 'svg';
     /*
      * What the two size controls come to, in the terms they are actually in:
      * the resolution in pixels, and what the scale does with it, which is fill
@@ -370,8 +388,8 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   win.wnd.addEventListener('pointerdown', () => sync(), true);
 
   // every control redraws the preview, which is the whole point of having one
-  for (const c of [fmtSvg, fmtPng, scaleIn, widthIn, heightIn,
-                   colorBy, transparent, fullTraces,
+  for (const c of [fmtSvg, fmtPng, fmtWebp, scaleIn, widthIn, heightIn,
+                   colorBy, background,
                    ...KINDS.flatMap(k => [k.on, k.w].filter(Boolean))]) {
     c.addEventListener('input', sync);
   }
@@ -516,18 +534,36 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     return scanning;
   }
 
-  /** an SVG string rasterised at a stated size — never the live canvas */
-  function toPNG(svg, w, h) {
+  /**
+   * An SVG string rasterised at a stated size — never the live canvas.
+   *
+   * The canvas is left unpainted before the drawing goes on, so a diagram
+   * exported without a background reaches the file as transparent pixels
+   * rather than black ones. Both formats carry the alpha channel.
+   */
+  function toRaster(svg, w, h, fmt = 'png') {
+    const type = MIME[fmt] || MIME.png;
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
       img.onload = () => {
         const c = document.createElement('canvas');
         c.width = w; c.height = h;
-        const ctx = c.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
         URL.revokeObjectURL(url);
-        c.toBlob(b => b ? resolve(b) : reject(new Error('could not encode the PNG')), 'image/png');
+        c.toBlob((b) => {
+          /*
+           * A browser that cannot encode the type hands back a PNG under the
+           * name it was asked for, silently. Saying so beats writing a file
+           * whose bytes do not match its extension.
+           */
+          if (!b) { reject(new Error(`could not encode the ${fmt.toUpperCase()}`)); return; }
+          if (fmt !== 'png' && b.type !== type) {
+            reject(new Error(`this browser cannot write ${fmt.toUpperCase()} — choose PNG or SVG`));
+            return;
+          }
+          resolve(b);
+        }, type, fmt === 'webp' ? WEBP_QUALITY : undefined);
       };
       img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not draw the diagram')); };
       img.src = url;
@@ -537,7 +573,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   async function run() {
     const faces = facesToExport();
     const o = options();
-    const png = fmtPng.checked;
+    const fmt = raster();
 
     /*
      * The folder first, before any drawing.
@@ -611,9 +647,10 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
      */
     const files = [];
     for (const { face, svg } of drawn) {
-      const name = fileFor(face, drawn.length, png ? 'png' : 'svg', doc.name);
+      const name = fileFor(face, drawn.length, fmt || 'svg', doc.name);
       // from the snapshot, not the fields: the raster must match the SVG it came from
-      files.push(png ? { name, blob: await toPNG(svg, o.width, o.height) } : { name, text: svg });
+      files.push(fmt ? { name, blob: await toRaster(svg, o.width, o.height, fmt) }
+                     : { name, text: svg });
     }
     if (moved()) throw new Error('the document changed while exporting — nothing was written');
 
