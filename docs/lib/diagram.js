@@ -7,7 +7,7 @@
 
 import { ACTION } from './render3d.js';
 import { layerColor, classColor, cosetColor, faceColor } from './palette.js';
-import { diagramSVG } from './diagramsvg.js';
+import { diagramSVG, figureEdges } from './diagramsvg.js';
 
 export class DiagramView {
   constructor(canvas, { onToggle, onHover } = {}) {
@@ -25,6 +25,26 @@ export class DiagramView {
     this.lineOnly = false;
     // 'layer' | 'class' — matches the 3D view; see _color()
     this.colorMode = 'layer';
+    /*
+     * The four kinds of line the drawing is made of, each with its own switch,
+     * weight and color — the same four the SVG export writes, so what is on
+     * screen and what lands in the file are the same picture described twice.
+     *
+     *   intersection  where every other plane cuts this one, right across
+     *   arrangement   the same cuts, chopped into the facets they bound
+     *   facet         the figure's inside divisions
+     *   face          the figure's outline — the line you would cut
+     *
+     * `color: null` means "follow the theme", which is what these were before
+     * they could be set at all; a color given here overrides that for both
+     * themes, because a color chosen deliberately is not a theme's business.
+     */
+    this.lines = {
+      intersection: { show: false, width: 0.55, color: null },
+      arrangement:  { show: true,  width: 0.6,  color: null },
+      facet:        { show: true,  width: 1.1,  color: null },
+      face:         { show: true,  width: 1.1,  color: null },
+    };
     /*
      * The same global facet opacity the 3D view carries, applied to the
      * facets of the FIGURE — the chosen ones. The arrangement behind them is
@@ -308,8 +328,9 @@ export class DiagramView {
   /** the traces, drawn full width — the engraved look of the printed plates */
   _drawLines(ctx, f, dark) {
     const R = Math.hypot(f.w, f.h);                 // longer than any chord
-    ctx.strokeStyle = dark ? 'rgba(205,215,240,0.62)' : 'rgba(25,25,35,0.72)';
-    ctx.lineWidth = Math.max(0.55, f.dpr * 0.55);
+    const k = this.lines.intersection;
+    ctx.strokeStyle = k.color || (dark ? 'rgba(205,215,240,0.62)' : 'rgba(25,25,35,0.72)');
+    ctx.lineWidth = Math.max(0.55, f.dpr * (k.width ?? 0.55));
     for (const [a, b, c] of this._lines()) {
       // a point on the line, in diagram coordinates, then along its direction
       const x0 = -a * c, y0 = -b * c;
@@ -428,24 +449,58 @@ export class DiagramView {
      * zoom the strokes thin and fade with the zoom, which is what the same
      * drawing printed small would do.
      */
-    const crowd = Math.min(1, Math.max(0.3, this.zoom));
-    ctx.strokeStyle = dark ? `rgba(190,205,235,${0.45 * crowd})` : `rgba(20,25,40,${0.42 * crowd})`;
-    ctx.lineWidth = Math.max(0.5, f.dpr * 0.6 * crowd);
-    for (const facet of facets) { this._path(ctx, facet.poly, f); ctx.stroke(); }
-
-    // 4. selected outlines, heavier — dashed where the face looks inward
-    ctx.lineWidth = Math.max(1, f.dpr * 1.1);
-    for (const facet of facets) {
-      if (!facet.selected) continue;
-      const inward = facet.facing === 0;
-      ctx.strokeStyle = inward
-        ? (dark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.32)')
-        : (dark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)');
-      ctx.setLineDash(inward ? [4 * f.dpr, 3 * f.dpr] : []);
-      this._path(ctx, facet.poly, f);
-      ctx.stroke();
+    const L = this.lines;
+    if (L.arrangement.show && L.arrangement.width > 0) {
+      const crowd = Math.min(1, Math.max(0.3, this.zoom));
+      ctx.strokeStyle = L.arrangement.color
+        || (dark ? `rgba(190,205,235,${0.45 * crowd})` : `rgba(20,25,40,${0.42 * crowd})`);
+      ctx.lineWidth = Math.max(0.5, f.dpr * L.arrangement.width * crowd);
+      for (const facet of facets) { this._path(ctx, facet.poly, f); ctx.stroke(); }
     }
-    ctx.setLineDash([]);
+
+    // 3½. the intersections, right across the plane, when they are asked for
+    if (L.intersection.show && L.intersection.width > 0) this._drawLines(ctx, f, dark);
+
+    /*
+     * 4. the figure's own lines: its inside divisions, then its outline.
+     *
+     * Split the way the export splits them — an edge with a chosen region on
+     * both sides is a division INSIDE the figure, an edge with one side only
+     * is the outline, the line you would cut — so the two can be weighted and
+     * colored apart, and so the screen and the file are one picture described
+     * twice. An outline claimed only by an inward-facing region is the rim of
+     * a cavity, and stays dashed to say so.
+     */
+    const chosen = facets.filter(x => x.selected);
+    if (chosen.length && ((L.face.show && L.face.width > 0) ||
+                          (L.facet.show && L.facet.width > 0))) {
+      const { border, inside } = figureEdges(chosen);
+      const seg = (e) => {
+        ctx.beginPath();
+        ctx.moveTo(f.cx + e.a[0] * f.scale, f.cy - e.a[1] * f.scale);
+        ctx.lineTo(f.cx + e.b[0] * f.scale, f.cy - e.b[1] * f.scale);
+        ctx.stroke();
+      };
+      const solid = dark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)';
+      const faint = dark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.32)';
+      if (L.facet.show && L.facet.width > 0 && inside.length) {
+        ctx.strokeStyle = L.facet.color || solid;
+        ctx.lineWidth = Math.max(1, f.dpr * L.facet.width);
+        ctx.setLineDash([]);
+        for (const e of inside) seg(e);
+      }
+      if (L.face.show && L.face.width > 0 && border.length) {
+        ctx.lineWidth = Math.max(1, f.dpr * L.face.width);
+        for (const outward of [true, false]) {
+          const es = border.filter(e => !!e.out === outward);
+          if (!es.length) continue;
+          ctx.strokeStyle = L.face.color || (outward ? solid : faint);
+          ctx.setLineDash(outward ? [] : [4 * f.dpr, 3 * f.dpr]);
+          for (const e of es) seg(e);
+        }
+      }
+      ctx.setLineDash([]);
+    }
 
     /*
      * 4½. the symmetry elements, where they meet this plane.
@@ -541,14 +596,51 @@ export class DiagramView {
    * Zoom and pan are deliberately not passed — an exported diagram is always
    * the whole plane, or two of them could not be compared.
    */
+  /**
+   * How the view is drawing itself, in the export's own words.
+   *
+   * One description of the picture, read by both the canvas above and the
+   * SVG below, so the file cannot drift from the screen. The export dialog
+   * spreads this and is left asking only what it alone can know: which
+   * planes, how big, what to call it and where to put it.
+   *
+   * lineOnly is the figure pages' Bruckner setting and predates the kinds;
+   * it still means what it meant, which is intersections and nothing else.
+   */
+  styleOptions() {
+    const L = this.lines;
+    const line = this.lineOnly
+      ? { intersectionLines: true, intersectionWidth: L.intersection.width || 0.55,
+          diagramLines: false, faceLines: false, facetLines: false, fill: false }
+      : { intersectionLines: L.intersection.show, intersectionWidth: L.intersection.width,
+          diagramLines: L.arrangement.show, diagramWidth: L.arrangement.width,
+          faceLines: L.face.show, faceWidth: L.face.width,
+          facetLines: L.facet.show, facetWidth: L.facet.width,
+          fill: true };
+    return {
+      colorMode: this.colorMode,
+      faceOpacity: this.faceOpacity,
+      ...line,
+      intersectionColor: L.intersection.color || undefined,
+      diagramColor: L.arrangement.color || undefined,
+      faceLineColor: L.face.color || undefined,
+      facetLineColor: L.facet.color || undefined,
+    };
+  }
+
   toSVG(options = {}) {
     if (!this.data) return '';
-    return diagramSVG(this.data, {
-      colorMode: this.colorMode,
-      traces: this.lineOnly ? 'full' : 'facets',
-      fill: !this.lineOnly,       // was `shading`, an option diagramSVG never read
-      ...options,
-    });
+    /*
+     * Everything the view is showing, in the export's own words — the four
+     * kinds of line with their weights and colors, the coloring, the opacity.
+     * The file is then the picture on screen, and the export dialog is left
+     * asking only what it alone can know: which planes, how big, what to
+     * call it and where to put it.
+     *
+     * Zoom and pan are deliberately not passed — an exported diagram is
+     * always the whole plane, or two of them could not be compared.
+     */
+    return diagramSVG(this.data, { ...this.styleOptions(), ...options });
   }
 }
 

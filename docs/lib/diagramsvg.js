@@ -99,8 +99,18 @@ export const DIAGRAM_DEFAULTS = {
   faceWidth: 0.7,
 
   background: 'white',  // any CSS color, or null for transparent
-  ink: '#222',          // the arrangement
+  ink: '#222',          // the arrangement, where a kind names no color of its own
   figureInk: null,      // the figure's own lines; null follows `ink`
+  /*
+   * A color per kind of line, each null to follow ink / figureInk as before.
+   * The view draws the same four kinds and lets each be colored, and an export
+   * that could not say the same thing would be a different picture from the
+   * one on screen.
+   */
+  intersectionColor: null,
+  diagramColor: null,
+  faceLineColor: null,
+  facetLineColor: null,
   metadata: null,       // {…} describing the document, written into the file
 };
 
@@ -174,18 +184,26 @@ function traceLines(data) {
  * the same corner reached from two facets is the same projected point to
  * within floating-point noise.
  */
-function figureEdges(facets) {
+export function figureEdges(facets) {
   const seen = new Map();
   const q = (v) => Math.round(v * 1e6) / 1e6 + 0;
   for (const f of facets) {
     const p = f.poly;
+    const out = f.facing !== 0;
     for (let i = 0; i < p.length; i++) {
       const a = p[i], b = p[(i + 1) % p.length];
       const A = [q(a[0]), q(a[1])], B = [q(b[0]), q(b[1])];
       const flip = A[0] > B[0] || (A[0] === B[0] && A[1] > B[1]);
       const key = flip ? `${B}|${A}` : `${A}|${B}`;
       const e = seen.get(key);
-      if (e) e.n++; else seen.set(key, { a, b, n: 1 });
+      /*
+       * `out` remembers whether anything facing OUTWARD claims this edge. A
+       * boundary edge claimed only by an inward-facing region is the rim of a
+       * cavity rather than the outside of the solid, and the screen draws it
+       * dashed to say so. The SVG reads neither field and is unaffected.
+       */
+      if (e) { e.n++; if (out) e.out = true; }
+      else seen.set(key, { a, b, n: 1, out });
     }
   }
   const border = [], inside = [];
@@ -312,7 +330,8 @@ export function diagramSVG(data, options = {}) {
      * was square and the figure always fitted it.
      */
     const width = o.traces === 'full' ? o.diagramWidth : o.intersectionWidth;
-    out.push(`  <g fill="none" stroke="${o.ink}" stroke-width="${width}" ` +
+    const stroke = (o.traces === 'full' ? o.diagramColor : o.intersectionColor) || o.ink;
+    out.push(`  <g fill="none" stroke="${stroke}" stroke-width="${width}" ` +
              `stroke-linejoin="round">`);
     const half = Math.hypot(W, H) / 2;
     for (const [a, b, c] of traceLines(data)) {
@@ -326,8 +345,8 @@ export function diagramSVG(data, options = {}) {
     out.push('  </g>');
   }
   if (drawArrangement(o)) {
-    out.push(`  <g fill="none" stroke="${o.ink}" stroke-width="${o.diagramWidth}" ` +
-             `stroke-linejoin="round">`);
+    out.push(`  <g fill="none" stroke="${o.diagramColor || o.ink}" ` +
+             `stroke-width="${o.diagramWidth}" stroke-linejoin="round">`);
     /*
      * Facet by facet — and the chosen ones are left out whenever the figure
      * is drawing its own edges below, so nothing is stroked twice. At equal
@@ -345,9 +364,10 @@ export function diagramSVG(data, options = {}) {
   if (chosen.length && (on(o, 'facet') || on(o, 'face'))) {
     const { border, inside } = figureEdges(chosen);
     const seg = (e) => `    <path d="M${X(e.a[0])},${Y(e.a[1])}L${X(e.b[0])},${Y(e.b[1])}"/>`;
-    const stroke = o.figureInk || o.ink;
+    const base = o.figureInk || o.ink;
     for (const [kind, edges] of [['facet', inside], ['face', border]]) {
       if (!on(o, kind) || !edges.length) continue;
+      const stroke = o[kind + 'LineColor'] || base;
       out.push(`  <g fill="none" stroke="${stroke}" stroke-width="${o[kind + 'Width']}" ` +
                `stroke-linecap="round" stroke-linejoin="round">`);
       for (const e of edges) out.push(seg(e));

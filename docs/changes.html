@@ -69,6 +69,37 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>View splits into Solid, Diagram and Coloring — and the diagram gets
+      its lines.</b> One section had come to hold three unrelated jobs: how the
+      solid is drawn, how the diagram is drawn, and the coloring both share.
+      They are three sections now. <b>Solid</b> keeps the edges, the symmetry
+      elements and the coordinate frame; <b>Coloring</b> keeps the face colors,
+      the palette editor, the coset subgroup and the facet opacity, all of
+      which the two views have in common; and <b>Diagram</b> holds what is
+      drawn on the plane — including the diagram face, which had been sitting
+      under Symmetry &amp; depth for want of anywhere better.
+      <p>
+      The Diagram section is where the new work is. The stellation diagram is
+      made of four kinds of line — the intersections right across the plane,
+      the arrangement chopped into its regions, the figure's inside divisions
+      and the figure's outline — and each now has its own switch, thickness
+      and color, where before only the first two existed at all and none could
+      be styled. The two outline colors are shared with the solid's edges:
+      a facet edge on the solid and a facet outline on the diagram are the same
+      thing seen twice, so setting either sets both. The thicknesses are not
+      shared, because a line measured in pixels on a flat drawing and a
+      cylinder in a lit scene do not want the same number, and cylinders are
+      the solid's business alone.
+      <p>
+      These are the same settings the diagram export writes. The export dialog
+      used to ask for all of them a second time, which is two descriptions of
+      one picture and exactly the pair that drifts — its preview card promised
+      "the picture that will be saved" while the diagram beside it was free to
+      disagree. Those rows are gone: the file is the picture on screen, and the
+      dialog asks only what an export alone can know — which planes, how big,
+      whether to paint the paper, what to call it and where to put it.
+    </div></li>
+    <li><div>
       <b>Escape no longer empties the app.</b> It closed the top-most window
       that could close, of any kind — so with no dialog open it started on the
       workspace panels, and a few presses took the solid, the diagram and the

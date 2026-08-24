@@ -253,6 +253,12 @@ async function boot() {
     },
   });
   diagram.colorMode = $('#colorMode').value;   // restored from storage above
+  /*
+   * The line style, now that there is a diagram to give it to. It is restored
+   * here rather than beside the solid's edges above because that runs before
+   * this exists — and a style pushed at nothing is a style silently lost.
+   */
+  applyDiagramLines(readJSON(localStorage.getItem('diagramLines')));
 
   cells = new CellsPanel($('#cells'), {
     onBeforeChange: () => mark(),
@@ -1616,12 +1622,27 @@ function wireControls() {
     else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); }
   });
 
-  for (const id of ['#showFaceEdges', '#faceEdgeColor', '#faceEdgeWidth', '#faceEdgeTubes',
-                    '#showFacetEdges', '#facetEdgeColor', '#facetEdgeWidth', '#facetEdgeTubes']) {
+  for (const id of ['#showFaceEdges', '#faceEdgeWidth', '#faceEdgeTubes',
+                    '#showFacetEdges', '#facetEdgeWidth', '#facetEdgeTubes']) {
     // `input` rather than `change` so dragging a slider or scrubbing the color
     // picker updates the solid as you go, which is the only way to tune a
     // weight or a shade against what you are actually looking at
     $(id).oninput = pushEdgeStyle;
+  }
+  // the two colors are shared with the diagram's outlines, so they take the
+  // step that pushes both
+  for (const id of ['#faceEdgeColor', '#facetEdgeColor']) {
+    $(id).oninput = pushEdgeStyleAndDiagram;
+  }
+  for (const k of DIAGRAM_LINE_KINDS) {
+    $(k.on).oninput = pushDiagramLines;
+    $(k.w).oninput = pushDiagramLines;
+    $(k.color).oninput = () => {
+      // a shared color set from this side is the same setting: put it back on
+      // the solid's control and let that push the renderer
+      if (k.shares) { syncSharedEdgeColors('diagram'); pushEdgeStyle(); }
+      pushDiagramLines();
+    };
   }
   let lastColorMode = $('#colorMode').value;
   $('#colorMode').onchange = async (e) => {
@@ -2151,6 +2172,66 @@ function applyEdgeStyle(style) {
   pushEdgeStyle();
 }
 
+/*
+ * The diagram's four kinds of line, as panel's controls describe them.
+ *
+ * The two outline colors are NOT here: a facet edge on the solid and a facet
+ * outline on the diagram are the same thing seen two ways, so they share one
+ * color, which lives with the solid's edges and is copied across in
+ * pushDiagramLines. The weights are separate, because a line measured in
+ * pixels on a flat drawing and a cylinder in a lit scene do not want the same
+ * number, and cylinders are 3-D only and have no meaning here at all.
+ */
+const DIAGRAM_LINE_KINDS = [
+  { key: 'intersection', on: '#dgIntersect',   w: '#dgIntersectWidth',
+    out: '#dgIntersectWidthLabel',   color: '#dgIntersectColor' },
+  { key: 'arrangement',  on: '#dgArrangement', w: '#dgArrangementWidth',
+    out: '#dgArrangementWidthLabel', color: '#dgArrangementColor' },
+  { key: 'facet',        on: '#dgFacet',       w: '#dgFacetWidth',
+    out: '#dgFacetWidthLabel',       color: '#dgFacetColor', shares: '#facetEdgeColor' },
+  { key: 'face',         on: '#dgFace',        w: '#dgFaceWidth',
+    out: '#dgFaceWidthLabel',        color: '#dgFaceColor',  shares: '#faceEdgeColor' },
+];
+
+/** controls -> the diagram, and remember it for next time */
+function pushDiagramLines() {
+  const style = {};
+  for (const k of DIAGRAM_LINE_KINDS) {
+    const width = Number($(k.w).value);
+    style[k.key] = { show: $(k.on).checked, width, color: $(k.color).value };
+    $(k.out).textContent = width.toFixed(1);
+    $(k.w).disabled = !$(k.on).checked;
+  }
+  try { localStorage.setItem('diagramLines', JSON.stringify(style)); } catch { }
+  if (diagram) { diagram.lines = style; diagram.draw(); }
+}
+
+/** the shared colors, in whichever direction they were just changed */
+function syncSharedEdgeColors(from) {
+  for (const k of DIAGRAM_LINE_KINDS) {
+    if (!k.shares) continue;
+    const a = $(k.shares), b = $(k.color);
+    if (from === 'solid') b.value = a.value;
+    else if (from === 'diagram') a.value = b.value;
+  }
+}
+
+/** the remembered line style, or the markup's own defaults */
+function applyDiagramLines(style) {
+  if (style) {
+    for (const k of DIAGRAM_LINE_KINDS) {
+      const v = style[k.key];
+      if (!v) continue;
+      if (typeof v.show === 'boolean') $(k.on).checked = v.show;
+      if (v.width > 0) $(k.w).value = v.width;
+      if (typeof v.color === 'string' && /^#[0-9a-f]{6}$/i.test(v.color)) $(k.color).value = v.color;
+    }
+  }
+  // the solid's edges own the two shared colors, whatever was stored here
+  syncSharedEdgeColors('solid');
+  pushDiagramLines();
+}
+
 /** controls -> renderer, and remember it for next time */
 function pushEdgeStyle() {
   const style = currentEdgeStyle();
@@ -2163,6 +2244,18 @@ function pushEdgeStyle() {
   renderer.facetEdges = { show: style.facet.show, color: hexToRgba(style.facet.color),
                           width: style.facet.width, tubes: !!style.facet.tubes };
   renderer.draw();
+}
+
+/*
+ * Changing an edge color on the solid changes it on the diagram, which is the
+ * whole point of their being one color: the same edge, drawn twice. Kept as a
+ * separate step after pushEdgeStyle so a document being restored, which drives
+ * the solid's inputs, carries the diagram along without knowing about it.
+ */
+function pushEdgeStyleAndDiagram() {
+  pushEdgeStyle();
+  syncSharedEdgeColors('solid');
+  pushDiagramLines();
 }
 
 /**

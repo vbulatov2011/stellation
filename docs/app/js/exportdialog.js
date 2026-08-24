@@ -81,7 +81,6 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
   const MIME = { png: 'image/png', webp: 'image/webp' };
   const WEBP_QUALITY = 1;   // the encoder's best; still lossy, see above
   const scaleIn = el('#exScale'), widthIn = el('#exWidth'), heightIn = el('#exHeight');
-  const colorBy = el('#exColor');
   const background = el('#exBackground');
   const nameOut = el('#exName'), info = el('#exInfo'), go = el('#exGo');
 
@@ -92,22 +91,18 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
    * drawing would come out blank.
    *
    * The weights are in pixels of the finished picture and their sliders run a
-   * FIXED tenth of a pixel to ten pixels, whatever the resolution is. Making
-   * that ceiling follow the resolution — so a big plate could be given a
-   * heavier cut line without the slider losing its fine end — cost far more
-   * than it bought: a range input silently drops a value that no longer fits,
-   * and every keystroke of a typed resolution is read as a resolution, so
-   * typing 4000 into the width field passes through 4, and the browser threw
-   * away the weights on the way. A fixed range cannot lose anything.
+   * How the picture LOOKS is not asked here at all.
+   *
+   * The four kinds of line, their weights, their colors, the coloring and the
+   * opacity are the Diagram section's controls in the panel, and this dialog
+   * takes them as they stand — diagram.styleOptions() below. They used to be
+   * asked twice, once for the screen and once for the file, which is two
+   * descriptions of one picture and exactly the kind of pair that drifts: the
+   * preview card promises "the picture that will be saved" and the diagram
+   * beside it was free to disagree. What is left here is what only an export
+   * can know — which planes, how big, whether to paint the paper, what to
+   * call it and where to put it.
    */
-  const KINDS = [
-    { key: 'intersection', on: el('#exTrace'), w: el('#exTraceW'), out: el('#exTraceOut') },
-    { key: 'diagram', on: el('#exDiagram'), w: el('#exDiagramW'), out: el('#exDiagramOut') },
-    { key: 'face', on: el('#exFace'), w: el('#exFaceW'), out: el('#exFaceOut') },
-    { key: 'facet', on: el('#exFacet'), w: el('#exFacetW'), out: el('#exFacetOut') },
-    { key: 'fill', on: el('#exFill') },
-  ];
-  const kind = (k) => KINDS.find(x => x.key === k);
 
   /** the distinct diagrams: one plane per class of face */
   const classes = () => (state.faces?.length ? state.faces : [{ index: 0, sides: 0, count: 1 }]);
@@ -168,16 +163,8 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     width: outW(),
     height: outH(),
     scale: scaleOf(),
-    intersectionLines: kind('intersection').on.checked,
-    intersectionWidth: Number(kind('intersection').w.value) / 10,
-    diagramLines: kind('diagram').on.checked,
-    diagramWidth: Number(kind('diagram').w.value) / 10,
-    faceLines: kind('face').on.checked,
-    faceWidth: Number(kind('face').w.value) / 10,
-    facetLines: kind('facet').on.checked,
-    facetWidth: Number(kind('facet').w.value) / 10,
-    fill: kind('fill').on.checked,
-    colorMode: colorBy.value,
+    // the look, exactly as the Diagram panel has it — see the note above
+    ...(diagram?.styleOptions?.() || {}),
     // the picture has no paper unless one is asked for
     background: background.checked ? 'white' : null,
     /*
@@ -223,14 +210,6 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     el('#exScaleOut').textContent =
       `${o.width} × ${o.height} px — the figure fills ${fill}% of ${side}` +
       (fill > 100 ? ', running past the edges, which are cropped' : '');
-    // a kind that is switched off grays its own weight rather than hiding it
-    for (const k of KINDS) {
-      if (!k.w) continue;
-      k.w.disabled = !k.on.checked;
-      k.out.textContent = (Number(k.w.value) / 10).toFixed(1) + ' px';
-      k.out.classList.toggle('dim', !k.on.checked);
-    }
-    colorBy.disabled = !kind('fill').on.checked;
 
     /*
      * What will actually be written, decided by the SAME predicate the export
@@ -249,7 +228,8 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
      * thing left for a general warning is the case that is not about any
      * particular face: settings that would draw nothing whatever the figure is.
      */
-    const drawsNothing = !KINDS.some(k => k.on.checked && (!k.w || Number(k.w.value) > 0));
+    const drawsNothing = !(o.fill || o.intersectionLines || o.diagramLines ||
+                           o.faceLines || o.facetLines);
     el('#exEmpty').hidden = !(drawsNothing && blank.length);
     el('#exEmpty').textContent = drawsNothing && blank.length
       ? 'these settings draw nothing — turn up a line weight, or fill the chosen cells' : '';
@@ -389,8 +369,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
 
   // every control redraws the preview, which is the whole point of having one
   for (const c of [fmtSvg, fmtPng, fmtWebp, scaleIn, widthIn, heightIn,
-                   colorBy, background,
-                   ...KINDS.flatMap(k => [k.on, k.w].filter(Boolean))]) {
+                   background]) {
     c.addEventListener('input', sync);
   }
   el('#exPickAll').onclick = () => { for (const f of classes()) picked.add(f.index); sync(); };

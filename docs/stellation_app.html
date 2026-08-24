@@ -302,10 +302,6 @@
         <span>build out to <b id="depthLabel">20</b> shells</span>
         <input id="depth" type="range" min="2" max="60" value="20">
       </label>
-      <label class="field" title="Which face of the polyhedron the stellation diagram is drawn on. Only faces the chosen symmetry cannot carry onto one another are listed — the rest would give the same picture.">
-        <span>diagram face</span>
-        <select id="planeIndex"></select>
-      </label>
       <p class="note">
         Cells are grouped into orbits of the first group, then split by the second —
         that split is what lets a chiral cell offer just one of its two hands.
@@ -315,39 +311,9 @@
       </div>
     </details>
 
+
     <details class="group">
-      <summary><h2>View</h2></summary>
-      <label class="field" title="How the facets are colored. By shell: one color per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one color per kind of face of the ORIGINAL polyhedron — an icosahedron has one kind however you stellate it, so it takes one color (two with the darkened undersides). By stellation face class: the same, but grouped under the stellation symmetry, so dropping to a subgroup splits those faces into the several kinds that symmetry can still tell apart — an icosahedron under a subgroup shows more than one color.">
-        <span>face colors</span>
-        <select id="colorMode">
-          <option value="layer">by shell</option>
-          <option value="class">by face class</option>
-          <option value="stellClass">by stellation face class</option>
-          <option value="coset">by cosets of a subgroup — per plane</option>
-          <option value="cosetL">by cosets of a subgroup — per facet</option>
-          <option value="cosetM">by cosets of a subgroup — per facet, mirror-split</option>
-          <option value="orbitP">by subgroup orbits — per plane</option>
-          <option value="orbitF">by subgroup orbits — per facet</option>
-          <option value="orbitC">by subgroup orbits — per cell</option>
-        </select>
-      </label>
-      <div class="row">
-        <button id="editColorsBtn" type="button"
-                title="Give any group of facets a color of its own, and an opacity of its own — the shells, the face classes, the cosets, whichever the menu above is reading. Colors are saved with the document.">Edit colors…</button>
-        <span id="colorsEdited" class="dim" hidden>edited</span>
-      </div>
-      <!-- shown only in coset mode: the subgroup of the POLYHEDRON group whose
-           cosets do the coloring — a property of the figure, not of the
-           editing symmetry -->
-      <label class="field" id="cosetSubRow" hidden
-             title="The subgroup whose cosets color the figure — a subgroup of the polyhedron symmetry, independent of the editing symmetry, so regrouping never repaints. A mirror-free subgroup counts its cosets among the rotations. Faces the cosets cannot label are gray. The five tetrahedra: coset subgroup T on the icosahedron.">
-        <span>coset subgroup</span>
-        <select id="cosetSub"></select>
-      </label>
-      <label class="field" title="How solid the facets are. Below 100% the solid turns to glass and its hidden edges come through, so you can look at the cells inside it — the interior of a stellation is otherwise the one thing you cannot see. At 0% only the edges are left, which is a wireframe of the whole arrangement.">
-        <span>facet opacity <b id="faceOpacityLabel">100</b>%</span>
-        <input id="faceOpacity" type="range" min="0" max="100" step="1" value="100">
-      </label>
+      <summary><h2>Solid</h2></summary>
       <fieldset class="edge-kinds">
         <legend title="Every facet lies in one of the original face planes. Where two facets of DIFFERENT planes meet there is a real crease — an edge of the solid. Where two facets of the SAME plane meet the surface runs flat across the join and the line is just how the plane arrangement was cut up. Drawing the two the same buries the shape of the solid in the arrangement that produced it.">edges</legend>
         <label class="check" title="The creases: where facets lying in different face planes meet"><input id="showFaceEdges" type="checkbox" checked> face edges</label>
@@ -386,8 +352,91 @@
           <input id="coordAxesWidth" type="range" min="0.1" max="5" step="0.1" value="1">
         </label>
       </fieldset>
+    </details>
+
+    <details class="group">
+      <summary><h2>Diagram</h2></summary>
+      <label class="field" title="Which face of the polyhedron the stellation diagram is drawn on. Only faces the chosen symmetry cannot carry onto one another are listed — the rest would give the same picture.">
+        <span>diagram face</span>
+        <select id="planeIndex"></select>
+      </label>
+      <!-- The four kinds of line the diagram is made of. These are the SAME
+           settings the diagram export writes: the export dialog asks only what
+           it alone can know — which planes, how big, what to call it — so the
+           file is the picture on this screen rather than a second description
+           of it that can drift.
+
+           The two outline colors are shared with the solid's edges above,
+           because a facet edge is the same thing seen two ways; the weights
+           are not, because a line measured in screen pixels on a flat drawing
+           and a cylinder in a lit 3-D scene do not want the same number. -->
+      <fieldset class="edge-kinds">
+        <legend title="The diagram is one face plane cut by all the others. These are the four kinds of line that draws, each with its own switch, thickness and color — the same four the export writes.">lines</legend>
+
+        <label class="check" title="Where every other plane cuts this one, drawn right across the picture rather than chopped into the regions it bounds — the engraved look of the printed plates"><input id="dgIntersect" type="checkbox"> intersections</label>
+        <div class="row edge-style">
+          <input id="dgIntersectColor" type="color" value="#8a8fa0" title="Color of the intersection lines">
+          <input id="dgIntersectWidth" type="range" min="0.1" max="8" step="0.1" value="0.6" title="Thickness, in pixels of the drawing">
+          <b id="dgIntersectWidthLabel">0.6</b>
+        </div>
+
+        <label class="check" title="The same cuts, chopped into the little regions they bound — the web the stellation was chosen out of"><input id="dgArrangement" type="checkbox" checked> diagram lines</label>
+        <div class="row edge-style">
+          <input id="dgArrangementColor" type="color" value="#9198a8" title="Color of the arrangement">
+          <input id="dgArrangementWidth" type="range" min="0.1" max="8" step="0.1" value="0.6" title="Thickness, in pixels of the drawing">
+          <b id="dgArrangementWidthLabel">0.6</b>
+        </div>
+
+        <label class="check" title="The divisions inside the figure — where two chosen regions meet. Its color is the solid's facet edges, above."><input id="dgFacet" type="checkbox" checked> facets outline</label>
+        <div class="row edge-style">
+          <input id="dgFacetColor" type="color" value="#6b7080" title="Color of the facet outlines — shared with the solid's facet edges">
+          <input id="dgFacetWidth" type="range" min="0.1" max="8" step="0.1" value="1.1" title="Thickness, in pixels of the drawing">
+          <b id="dgFacetWidthLabel">1.1</b>
+        </div>
+
+        <label class="check" title="The outline of the figure — an edge with the figure on one side and nothing on the other. Dashed where it is the rim of a cavity. Its color is the solid's face edges, above."><input id="dgFace" type="checkbox" checked> faces outline</label>
+        <div class="row edge-style">
+          <input id="dgFaceColor" type="color" value="#000000" title="Color of the figure's outline — shared with the solid's face edges">
+          <input id="dgFaceWidth" type="range" min="0.1" max="8" step="0.1" value="1.1" title="Thickness, in pixels of the drawing">
+          <b id="dgFaceWidthLabel">1.1</b>
+        </div>
+      </fieldset>
       <label class="check" title="Tint the cells you have not chosen, so you can see what else is available on this plane">
         <input id="showAllFacets" type="checkbox" checked> shade unchosen cells
+      </label>
+    </details>
+    <details class="group">
+      <summary><h2>Coloring</h2></summary>
+      <label class="field" title="How the facets are colored. By shell: one color per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one color per kind of face of the ORIGINAL polyhedron — an icosahedron has one kind however you stellate it, so it takes one color (two with the darkened undersides). By stellation face class: the same, but grouped under the stellation symmetry, so dropping to a subgroup splits those faces into the several kinds that symmetry can still tell apart — an icosahedron under a subgroup shows more than one color.">
+        <span>face colors</span>
+        <select id="colorMode">
+          <option value="layer">by shell</option>
+          <option value="class">by face class</option>
+          <option value="stellClass">by stellation face class</option>
+          <option value="coset">by cosets of a subgroup — per plane</option>
+          <option value="cosetL">by cosets of a subgroup — per facet</option>
+          <option value="cosetM">by cosets of a subgroup — per facet, mirror-split</option>
+          <option value="orbitP">by subgroup orbits — per plane</option>
+          <option value="orbitF">by subgroup orbits — per facet</option>
+          <option value="orbitC">by subgroup orbits — per cell</option>
+        </select>
+      </label>
+      <div class="row">
+        <button id="editColorsBtn" type="button"
+                title="Give any group of facets a color of its own, and an opacity of its own — the shells, the face classes, the cosets, whichever the menu above is reading. Colors are saved with the document.">Edit colors…</button>
+        <span id="colorsEdited" class="dim" hidden>edited</span>
+      </div>
+      <!-- shown only in coset mode: the subgroup of the POLYHEDRON group whose
+           cosets do the coloring — a property of the figure, not of the
+           editing symmetry -->
+      <label class="field" id="cosetSubRow" hidden
+             title="The subgroup whose cosets color the figure — a subgroup of the polyhedron symmetry, independent of the editing symmetry, so regrouping never repaints. A mirror-free subgroup counts its cosets among the rotations. Faces the cosets cannot label are gray. The five tetrahedra: coset subgroup T on the icosahedron.">
+        <span>coset subgroup</span>
+        <select id="cosetSub"></select>
+      </label>
+      <label class="field" title="How solid the facets are. Below 100% the solid turns to glass and its hidden edges come through, so you can look at the cells inside it — the interior of a stellation is otherwise the one thing you cannot see. At 0% only the edges are left, which is a wireframe of the whole arrangement.">
+        <span>facet opacity <b id="faceOpacityLabel">100</b>%</span>
+        <input id="faceOpacity" type="range" min="0" max="100" step="1" value="100">
       </label>
     </details>
 
@@ -738,53 +787,17 @@
 
   <div class="ex-section">
     <b>Appearance</b>
+    <p class="note">
+      The lines, their weights and colors, and the coloring of the regions are
+      the <b>Diagram</b> section's, in the panel — the file is the picture on
+      screen. Only the paper is asked for here, since the screen has a
+      background of its own that no file has to inherit.
+    </p>
     <!--
       Four kinds of ink, each on its own switch and weight. A plate for reading
       wants the arrangement and no outline; a net wants the outline heavy and
       the arrangement gone. The preview is the picture that will be saved.
     -->
-    <div class="ex-kinds">
-      <label class="ex-kind" title="Where every other plane cuts this one, drawn right across the picture rather than chopped into the regions it bounds — the engraved look of the printed plates">
-        <input type="checkbox" id="exTrace">
-        <span>Intersections</span>
-        <input type="range" id="exTraceW" min="1" max="100" value="7">
-        <b id="exTraceOut">0.7</b>
-      </label>
-      <label class="ex-kind" title="Every plane's trace across the face — the web the stellation was chosen out of">
-        <input type="checkbox" id="exDiagram" checked>
-        <span>Diagram lines</span>
-        <input type="range" id="exDiagramW" min="1" max="100" value="7">
-        <b id="exDiagramOut">0.7</b>
-      </label>
-      <label class="ex-kind" title="The outline of the figure — an edge with the figure on one side and nothing on the other. The cut line.">
-        <input type="checkbox" id="exFace" checked>
-        <span>Faces outline</span>
-        <input type="range" id="exFaceW" min="1" max="100" value="12">
-        <b id="exFaceOut">1.2</b>
-      </label>
-      <label class="ex-kind" title="The divisions inside the figure — where two chosen facets meet">
-        <input type="checkbox" id="exFacet" checked>
-        <span>Facets outline</span>
-        <input type="range" id="exFacetW" min="1" max="100" value="7">
-        <b id="exFacetOut">0.7</b>
-      </label>
-      <label class="ex-kind" title="The regions the figure takes, shaded">
-        <input type="checkbox" id="exFill" checked>
-        <span>Faces fill</span>
-        <select id="exColor" class="ex-kind-sel">
-          <option value="layer">by shell</option>
-          <option value="class">by face class</option>
-          <option value="stellClass">by stellation class</option>
-          <option value="coset">by cosets — per plane</option>
-          <option value="cosetL">by cosets — per facet</option>
-          <option value="cosetM">by cosets — mirror-split</option>
-          <option value="orbitP">by orbits — per plane</option>
-          <option value="orbitF">by orbits — per facet</option>
-          <option value="orbitC">by orbits — per cell</option>
-          <option value="none">plain</option>
-        </select>
-      </label>
-    </div>
     <div class="row">
       <label title="Paint the paper behind the drawing. Off, the picture has no background at all and whatever it is placed on shows through."><input type="checkbox" id="exBackground"> Background</label>
     </div>
