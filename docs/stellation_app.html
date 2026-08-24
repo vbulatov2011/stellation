@@ -438,6 +438,9 @@
           <span class="dim">opacity</span>
           <input id="dgFaceOpacity" type="number" min="0" max="100" step="1" value="100" title="How solid the filled regions are, in percent. It is the diagram's own, not the solid's — a drawing on paper wants a different weight of paint from a lit solid.">
         </div>
+        <label class="check" title="Tint the cells you have not chosen, so you can see what else is available on this plane — the other paint on this drawing, and the only one that is not about the figure itself">
+          <input id="showAllFacets" type="checkbox" checked> shade unused cells
+        </label>
       </fieldset>
       <fieldset class="edge-kinds">
         <legend title="The diagram is one face plane cut by all the others. These are the four kinds of line that draws, each with its own switch, thickness and color — the same four the export writes.">lines</legend>
@@ -484,9 +487,6 @@
           <input id="dgElemWidth" type="number" min="0.4" max="6" step="0.1" value="1.1">
         </div>
       </fieldset>
-      <label class="check" title="Tint the cells you have not chosen, so you can see what else is available on this plane">
-        <input id="showAllFacets" type="checkbox" checked> shade unused cells
-      </label>
     </details>
 
     <details class="group">
