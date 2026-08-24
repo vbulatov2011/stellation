@@ -262,6 +262,8 @@ async function boot() {
   if (facePref) {
     if (typeof facePref.show === 'boolean') $('#dgShowFaces').checked = facePref.show;
     if (Number.isFinite(facePref.opacity)) $('#dgFaceOpacity').value = String(facePref.opacity);
+    if (typeof facePref.shade === 'boolean') $('#showAllFacets').checked = facePref.shade;
+    if (Number.isFinite(facePref.shadeOpacity)) $('#shadeOpacity').value = String(facePref.shadeOpacity);
   }
   pushDiagramFaces();
   const elemPref = readJSON(localStorage.getItem('diagramElems'));
@@ -1782,6 +1784,7 @@ function wireControls() {
   $('#showFaces').onchange = pushFaces;
   $('#dgFaceOpacity').oninput = pushDiagramFaces;
   $('#dgShowFaces').onchange = pushDiagramFaces;
+  $('#shadeOpacity').oninput = pushDiagramFaces;
   const pushCoordAxes = () => {
     const w = typedWidth('#coordAxesWidth', 0.1, 5, 1);
     localStorage.setItem('coordAxes', JSON.stringify({ show: $('#showCoordAxes').checked, width: w }));
@@ -1879,7 +1882,9 @@ function wireControls() {
 
   installSplitters();
 
-  $('#showAllFacets').onchange = (e) => { diagram.showAll = e.target.checked; diagram.draw(); };
+  // through the one path, so the tint's strength, the stored preference and
+  // the export's preview all follow the switch
+  $('#showAllFacets').onchange = pushDiagramFaces;
 
   $('#cellsString').onchange = async (e) => {
     try {
@@ -2384,12 +2389,20 @@ function pushFaces() {
 /** the diagram's regions -> the diagram, and remembered */
 function pushDiagramFaces() {
   const on = $('#dgShowFaces').checked;
+  const shadeOn = $('#showAllFacets').checked;
   $('#dgFaceOpacity').disabled = !on;
+  $('#shadeOpacity').disabled = !shadeOn;
   try {
     localStorage.setItem('diagramFaces', JSON.stringify(
-      { show: on, opacity: facePct('#dgFaceOpacity') }));
+      { show: on, opacity: facePct('#dgFaceOpacity'),
+        shade: shadeOn, shadeOpacity: facePct('#shadeOpacity', 15) }));
   } catch { }
-  if (diagram) { diagram.faceOpacity = diagramFaceOpacity(); diagramStyleChanged(); }
+  if (diagram) {
+    diagram.faceOpacity = diagramFaceOpacity();
+    diagram.showAll = shadeOn;
+    diagram.shadeOpacity = facePct('#shadeOpacity', 15) / 100;
+    diagramStyleChanged();
+  }
 }
 
 /** the remembered line style, or the markup's own defaults */

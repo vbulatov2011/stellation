@@ -20,6 +20,14 @@ export class DiagramView {
     this.zoom = 1;
     this.pan = { x: 0, y: 0 };
     this.showAll = true;
+    /*
+     * How strongly the unchosen cells are tinted. It was a pair of constants,
+     * 0.17 in the dark theme and 0.13 in the light, which is a judgement about
+     * how much of the arrangement someone wants to see behind the figure — and
+     * that depends on the figure, on the depth, and on what is being looked
+     * for. One number now, and it is a control.
+     */
+    this.shadeOpacity = 0.15;
     // draw the arrangement the way Brückner and Hess drew it: full plane traces,
     // no fills, no shell tinting. See _lines().
     this.lineOnly = false;
@@ -384,19 +392,20 @@ export class DiagramView {
     }
 
     // 1. every facet, filled faintly by layer, so the arrangement reads as depth
-    if (this.showAll) {
+    const shade = Math.max(0, Math.min(1, this.shadeOpacity ?? 0.15));
+    if (this.showAll && shade > 0) {
       for (const facet of facets) {
         if (this.colorMode === 'cosetM' && facet.pieces) {
           for (const pc of facet.pieces) {
             const c = faceColor(this.colorMode, pc.label ?? -1, true);
-            ctx.fillStyle = this._rgba(c, (dark ? 0.17 : 0.13) * c[3]);
+            ctx.fillStyle = this._rgba(c, shade * c[3]);
             this._path(ctx, pc.poly, f);
             ctx.fill();
           }
           continue;
         }
         const c = this._color(facet);
-        ctx.fillStyle = this._rgba(c, (dark ? 0.17 : 0.13) * c[3]);
+        ctx.fillStyle = this._rgba(c, shade * c[3]);
         this._path(ctx, facet.poly, f);
         ctx.fill();
       }
