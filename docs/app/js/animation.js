@@ -253,7 +253,23 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     const stageCtx = stage.getContext('2d');
     const stream = stage.captureStream(0);
     const track = stream.getVideoTracks()[0];
-    const pushFrame = () => { stageCtx.drawImage(src, 0, 0); track.requestFrame?.(); };
+    /*
+     * Each frame lands on a filled stage, not on the last one.
+     *
+     * The view canvas draws onto nothing now — its backdrop is the element's
+     * CSS, which drawImage cannot see — and video carries no alpha anyway. So
+     * the stage is painted with the renderer's own background first; without
+     * it the transparent parts of every frame would keep whatever the stage
+     * held before, which is the previous frame, smeared behind the new one.
+     */
+    const bg = renderer.background || [0, 0, 0];
+    const backdrop = 'rgb(' + bg.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255)).join(',') + ')';
+    const pushFrame = () => {
+      stageCtx.fillStyle = backdrop;
+      stageCtx.fillRect(0, 0, VW, VH);
+      stageCtx.drawImage(src, 0, 0);
+      track.requestFrame?.();
+    };
     // roughly a tenth of a bit per pixel per frame: ~12 Mb/s at 1080p60, more at 4K
     const bits = Math.min(60e6, Math.max(8e6, VW * VH * 6));
     const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bits });

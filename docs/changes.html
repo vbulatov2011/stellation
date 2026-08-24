@@ -69,6 +69,28 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>The 3D view renders with an alpha channel, and saves one.</b> The
+      figure is drawn onto nothing now: the drawing buffer is cleared fully
+      transparent, so what it holds is the solid and only the solid. Every
+      pixel the figure does not cover stays empty, a facet at partial opacity
+      leaves a partly transparent pixel, and the antialiased silhouette comes
+      out softly covered rather than blended into a background it no longer
+      has. Saving the view, or a document thumbnail, writes an RGBA PNG that
+      can be laid over anything — the transparency is in the file, not painted
+      out of it.
+      <p>
+      Nothing on screen changes. The backdrop you see is the canvas element's
+      own CSS colour, set from the same per-theme value callers always set,
+      and an export reads the drawing buffer, which never had it. The blending
+      needed one real correction to make this true: coverage has to accumulate
+      down the depth-sorted pass — <code>a + dst·(1−a)</code> — where before
+      the alpha channel was blended with the same rule as a colour, so two
+      half-transparent facets over empty space left a pixel thinner than
+      either. That never showed while the background was opaque, and shows at
+      once when it is not. Video is unaffected: it carries no alpha, so its
+      frames are laid on the backdrop explicitly before encoding.
+    </div></li>
+    <li><div>
       <b>And their duals, whose vertices are at infinity.</b> The ten solids
       dual to those — tetrahemihexacron to great dirhombicosidodecacron — were
       the last ones missing, and they are missing for a reason: a face through

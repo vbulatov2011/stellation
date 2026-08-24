@@ -198,10 +198,49 @@ function program(gl, vs, fs) {
   return p;
 }
 
+/**
+ * Source-over onto a buffer that may be transparent.
+ *
+ * The color channels take the familiar src*a + dst*(1-a), which leaves them
+ * premultiplied by the coverage so far — what this context is declared to
+ * hold. The alpha channel needs its own rule, and it is the one a plain
+ * blendFunc cannot express: coverage ACCUMULATES, a + dst_a*(1-a), so two
+ * half-transparent facets over empty space leave a pixel that is three
+ * quarters covered rather than half. With the single blendFunc this used to
+ * use, the alpha channel was blended as if it were a color — src_a*src_a —
+ * and every translucent pixel came out thinner than it should, which does
+ * not show at all while the background is opaque and shows immediately once
+ * it is not.
+ */
+function blendOver(gl) {
+  gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,
+                       gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+}
+
 export class Renderer3D {
   constructor(canvas) {
     this.canvas = canvas;
-    const gl = this.gl = canvas.getContext('webgl2', { antialias: true, alpha: false });
+    /*
+     * The drawing buffer carries alpha, and the figure is drawn ONTO NOTHING:
+     * the clear is fully transparent, so what the buffer holds is the solid
+     * and only the solid. Every pixel it does not cover stays at alpha 0, and
+     * a facet drawn at partial opacity leaves a partly transparent pixel —
+     * which is what makes toDataURL() and drawImage() hand out an image that
+     * can be laid over anything.
+     *
+     * `premultipliedAlpha` is left at its default of true, and the blending
+     * below is set up to match: the color channels accumulate multiplied by
+     * coverage, which is what the compositor and the PNG encoder expect of
+     * this context. Asking for false instead would mean un-premultiplying in
+     * the shader and would darken every translucent pixel by its own alpha a
+     * second time.
+     *
+     * The backdrop you actually SEE is the canvas element's CSS background —
+     * see the `background` accessor — so nothing on screen changes, while an
+     * exported image has no backdrop baked into it at all.
+     */
+    const gl = this.gl = canvas.getContext('webgl2',
+      { antialias: true, alpha: true, premultipliedAlpha: true });
     if (!gl) throw new Error('WebGL2 is not available in this browser');
 
     this.prog = program(gl, VERT, FRAG);
@@ -283,7 +322,7 @@ export class Renderer3D {
     this.coordAxesCount = 0;
     this.elemCount = 0;
     this.discCount = 0;
-    this.background = [0.055, 0.06, 0.078];
+    this.background = [0.055, 0.06, 0.078];   // through the accessor below
     this.edgeColor = [0.0, 0.0, 0.0, 1.0];
 
     /*
@@ -1225,7 +1264,8 @@ export class Renderer3D {
     const gl = this.gl;
     const W = this.canvas.width, H = this.canvas.height;
     gl.viewport(0, 0, W, H);
-    gl.clearColor(...this.background, 1);
+    // nothing behind the figure: see the note on the context
+    gl.clearColor(0, 0, 0, 0);
     gl.enable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);          // shells are visible from both sides
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -1344,7 +1384,7 @@ export class Renderer3D {
         gl.enable(gl.POLYGON_OFFSET_FILL);
         gl.polygonOffset(1.2, 1.2);
         gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        blendOver(gl);
         gl.depthMask(false);
         if (n) gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_INT, 0);
         else gl.drawArrays(gl.TRIANGLES, 0, this.count);   // no mesh tables: unsorted
@@ -1359,7 +1399,7 @@ export class Renderer3D {
     if (this.discCount) {
       gl.useProgram(this.prog);
       gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      blendOver(gl);
       gl.depthMask(false);
       // faint, because they stack: fifteen planes at 0.06 still reach ~0.6
       gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 0.06);
@@ -1841,7 +1881,26 @@ export class Renderer3D {
     }, { passive: false });
   }
 
-  /** a PNG data URL of the current view */
+  /**
+   * The color BEHIND the figure.
+   *
+   * It is no longer what the drawing buffer is cleared to — the buffer is
+   * cleared to nothing, so that an exported image carries the solid alone —
+   * but the canvas element's own CSS background, which sits behind the
+   * transparent pixels and is therefore what a person looking at the screen
+   * sees. Callers set it exactly as they always did, once per theme, and the
+   * view looks the same as before; toDataURL() and drawImage() read the
+   * drawing buffer and never see it.
+   */
+  set background(rgb) {
+    this._background = rgb;
+    const b = (v) => Math.max(0, Math.min(255, Math.round((v ?? 0) * 255)));
+    this.canvas.style.backgroundColor = `rgb(${b(rgb?.[0])}, ${b(rgb?.[1])}, ${b(rgb?.[2])})`;
+  }
+
+  get background() { return this._background; }
+
+  /** a PNG data URL of the current view, transparent where the figure is not */
   snapshot() {
     this.draw();
     return this.canvas.toDataURL('image/png');
