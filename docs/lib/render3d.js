@@ -803,17 +803,18 @@ export class Renderer3D {
   }
 
   /**
-   * Draw once into a square buffer of the given side and return the pixels as
-   * a fresh canvas. The live canvas is restored before returning.
+   * Draw once into a buffer of the given size and return the pixels as a fresh
+   * canvas. The live canvas is restored before returning.
    *
    * The point is that the result does not depend on the window. _camera()
    * takes the aspect ratio into account — it has to, or a narrow canvas would
    * cut the sides off — so the same solid at the same zoom fills a different
-   * fraction of a wide canvas than of a tall one. Cropping a square out of
-   * whatever shape the canvas happens to be therefore produces a picture whose
-   * framing depends on the reader's window at the moment they pressed save,
-   * and two such pictures cannot be compared with each other. Rendering at a
-   * fixed square size makes the framing a property of the document alone.
+   * fraction of a wide canvas than of a tall one. Cropping the picture out of
+   * whatever shape the canvas happens to be therefore produces a framing that
+   * depends on the reader's window at the moment they pressed save, and two
+   * such pictures cannot be compared with each other. Rendering at a size the
+   * caller states makes the framing a property of that size alone — which is
+   * why a thumbnail asks for a square and gets the same square every time.
    *
    * Copy out immediately: the context has no preserveDrawingBuffer, so the
    * pixels exist only within the frame that drew them — hence the drawImage
@@ -822,13 +823,14 @@ export class Renderer3D {
    * Distinct from snapshot() below, which hands back the live view as a data
    * URL for "save image" — there, matching what is on screen IS the point.
    */
-  squareImage(size = 256) {
+  image(w, h) {
     const { canvas } = this;
     const w0 = canvas.width, h0 = canvas.height;
     const out = document.createElement('canvas');
-    out.width = out.height = size;
+    out.width = Math.max(1, Math.round(w));
+    out.height = Math.max(1, Math.round(h));
     try {
-      canvas.width = canvas.height = size;
+      canvas.width = out.width; canvas.height = out.height;
       this.draw();
       out.getContext('2d').drawImage(canvas, 0, 0);
     } finally {
@@ -837,6 +839,9 @@ export class Renderer3D {
     }
     return out;
   }
+
+  /** the same, square — what a thumbnail wants */
+  squareImage(size = 256) { return this.image(size, size); }
 
   /**
    * upload a mesh: {vertices:[{x,y,z}], faces:[[i,...]]} plus a layer per face.

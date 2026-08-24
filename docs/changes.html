@@ -69,6 +69,23 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>A picture at any size, and JPEG.</b> The 2-D export asked for a square
+      or nothing; it now has a width and a height, opening at the size the view
+      is on screen with a <b>view</b> button to put them back. They are not a
+      crop: the camera takes the aspect ratio into account, so a picture written
+      at a different shape is the same solid framed for that shape, and the
+      readout says which of the two you have asked for.
+      <p>
+      JPEG joins PNG and WebP, and brings the one question the other two do not
+      raise. It has no alpha channel, so a picture written as one has to stand
+      on something — and a canvas asked for a JPEG composites onto black, which
+      would send a figure that looked right on a pale screen back on a black
+      square. It is laid on the background currently behind the view instead,
+      read off the canvas element where the renderer now keeps it: light
+      rgb(246,247,249) or dark rgb(14,15,20), the colour you were looking at.
+      PNG and WebP are unaffected and stay transparent.
+    </div></li>
+    <li><div>
       <b>Exports have a section, and a picture is not a mesh.</b> Taking the
       figure out of the app was two buttons at the end of the Files row, among
       the verbs that save the document — which they are not: a copy for a

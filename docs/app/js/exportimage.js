@@ -24,19 +24,28 @@ import { createInternalWindow } from '../../lib/uilib/modules.js';
 const $ = (q) => document.querySelector(q);
 
 /*
- * The two raster formats, and the whole difference between them. PNG is
- * exact; WebP is about half the size with the alpha channel kept just as
- * exactly and the colors very slightly lossy on the antialiased edges — a
- * canvas has no lossless WebP setting to ask for, at any quality.
+ * The three raster formats, and the whole difference between them.
+ *
+ * PNG is exact. WebP is about half the size, with the alpha channel kept just
+ * as exactly and the colors very slightly lossy on the antialiased edges — a
+ * canvas has no lossless WebP setting to ask for, at any quality. JPEG has no
+ * alpha channel at all, so a picture written as one has to be given something
+ * to stand on: `opaque` marks it, and the background painted behind it is the
+ * one currently behind the view, so the file looks like the screen it came
+ * from rather than like the black a canvas would default to.
  */
 const FORMATS = [
-  { id: 'png', label: 'PNG — exact', ext: 'png', mime: 'image/png',
+  { id: 'png', label: 'PNG — exact, transparent', ext: 'png', mime: 'image/png',
     note: 'Lossless. Every pixel is the one on screen, transparency included.' },
-  { id: 'webp', label: 'WebP — about half the size', ext: 'webp', mime: 'image/webp',
-    quality: 1,
+  { id: 'webp', label: 'WebP — transparent, about half the size', ext: 'webp',
+    mime: 'image/webp', quality: 1,
     note: 'Keeps transparency exactly and packs to roughly half a PNG. The colors ' +
           'are very slightly lossy on the antialiased edges — take PNG when the ' +
           'pixels have to match.' },
+  { id: 'jpg', label: 'JPEG — smallest, no transparency', ext: 'jpg',
+    mime: 'image/jpeg', quality: 0.92, opaque: true,
+    note: 'JPEG cannot hold transparency, so the picture is laid on the background ' +
+          'the view has now. Smallest of the three, and lossy everywhere.' },
 ];
 
 export function initExportImage({ state, renderer, currentName, download, setStatus }) {
@@ -60,7 +69,7 @@ export function initExportImage({ state, renderer, currentName, download, setSta
   const dlg = win.interior;
   const el = (id) => dlg.querySelector(id);
   const fmtSel = el('#eiFormat'), nameIn = el('#eiName');
-  const square = el('#eiSquare'), sizeIn = el('#eiSize');
+  const widthIn = el('#eiWidth'), heightIn = el('#eiHeight');
   const info = el('#eiInfo'), go = el('#eiGo');
   let busy = false;
   // the name this dialog last offered, and the document it was offered for —
@@ -85,24 +94,36 @@ export function initExportImage({ state, renderer, currentName, download, setSta
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const stem = () => slug(nameIn.value || '') || slug(currentName() || '') || 'stellation';
 
-  /** what the picture will measure, which is the view unless a size is asked for */
+  /** the size the view is on screen, which is what the boxes open at */
+  const viewSize = () => ({ w: renderer?.canvas?.width || 0, h: renderer?.canvas?.height || 0 });
+
+  /** what the picture will measure: whatever the two boxes say, within reason */
+  const clamp = (v, fallback) =>
+    Math.max(16, Math.min(8192, Math.round(Number(v) || fallback || 16)));
   const pixels = () => {
-    if (square.checked) {
-      const n = Math.max(16, Math.min(4096, Math.round(Number(sizeIn.value) || 1024)));
-      return { w: n, h: n };
-    }
-    const c = renderer?.canvas;
-    return { w: c?.width || 0, h: c?.height || 0 };
+    const view = viewSize();
+    return { w: clamp(widthIn.value, view.w), h: clamp(heightIn.value, view.h) };
   };
 
   function sync() {
     const f = format();
     el('#eiNote').textContent = f.note;
-    sizeIn.disabled = !square.checked;
     const { w, h } = pixels();
-    el('#eiSizeOut').textContent = square.checked
-      ? `${w} × ${h} px`
-      : `${w} × ${h} px — the view as it is on screen`;
+    const view = viewSize();
+    /*
+     * The camera takes the aspect ratio into account, so a picture written at
+     * a different shape from the window is not the window cropped — it is the
+     * same solid framed for that shape. Worth saying, because asking for a
+     * square from a wide view and getting more of the figure rather than less
+     * looks like a bug until you know it.
+     */
+    const same = w === view.w && h === view.h;
+    el('#eiSizeOut').textContent = same
+      ? `${w} × ${h} px — the view as it is on screen`
+      : `${w} × ${h} px — the view is ${view.w} × ${view.h}; ` +
+        (w * view.h === h * view.w
+          ? 'the same shape, so the same framing'
+          : 'a different shape, so the figure is framed for it');
     el('#eiFile').textContent = `${stem()}.${f.ext}`;
     el('#eiWhereRow').hidden = !hasFSAccess();
     go.disabled = busy || !renderer;
@@ -119,20 +140,45 @@ export function initExportImage({ state, renderer, currentName, download, setSta
   }
 
   /**
+   * The colour behind the view, as the screen has it.
+   *
+   * Read off the canvas element rather than kept here: the renderer paints no
+   * background of its own any more, it sets one on its element (see
+   * Renderer3D's `background`), and that is precisely "the background
+   * currently visible". Falls back to white, which is a better guess than the
+   * black a canvas composites onto when asked for a JPEG.
+   */
+  function backdrop() {
+    const el2 = renderer?.canvas;
+    const c = el2 && getComputedStyle(el2).backgroundColor;
+    return (c && c !== 'transparent' && !/^rgba\(0, 0, 0, 0\)$/.test(c)) ? c : '#ffffff';
+  }
+
+  /**
    * The picture, as bytes.
    *
-   * Square asks the renderer for its own square image at that size — which
-   * resizes the drawing buffer, draws, and puts it back — and otherwise the
-   * live canvas is taken as it stands. Either way the encoding happens in the
-   * same task as the drawing, because the context keeps no drawing buffer
-   * between tasks.
+   * Drawn at the asked-for size through the renderer, which resizes its
+   * drawing buffer, draws, copies the pixels out and puts the buffer back —
+   * the copy has to happen in the same task, because the context keeps no
+   * drawing buffer between them.
+   *
+   * A format with no alpha channel is laid on the background first. Without
+   * that, `toDataURL('image/jpeg')` composites onto black, and a figure that
+   * looked right on a pale screen comes back on a black square.
    */
   async function bytes(f) {
-    const { w } = pixels();
-    const canvas = square.checked ? renderer.squareImage(w) : null;
-    const url = canvas
-      ? canvas.toDataURL(f.mime, f.quality)
-      : renderer.snapshot(f.mime, f.quality);
+    const { w, h } = pixels();
+    let canvas = renderer.image(w, h);
+    if (f.opaque) {
+      const flat = document.createElement('canvas');
+      flat.width = w; flat.height = h;
+      const ctx = flat.getContext('2d');
+      ctx.fillStyle = backdrop();
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(canvas, 0, 0);
+      canvas = flat;
+    }
+    const url = canvas.toDataURL(f.mime, f.quality);
     const blob = await (await fetch(url)).blob();
     /*
      * A browser that cannot encode the type hands back a PNG under the name
@@ -194,12 +240,21 @@ export function initExportImage({ state, renderer, currentName, download, setSta
     showFolder();
     sync();
   };
-  for (const c of [fmtSel, square, sizeIn, nameIn]) c.addEventListener('input', sync);
+  for (const c of [fmtSel, widthIn, heightIn, nameIn]) c.addEventListener('input', sync);
+  el('#eiFitView').onclick = () => {
+    const { w, h } = viewSize();
+    widthIn.value = w; heightIn.value = h;
+    sync();
+  };
 
   function open() {
     const doc = currentName();
     // a name typed for THIS document is kept; a different document gets its own
     if (offeredFor !== doc || !nameIn.value) { nameIn.value = slug(doc || ''); offeredFor = doc; }
+    // the boxes open at the size the view is, every time: the window is the
+    // one thing that has certainly moved since this was last opened
+    const { w, h } = viewSize();
+    if (w && h) { widthIn.value = w; heightIn.value = h; }
     info.textContent = '';
     sync();
     showFolder();

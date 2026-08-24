@@ -645,14 +645,15 @@
 
   <div class="ex-section">
     <b>Size</b>
-    <div class="row">
-      <label class="check" title="Write the picture square at a size you choose, rather than at the shape and size the view happens to be on screen">
-        <input type="checkbox" id="eiSquare"> square
-      </label>
-      <input type="number" id="eiSize" min="16" max="4096" step="1" value="1024" class="num" aria-label="Pixels">
+    <!-- width and height stay on one row: split across two they read as
+         separate settings -->
+    <div class="row" title="The picture's resolution in pixels. It opens at the size the view is on screen; type either box to write it larger, or a different shape.">
+      <label class="dim">width <input type="number" id="eiWidth" min="16" max="8192" step="1"></label>
+      <label class="dim">height <input type="number" id="eiHeight" min="16" max="8192" step="1"></label>
       <span class="dim">px</span>
+      <button id="eiFitView" type="button" title="Back to the size and shape the view is on screen">view</button>
     </div>
-    <p id="eiSizeOut" class="note"></p>
+    <p id="eiSizeOut" class="note dim"></p>
   </div>
 
   <div class="ex-section">
