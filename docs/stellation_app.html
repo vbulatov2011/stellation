@@ -290,11 +290,13 @@
 
     <details class="group" id="symGroup">
       <summary><h2>Symmetry &amp; depth</h2></summary>
-      <label class="field">
+      <label class="field"
+             title="The symmetry the cells are grouped into orbits of — normally the solid's own point group. It decides which cells count as the same cell, and so fixes the arrangement you are choosing from. Hover the menu itself to see what the chosen group is.">
         <span>polyhedron</span>
         <select id="polySym"></select>
       </label>
-      <label class="field">
+      <label class="field"
+             title="The editing symmetry. Each orbit above is split again by this group, and one click adds or removes a whole orbit of it — so lowering it is how you work at finer grain, down to E and one cell at a time. The split is also what lets a chiral cell offer just one of its two hands.">
         <span>stellation</span>
         <select id="stellSym"></select>
       </label>
@@ -302,12 +304,12 @@
            subgroup whose cosets or orbits do the coloring. Shown only when the
            face colors are reading one, since otherwise it decides nothing. -->
       <label class="field" id="cosetSubRow" hidden
-             title="The subgroup whose cosets color the figure — a subgroup of the polyhedron symmetry, independent of the editing symmetry, so regrouping never repaints. A mirror-free subgroup counts its cosets among the rotations. Faces the cosets cannot label are gray. The five tetrahedra: coloring subgroup T on the icosahedron.">
+             title="The subgroup whose cosets or orbits do the coloring. It is a subgroup of the polyhedron symmetry and independent of the editing symmetry, so regrouping never repaints. Faces the cosets cannot label are drawn gray. The compound of five tetrahedra is this set to T on the icosahedron.">
         <span>coloring</span>
         <select id="cosetSub"></select>
       </label>
       <label class="field" title="How many shells of cells to build outward from the core. Chosen automatically per solid — most build every shell there is; the few with planes passing near the center are capped to stay quick. Type a number to override; 60 means every shell there is.">
-        <span>build out to <b id="depthLabel" class="dim"></b></span>
+        <span>shells count <b id="depthLabel" class="dim"></b></span>
         <input id="depth" type="number" min="2" max="60" step="1" value="20">
       </label>
       <div class="row buttons">
