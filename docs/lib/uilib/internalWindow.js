@@ -74,13 +74,34 @@ function createWindowManager() {
     });
   }
 
-  /** the top-most visible window that can close — what Escape acts on */
+  /**
+   * The top-most visible DIALOG that can close — what Escape acts on.
+   *
+   * Dialogs only. Escape used to take the top-most closable window of any
+   * kind, which put the workspace panels — the solid, the diagram, the cells
+   * table — one keystroke from gone: press it a few times with nothing else
+   * open and the app empties, and because visibility is persisted the empty
+   * screen survives a reload, so it reads as a broken program rather than as
+   * something the keyboard just did. A panel is closed deliberately, by its
+   * own button or from the windows menu, and never by a key whose whole
+   * meaning is "dismiss the thing in front of me".
+   */
   function topClosable() {
-    for (let i = windows.length - 1; i >= 0; i--) {
-      const w = windows[i];
-      if (w.canClose && w.isVisible()) return w;
+    /*
+     * By z-band first, then by stacking order. Walking the array backwards
+     * alone is wrong for exactly the windows Escape matters most to: a modal
+     * sits in a fixed band ABOVE everything and toTop() deliberately does not
+     * restack it, so it keeps whatever array position it was created at — and
+     * a browser opened later would be found first and dismissed instead of
+     * the dialog covering it. Rank the bands the way the z-indices do.
+     */
+    const rank = (w) => (w.modal ? 2 : w.alwaysOnTop ? 1 : 0);
+    let best = null;
+    for (const w of windows) {
+      if (!(w.canClose && w.isDialog && w.isVisible())) continue;
+      if (!best || rank(w) >= rank(best)) best = w;   // later wins a tie
     }
-    return null;
+    return best;
   }
 
   addEventListener('resize', () => {
@@ -124,7 +145,8 @@ function createWindowManager() {
  *   container                 element the window lives in and is clamped to
  *                             (default document.body)
  *   role                      ARIA role ('dialog' for transient pickers,
- *                             'region' for workspace panels)
+ *                             'region' for workspace panels). Escape closes
+ *                             a 'dialog' and nothing else — see topClosable
  *
  * returns { wnd, interior, header, button, titleDiv,
  *           setTitle, setVisible, isVisible, clamp, onMove,
@@ -380,6 +402,8 @@ export function createInternalWindow(params = {}) {
     setTitle, setVisible, isVisible, clamp,
     onMove: () => saveGeometry(),
     canClose, modal, alwaysOnTop, alwaysVisible,
+    // what Escape is allowed to close; see the window manager's topClosable
+    isDialog: params.role === 'dialog',
   };
 
   manager.add(myself);

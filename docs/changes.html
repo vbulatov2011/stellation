@@ -69,6 +69,21 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Escape no longer empties the app.</b> It closed the top-most window
+      that could close, of any kind — so with no dialog open it started on the
+      workspace panels, and a few presses took the solid, the diagram and the
+      cells table away. Worse, because a window remembers whether it was open,
+      the empty screen came back after a reload: not a keystroke that could be
+      undone but a program that appeared to have broken, with only the windows
+      menu to put it right. Escape now closes dialogs and nothing else. A panel
+      is closed deliberately, by its own button or from that menu.
+      <p>
+      It also picks the right dialog now. It took the most recently stacked
+      one, and a modal sits in a fixed band above everything without ever
+      restacking — so a browser opened after it was dismissed first, from
+      underneath. Escape follows the z-bands: whatever is actually in front.
+    </div></li>
+    <li><div>
       <b>A picture at any size, and JPEG.</b> The 2-D export asked for a square
       or nothing; it now has a width and a height, opening at the size the view
       is on screen with a <b>view</b> button to put them back. They are not a
