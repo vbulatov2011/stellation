@@ -5,7 +5,7 @@
 
 import {
   Renderer3D, DiagramView, CellsPanel, labelKeys,
-  writeStel, facePlanes, suggestDepth,
+  writeStel, facePlanes, suggestDepth, polarRows, planesFromList,
 } from '../../lib/modules.js';
 import { createInternalWindow } from '../../lib/uilib/modules.js';
 import { writePreset, readDocument, newDocumentName, normalizePlaneRows,
@@ -50,6 +50,13 @@ const state = {
    * arrangement, so old builds must refuse such documents, not misread them.
    */
   centralPlanes: false,
+  /*
+   * The plane rows of a dual whose vertices are at infinity — see polarOf().
+   * Held apart from customPlanes, which means "this document IS a plane
+   * sheet": these are derived from a catalog solid and travel with it, so the
+   * document saves as that solid and reopens by name.
+   */
+  polarPlanes: null,
   building: false,
   // edited since the last save or open — see touch() and confirmDiscard()
   dirty: false,
@@ -431,6 +438,29 @@ function syncHash() {
   catch { location.hash = h; }     // file:// URLs reject replaceState
 }
 
+/**
+ * The plane rows of a catalog solid that is built from its dual, or null.
+ *
+ * Nine of the uniform polyhedra are hemipolyhedra: some of their faces pass
+ * through the center, so the dual has vertices at infinity and its stored
+ * vertex list is only a truncated stand-in for drawing — faces that miss
+ * their own plane by a tenth of the figure, most of them crossed
+ * quadrilaterals with no usable normal at all. Building an arrangement from
+ * that geometry would be building the wrong solid.
+ *
+ * A stellation needs no vertices, though, only planes, and those are exact:
+ * the dual's face planes are the polars of the primal's vertices. So a
+ * catalog entry carrying `polar` names its primal and takes its planes from
+ * there. Nothing else about the build changes — the planes are finite,
+ * ordinary, and none of them passes through the center.
+ */
+function polarOf(item) {
+  const g = item?.polar ? state.geometry[item.polar] : null;
+  if (!g) return null;
+  const rows = polarRows(toPoly(g));
+  return rows.length ? rows : null;
+}
+
 function findItem(file) {
   for (const cat of state.catalog)
     for (const it of cat.items) if (it.file === file) return { ...it, category: cat.category };
@@ -749,6 +779,7 @@ function updateCatCount() {
 async function select(item, opts = {}) {
   if (!item) return;
   state.customPlanes = null;         // picking a solid leaves custom-plane mode
+  state.polarPlanes = polarOf(item); // a dual built from its primal's vertices
   /*
    * A document brings its own answer; a plain pick starts plain — except the
    * hemipolyhedra, whose central faces ARE the solid: without them what gets
@@ -766,9 +797,11 @@ async function select(item, opts = {}) {
     setDepth(opts.depth, false);           // an opened document or a link fixes it
   } else if (state.depthAuto) {
     // suggest from the planes that will actually be in the arrangement —
-    // central planes cut everything, so their presence caps the depth
-    setDepth(suggestDepth(facePlanes(toPoly(state.geometry[item.file]),
-                                     { central: state.centralPlanes })), true);
+    // central planes cut everything, so their presence caps the depth, and a
+    // polar solid's planes are not its own geometry's at all
+    setDepth(suggestDepth(state.polarPlanes
+      ? planesFromList(state.polarPlanes)
+      : facePlanes(toPoly(state.geometry[item.file]), { central: state.centralPlanes })), true);
   }
 
   syncSymmetrySelects();
@@ -1197,7 +1230,8 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
   $('#stopBuild').hidden = false;
   setStatus('building the plane arrangement…', true);
 
-  const g = state.customPlanes ? null : state.geometry[state.current.file];
+  const sheet = state.customPlanes || state.polarPlanes;
+  const g = sheet ? null : state.geometry[state.current.file];
   /*
    * `preserve` is the stellation-symmetry switch — and ONLY that switch. The
    * arrangement it rebuilds is geometrically the one on screen (the group
@@ -1218,7 +1252,7 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
 
   try {
     const info = await call('build', {
-      geometry: g, customPlanes: state.customPlanes || null,
+      geometry: g, customPlanes: sheet || null,
       centralPlanes: state.centralPlanes || false,
       matrices: polyM, subMatrices: subM,
       maxIntersection: state.depth >= NO_LIMIT ? -1 : state.depth, maxLayer: 1000,
@@ -1911,9 +1945,11 @@ async function buildCustomPlanes(planeRows) {
   const expanded = expandPlaneRows(rows, state.symmetry);
   info.textContent = '';
   const prev = { planeRows: state.planeRows, customPlanes: state.customPlanes,
-                 current: state.current, centralPlanes: state.centralPlanes };
+                 current: state.current, centralPlanes: state.centralPlanes,
+                 polarPlanes: state.polarPlanes };
   state.planeRows = rows;
   state.customPlanes = expanded;
+  state.polarPlanes = null;          // an edited sheet is nobody's dual
   state.current = { file: 'custom', name: `custom planes (${rows.length} rows → ${expanded.length})`, symmetry: null };
   syncSymmetrySelects();
   const ok = await build();

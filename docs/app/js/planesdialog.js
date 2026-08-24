@@ -19,7 +19,7 @@
  * shares the app's controls (drag to turn, wheel to zoom).
  */
 
-import { Renderer3D, LAYER_COLORS, facePlanes, matMul } from '../../lib/modules.js';
+import { Renderer3D, LAYER_COLORS, facePlanes, polarRows, planesFromList, matMul } from '../../lib/modules.js';
 import { readDocument } from './preset.js';
 import { createInternalWindow } from '../../lib/uilib/modules.js';
 
@@ -112,9 +112,18 @@ export function initPlanesDialog(deps) {
   function reduceSolid(file, groupName) {
     const g = state.geometry[file];
     if (!g) return null;
-    // central faces come along as rows — whether they join the arrangement
-    // is the checkbox's decision, but the sheet must show what the solid has
-    const planes = facePlanes(deps.toPoly(g), { central: true });
+    /*
+     * Central faces come along as rows — whether they join the arrangement is
+     * the checkbox's decision, but the sheet must show what the solid has.
+     *
+     * A solid the catalog marks `polar` has no usable geometry of its own
+     * (its vertices are at infinity); its planes are the polars of its
+     * primal's vertices, the same way the app builds it. See polarOf().
+     */
+    const item = state.catalog?.flatMap(c => c.items).find(i => i.file === file);
+    const primal = item?.polar ? state.geometry[item.polar] : null;
+    const planes = primal ? planesFromList(polarRows(deps.toPoly(primal)))
+                          : facePlanes(deps.toPoly(g), { central: true });
     if (!planes.length) return null;
     const items = planes.map(p => ({ n: [p.n.x, p.n.y, p.n.z], d: p.d }));
     const M = state.symmetry[groupName]?.matrices;

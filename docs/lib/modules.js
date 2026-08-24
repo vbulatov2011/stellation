@@ -25,7 +25,7 @@ export {
   // building
   buildStellation, makeArrangement, makeLayers, makeCellsBetween,
   makeSymmetricCells, makeSubCells, makeConnectivityGraph,
-  facePlanes, planesFromList, planeFromPoint, suggestDepth,
+  facePlanes, planesFromList, planeFromPoint, polarRows, suggestDepth,
   // cells and selections
   extractMesh, selectedSubCells, subCellForFacet, cellsAcrossFacet,
   cellsAcrossFace, supportSet, dependentSet, adjacent, compareCells, selKey,

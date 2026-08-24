@@ -242,6 +242,38 @@ export function facePlanes(poly, opts = null) {
 }
 
 /**
+ * The face planes of a solid's DUAL, as rows for planesFromList.
+ *
+ * Polar reciprocation in the unit sphere: each vertex v of the solid becomes
+ * the plane through v/|v|² perpendicular to v, and each face plane becomes a
+ * vertex. So the dual's planes are read straight off the primal's vertices,
+ * one apiece, and for a solid whose vertices sit on the unit sphere — which
+ * every uniform polyhedron's do — that is simply n = v/|v|, d = 1.
+ *
+ * This is the only honest way to build the duals of the hemipolyhedra. Their
+ * faces run through the center, so the dual has vertices AT INFINITY, and a
+ * vertex list can only ever hold a truncated stand-in for them: in this
+ * catalog's own data those stand-ins miss their face's plane by as much as
+ * 0.4, and most of the faces are crossed quadrilaterals whose Newell normal
+ * cancels to nothing. Read as geometry they are useless. But a stellation
+ * needs no vertices — only planes — and the planes are not approximate at
+ * all: they are exactly the polars of the primal's vertices, finite and
+ * ordinary, and the arrangement they cut is as well behaved as any other.
+ *
+ * A vertex at the center has no polar (its plane is infinitely far away) and
+ * is skipped; no uniform polyhedron has one.
+ */
+export function polarRows(poly) {
+  const rows = [];
+  for (const v of poly.vertices) {
+    const L = len(v);
+    if (L < 1e-9) continue;
+    rows.push({ n: [v.x / L, v.y / L, v.z / L], d: 1 / L });
+  }
+  return rows;
+}
+
+/**
  * A plane arrangement from an explicit list of planes — the plane-editor path.
  *
  * The original Java had a dialog for this: type in planes, apply a symmetry
