@@ -289,34 +289,45 @@
     </div>
 
     <details class="group" id="symGroup">
-      <summary><h2>Symmetry &amp; depth</h2></summary>
-      <label class="field"
-             title="The symmetry the cells are grouped into orbits of — normally the solid's own point group. It decides which cells count as the same cell, and so fixes the arrangement you are choosing from. Hover the menu itself to see what the chosen group is.">
-        <span>polyhedron</span>
-        <select id="polySym"></select>
-      </label>
-      <label class="field"
-             title="The editing symmetry. Each orbit above is split again by this group, and one click adds or removes a whole orbit of it — so lowering it is how you work at finer grain, down to E and one cell at a time. The split is also what lets a chiral cell offer just one of its two hands.">
-        <span>stellation</span>
-        <select id="stellSym"></select>
-      </label>
-      <!-- The third symmetry choice, and it belongs with the other two: the
-           subgroup whose cosets or orbits do the coloring. Shown only when the
-           face colors are reading one, since otherwise it decides nothing. -->
-      <label class="field" id="cosetSubRow" hidden
-             title="The subgroup whose cosets or orbits do the coloring. It is a subgroup of the polyhedron symmetry and independent of the editing symmetry, so regrouping never repaints. Faces the cosets cannot label are drawn gray. The compound of five tetrahedra is this set to T on the icosahedron.">
-        <span>coloring</span>
-        <select id="cosetSub"></select>
-      </label>
-      <label class="field" title="How many shells of cells to build outward from the core. Chosen automatically per solid — most build every shell there is; the few with planes passing near the center are capped to stay quick. Type a number to override; 60 means every shell there is.">
-        <span>shells count <b id="depthLabel" class="dim"></b></span>
-        <input id="depth" type="number" min="2" max="60" step="1" value="20">
-      </label>
-      <!-- nogrow: one verb on its own, so it keeps the width its text asks
-           for rather than stretching the way a dialog's action does -->
-      <div class="row buttons nogrow">
-        <button id="editPlanes" title="Edit the plane set of the figure on screen. It opens with the current solid's own planes, reduced to one row per symmetry class, and you add to them, drop them or move them — so this is how to stellate something the catalog does not have, starting from something it does. Clear the rows to start from nothing. (The original program's plane editor.)">Edit planes…</button>
-      </div>
+      <summary><h2>Construction</h2></summary>
+      <!-- The two halves of making a figure: which symmetries it is read
+           under, and how much of it to build. Boxed apart because they are
+           asked at different moments — the groups when you decide what you
+           are looking at, the depth and the planes when you decide how much
+           of it there is to look at. -->
+      <fieldset class="subsection">
+        <legend title="The three groups the figure is read under: what counts as one cell, what one click moves, and what the coloring divides by.">symmetry</legend>
+        <label class="field"
+               title="The symmetry the cells are grouped into orbits of — normally the solid's own point group. It decides which cells count as the same cell, and so fixes the arrangement you are choosing from. Hover the menu itself to see what the chosen group is.">
+          <span>polyhedron</span>
+          <select id="polySym"></select>
+        </label>
+        <label class="field"
+               title="The editing symmetry. Each orbit above is split again by this group, and one click adds or removes a whole orbit of it — so lowering it is how you work at finer grain, down to E and one cell at a time. The split is also what lets a chiral cell offer just one of its two hands.">
+          <span>stellation</span>
+          <select id="stellSym"></select>
+        </label>
+        <!-- The third symmetry choice, and it belongs with the other two: the
+             subgroup whose cosets or orbits do the coloring. Shown only when the
+             face colors are reading one, since otherwise it decides nothing. -->
+        <label class="field" id="cosetSubRow" hidden
+               title="The subgroup whose cosets or orbits do the coloring. It is a subgroup of the polyhedron symmetry and independent of the editing symmetry, so regrouping never repaints. Faces the cosets cannot label are drawn gray. The compound of five tetrahedra is this set to T on the icosahedron.">
+          <span>coloring</span>
+          <select id="cosetSub"></select>
+        </label>
+      </fieldset>
+      <fieldset class="subsection">
+        <legend title="How much of the arrangement to build, and which planes it is cut from.">build</legend>
+        <label class="field" title="How many shells of cells to build outward from the core. Chosen automatically per solid — most build every shell there is; the few with planes passing near the center are capped to stay quick. Type a number to override; 60 means every shell there is.">
+          <span>shells count <b id="depthLabel" class="dim"></b></span>
+          <input id="depth" type="number" min="2" max="60" step="1" value="20">
+        </label>
+        <!-- nogrow: one verb on its own, so it keeps the width its text asks
+             for rather than stretching the way a dialog's action does -->
+        <div class="row buttons nogrow">
+          <button id="editPlanes" title="Edit the plane set of the figure on screen. It opens with the current solid's own planes, reduced to one row per symmetry class, and you add to them, drop them or move them — so this is how to stellate something the catalog does not have, starting from something it does. Clear the rows to start from nothing. (The original program's plane editor.)">Edit planes…</button>
+        </div>
+      </fieldset>
     </details>
 
 

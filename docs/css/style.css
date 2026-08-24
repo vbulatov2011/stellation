@@ -720,25 +720,28 @@ svg.sq .fill { fill: var(--ic-fill); stroke: none; }
 .add { color: var(--add); }
 .rem { color: var(--rem); }
 
-/* the three symmetry-element toggles, boxed so they read as one control */
+/*
+ * A boxed group inside a panel section: a thin frame and a small legend, so
+ * a handful of related controls read as one thing rather than as a run of
+ * loose rows. `.subsection` is the general case; the two older names are
+ * kept because the markup and its comments still speak of them.
+ */
+.subsection,
+.edge-kinds,
 .sym-elems {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 4px 8px 6px;
   margin: 6px 0 4px;
 }
+.subsection legend,
+.edge-kinds legend,
 .sym-elems legend { font-size: 10.5px; color: var(--dim); padding: 0 4px; }
+.subsection .check,
+.edge-kinds .check,
 .sym-elems .check { margin: 2px 0; }
 
 /* the two kinds of edge: a checkbox, then its color and weight on one row */
-.edge-kinds {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 4px 8px 6px;
-  margin: 6px 0 4px;
-}
-.edge-kinds legend { font-size: 10.5px; color: var(--dim); padding: 0 4px; }
-.edge-kinds .check { margin: 2px 0; }
 .edge-style {
   display: flex;
   align-items: center;
