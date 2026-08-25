@@ -910,6 +910,24 @@ function tipSwatch(mode, k) {
  * where the facet was entered, it reads as a label ON the facet.
  */
 let tipKey = null;
+/*
+ * The label waits for the pointer to stop.
+ *
+ * Answering the moment a facet comes under the pointer meant that sweeping
+ * across a figure fired the label at every facet on the way — a stutter of
+ * answers to a question nobody had asked yet. So the answer is prepared as
+ * soon as it is known and shown only once the pointer has been still for
+ * DWELL, which is what asking looks like: the pointer stops on the thing.
+ *
+ * Any movement postpones the reveal (see the pointermove listener), so a
+ * sweep never reaches it, however many facets it crosses. Once the label IS
+ * up, movement inside the same facet leaves it alone — it is anchored to the
+ * facet, not to the pointer — and only a change of facet takes it down again
+ * to wait out another dwell.
+ */
+const TIP_DWELL = 350;
+let tipTimer = 0;
+let tipPending = null;      // the html to reveal when the pointer settles
 
 /**
  * Put the label at the pointer, or hide it when there is nothing to say.
@@ -922,12 +940,15 @@ function showMixTip(v, key = null) {
   if (!el) return;
   const mode = $('#colorMode')?.value || '';
   const isCoset = mode.startsWith('coset');
-  if (v === undefined || !(isCoset || mode.startsWith('orbit'))) {
-    el.hidden = true; tipKey = null; return;
-  }
-  // same facet, same reading: leave it exactly where it is
+  if (v === undefined || !(isCoset || mode.startsWith('orbit'))) { hideMixTip(); return; }
+  /*
+   * Same facet, same reading: nothing to do. Visible, it stays where it is;
+   * still waiting, its dwell keeps running rather than restarting — the 3-D
+   * hover asks again every 40 ms, and restarting here would mean the timer
+   * could never expire.
+   */
   const k = `${mode}|${key === null ? '' : key}`;
-  if (!el.hidden && tipKey === k) return;
+  if (tipKey === k) return;
   tipKey = k;
   el.dataset.key = k;      // what it is naming, for anyone checking it holds still
   const noun = isCoset ? 'coset' : 'orbit';
@@ -942,7 +963,17 @@ function showMixTip(v, key = null) {
   } else {
     html = `${tipSwatch(mode, v)}${noun} ${v}`;
   }
-  el.innerHTML = html;
+  // a new answer: take the old one down and wait to be asked for this one
+  tipPending = html;
+  el.hidden = true;
+  restartTipDwell();
+}
+
+/** show what is pending, at wherever the pointer came to rest */
+function revealMixTip() {
+  const el = tipEl();
+  if (!el || tipPending === null) return;
+  el.innerHTML = tipPending;
   el.hidden = false;
   // placed after unhiding, so the measurement is of the laid-out label
   const w = el.offsetWidth, h = el.offsetHeight;
@@ -952,7 +983,18 @@ function showMixTip(v, key = null) {
   el.style.top = Math.max(6, y) + 'px';
 }
 
-const hideMixTip = () => { const el = tipEl(); if (el) el.hidden = true; tipKey = null; };
+function restartTipDwell() {
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(revealMixTip, TIP_DWELL);
+}
+
+const hideMixTip = () => {
+  clearTimeout(tipTimer);
+  tipPending = null;
+  const el = tipEl();
+  if (el) el.hidden = true;
+  tipKey = null;
+};
 
 function onHover3D(hit, mod) {
   const mesh = state.mesh;
@@ -2396,8 +2438,16 @@ function wireControls() {
    * facet it should have been anchored to. Capturing at the document is the
    * one place guaranteed to run first.
    */
-  document.addEventListener('pointermove',
-    (e) => { tipXY = { x: e.clientX, y: e.clientY }; }, true);
+  document.addEventListener('pointermove', (e) => {
+    tipXY = { x: e.clientX, y: e.clientY };
+    /*
+     * Moving postpones the reveal — that is the whole of "wait until the
+     * pointer stops". Only while the label is DOWN: once it is up it belongs
+     * to the facet, and taking it down for a twitch inside that facet is the
+     * flicker this already had once.
+     */
+    if (tipPending !== null && tipEl()?.hidden) restartTipDwell();
+  }, true);
   for (const id of ['#view3d', '#diagram']) {
     // a hit test that simply stops firing would leave the last answer floating
     // over a view the pointer has left
