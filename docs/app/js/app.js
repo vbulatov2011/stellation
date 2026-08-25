@@ -19,7 +19,7 @@ import { initExportDialog } from './exportdialog.js';
 import { initExportSolid } from './exportsolid.js';
 import { initExportImage } from './exportimage.js';
 import { initColors, colorsArray, applyColorsArray } from './colors.js';
-import { hasColorOverrides, setColorOverrides } from '../../lib/palette.js';
+import { hasColorOverrides, setColorOverrides, setBlendMixing } from '../../lib/palette.js';
 import { initAnimation } from './animation.js';
 
 const $ = sel => document.querySelector(sel);
@@ -324,6 +324,10 @@ async function boot() {
     renderer.faceOpacity = solidFaceOpacity();
     $('#faceOpacity').disabled = !$('#showFaces').checked;
     // parked for fillElemSym, which runs once the polyhedron group is known
+    if (localStorage.getItem('colorMix') === '0') {
+      $('#colorMix').checked = false;
+      setBlendMixing(false);   // before the first setMesh, like the mode above
+    }
     const savedElemSym = localStorage.getItem('elemSym');
     if (savedElemSym) $('#elemSym').dataset.want = savedElemSym;
     const savedElemW = Number(localStorage.getItem('elemWidth'));
@@ -1222,11 +1226,20 @@ const colorFamilyOf = (mode) => COLOR_PER.coset.some(([v]) => v === mode) ? 'cos
 // what each family was last set to, so leaving one and coming back is not a reset
 const lastPer = { coset: 'coset', orbit: 'orbitP' };
 
+/*
+ * Blends are a coset phenomenon: an orbit labeling puts every element in
+ * exactly one orbit, so it is never gray and never mixed — see subgroupOrbits
+ * — and a switch offered where nothing can change is a switch that lies.
+ */
+const hasBlends = (family) => family === 'coset';
+
 /** fill the second menu for a family, selecting `mode` */
 function fillColorPer(family, mode) {
   const per = $('#colorPer');
   const row = $('#colorPerRow');
   if (row) row.hidden = !COLOR_PER[family];
+  const mix = $('#colorMixRow');
+  if (mix) mix.hidden = !hasBlends(family);
   if (!per || !COLOR_PER[family]) return;
   per.innerHTML = COLOR_PER[family]
     .map(([v, label]) => `<option value="${v}"${v === mode ? ' selected' : ''}>${label}</option>`)
@@ -2080,6 +2093,14 @@ function wireControls() {
       pushDiagramLines();
     };
   }
+  $('#colorMix').onchange = (e) => {
+    setBlendMixing(e.target.checked);
+    localStorage.setItem('colorMix', e.target.checked ? '1' : '0');
+    renderer?.refreshColors();
+    diagram?.draw();
+    colorsDialog?.refresh();
+    diagramStyleChanged();     // the export preview reads the same palette
+  };
   $('#colorFamily').onchange = () => composeColorMode(true);
   $('#colorPer').onchange = () => composeColorMode(false);
   let lastColorMode = $('#colorMode').value;

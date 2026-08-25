@@ -217,17 +217,42 @@ export function defaultColor(mode, i) {
   return [c[0], c[1], c[2], 1];
 }
 
+/*
+ * Whether a blend is mixed or left gray.
+ *
+ * A plane belonging to several cosets at once has no color of its own, and
+ * mixing its cosets is a fair picture of that — but the mix is a color like
+ * any other, so on screen the fact is easy to miss: a muddy facet reads as a
+ * facet somebody chose a muddy color for, not as one the coloring cannot
+ * name. Turned off, every such element falls to gray, which nothing else in
+ * a coset reading wears, and "these belong to more than one" becomes a thing
+ * you can see rather than infer.
+ *
+ * Module state because faceColor is called per facet from four places — the
+ * renderer, the diagram, the SVG and the mesh exporters — and threading a
+ * display preference through all of them would put it in four signatures to
+ * be forgotten in one.
+ */
+let MIX_BLENDS = true;
+export function setBlendMixing(on) { MIX_BLENDS = !!on; }
+export function blendMixing() { return MIX_BLENDS; }
+
 /**
  * THE color of a facet: the group's override if it has one, else the palette's
  * own answer, darkened when this is an underside. `i` is a group index, -1 or
  * null for gray, or an ARRAY of indices — a blend, which mixes its members in
- * Oklab exactly as before, overrides and all, and averages their alphas.
+ * Oklab exactly as before, overrides and all, and averages their alphas, or
+ * comes out gray when mixing is off.
  *
  * Returns [r, g, b, a]; callers that want only rgb can ignore the fourth.
  */
 export function faceColor(mode, i, top = true) {
   let c;
-  if (Array.isArray(i) || ArrayBuffer.isView(i)) {
+  if ((Array.isArray(i) || ArrayBuffer.isView(i)) && !MIX_BLENDS) {
+    // gray through the same door as any other group, so a gray the Colors
+    // panel has been given still wins
+    c = OVERRIDES.get(colorKey(mode, -1)) || defaultColor(mode, -1);
+  } else if (Array.isArray(i) || ArrayBuffer.isView(i)) {
     let L = 0, A = 0, B = 0, al = 0;
     for (const k of i) {
       const m = OVERRIDES.get(colorKey(mode, k)) || defaultColor(mode, k);
