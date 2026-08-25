@@ -1055,7 +1055,26 @@ export function buildStellation(poly, matrices, opts = {}) {
             if (r > frameRadius) frameRadius = r;
           }
 
-  return { pool, planes, arrangement, layers, cellLayers, frameRadius,
+  /*
+   * And the radius of the CORE — layer 0, the polyhedron you started from.
+   *
+   * The one length in the arrangement that does not depend on what is
+   * selected, which is what makes it the right yardstick when nothing is:
+   * the symmetry elements and the coordinate frame are sized to the mesh on
+   * screen, and an empty selection has no mesh and so no size at all. The
+   * core is always there, always the same, and is the scale the whole figure
+   * is read against anyway.
+   */
+  let coreRadius = 1e-9;
+  for (const orbit of (cellLayers[0] || []))
+    for (const cell of orbit.cells)
+      for (const f of cell.top)
+        for (const id of f.v) {
+          const r = len(pool.get(id));
+          if (r > coreRadius) coreRadius = r;
+        }
+
+  return { pool, planes, arrangement, layers, cellLayers, frameRadius, coreRadius,
            maxRadius: maxOf(pool.pts, len) };
 }
 

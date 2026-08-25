@@ -311,6 +311,7 @@ export class Renderer3D {
     this.lastFaceClass = null;
     this.elements = null;      // symmetry axes / mirrors / Sn axes, see setElements
     this.elemWidth = 1;        // thickness multiplier for them — see setElemWidth
+    this.coreWorldR = 0;       // the core's radius, the yardstick — see _extentR
     /*
      * The coordinate frame: x, y, z as arrows through the origin. In the
      * home orientation x points right, y up and z toward the viewer, which
@@ -359,6 +360,36 @@ export class Renderer3D {
    * Everything is depth-tested against the solid, so an element behind a cell is
    * hidden by it and you can read which way it actually runs.
    */
+  /*
+   * The core's radius in world units, from the build. See _extentR.
+   */
+  setCoreRadius(worldR) {
+    this.coreWorldR = Number.isFinite(worldR) && worldR > 0 ? worldR : 0;
+    if (this.elements) this._buildElements();
+    if (this.showCoordAxes) this._buildCoordAxes();
+    this.draw();
+  }
+
+  /*
+   * How big the thing on screen is, for whatever has to be drawn around it.
+   *
+   * The mesh's own radius, which is the selection's — the elements and the
+   * coordinate arrows follow what you are actually looking at, and rescale as
+   * it grows. An EMPTY selection has no mesh and therefore no radius, and the
+   * floor below used to be all that was left: everything collapsed to a
+   * thousandth of a unit and the elements vanished exactly when they are most
+   * useful, since an empty figure is when you are looking at the symmetry
+   * rather than at a solid. So an empty selection falls back to the core's
+   * radius, which is fixed for the whole arrangement and is the scale the
+   * figure is read against anyway.
+   */
+  _extentR() {
+    const s = this.modelScale || 1;
+    const meshR = (this.lastMaxR || 0) * s;
+    if (meshR > 1e-6) return Math.max(1e-3, meshR);
+    return Math.max(1e-3, (this.coreWorldR || 0) * s);
+  }
+
   setElements(elements) {
     this.elements = elements || null;
     this._buildElements();
@@ -388,7 +419,7 @@ export class Renderer3D {
        * at the cost of their re-scaling as cells are added — which is what
        * the symmetry elements already do, for the same reason.
        */
-      const R = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1)) * AXES_EXT;
+      const R = this._extentR() * AXES_EXT;
       const rad = R * 0.006 * (this.coordAxesWidth > 0 ? this.coordAxesWidth : 1);
       const coneR = rad * 2;
       const coneH = coneR * Math.sqrt(3);        // 60° apex: tan(30°) = r / h
@@ -457,9 +488,10 @@ export class Renderer3D {
        * Sized to the current selection, reaching a little past it. They do
        * rescale when the selection's extent changes. That was looked at and
        * left alone: sizing them to the whole arrangement instead keeps them
-       * still but makes them dwarf a small selection, which is worse.
+       * still but makes them dwarf a small selection, which is worse. With
+       * nothing selected there is no selection to follow — see _extentR.
        */
-      const R = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1));
+      const R = this._extentR();
       const ext = R * ELEM_EXT;
       // the slider scales the thickness; the extent stays put, so a thicker
       // axis is a fatter tube reaching exactly as far as the thin one did
@@ -898,6 +930,13 @@ export class Renderer3D {
     for (const v of mesh.vertices) maxR = Math.max(maxR, Math.hypot(v.x, v.y, v.z));
     this.lastMaxR = maxR;
     const firstMesh = !this.modelScale;
+    /*
+     * An empty mesh is a real state — deselect everything and this is what
+     * arrives — and 1/1e-9 is not a scale. Fall back to the core's radius,
+     * which is the same yardstick _extentR uses and leaves the scale where
+     * the first real mesh would have put it.
+     */
+    if (firstMesh) maxR = maxR > 1e-6 ? maxR : (this.coreWorldR || 1);
     if (firstMesh) this.modelScale = 1 / maxR;
 
     /*
@@ -1274,7 +1313,18 @@ export class Renderer3D {
     gl.enable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);          // shells are visible from both sides
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    if (!this.count) return;
+    /*
+     * An empty selection is a real state, and a drawable one.
+     *
+     * This used to return on an empty mesh, which took the symmetry elements
+     * and the coordinate frame down with it — and those are precisely what
+     * you are looking at when nothing is selected, since with no cells in the
+     * way the axes and mirrors are the whole picture. Only a frame with
+     * nothing whatever in it returns early now; the mesh draws below guard
+     * themselves on `count`.
+     */
+    if (!this.count && !this.elemCount && !this.discCount &&
+        !(this.showCoordAxes && this.coordAxesCount)) return;
 
     const cam = this._camera(W, H);
     // A parallel projection has no eye to fall behind, so the near plane may sit
@@ -1373,15 +1423,17 @@ export class Renderer3D {
     // per-face alpha needs the same back-to-front compositing the global
     // opacity does, so one translucent group puts the whole pass on that path
     if (alpha >= 1 && !this._anyFaceAlpha) {
-      gl.enable(gl.POLYGON_OFFSET_FILL);
-      gl.polygonOffset(1.2, 1.2);    // sink the faces so the ink sits cleanly on top
-      gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
-      gl.drawArrays(gl.TRIANGLES, 0, this.count);
-      gl.disable(gl.POLYGON_OFFSET_FILL);
+      if (this.count) {
+        gl.enable(gl.POLYGON_OFFSET_FILL);
+        gl.polygonOffset(1.2, 1.2);  // sink the faces so the ink sits cleanly on top
+        gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
+        gl.drawArrays(gl.TRIANGLES, 0, this.count);
+        gl.disable(gl.POLYGON_OFFSET_FILL);
+      }
       drawInk();
     } else {
       drawInk();
-      if (alpha > 0) {
+      if (alpha > 0 && this.count) {
         const n = this._sortedTriangles();     // binds this.vao and its elements
         gl.useProgram(this.prog);
         if (!n) gl.bindVertexArray(this.vao);

@@ -69,6 +69,23 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>An empty selection still shows the symmetry.</b>
+      Deselect every cell and the symmetry elements and the coordinate arrows
+      went with them, which is backwards: with no cells in the way, the axes
+      and mirrors are the whole picture, and looking at the symmetry on its own
+      is a reason to clear the selection rather than an accident. Two things
+      were wrong. The frame returned early on an empty mesh, taking the ink
+      pass &mdash; edges, elements, arrows &mdash; down with it; and both were
+      sized to the mesh&rsquo;s own radius, which an empty mesh does not have.
+      <p>
+      They now fall back to the radius of the core &mdash; layer 0, the
+      polyhedron you started from &mdash; which is the one length in the
+      arrangement that does not depend on what is selected. So the empty
+      figure has a stable size, the same whatever was on screen a moment
+      before, and the elements sit at the scale the whole figure is read
+      against. A selection still sizes them itself, exactly as before.
+    </div></li>
+    <li><div>
       <b>The symmetry elements can be any subgroup&rsquo;s.</b>
       Solid &rsaquo; symmetry elements gained a <b>group</b> menu. The axes,
       mirrors and rotoreflections used to be the stellation group&rsquo;s with

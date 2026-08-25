@@ -1623,6 +1623,8 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
     cells.setLabels(duValLabels());
     // fix the camera for this whole arrangement — see Renderer3D._camera
     renderer?.setFrameRadius(info.frameRadius || 0);
+    // the yardstick for the elements and the frame when nothing is selected
+    renderer?.setCoreRadius(info.coreRadius || 0);
     fillFaceSelect(info.faces);
     refreshElements();
     renderLegend();

@@ -509,6 +509,8 @@ self.onmessage = (e) => {
           faces: facesForMode(null),
           // the buildable arrangement's radius — what the camera should frame
           frameRadius: stel.frameRadius,
+          // the core's radius, the yardstick when nothing is selected
+          coreRadius: stel.coreRadius,
           layers: stel.cellLayers.length,
           vertices: stel.pool.size,
           facets: stel.arrangement.reduce((s, a) => s + a.length, 0),
