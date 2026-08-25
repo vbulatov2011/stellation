@@ -69,6 +69,30 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Point at a facet and it says which cosets it belongs to.</b>
+      A blend answers &ldquo;which cosets?&rdquo; with a color, and a color is
+      the one form of that answer you cannot read back &mdash; three colors
+      mixed in Oklab is not three colors any more, it is one muddy one. A label
+      now follows the pointer in the solid and in the diagram, naming the group
+      under it: <i>coset 3</i>, or <i>cosets 1 + 8</i> for a mix, with the
+      mixed color and the colors that went into it swatched beside the numbers,
+      or <i>no coset fits</i> where nothing does.
+      <p>
+      A table was considered and does not survive contact with the data. Mixes
+      are not pairs: the icosahedron alone reaches six-way and ten-way mixes,
+      and a single figure can carry hundreds of distinct combinations, so there
+      is nothing to lay out in a grid and no legend that would hold them.
+      Naming the one under the pointer costs a line, works for a mix of any
+      size, and is asked exactly where the question occurs.
+      <p>
+      The solid&rsquo;s hover pick deliberately runs only while a modifier is
+      held &mdash; it drives the cursor and the outline, which are promises
+      about what a click would do, and a bare hover promises nothing. So the
+      label asks its own quieter question, touching neither, throttled to 40 ms
+      because it now runs on every mouse move; one pick measured 0.36 ms on a
+      three-shell icosahedron.
+    </div></li>
+    <li><div>
       <b>Elements belonging to several cosets can be told to look it.</b>
       A plane can belong to more than one coset of the chosen subgroup at
       once, and then it has no color of its own. Mixing its cosets is a fair

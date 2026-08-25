@@ -1829,6 +1829,27 @@ export class Renderer3D {
         // owns the highlight color; without it, fall back to a plain outline
         if (this.onPickHover) this.onPickHover(hit, mods(e));
         else this.setHighlight(hit ? hit.face : -1);
+        /*
+         * A second, quieter question: what is under the pointer, asked with no
+         * modifier held. The pick above deliberately does not run without one —
+         * it drives the cursor and the outline, both of which are promises
+         * about what a click would do, and a bare hover promises nothing. This
+         * asks only to NAME the face, so it neither touches the cursor nor
+         * outlines anything.
+         *
+         * Throttled because it now runs on every mouse move rather than only
+         * during a gesture. A pick measured 0.36 ms on a three-shell
+         * icosahedron and it is linear in the mesh, so the dense duals are the
+         * ones that would notice; 40 ms is well under the eye's threshold for
+         * a label and puts a hard ceiling on the cost.
+         */
+        if (this.onHoverInfo && !picking(e)) {
+          const now = performance.now();
+          if (now - (this._hoverInfoAt || 0) >= 40) {
+            this._hoverInfoAt = now;
+            this.onHoverInfo(this.pick(e));
+          }
+        }
         return;
       }
       // Trackball: the drag direction turns the solid about the perpendicular

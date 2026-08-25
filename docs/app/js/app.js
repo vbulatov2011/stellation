@@ -19,7 +19,8 @@ import { initExportDialog } from './exportdialog.js';
 import { initExportSolid } from './exportsolid.js';
 import { initExportImage } from './exportimage.js';
 import { initColors, colorsArray, applyColorsArray } from './colors.js';
-import { hasColorOverrides, setColorOverrides, setBlendMixing } from '../../lib/palette.js';
+import { hasColorOverrides, setColorOverrides, setBlendMixing, faceColor,
+         rgbaToHex } from '../../lib/palette.js';
 import { initAnimation } from './animation.js';
 
 const $ = sel => document.querySelector(sel);
@@ -348,6 +349,8 @@ async function boot() {
     renderer.start();
     renderer.onPick = onPick3D;
     renderer.onPickHover = onHover3D;
+    // the group label, on a plain hover — see Renderer3D's move handler
+    renderer.onHoverInfo = (hit) => showMixTip(hit ? meshGroupAt(hit.face) : undefined);
   } catch (err) {
     $('#view3d').replaceWith(Object.assign(document.createElement('div'), {
       className: 'nogl', textContent: '3D view needs WebGL2, which this browser did not provide.',
@@ -362,6 +365,13 @@ async function boot() {
         ? `beneath ${facet.refBelow ? facet.refBelow.join('.') : '—'} · ` +
           `above ${facet.refAbove ? facet.refAbove.join('.') : '—'}`
         : '';
+      // and which group it belongs to, read off the same fields the diagram
+      // colors it by — see DiagramView._group
+      if (!facet) { hideMixTip(); return; }
+      const by = { coset: 'coset', cosetL: 'cosetL', cosetM: 'cosetM',
+                   orbitP: 'orbitP', orbitF: 'orbitF', orbitC: 'orbitC' };
+      const field = by[$('#colorMode')?.value];
+      showMixTip(field ? (facet[field] ?? -1) : undefined);
     },
   });
   diagram.colorMode = $('#colorMode').value;   // restored from storage above
@@ -846,13 +856,86 @@ function onPick3D(hit, mod) {
  * still says "add here". Its absence is the honest answer, and the status line
  * beside it says why.
  */
+/*
+ * Which group the pointer is over, said in words.
+ *
+ * A blend answers "which cosets?" with a color, and a color is the one form of
+ * that answer you cannot read back: three colors mixed in Oklab is not three
+ * colors any more, it is one muddy one. Counted across the catalog the mixes
+ * are not a table's worth either — the icosahedron alone reaches ten-way mixes
+ * and hundreds of distinct combinations per facet — so there is nothing to lay
+ * out in a grid and no fixed legend that would hold them. Naming the one under
+ * the pointer is the answer that scales: it costs a line, works for a mix of
+ * any size, and is asked exactly where the question occurs.
+ */
+const tipEl = () => document.getElementById('mixTip');
+let tipXY = { x: 0, y: 0 };
+
+/** the value the ACTIVE coloring gives this mesh face: index, blend array, or -1 */
+function meshGroupAt(faceIndex) {
+  const m = state.mesh;
+  if (!m || faceIndex == null || faceIndex < 0) return undefined;
+  switch ($('#colorMode')?.value) {
+    case 'coset':  return m.faceCosets?.[faceIndex];
+    case 'cosetL': return m.faceCosetsL?.[faceIndex];
+    case 'cosetM': return m.faceCosetsM?.[faceIndex];
+    case 'orbitP': return m.faceOrbitP?.[faceIndex];
+    case 'orbitF': return m.faceOrbitF?.[faceIndex];
+    case 'orbitC': return m.faceOrbitC?.[faceIndex];
+    default: return undefined;         // the other readings have their own words
+  }
+}
+
+/** one swatch of the color a group wears, overrides and all */
+function tipSwatch(mode, k) {
+  const c = faceColor(mode, k, true);
+  return `<i class="tipsw" style="background:${rgbaToHex(c)}"></i>`;
+}
+
+/**
+ * Put the label at the pointer, or hide it when there is nothing to say.
+ * `v` is what meshGroupAt or the diagram's facet gives: a group index, an
+ * array of them for a mix, or -1 / null for gray.
+ */
+function showMixTip(v) {
+  const el = tipEl();
+  if (!el) return;
+  const mode = $('#colorMode')?.value || '';
+  const isCoset = mode.startsWith('coset');
+  if (v === undefined || !(isCoset || mode.startsWith('orbit'))) { el.hidden = true; return; }
+  const noun = isCoset ? 'coset' : 'orbit';
+  let html;
+  if (Array.isArray(v) || ArrayBuffer.isView(v)) {
+    const ks = Array.from(v);
+    // the mix, then its members: what is on the facet and what went into it
+    html = `${tipSwatch(mode, ks)}${noun}s ` +
+           ks.map(k => `${tipSwatch(mode, k)}${k}`).join(' + ');
+  } else if (v == null || v < 0) {
+    html = `<span class="tipdim">${tipSwatch(mode, -1)}no ${noun} fits</span>`;
+  } else {
+    html = `${tipSwatch(mode, v)}${noun} ${v}`;
+  }
+  el.innerHTML = html;
+  el.hidden = false;
+  // placed after unhiding, so the measurement is of the laid-out label
+  const w = el.offsetWidth, h = el.offsetHeight;
+  const x = Math.min(tipXY.x + 14, innerWidth - w - 6);
+  const y = tipXY.y + 18 + h > innerHeight ? tipXY.y - h - 10 : tipXY.y + 18;
+  el.style.left = Math.max(6, x) + 'px';
+  el.style.top = Math.max(6, y) + 'px';
+}
+
+const hideMixTip = () => { const el = tipEl(); if (el) el.hidden = true; };
+
 function onHover3D(hit, mod) {
   const mesh = state.mesh;
   if (!hit || !mesh) {
     $('#hover3d').textContent = '';
     renderer?.setHighlight(-1);
+    hideMixTip();
     return;
   }
+  showMixTip(meshGroupAt(hit.face));
   const action = mod?.shift ? 'add' : (mod?.ctrl ? 'remove' : null);
   const key = mod?.shift ? mesh.faceOutside[hit.face] : mesh.faceInside[hit.face];
   // an action with nothing to act on gets no outline; a bare hover still
@@ -2266,6 +2349,22 @@ function wireControls() {
     refreshElements();
   };
 
+
+  /*
+   * Where the pointer is, for the group label.
+   *
+   * Neither hover callback carries the event — the renderer's pick gives a hit
+   * and the diagram's gives a facet — so the position is tracked here instead
+   * of changing two signatures for a label. pointerleave hides it: a hit test
+   * that simply stops firing would leave the last answer floating over a view
+   * the pointer has left.
+   */
+  for (const id of ['#view3d', '#diagram']) {
+    const el = $(id);
+    if (!el) continue;
+    el.addEventListener('pointermove', (e) => { tipXY = { x: e.clientX, y: e.clientY }; });
+    el.addEventListener('pointerleave', hideMixTip);
+  }
 
   installSplitters();
 
