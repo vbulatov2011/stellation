@@ -82,6 +82,38 @@ export function groupsOf(mesh, mode) {
   return out;
 }
 
+/**
+ * How each group is actually used by the figure on screen: for group i,
+ * `crisp` is how many facets wear it alone and `mixed` how many wear it inside
+ * a blend. Both zero means the group exists in the arithmetic and nowhere in
+ * the picture.
+ *
+ * The rows are a contiguous 0..max because POSITION IS GROUP NUMBER — that is
+ * what lets a palette be pasted from one figure onto another, and what
+ * applyColorsArray relies on — so the list cannot be trimmed to the groups in
+ * use without breaking every saved palette. What it can do is say which is
+ * which, and it needs to: a cube under C4 has twelve cosets, wears not one of
+ * them crisply, mixes eight of them across its four non-axis faces, and never
+ * mentions the other four. Twelve rows over a six-faced solid is a fair
+ * question, and this is the answer to it.
+ */
+export function groupUsage(mesh, mode) {
+  const spec = MODES[mode];
+  const arr = spec && mesh ? spec.of(mesh) : null;
+  const use = new Map();
+  if (!arr) return use;
+  const bump = (k, key) => {
+    if (!(k >= 0)) return;
+    const e = use.get(k) || { crisp: 0, mixed: 0 };
+    e[key]++; use.set(k, e);
+  };
+  for (const v of arr) {
+    if (Array.isArray(v) || ArrayBuffer.isView(v)) { for (const k of v) bump(k, 'mixed'); }
+    else bump(v, 'crisp');
+  }
+  return use;
+}
+
 /** the label a group wears in the list */
 const labelOf = (mode, i) =>
   (i < 0 ? 'gray — no coset fits' : (MODES[mode]?.one(i) ?? `group ${i}`));
@@ -168,8 +200,21 @@ export function initColors({ state, renderer, diagram, onChange }) {
   function build() {
     const m = mode();
     const groups = groupsOf(state.mesh, m);
+    const usage = groupUsage(state.mesh, m);
+    /*
+     * Say how many rows are doing nothing before the reader counts them and
+     * wonders. Only worth saying when some are: on an ordinary figure every
+     * group is worn and the label reads as it always did.
+     */
+    const numbered = groups.filter(i => i >= 0);
+    const onlyMixed = numbered.filter(i => { const u = usage.get(i); return u && !u.crisp && u.mixed; });
+    const unused = numbered.filter(i => !usage.get(i));
+    const extra = [];
+    if (onlyMixed.length) extra.push(`${onlyMixed.length} only in mixes`);
+    if (unused.length) extra.push(`${unused.length} unused here`);
     modeLabel.textContent = MODES[m]
       ? `${MODES[m].name} · ${groups.length} group${groups.length === 1 ? '' : 's'}`
+        + (extra.length ? ` · ${extra.join(', ')}` : '')
       : 'no colorable groups';
     list.textContent = '';
 
@@ -198,6 +243,27 @@ export function initColors({ state, renderer, diagram, onChange }) {
       const name = document.createElement('span');
       name.className = 'col-name';
       name.textContent = labelOf(m, i);
+      /*
+       * What this row is doing. A group worn only inside blends still matters
+       * — its color is an ingredient of the mix, so changing it changes the
+       * picture — which is exactly why it stays in the list and exactly why it
+       * has to say so, or it reads as a color that does nothing.
+       */
+      const u = i >= 0 ? usage.get(i) : null;
+      if (i >= 0) {
+        const note = document.createElement('i');
+        note.className = 'col-use';
+        if (!u) { note.textContent = 'unused here'; row.classList.add('col-idle'); }
+        else if (!u.crisp) note.textContent = `in ${u.mixed} mix${u.mixed === 1 ? '' : 'es'}`;
+        else note.textContent = `${u.crisp} facet${u.crisp === 1 ? '' : 's'}`;
+        note.title = !u
+          ? 'No facet wears this group, on its own or in a mix: changing it changes nothing here'
+          : (!u.crisp
+            ? `No facet wears this alone; ${u.mixed} wear it inside a mixed color, so its color is an ingredient of those`
+            : `${u.crisp} facet${u.crisp === 1 ? '' : 's'} wear this group`
+              + (u.mixed ? `, and ${u.mixed} more inside a mixed color` : ''));
+        name.appendChild(note);
+      }
 
       const alpha = document.createElement('input');
       alpha.type = 'range';

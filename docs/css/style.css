@@ -564,6 +564,18 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); 
 }
 .tipdim { color: var(--dim); }
 
+/*
+ * What a Colors row is doing, beside its name: a facet count, "in N mixed" for
+ * a group that only ever appears inside a blend, or "unused here" for one the
+ * figure never mentions. Quiet, because it is an annotation on the name rather
+ * than part of it.
+ */
+.col-use {
+  margin-left: 6px; font-style: normal; font-size: 10px;
+  color: var(--dim); font-family: var(--mono, monospace);
+}
+.col-idle { opacity: 0.55; }
+
 /* the key to the Cells bar colors */
 .legend {
   display: flex;
