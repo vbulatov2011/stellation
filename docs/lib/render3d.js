@@ -1830,24 +1830,28 @@ export class Renderer3D {
         if (this.onPickHover) this.onPickHover(hit, mods(e));
         else this.setHighlight(hit ? hit.face : -1);
         /*
-         * A second, quieter question: what is under the pointer, asked with no
-         * modifier held. The pick above deliberately does not run without one —
-         * it drives the cursor and the outline, both of which are promises
-         * about what a click would do, and a bare hover promises nothing. This
-         * asks only to NAME the face, so it neither touches the cursor nor
-         * outlines anything.
+         * A second, quieter question: what is under the pointer. The pick above
+         * deliberately does not run without a modifier — it drives the cursor
+         * and the outline, both of which are promises about what a click would
+         * do, and a bare hover promises nothing. This asks only to NAME the
+         * face, so it touches neither.
          *
-         * Throttled because it now runs on every mouse move rather than only
-         * during a gesture. A pick measured 0.36 ms on a three-shell
-         * icosahedron and it is linear in the mesh, so the dense duals are the
-         * ones that would notice; 40 ms is well under the eye's threshold for
-         * a label and puts a hard ceiling on the cost.
+         * Asked on every move, modifier or not, so that one answer governs the
+         * label at all times. It used to skip the modifier case, which left
+         * onPickHover to hide the label and this to show it again — the two
+         * taking turns forty times a second, which is what a flicker is.
+         *
+         * Throttled because it runs on every mouse move rather than only
+         * during a gesture, and reusing the pick above when there is one. A
+         * pick measured 0.36 ms on a three-shell icosahedron and is linear in
+         * the mesh, so the dense duals are the ones that would notice; 40 ms
+         * is well under the eye's threshold for a label.
          */
-        if (this.onHoverInfo && !picking(e)) {
+        if (this.onHoverInfo) {
           const now = performance.now();
           if (now - (this._hoverInfoAt || 0) >= 40) {
             this._hoverInfoAt = now;
-            this.onHoverInfo(this.pick(e));
+            this.onHoverInfo(picking(e) ? hit : this.pick(e));
           }
         }
         return;

@@ -350,7 +350,9 @@ async function boot() {
     renderer.onPick = onPick3D;
     renderer.onPickHover = onHover3D;
     // the group label, on a plain hover — see Renderer3D's move handler
-    renderer.onHoverInfo = (hit) => showMixTip(hit ? meshGroupAt(hit.face) : undefined);
+    renderer.onHoverInfo = (hit) => (hit
+      ? showMixTip(meshGroupAt(hit.face), hit.face)
+      : hideMixTip());
   } catch (err) {
     $('#view3d').replaceWith(Object.assign(document.createElement('div'), {
       className: 'nogl', textContent: '3D view needs WebGL2, which this browser did not provide.',
@@ -371,7 +373,10 @@ async function boot() {
       const by = { coset: 'coset', cosetL: 'cosetL', cosetM: 'cosetM',
                    orbitP: 'orbitP', orbitF: 'orbitF', orbitC: 'orbitC' };
       const field = by[$('#colorMode')?.value];
-      showMixTip(field ? (facet[field] ?? -1) : undefined);
+      // keyed on the region itself; onHover already fires only on a change,
+      // so this only has to survive the coloring changing under a still pointer
+      if (!diagramTipKeys.has(facet)) diagramTipKeys.set(facet, ++diagramTipSeq);
+      showMixTip(field ? (facet[field] ?? -1) : undefined, diagramTipKeys.get(facet));
     },
   });
   diagram.colorMode = $('#colorMode').value;   // restored from storage above
@@ -870,6 +875,10 @@ function onPick3D(hit, mod) {
  */
 const tipEl = () => document.getElementById('mixTip');
 let tipXY = { x: 0, y: 0 };
+// stable small ids for diagram regions, so the label can be keyed on identity
+// without putting the region object into a string
+const diagramTipKeys = new WeakMap();
+let diagramTipSeq = 0;
 
 /** the value the ACTIVE coloring gives this mesh face: index, blend array, or -1 */
 function meshGroupAt(faceIndex) {
@@ -892,17 +901,35 @@ function tipSwatch(mode, k) {
   return `<i class="tipsw" style="background:${rgbaToHex(c)}"></i>`;
 }
 
+/*
+ * What the label is currently naming: the mode, and the identity of the thing
+ * under the pointer — a mesh face index in the solid, the facet object in the
+ * diagram. The label is a fact about that thing, not about the pointer, so
+ * while the answer is unchanged it neither moves nor is rebuilt. Following
+ * the pointer across one facet made it look like a cursor decoration; anchored
+ * where the facet was entered, it reads as a label ON the facet.
+ */
+let tipKey = null;
+
 /**
  * Put the label at the pointer, or hide it when there is nothing to say.
  * `v` is what meshGroupAt or the diagram's facet gives: a group index, an
- * array of them for a mix, or -1 / null for gray.
+ * array of them for a mix, or -1 / null for gray. `key` identifies what is
+ * being named, so that a move within one facet changes nothing.
  */
-function showMixTip(v) {
+function showMixTip(v, key = null) {
   const el = tipEl();
   if (!el) return;
   const mode = $('#colorMode')?.value || '';
   const isCoset = mode.startsWith('coset');
-  if (v === undefined || !(isCoset || mode.startsWith('orbit'))) { el.hidden = true; return; }
+  if (v === undefined || !(isCoset || mode.startsWith('orbit'))) {
+    el.hidden = true; tipKey = null; return;
+  }
+  // same facet, same reading: leave it exactly where it is
+  const k = `${mode}|${key === null ? '' : key}`;
+  if (!el.hidden && tipKey === k) return;
+  tipKey = k;
+  el.dataset.key = k;      // what it is naming, for anyone checking it holds still
   const noun = isCoset ? 'coset' : 'orbit';
   let html;
   if (Array.isArray(v) || ArrayBuffer.isView(v)) {
@@ -925,17 +952,20 @@ function showMixTip(v) {
   el.style.top = Math.max(6, y) + 'px';
 }
 
-const hideMixTip = () => { const el = tipEl(); if (el) el.hidden = true; };
+const hideMixTip = () => { const el = tipEl(); if (el) el.hidden = true; tipKey = null; };
 
 function onHover3D(hit, mod) {
   const mesh = state.mesh;
+  /*
+   * The label is not touched here, either way. This runs on every move, while
+   * the label is answered on its own throttle by onHoverInfo — the two writing
+   * to it in turn is exactly what made it flicker.
+   */
   if (!hit || !mesh) {
     $('#hover3d').textContent = '';
     renderer?.setHighlight(-1);
-    hideMixTip();
     return;
   }
-  showMixTip(meshGroupAt(hit.face));
   const action = mod?.shift ? 'add' : (mod?.ctrl ? 'remove' : null);
   const key = mod?.shift ? mesh.faceOutside[hit.face] : mesh.faceInside[hit.face];
   // an action with nothing to act on gets no outline; a bare hover still
@@ -2355,15 +2385,23 @@ function wireControls() {
    *
    * Neither hover callback carries the event — the renderer's pick gives a hit
    * and the diagram's gives a facet — so the position is tracked here instead
-   * of changing two signatures for a label. pointerleave hides it: a hit test
-   * that simply stops firing would leave the last answer floating over a view
-   * the pointer has left.
+   * of changing two signatures for a label.
+   *
+   * On DOCUMENT, in the capture phase, and that is the whole point: the views
+   * register their own pointermove handlers in their constructors, long before
+   * this runs, and at the target element listeners fire in registration order
+   * whichever phase they claim. Tracked on the canvas, the position was always
+   * one event stale — the renderer's handler placed the label using where the
+   * pointer had been a move ago, which read as the label drifting inside a
+   * facet it should have been anchored to. Capturing at the document is the
+   * one place guaranteed to run first.
    */
+  document.addEventListener('pointermove',
+    (e) => { tipXY = { x: e.clientX, y: e.clientY }; }, true);
   for (const id of ['#view3d', '#diagram']) {
-    const el = $(id);
-    if (!el) continue;
-    el.addEventListener('pointermove', (e) => { tipXY = { x: e.clientX, y: e.clientY }; });
-    el.addEventListener('pointerleave', hideMixTip);
+    // a hit test that simply stops firing would leave the last answer floating
+    // over a view the pointer has left
+    $(id)?.addEventListener('pointerleave', hideMixTip);
   }
 
   installSplitters();
