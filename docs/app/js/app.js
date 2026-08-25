@@ -1189,6 +1189,46 @@ function fillCosetSub() {
   fillSelect('#cosetSub', names, names.includes(kept) ? kept : state.polySym);
 }
 
+/*
+ * The selection the coloring is currently aimed at.
+ *
+ * Null means "aimed at nothing yet, steer on the next refresh". Held here
+ * rather than in state because it describes the worker's labeling, not the
+ * document: it must not be saved, restored, or undone.
+ */
+let steeredBy = null;
+
+/** the same cells, whatever order they arrived in */
+function sameSelection(a, b) {
+  if (!a || a.size !== b.size) return false;
+  for (const k of b) if (!a.has(k)) return false;
+  return true;
+}
+
+/*
+ * Keep the coloring aimed at the figure on screen.
+ *
+ * A coset labeling is chosen partly by the selection — see the worker's
+ * 'steer' — so editing the cells can leave it aimed at the figure you just
+ * stopped looking at. refresh() is where every path that changes the
+ * selection ends up, from a click on a cell to an undo to the cells string,
+ * so one guard here covers all of them; the selection comparison keeps the
+ * appearance-only refreshes, which are the frequent ones, free.
+ */
+async function steerColoring() {
+  const mode = $('#colorMode')?.value || '';
+  if (!mode.startsWith('coset')) return;   // orbit labelings take no steer
+  const name = $('#cosetSub')?.value;
+  if (!name || name === state.polySym) return;
+  const g = state.symmetry?.[name];
+  if (!g || sameSelection(steeredBy, state.selected)) return;
+  const info = await call('steer', {
+    subMatrices: g.matrices, selected: [...state.selected], mode,
+  });
+  steeredBy = new Set(state.selected);
+  if (info?.faces?.length) fillFaceSelect(info.faces);
+}
+
 /**
  * Tell the worker which subgroup colors the cosets. The worker defaults to
  * the whole polyhedron group on every build, so this only needs sending when
@@ -1210,6 +1250,7 @@ async function applyCosetSub() {
     subMatrices: g.matrices, selected: [...state.selected],
     mode: $('#colorMode').value,
   });
+  steeredBy = new Set(state.selected);   // this message steers as well
   if (info?.faces?.length) fillFaceSelect(info.faces);
 }
 
@@ -1544,6 +1585,7 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
       state.selected = new Set(keys);
     }
 
+    steeredBy = null;           // new arrangement, new cells: aim afresh
     await applyCosetSub();      // the coloring's subgroup, when it differs
     await refresh();
     state.builtStellSym = state.stellSym;   // what the grouping on screen actually is
@@ -1634,6 +1676,7 @@ async function changeStellSym() {
 
 async function refresh() {
   if (!state.outline) return;
+  await steerColoring();
   const selected = [...state.selected];
   const { mesh, diagram: dia } = await call('both', { selected, planeIndex: state.planeIndex,
     split: $('#colorMode')?.value === 'cosetM' });
@@ -1957,6 +2000,7 @@ function wireControls() {
       subMatrices: g.matrices, selected: [...state.selected],
       mode: $('#colorMode').value,
     });
+    steeredBy = new Set(state.selected);
     if (info?.faces?.length) fillFaceSelect(info.faces);
     await refresh();
   };

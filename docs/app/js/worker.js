@@ -609,6 +609,46 @@ self.onmessage = (e) => {
         break;
       }
 
+      /*
+       * Re-aim the coset labeling at the selection now on screen.
+       *
+       * cosetClasses cannot tell the two compounds of five tetrahedra apart by
+       * group alone — the group maps one onto the other — so it picks the
+       * labeling that leaves the fewest SELECTED cells wearing more than one
+       * color. That steer is only as current as the selection it was handed,
+       * and the selection changes on every click. Sent once at build and once
+       * per subgroup change, it went stale the moment the figure was edited:
+       * turning 5.2 off and 5.1 on kept the labeling aimed at 5.2, and all
+       * sixty cells of the other hand came out multicolored. Saving and
+       * reopening cured it, which is the tell — the document was right and
+       * only the screen was stale.
+       *
+       * Only what the active coloring reads is recomputed. subgroupOrbits
+       * takes no selection at all, so orbit modes never come here; the plane
+       * labeling is a few milliseconds; the facet labeling is up to half a
+       * second on the dense duals and is done only for the modes that show
+       * it. Switching mode goes through 'cosets' and recomputes the lot, so
+       * nothing a mode can reach is left steered by an older figure.
+       */
+      case 'steer': {
+        if (!stel) { fail('nothing built yet'); break; }
+        const mode = payload.mode || null;
+        if (!stel.planes.length || !cosetGroup || !payload.subMatrices
+            || !(mode === 'coset' || mode === 'cosetL' || mode === 'cosetM')) {
+          reply({ faces: null });
+          break;
+        }
+        const prefer = payload.selected
+          ? selectedCells(stel, new Set(payload.selected)) : null;
+        cosets = cosetClasses(stel, cosetGroup, payload.subMatrices, prefer);
+        if (mode !== 'coset') {
+          cosetsL = facetCosetClasses(stel, cosetGroup, payload.subMatrices, prefer,
+                                      { split: true });
+        }
+        reply({ faces: facesForMode(mode) });
+        break;
+      }
+
       /** every atom key in layers [0, n) — the "first n layers" shortcut */
       case 'layerKeys': {
         const keys = [];
