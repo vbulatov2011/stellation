@@ -322,6 +322,9 @@ async function boot() {
     // before the first setMesh, so the first frame is already right
     renderer.faceOpacity = solidFaceOpacity();
     $('#faceOpacity').disabled = !$('#showFaces').checked;
+    // parked for fillElemSym, which runs once the polyhedron group is known
+    const savedElemSym = localStorage.getItem('elemSym');
+    if (savedElemSym) $('#elemSym').dataset.want = savedElemSym;
     const savedElemW = Number(localStorage.getItem('elemWidth'));
     if (savedElemW > 0) {
       renderer.elemWidth = savedElemW;       // before the first setElements
@@ -1170,6 +1173,7 @@ function syncSymmetrySelects() {
   fillSelect('#stellSym', stellNames, state.stellSym);
 
   fillCosetSub();
+  fillElemSym();
 }
 
 /*
@@ -1442,12 +1446,45 @@ function symmetryElements(name) {
   return out;
 }
 
+/*
+ * Whose symmetry elements get drawn.
+ *
+ * A view choice, not the figure's: which axes and mirrors you want to SEE is
+ * not the symmetry you are building with. It used to be the stellation group
+ * with no say in the matter, which answered only one of the questions people
+ * ask of it — the useful one is often a subgroup's, since its axes show what
+ * a lower symmetry would preserve, and that is exactly what you are choosing
+ * between when you decide to stellate under one. Falls back to the stellation
+ * group whenever the menu has nothing to say, so the first sight of a figure
+ * is what it always was.
+ */
+function elemSymName() {
+  const v = $('#elemSym')?.value;
+  return v && state.symmetry?.[v] ? v : state.stellSym;
+}
+
+/*
+ * The elements menu: any subgroup of the polyhedron group, exactly as the
+ * coloring's subgroup menu offers. The choice is kept across figures while it
+ * still names a subgroup — a preference belongs to whoever is looking — and
+ * falls back to the stellation group when a new solid leaves it meaningless.
+ */
+function fillElemSym() {
+  const sel = $('#elemSym');
+  if (!sel) return;
+  const names = subgroupsOf(state.polySym);
+  const want = sel.dataset.want && names.includes(sel.dataset.want) ? sel.dataset.want : null;
+  if (want) delete sel.dataset.want;
+  const kept = want || sel.value;
+  fillSelect('#elemSym', names, names.includes(kept) ? kept : state.stellSym);
+}
+
 const sub = n => String(n).replace(/\d/g, d => '₀₁₂₃₄₅₆₇₈₉'[d]);
 const hexRgb = (hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
 
 /** the current group's elements, filtered to the checked kinds */
 function shownElements() {
-  const el = state.elements || symmetryElements(state.stellSym);
+  const el = state.elements || symmetryElements(elemSymName());
   return {
     axes: $('#showAxes')?.checked ? el.axes : [],
     mirrors: $('#showMirrors')?.checked ? el.mirrors : [],
@@ -1456,7 +1493,7 @@ function shownElements() {
 }
 
 function refreshElements() {
-  state.elements = symmetryElements(state.stellSym);
+  state.elements = symmetryElements(elemSymName());
   const el = state.elements;
 
   // a checkbox for something the group does not have is a trap; disable it
@@ -1516,7 +1553,7 @@ function refreshDiagramOverlay() {
    * useful whether or not the solid is wearing them — so this reads the
    * symmetry directly and the Diagram section's switches choose from it.
    */
-  const all = state.elements || symmetryElements(state.stellSym);
+  const all = state.elements || symmetryElements(elemSymName());
   const el = { axes: wantAxes ? all.axes : [], improper: wantAxes ? all.improper : [],
                mirrors: wantMirrors ? all.mirrors : [] };
   const out = [];
@@ -2123,6 +2160,13 @@ function wireControls() {
     const el = $(id);
     if (el) el.onchange = refreshElements;
   }
+  $('#elemSym').onchange = () => {
+    syncGroupTitle('#elemSym');
+    // a preference of the viewer's, so it is remembered like the thickness
+    // beside it and never written into the document — see makeThumbnail
+    try { localStorage.setItem('elemSym', $('#elemSym').value); } catch { }
+    refreshElements();
+  };
 
 
   installSplitters();

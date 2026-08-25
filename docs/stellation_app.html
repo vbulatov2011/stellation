@@ -390,7 +390,11 @@
         </div>
       </fieldset>
       <fieldset class="sym-elems">
-        <legend title="The symmetry elements of the stellation group, drawn through the origin as real geometry so the solid hides the parts behind it. Inequivalent elements get different colors — the legend below names them.">symmetry elements</legend>
+        <legend title="Symmetry elements drawn through the origin as real geometry, so the solid hides the parts behind it. Inequivalent elements get different colors — the legend below names them.">symmetry elements</legend>
+        <div class="ctl-line">
+          <span class="dim grow">group</span>
+          <select id="elemSym" title="Whose elements to draw. Any subgroup of the polyhedron symmetry, independent of what you are building with: the axes of a subgroup show what a lower symmetry would preserve, which is what you are choosing between when you stellate under one."></select>
+        </div>
         <div class="ctl-line wrap">
           <label class="check" title="The rotation axes of the stellation group, drawn through the origin"><input id="showAxes" type="checkbox"> axes</label>
           <label class="check" title="Each mirror plane as a rim the thickness of the axes, with a faint translucent fill"><input id="showMirrors" type="checkbox"> mirrors</label>
@@ -479,7 +483,7 @@
            per-class colors of the elements themselves, which is what makes a
            dot here and a cylinder there read as one object. -->
       <fieldset class="edge-kinds">
-        <legend title="The stellation symmetry marked on the drawing plane, in the same colors the solid uses for the same elements">symmetry elements</legend>
+        <legend title="The same elements as the Solid section draws — its group choice — where they meet the drawing plane, in the same colors">symmetry elements</legend>
         <div class="ctl-line wrap">
           <label class="check" title="A dot where each rotation or rotoreflection axis pierces the drawing plane"><input id="dgAxes" type="checkbox"> axis marks</label>
           <label class="check" title="A dashed line where each mirror plane crosses the drawing plane"><input id="dgMirrors" type="checkbox"> mirror lines</label>

@@ -359,11 +359,19 @@
         picture.</dd>
 
       <dt>symmetry elements</dt>
-      <dd>The group's rotation axes, mirror planes and rotoreflection axes, drawn as
+      <dd>Rotation axes, mirror planes and rotoreflection axes, drawn as
         solid geometry through the origin so the stellation hides what is behind
         them. Inequivalent elements get different colors; the legend names each
         class, and <em>mark on the diagram</em> shows where the same elements meet
-        the diagram's plane.</dd>
+        the diagram's plane.
+        <p><b>group</b> chooses whose elements these are: any subgroup of the
+        polyhedron symmetry, independent of the symmetry you are building with.
+        A subgroup's axes show what a lower symmetry would preserve, which is
+        what you are choosing between when you decide to stellate under one —
+        the tetrahedral axes drawn on an icosahedral figure say where its five
+        tetrahedra sit. The choice is yours rather than the document's: it is
+        remembered between sessions, never saved into a file, and falls back to
+        the stellation symmetry when a new solid leaves it meaningless.</dd>
 
       <dt>coordinate axes</dt>
       <dd>The x, y and z axes through the origin, drawn as colored arrows
