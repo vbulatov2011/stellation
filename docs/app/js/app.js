@@ -361,22 +361,28 @@ async function boot() {
 
   diagram = new DiagramView($('#diagram'), {
     onToggle: (facet, mod) => applyToFacet(facet, mod),
+    /*
+     * The diagram answers in the corner of its own view rather than at the
+     * pointer. It already had a readout there naming the two cells a region
+     * lies between, and a second, floating answer about the same region was
+     * one thing said in two places — so the group joins the line it belongs
+     * on. In the corner it also needs no waiting and hides nothing: the
+     * reason the pointer label had to be delayed was that it sat on top of
+     * the figure.
+     */
     onHover: (facet) => {
-      // name both neighbors, since the two gestures reach one each
-      $('#hover2d').textContent = facet
-        ? `beneath ${facet.refBelow ? facet.refBelow.join('.') : '—'} · ` +
-          `above ${facet.refAbove ? facet.refAbove.join('.') : '—'}`
-        : '';
+      const el = $('#hover2d');
+      if (!facet) { el.textContent = ''; return; }
+      // both neighbors, since the two gestures reach one each
+      const cells = `beneath ${facet.refBelow ? facet.refBelow.join('.') : '—'} · ` +
+                    `above ${facet.refAbove ? facet.refAbove.join('.') : '—'}`;
       // and which group it belongs to, read off the same fields the diagram
       // colors it by — see DiagramView._group
-      if (!facet) { hideMixTip(); return; }
       const by = { coset: 'coset', cosetL: 'cosetL', cosetM: 'cosetM',
                    orbitP: 'orbitP', orbitF: 'orbitF', orbitC: 'orbitC' };
       const field = by[$('#colorMode')?.value];
-      // keyed on the region itself; onHover already fires only on a change,
-      // so this only has to survive the coloring changing under a still pointer
-      if (!diagramTipKeys.has(facet)) diagramTipKeys.set(facet, ++diagramTipSeq);
-      showMixTip(field ? (facet[field] ?? -1) : undefined, diagramTipKeys.get(facet));
+      const group = groupLabelHTML(field ? (facet[field] ?? -1) : undefined);
+      el.innerHTML = group ? `${cells} · ${group}` : cells;
     },
   });
   diagram.colorMode = $('#colorMode').value;   // restored from storage above
@@ -875,10 +881,6 @@ function onPick3D(hit, mod) {
  */
 const tipEl = () => document.getElementById('mixTip');
 let tipXY = { x: 0, y: 0 };
-// stable small ids for diagram regions, so the label can be keyed on identity
-// without putting the region object into a string
-const diagramTipKeys = new WeakMap();
-let diagramTipSeq = 0;
 
 /** the value the ACTIVE coloring gives this mesh face: index, blend array, or -1 */
 function meshGroupAt(faceIndex) {
@@ -930,17 +932,38 @@ let tipTimer = 0;
 let tipPending = null;      // the html to reveal when the pointer settles
 
 /**
+ * What a group value says, as html: "coset 3", "cosets 1 + 8" with the mix and
+ * its members swatched, "no coset fits". Empty when the reading in force has
+ * no group vocabulary — by shell and the two class readings name their groups
+ * elsewhere. `v` is what meshGroupAt or a diagram facet gives.
+ */
+function groupLabelHTML(v) {
+  const mode = $('#colorMode')?.value || '';
+  const isCoset = mode.startsWith('coset');
+  if (v === undefined || !(isCoset || mode.startsWith('orbit'))) return '';
+  const noun = isCoset ? 'coset' : 'orbit';
+  if (Array.isArray(v) || ArrayBuffer.isView(v)) {
+    const ks = Array.from(v);
+    // the mix, then its members: what is on the facet and what went into it
+    return `${tipSwatch(mode, ks)}${noun}s ` +
+           ks.map(k => `${tipSwatch(mode, k)}${k}`).join(' + ');
+  }
+  if (v == null || v < 0) return `<span class="tipdim">${tipSwatch(mode, -1)}no ${noun} fits</span>`;
+  return `${tipSwatch(mode, v)}${noun} ${v}`;
+}
+
+/**
  * Put the label at the pointer, or hide it when there is nothing to say.
- * `v` is what meshGroupAt or the diagram's facet gives: a group index, an
- * array of them for a mix, or -1 / null for gray. `key` identifies what is
- * being named, so that a move within one facet changes nothing.
+ * `v` is what meshGroupAt gives: a group index, an array of them for a mix,
+ * or -1 / null for gray. `key` identifies what is being named, so that a move
+ * within one facet changes nothing.
  */
 function showMixTip(v, key = null) {
   const el = tipEl();
   if (!el) return;
   const mode = $('#colorMode')?.value || '';
-  const isCoset = mode.startsWith('coset');
-  if (v === undefined || !(isCoset || mode.startsWith('orbit'))) { hideMixTip(); return; }
+  const html0 = groupLabelHTML(v);
+  if (!html0) { hideMixTip(); return; }
   /*
    * Same facet, same reading: nothing to do. Visible, it stays where it is;
    * still waiting, its dwell keeps running rather than restarting — the 3-D
@@ -951,20 +974,8 @@ function showMixTip(v, key = null) {
   if (tipKey === k) return;
   tipKey = k;
   el.dataset.key = k;      // what it is naming, for anyone checking it holds still
-  const noun = isCoset ? 'coset' : 'orbit';
-  let html;
-  if (Array.isArray(v) || ArrayBuffer.isView(v)) {
-    const ks = Array.from(v);
-    // the mix, then its members: what is on the facet and what went into it
-    html = `${tipSwatch(mode, ks)}${noun}s ` +
-           ks.map(k => `${tipSwatch(mode, k)}${k}`).join(' + ');
-  } else if (v == null || v < 0) {
-    html = `<span class="tipdim">${tipSwatch(mode, -1)}no ${noun} fits</span>`;
-  } else {
-    html = `${tipSwatch(mode, v)}${noun} ${v}`;
-  }
   // a new answer: take the old one down and wait to be asked for this one
-  tipPending = html;
+  tipPending = html0;
   el.hidden = true;
   restartTipDwell();
 }
@@ -2448,11 +2459,10 @@ function wireControls() {
      */
     if (tipPending !== null && tipEl()?.hidden) restartTipDwell();
   }, true);
-  for (const id of ['#view3d', '#diagram']) {
-    // a hit test that simply stops firing would leave the last answer floating
-    // over a view the pointer has left
-    $(id)?.addEventListener('pointerleave', hideMixTip);
-  }
+  // a hit test that simply stops firing would leave the last answer floating
+  // over a view the pointer has left. The diagram answers in its corner and
+  // clears itself when the pointer is over no region.
+  $('#view3d')?.addEventListener('pointerleave', hideMixTip);
 
   installSplitters();
 

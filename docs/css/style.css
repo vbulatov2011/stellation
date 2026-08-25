@@ -174,12 +174,25 @@ main {
   color: var(--dim);
   pointer-events: none;
 }
-.hover { margin-left: auto; color: var(--accent); font-family: var(--mono); }
+/*
+ * The readout in the corner of a view: what the pointer is over, and what it
+ * belongs to. Bottom LEFT — it used to be pushed right by a margin, which put
+ * it where a wide diagram is busiest.
+ *
+ * Styled as the label that follows the pointer in the solid, because it says
+ * the same kind of thing and there is no reason for one figure to answer in
+ * two voices. It was accent-colored, which on the light theme is #c8860a: a
+ * brown that reads as a warning rather than as an answer, and which collided
+ * with the coset swatches sitting beside it.
+ */
+.hover { color: var(--text); font: 11px/1.5 var(--mono, monospace); }
 .hover:not(:empty) {
-  padding: 2px 7px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel-2) 92%, transparent);
   backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 .nogl { display: grid; place-items: center; height: 100%; padding: 20px; color: var(--dim); text-align: center; }
 
@@ -554,12 +567,12 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); 
   font: 11px/1.5 var(--mono, monospace); white-space: nowrap;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
 }
-.mixtip .tipsw {
+.tipsw {
   display: inline-block; width: 9px; height: 9px; margin-right: 3px;
   border-radius: 2px; border: 1px solid rgba(128, 128, 128, 0.5);
   vertical-align: -1px;
 }
-.mixtip .tipdim { color: var(--dim); }
+.tipdim { color: var(--dim); }
 
 /* the key to the Cells bar colors */
 .legend {
