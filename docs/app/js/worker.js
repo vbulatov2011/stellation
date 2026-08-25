@@ -599,9 +599,18 @@ self.onmessage = (e) => {
      * The five tetrahedra are a chiral figure; they want the polyhedron
      * symmetry set to I, and saying so is better than guessing.
      */
-        // the incumbent labeling, if it was made under this same subgroup
-        const prev = (payload.subName && payload.subName === cosetsSubName && cosets)
-          ? cosets.planes : null;
+        /*
+         * The precedent that decides ties, strongest first: a document's own
+         * recorded labeling (it is the figure as saved), else the incumbent
+         * from this session under the same subgroup. Either only ever
+         * decides ties — a selection that strictly wants a labeling gets it.
+         */
+        const docPrev = (Array.isArray(payload.prevPlanes)
+                         && payload.prevPlanes.length === stel.planes.length)
+          ? payload.prevPlanes : null;
+        const prev = docPrev
+          || ((payload.subName && payload.subName === cosetsSubName && cosets)
+              ? cosets.planes : null);
         cosets = (stel.planes.length && cosetGroup && payload.subMatrices)
           ? cosetClasses(stel, cosetGroup, payload.subMatrices, prefer, prev) : null;
         cosetsL = (stel.planes.length && cosetGroup && payload.subMatrices)
@@ -612,6 +621,8 @@ self.onmessage = (e) => {
           ? subgroupOrbits(stel, payload.subMatrices) : null;
         reply({ count: cosets ? cosets.count : 0,
                 countL: cosetsL ? cosetsL.count : 0,
+                // the labeling itself, for the app to save with the document
+                planeLabels: cosets ? Array.from(cosets.planes) : null,
                 orbitCounts: orbits
                   ? [orbits.planeCount, orbits.facetCount, orbits.cellCount] : null,
                 /*
@@ -663,7 +674,8 @@ self.onmessage = (e) => {
                                       { split: true, prevPlanes: prev });
         }
         cosetsSubName = payload.subName ?? null;
-        reply({ faces: facesForMode(mode) });
+        reply({ faces: facesForMode(mode),
+                planeLabels: cosets ? Array.from(cosets.planes) : null });
         break;
       }
 

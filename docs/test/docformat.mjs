@@ -190,5 +190,43 @@ const base = {
   ok(refused, 'a document with a malformed plane refuses to open');
 }
 
+/*
+ * The coset labeling round-trips, and its absence costs nothing.
+ *
+ * cosetPlanes records which labeling the coloring wore when the steering tie
+ * could not decide — both compounds of five tetrahedra selected at once is
+ * the case. It is a preference, not geometry: a reader without it builds the
+ * same figure and resolves the tie the old way, so it must ride in release 1
+ * and vanish when it has nothing to say.
+ */
+{
+  const labels = [4, 2, 0, 1, 3, 2, 1, 0, 3, 1, 4, 3, 2, 4, 0, 4, 2, 3, 0, 1];
+  const doc = JSON.parse(writePreset({ ...base, cells: '{5(1,2)}',
+    colorMode: 'coset', cosetSub: 'T', cosetPlanes: labels }));
+  ok(doc.appInfo.fileFormatRelease === 1, 'cosetPlanes does not bump the release');
+  ok(Array.isArray(doc.params.display.cosetPlanes)
+     && doc.params.display.cosetPlanes.join() === labels.join(),
+     'the labeling is written, one integer per plane');
+  const read = readPreset(doc);
+  ok(Array.isArray(read.cosetPlanes) && read.cosetPlanes.join() === labels.join(),
+     'and reads back exactly');
+  ok(read.cosetSub === 'T', 'beside the subgroup it belongs to');
+}
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}',
+    colorMode: 'coset', cosetSub: 'T' }));
+  ok(doc.params.display.cosetPlanes === undefined,
+     'no labeling, no field — the classic envelope is untouched');
+  ok(readPreset(doc).cosetPlanes === null, 'and reads back as none');
+}
+{
+  // a file is anything at all: junk must read as absent, not as a labeling
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));
+  doc.params.display.cosetPlanes = ['a', 1, 2];
+  ok(readPreset(doc).cosetPlanes === null, 'non-integer labels read as absent');
+  doc.params.display.cosetPlanes = 'nonsense';
+  ok(readPreset(doc).cosetPlanes === null, 'a stray string reads as absent');
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

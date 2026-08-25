@@ -65,7 +65,7 @@ export function writePreset({
   name, polyhedron, file, polySymmetry, stellSymmetry,
   planeDepth, cells, cellsIndexing = null, diagramFace,
   showEdges = true, showAllFacets = true, colorMode = 'layer',
-  cosetSub = null, faceOpacity = 1, edges = null, colors = null,
+  cosetSub = null, cosetPlanes = null, faceOpacity = 1, edges = null, colors = null,
   view = null, planeRows = null, centralPlanes = false,
   exportLengthUnit = 0.01,
 }) {
@@ -108,7 +108,21 @@ export function writePreset({
        * the Colors panel's copy box is for. Absent when nothing was edited,
        * so a document that never touched colors reads exactly as before.
        */
+      /*
+       * `cosetPlanes` records which labeling the coset coloring wears, one
+       * integer per plane, when the coloring's subgroup leaves that choice
+       * open. The compound of five tetrahedra with both hands selected is
+       * the case: the two candidate labelings score identically, the live
+       * app resolves the tie by whatever was on screen, and without this
+       * field a reopened document resolves it from nothing — so the saved
+       * figure could come back in the other hand's colors. Only a tie is
+       * ever decided by it; a selection that strictly demands a labeling
+       * overrides it on open, so a hand-edited document cannot be forced
+       * into the wrong colors. No release bump: a reader without the field
+       * builds the same figure and merely resolves the tie the old way.
+       */
       display: { diagramFace, showEdges, showAllFacets, colorMode, cosetSub,
+                 cosetPlanes: cosetPlanes?.length ? cosetPlanes : undefined,
                  faceOpacity, edges, colors: colors?.length ? colors : undefined },
       camera: view ? { view } : undefined,
       /*
@@ -312,6 +326,10 @@ export function readPreset(doc) {
       ? p.display.colorMode : 'layer',
     // the coset colorings carry their subgroup, or they reopen colorless
     cosetSub: typeof p.display?.cosetSub === 'string' ? p.display.cosetSub : null,
+    // and the labeling the coloring wore, used only to break ties on reopen
+    cosetPlanes: Array.isArray(p.display?.cosetPlanes)
+        && p.display.cosetPlanes.every(Number.isInteger)
+      ? p.display.cosetPlanes : null,
     // written since translucency existed; anything older was drawn solid
     faceOpacity: clamp01(p.display?.faceOpacity, 1),
     /*

@@ -961,6 +961,8 @@ async function select(item, opts = {}) {
    * exactly the documents that have a name to be known by.
    */
   docLinkHash = null;
+  // a pick with no cells brings no document, so no parked labeling either
+  if (!opts.cells) pendingCosetPlanes = null;
   state.customPlanes = null;         // picking a solid leaves custom-plane mode
   state.polarPlanes = polarOf(item); // a dual built from its primal's vertices
   /*
@@ -1197,6 +1199,13 @@ function fillCosetSub() {
  * document: it must not be saved, restored, or undone.
  */
 let steeredBy = null;
+/*
+ * A reopened document's recorded labeling, parked between readPreset and the
+ * first cosets message for its subgroup, which consumes it. Worker-bound
+ * state like steeredBy, not document state — the document's copy is the one
+ * in state.cosetPlanes, refreshed from every steer reply for saving.
+ */
+let pendingCosetPlanes = null;
 
 /** the same cells, whatever order they arrived in */
 function sameSelection(a, b) {
@@ -1226,6 +1235,7 @@ async function steerColoring() {
     subMatrices: g.matrices, selected: [...state.selected], mode, subName: name,
   });
   steeredBy = new Set(state.selected);
+  if (Array.isArray(info?.planeLabels)) state.cosetPlanes = info.planeLabels;
   if (info?.faces?.length) fillFaceSelect(info.faces);
 }
 
@@ -1246,11 +1256,16 @@ async function applyCosetSub() {
    * a coloring by cosets or orbits can turn one class of planes into several
    * different pictures, and the plane menu has to offer all of them.
    */
+  // a reopened document hands back the labeling it was saved wearing
+  const parked = pendingCosetPlanes && pendingCosetPlanes.sub === name
+    ? pendingCosetPlanes.planes : null;
   const info = await call('cosets', {
     subMatrices: g.matrices, selected: [...state.selected],
-    mode: $('#colorMode').value, subName: name,
+    mode: $('#colorMode').value, subName: name, prevPlanes: parked,
   });
+  if (parked) pendingCosetPlanes = null;   // consumed: from here it is incumbency
   steeredBy = new Set(state.selected);   // this message steers as well
+  if (Array.isArray(info?.planeLabels)) state.cosetPlanes = info.planeLabels;
   if (info?.faces?.length) fillFaceSelect(info.faces);
 }
 
@@ -2001,6 +2016,7 @@ function wireControls() {
       mode: $('#colorMode').value, subName: name,
     });
     steeredBy = new Set(state.selected);
+    if (Array.isArray(info?.planeLabels)) state.cosetPlanes = info.planeLabels;
     if (info?.faces?.length) fillFaceSelect(info.faces);
     await refresh();
   };
@@ -2418,6 +2434,11 @@ function currentPresetText(docName) {
     colors: hasColorOverrides($('#colorMode').value)
       ? colorsArray(state.mesh, $('#colorMode').value) : null,
     cosetSub: $('#cosetSub').value || null,
+    // the labeling the coset coloring wears, so a tie reopens as saved
+    cosetPlanes: ($('#colorMode').value.startsWith('coset')
+                  && $('#cosetSub').value && $('#cosetSub').value !== state.polySym
+                  && Array.isArray(state.cosetPlanes))
+      ? state.cosetPlanes : null,
     faceOpacity: solidFaceOpacity(),
     view: renderer?.getView() || null,
     planeRows: state.customPlanes ? state.planeRows : null,
@@ -2720,6 +2741,9 @@ function applyDisplaySettings(doc) {
    * the element and fillCosetSub() honors it when the options exist.
    */
   if (doc.cosetSub) $('#cosetSub').dataset.want = doc.cosetSub;
+  // the labeling the document was saved wearing — see applyCosetSub
+  pendingCosetPlanes = doc.cosetSub && doc.cosetPlanes
+    ? { sub: doc.cosetSub, planes: doc.cosetPlanes } : null;
   /*
    * The palette is parked for the same reason the coset subgroup is: its rows
    * are the groups the built figure wears, and nothing is built yet. A

@@ -69,6 +69,23 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>The coloring choice is saved with the document.</b>
+      The entry below left one honest gap: a tie is genuinely undetermined by
+      the selection, so a saved both-hands figure reopened by resolving it
+      from nothing, and could come back wearing the other hand&rsquo;s colors.
+      The document now records the labeling the coloring wears &mdash; one
+      integer per plane, beside the subgroup it belongs to &mdash; and a
+      reopened document resolves its tie to exactly the colors it was saved
+      with. The autosave carries it too, so a plain reload keeps the coloring
+      as well as the cells.
+      <p>
+      It is a preference, not geometry: it only ever decides ties, so a
+      selection that strictly demands a labeling still gets it, and a
+      hand-edited document cannot be forced into wrong colors. The format
+      release does not move &mdash; an older build ignores the field, builds
+      the same figure, and merely resolves the tie the way it always did.
+    </div></li>
+    <li><div>
       <b>A tied coloring keeps the colors already on screen.</b>
       Select both compounds of five tetrahedra at once and the two candidate
       labelings score identically &mdash; whichever is chosen, one hand is five
@@ -86,9 +103,10 @@
       recolors what is already there; a recolor happens exactly when the
       surviving figure strictly demands the other labeling &mdash; remove the
       hand the coloring is committed to and the survivor must switch, which
-      no rule can avoid. One honest consequence: a saved both-hands figure
-      reopens with no history, so a reload resolves the tie deterministically
-      rather than by the path you took to it.
+      no rule can avoid. One honest consequence, cured in the entry
+      above: a saved both-hands figure used to reopen with no history, so a
+      reload resolved the tie deterministically rather than by the path you
+      took to it.
     </div></li>
     <li><div>
       <b>The coloring keeps following the figure you are editing.</b>
