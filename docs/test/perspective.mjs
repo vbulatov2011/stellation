@@ -151,5 +151,70 @@ console.log('\n-- depth still orders correctly, and stays in the clip volume');
   }
 }
 
+/*
+ * Which side of a plane the eye is on.
+ *
+ * The translucent pass orders facets plane by plane: everything on the eye's
+ * side of a plane is nearer than everything beyond it. For an eye at infinity
+ * that is decided by the normal's view-z alone, since a plane's own offset
+ * cannot matter to a direction — and that is what the sort used to do. Bring
+ * the eye in and the offset matters at once, and the parallel rule gets the
+ * planes that straddle the eye exactly backwards.
+ *
+ * The eye sits at view (0, 0, D), so in model space at D·(M[2], M[6], M[10]);
+ * its signed distance from n·x = d is D·zc - d, and dividing out the positive
+ * D leaves zc - d·k with k = 1/D — the parallel test again the moment k is 0.
+ * What follows checks that expression against the eye point it stands for.
+ *
+ * This is the algebra, not the call site: the rule lives inside a method that
+ * needs a GL context. Measured in the browser on the icosahedron at an eye ten
+ * radii out, the two rules disagree for planes within 4.56° of edge-on, which
+ * is 57% of orientations and up to two planes at once — the intermittent
+ * artifact this fixes.
+ */
+console.log('\n-- the sort asks about the eye POINT, and agrees with it');
+{
+  // a deterministic spread of rotations, planes and eye distances
+  const rot = (t) => {                       // an orthonormal basis, column-major
+    const c = Math.cos(t), s = Math.sin(t), c2 = Math.cos(t * 1.7), s2 = Math.sin(t * 1.7);
+    const e0 = [c, s, 0], e1 = [-s * c2, c * c2, s2];
+    const e2 = [e0[1] * e1[2] - e0[2] * e1[1],
+                e0[2] * e1[0] - e0[0] * e1[2],
+                e0[0] * e1[1] - e0[1] * e1[0]];
+    // column-major: M[2], M[6], M[10] is the view-z row, i.e. e2's components
+    return [e0[0], e1[0], e2[0], 0, e0[1], e1[1], e2[1], 0, e0[2], e1[2], e2[2], 0, 0, 0, 0, 1];
+  };
+  let checked = 0, agree = 0, straddling = 0;
+  for (let i = 1; i <= 60; i++) {
+    const M = rot(i * 0.37);
+    for (let j = 1; j <= 12; j++) {
+      const a1 = j * 0.53, a2 = j * 1.19;
+      const n = [Math.cos(a1) * Math.sin(a2), Math.sin(a1) * Math.sin(a2), Math.cos(a2)];
+      const d = 0.2 + (j % 5) * 0.31;                      // offset, always >= 0
+      for (const D of [2.5, 5, 10, 40, 1e6]) {
+        const k = 1 / D;
+        const zc = M[2] * n[0] + M[6] * n[1] + M[10] * n[2];
+        // ground truth: the eye as an actual point in model space
+        const E = [D * M[2], D * M[6], D * M[10]];
+        const truth = Math.sign(E[0] * n[0] + E[1] * n[1] + E[2] * n[2] - d);
+        const rule = Math.sign(zc - d * k);
+        checked++;
+        if (truth === rule) agree++;
+        if (Math.sign(zc) !== truth) straddling++;         // where the old rule was wrong
+      }
+    }
+  }
+  ok(agree === checked, `the rule matches the eye point in all ${checked} cases`);
+  ok(straddling > 0,
+     `and the parallel rule genuinely differs (${straddling} of ${checked} straddle the eye)`);
+}
+
+console.log('\n-- and it degenerates to the parallel test at k = 0');
+{
+  for (const [zc, d] of [[0.9, 0.5], [-0.4, 0.8], [0.05, 0.79], [-0.02, 0.3]]) {
+    ok(Math.sign(zc - d * 0) === Math.sign(zc), `k=0 leaves sign(zc) alone for zc=${zc}`);
+  }
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

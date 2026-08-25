@@ -94,6 +94,18 @@
       Picking inverts the same formula, so what you click is what you point at,
       and the camera travels in the saved view as a ninth number that is absent
       whenever it is zero.
+      <p>
+      The translucent pass had to learn the same lesson. It orders facets plane
+      by plane &mdash; everything on the eye&rsquo;s side of a plane is nearer
+      than everything beyond it &mdash; and it decided which side that was from
+      the normal alone, which is an eye at infinity answering about a direction.
+      With the eye brought in, a plane&rsquo;s own offset matters, and the
+      planes that pass between the eye and the centre came out exactly
+      backwards. Using the eye as a point rather than a direction costs one
+      term, and it is the same <i>p</i>/R the projection uses, so the two
+      cannot drift apart. On the icosahedron at an eye ten radii out the old
+      rule was wrong for planes within 4.6&deg; of edge-on: better than half of
+      all orientations had at least one.
     </div></li>
     <li><div>
       <b>Point at a facet and it says which cosets it belongs to.</b>

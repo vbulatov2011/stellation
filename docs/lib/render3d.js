@@ -1268,12 +1268,40 @@ export class Renderer3D {
     if (!sd) return 0;
     const { T, eqs, side, order, far, near, elements } = sd;
     const R = quatToMat4(this.rotation);        // column-major; row 2 is eye z
+    /*
+     * Which side of each plane the EYE is on — and under perspective that is a
+     * question about a point, not a direction.
+     *
+     * The rule is: everything on the eye's side of a plane is nearer than
+     * everything beyond it, so sorting by that for every plane in turn orders
+     * the whole figure. Deciding it by the normal's view-z alone answers "which
+     * side is the eye on" for an eye at infinity, where the plane's own offset
+     * cannot matter. Bring the eye in and it matters at once: a plane with the
+     * eye between it and the viewer has its far side nearer, and the parallel
+     * rule gets that exactly backwards. That is the defect — translucent facets
+     * compositing in the wrong order on the planes that straddle the eye.
+     *
+     * In view space the eye is at (0, 0, D) with D = 1/k, k the same p/R the
+     * projection uses; in model space that is D·(R[2], R[6], R[10]). Its signed
+     * distance from the plane n·x = d is D·zc - d, and dividing the positive D
+     * out leaves zc - d·k, which is the parallel test again the moment k is 0.
+     * So one expression covers both cameras and they cannot drift apart.
+     */
+    const cam = this._camera(this.canvas.width || 1, this.canvas.height || 1);
+    const k = cam.p > 0 && cam.pr > 0 ? cam.p / cam.pr : 0;
     for (let p = 0; p < eqs.length; p++) {
-      const [nx, ny, nz] = eqs[p];
+      const [nx, ny, nz, d] = eqs[p];
       const zc = R[2] * nx + R[6] * ny + R[10] * nz;
-      // edge-on: its half-spaces project to disjoint half-planes, no occlusion
-      if (zc > -1e-6 && zc < 1e-6) continue;
-      const sign = zc > 0 ? 1 : -1;
+      // the eye's signed distance, up to the positive factor D
+      const w = zc - d * k;
+      /*
+       * The eye lies in the plane: it projects to a line, its half-spaces to
+       * disjoint half-planes, and neither can occlude the other. At k = 0 this
+       * is the old "edge-on to the view direction" test, which is the same
+       * statement about an eye infinitely far away.
+       */
+      if (w > -1e-6 && w < 1e-6) continue;
+      const sign = w > 0 ? 1 : -1;
       const row = p * T;
       let nf = 0, nn = 0;
       for (let i = 0; i < T; i++) {
