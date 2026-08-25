@@ -351,6 +351,7 @@ async function boot() {
     renderer.onPickHover = onHover3D;
     // the group half of the solid's line — see Renderer3D's move handler
     renderer.onHoverInfo = (hit) => {
+      solidLine.cells = solidCellsHTML(hit);
       solidLine.group = hit ? groupLabelHTML(meshGroupAt(hit.face)) : '';
       pushSolidLine();
     };
@@ -970,16 +971,36 @@ function groupLabelHTML(v) {
 }
 
 /*
- * The solid's line has two halves, written by two callbacks: what a click
- * would do, which only exists while a modifier is held, and which group the
- * face belongs to, which arrives on the hover pick. Each remembers its own
- * half so that either can be rewritten without erasing the other — the two
- * clobbering one element is what made the old floating label flicker.
+ * The solid's line, in three parts written by two callbacks. Each part is
+ * remembered separately so that either callback can rewrite its own without
+ * erasing the other's — two callbacks clobbering one element is what made the
+ * old floating label flicker.
+ *
+ * `cells` and `group` come from the hover pick, which runs whether or not a
+ * modifier is held; `action` is the modifier's business alone.
  */
-const solidLine = { action: '', group: '' };
+const solidLine = { cells: '', action: '', group: '' };
 function pushSolidLine() {
-  const parts = [solidLine.action, solidLine.group].filter(Boolean);
+  const parts = [solidLine.cells, solidLine.action, solidLine.group].filter(Boolean);
   scheduleReadout('#hover3d', parts.join(' · '));
+}
+
+/*
+ * Which cells the face under the pointer lies between, in the diagram's own
+ * terms: the one you are looking AT, which is the cell this facet belongs to
+ * and the one ctrl-click takes away, and the one resting ON it, which is what
+ * shift-click adds. The diagram has said this all along — "beneath 0.0.0 ·
+ * above 1.0.2" — and the solid had it only as a promise about a modifier that
+ * happened to be held, which is the same fact told half the time.
+ *
+ * Named as the Cells panel names them: the box a click will actually toggle,
+ * not the raw atom underneath it.
+ */
+function solidCellsHTML(hit) {
+  const mesh = state.mesh;
+  if (!hit || !mesh) return '';
+  const box = (k) => (k && (state.subOf?.get(k) || k)) || '—';
+  return `cell ${box(mesh.faceInside[hit.face])} · adds ${box(mesh.faceOutside[hit.face])}`;
 }
 
 function onHover3D(hit, mod) {
@@ -990,6 +1011,7 @@ function onHover3D(hit, mod) {
     pushSolidLine();
     return;
   }
+
   const action = mod?.shift ? 'add' : (mod?.ctrl ? 'remove' : null);
   const key = mod?.shift ? mesh.faceOutside[hit.face] : mesh.faceInside[hit.face];
   // an action with nothing to act on gets no outline; a bare hover still
@@ -997,9 +1019,13 @@ function onHover3D(hit, mod) {
   renderer?.setHighlight(action && !key ? -1 : hit.face, action);
   // name the box the panel shows, not the raw atom — that is what the click's
   // orbit expansion will actually toggle
-  const shown = key && (state.subOf?.get(key) || key);
-  solidLine.action = !action ? ''
-    : key ? `${mod.shift ? 'add' : 'remove'} cell ${shown}`
+  /*
+   * Only the refusals. Naming the cell again would repeat what `cells` above
+   * already says — and says whether or not a modifier is held — but a gesture
+   * with nothing to act on is worth spelling out, since the missing half is
+   * shown there as a dash and a dash does not explain itself.
+   */
+  solidLine.action = !action || key ? ''
     : (mod.shift ? 'nothing further out on this face' : 'nothing behind this face');
   pushSolidLine();
 }
@@ -2437,7 +2463,7 @@ function wireControls() {
   }, true);
   // leaving is a departure, not an update: the line goes at once
   $('#view3d')?.addEventListener('pointerleave', () => {
-    solidLine.action = solidLine.group = '';
+    solidLine.cells = solidLine.action = solidLine.group = '';
     clearReadout('#hover3d');
   });
   $('#diagram')?.addEventListener('pointerleave', () => clearReadout('#hover2d'));
