@@ -349,10 +349,11 @@ async function boot() {
     renderer.start();
     renderer.onPick = onPick3D;
     renderer.onPickHover = onHover3D;
-    // the group label, on a plain hover — see Renderer3D's move handler
-    renderer.onHoverInfo = (hit) => (hit
-      ? showMixTip(meshGroupAt(hit.face), hit.face)
-      : hideMixTip());
+    // the group half of the solid's line — see Renderer3D's move handler
+    renderer.onHoverInfo = (hit) => {
+      solidLine.group = hit ? groupLabelHTML(meshGroupAt(hit.face)) : '';
+      pushSolidLine();
+    };
   } catch (err) {
     $('#view3d').replaceWith(Object.assign(document.createElement('div'), {
       className: 'nogl', textContent: '3D view needs WebGL2, which this browser did not provide.',
@@ -371,8 +372,9 @@ async function boot() {
      * the figure.
      */
     onHover: (facet) => {
-      const el = $('#hover2d');
-      if (!facet) { el.textContent = ''; return; }
+      // over no region is an ANSWER, not a departure: scheduled like any
+      // other, so crossing a gap mid-sweep does not blank the line under you
+      if (!facet) { scheduleReadout('#hover2d', ''); return; }
       // both neighbors, since the two gestures reach one each
       const cells = `beneath ${facet.refBelow ? facet.refBelow.join('.') : '—'} · ` +
                     `above ${facet.refAbove ? facet.refAbove.join('.') : '—'}`;
@@ -382,7 +384,7 @@ async function boot() {
                    orbitP: 'orbitP', orbitF: 'orbitF', orbitC: 'orbitC' };
       const field = by[$('#colorMode')?.value];
       const group = groupLabelHTML(field ? (facet[field] ?? -1) : undefined);
-      el.innerHTML = group ? `${cells} · ${group}` : cells;
+      scheduleReadout('#hover2d', group ? `${cells} · ${group}` : cells);
     },
   });
   diagram.colorMode = $('#colorMode').value;   // restored from storage above
@@ -879,8 +881,51 @@ function onPick3D(hit, mod) {
  * the pointer is the answer that scales: it costs a line, works for a mix of
  * any size, and is asked exactly where the question occurs.
  */
-const tipEl = () => document.getElementById('mixTip');
 let tipXY = { x: 0, y: 0 };
+
+/*
+ * Both views answer in the strip along their own bottom, and only once the
+ * pointer has stopped.
+ *
+ * Answering the moment a facet came under the pointer meant that sweeping
+ * across a figure fired an answer at every facet on the way — a stutter of
+ * replies to a question nobody had asked yet. The pointer coming to rest on
+ * something is what asking looks like, so an answer is composed as soon as it
+ * is known and written only after TIP_DWELL of stillness. Movement postpones
+ * the write; it does not blank what is there, because a line that empties
+ * itself while you move is the same stutter wearing grey.
+ *
+ * A strip of text rather than a label at the pointer: it hides nothing, needs
+ * no placing, and the diagram already had one naming the cells a region lies
+ * between, so the group had somewhere to belong. Leaving the pointer clears
+ * the view's own line at once — that is a departure, not an update.
+ */
+const TIP_DWELL = 350;
+let restTimer = 0;
+const pendingLine = { '#hover3d': null, '#hover2d': null };
+
+function scheduleReadout(id, html) {
+  if (pendingLine[id] === html) return;      // the same answer, already waiting
+  pendingLine[id] = html;
+  clearTimeout(restTimer);
+  restTimer = setTimeout(flushReadouts, TIP_DWELL);
+}
+
+function flushReadouts() {
+  for (const [id, html] of Object.entries(pendingLine)) {
+    if (html === null) continue;
+    const el = $(id);
+    if (el) el.innerHTML = html;
+    pendingLine[id] = null;
+  }
+}
+
+/** the pointer has left: this view says nothing at all, immediately */
+function clearReadout(id) {
+  pendingLine[id] = null;
+  const el = $(id);
+  if (el) el.textContent = '';
+}
 
 /** the value the ACTIVE coloring gives this mesh face: index, blend array, or -1 */
 function meshGroupAt(faceIndex) {
@@ -903,34 +948,6 @@ function tipSwatch(mode, k) {
   return `<i class="tipsw" style="background:${rgbaToHex(c)}"></i>`;
 }
 
-/*
- * What the label is currently naming: the mode, and the identity of the thing
- * under the pointer — a mesh face index in the solid, the facet object in the
- * diagram. The label is a fact about that thing, not about the pointer, so
- * while the answer is unchanged it neither moves nor is rebuilt. Following
- * the pointer across one facet made it look like a cursor decoration; anchored
- * where the facet was entered, it reads as a label ON the facet.
- */
-let tipKey = null;
-/*
- * The label waits for the pointer to stop.
- *
- * Answering the moment a facet comes under the pointer meant that sweeping
- * across a figure fired the label at every facet on the way — a stutter of
- * answers to a question nobody had asked yet. So the answer is prepared as
- * soon as it is known and shown only once the pointer has been still for
- * DWELL, which is what asking looks like: the pointer stops on the thing.
- *
- * Any movement postpones the reveal (see the pointermove listener), so a
- * sweep never reaches it, however many facets it crosses. Once the label IS
- * up, movement inside the same facet leaves it alone — it is anchored to the
- * facet, not to the pointer — and only a change of facet takes it down again
- * to wait out another dwell.
- */
-const TIP_DWELL = 350;
-let tipTimer = 0;
-let tipPending = null;      // the html to reveal when the pointer settles
-
 /**
  * What a group value says, as html: "coset 3", "cosets 1 + 8" with the mix and
  * its members swatched, "no coset fits". Empty when the reading in force has
@@ -952,71 +969,25 @@ function groupLabelHTML(v) {
   return `${tipSwatch(mode, v)}${noun} ${v}`;
 }
 
-/**
- * Put the label at the pointer, or hide it when there is nothing to say.
- * `v` is what meshGroupAt gives: a group index, an array of them for a mix,
- * or -1 / null for gray. `key` identifies what is being named, so that a move
- * within one facet changes nothing.
+/*
+ * The solid's line has two halves, written by two callbacks: what a click
+ * would do, which only exists while a modifier is held, and which group the
+ * face belongs to, which arrives on the hover pick. Each remembers its own
+ * half so that either can be rewritten without erasing the other — the two
+ * clobbering one element is what made the old floating label flicker.
  */
-function showMixTip(v, key = null) {
-  const el = tipEl();
-  if (!el) return;
-  const mode = $('#colorMode')?.value || '';
-  const html0 = groupLabelHTML(v);
-  if (!html0) { hideMixTip(); return; }
-  /*
-   * Same facet, same reading: nothing to do. Visible, it stays where it is;
-   * still waiting, its dwell keeps running rather than restarting — the 3-D
-   * hover asks again every 40 ms, and restarting here would mean the timer
-   * could never expire.
-   */
-  const k = `${mode}|${key === null ? '' : key}`;
-  if (tipKey === k) return;
-  tipKey = k;
-  el.dataset.key = k;      // what it is naming, for anyone checking it holds still
-  // a new answer: take the old one down and wait to be asked for this one
-  tipPending = html0;
-  el.hidden = true;
-  restartTipDwell();
+const solidLine = { action: '', group: '' };
+function pushSolidLine() {
+  const parts = [solidLine.action, solidLine.group].filter(Boolean);
+  scheduleReadout('#hover3d', parts.join(' · '));
 }
-
-/** show what is pending, at wherever the pointer came to rest */
-function revealMixTip() {
-  const el = tipEl();
-  if (!el || tipPending === null) return;
-  el.innerHTML = tipPending;
-  el.hidden = false;
-  // placed after unhiding, so the measurement is of the laid-out label
-  const w = el.offsetWidth, h = el.offsetHeight;
-  const x = Math.min(tipXY.x + 14, innerWidth - w - 6);
-  const y = tipXY.y + 18 + h > innerHeight ? tipXY.y - h - 10 : tipXY.y + 18;
-  el.style.left = Math.max(6, x) + 'px';
-  el.style.top = Math.max(6, y) + 'px';
-}
-
-function restartTipDwell() {
-  clearTimeout(tipTimer);
-  tipTimer = setTimeout(revealMixTip, TIP_DWELL);
-}
-
-const hideMixTip = () => {
-  clearTimeout(tipTimer);
-  tipPending = null;
-  const el = tipEl();
-  if (el) el.hidden = true;
-  tipKey = null;
-};
 
 function onHover3D(hit, mod) {
   const mesh = state.mesh;
-  /*
-   * The label is not touched here, either way. This runs on every move, while
-   * the label is answered on its own throttle by onHoverInfo — the two writing
-   * to it in turn is exactly what made it flicker.
-   */
   if (!hit || !mesh) {
-    $('#hover3d').textContent = '';
+    solidLine.action = '';
     renderer?.setHighlight(-1);
+    pushSolidLine();
     return;
   }
   const action = mod?.shift ? 'add' : (mod?.ctrl ? 'remove' : null);
@@ -1027,9 +998,10 @@ function onHover3D(hit, mod) {
   // name the box the panel shows, not the raw atom — that is what the click's
   // orbit expansion will actually toggle
   const shown = key && (state.subOf?.get(key) || key);
-  $('#hover3d').textContent = !action ? ''
+  solidLine.action = !action ? ''
     : key ? `${mod.shift ? 'add' : 'remove'} cell ${shown}`
     : (mod.shift ? 'nothing further out on this face' : 'nothing behind this face');
+  pushSolidLine();
 }
 
 // ------------------------------------------------------------------ catalog
@@ -2449,20 +2421,26 @@ function wireControls() {
    * facet it should have been anchored to. Capturing at the document is the
    * one place guaranteed to run first.
    */
+  /*
+   * Moving postpones every pending write — that is the whole of "only once the
+   * pointer stops". Captured at the document because the views register their
+   * own pointermove handlers in their constructors, and at the target element
+   * listeners fire in registration order whichever phase they claim; anything
+   * later would be reading a position, and restarting a timer, one move behind.
+   */
   document.addEventListener('pointermove', (e) => {
     tipXY = { x: e.clientX, y: e.clientY };
-    /*
-     * Moving postpones the reveal — that is the whole of "wait until the
-     * pointer stops". Only while the label is DOWN: once it is up it belongs
-     * to the facet, and taking it down for a twitch inside that facet is the
-     * flicker this already had once.
-     */
-    if (tipPending !== null && tipEl()?.hidden) restartTipDwell();
+    if (pendingLine['#hover3d'] !== null || pendingLine['#hover2d'] !== null) {
+      clearTimeout(restTimer);
+      restTimer = setTimeout(flushReadouts, TIP_DWELL);
+    }
   }, true);
-  // a hit test that simply stops firing would leave the last answer floating
-  // over a view the pointer has left. The diagram answers in its corner and
-  // clears itself when the pointer is over no region.
-  $('#view3d')?.addEventListener('pointerleave', hideMixTip);
+  // leaving is a departure, not an update: the line goes at once
+  $('#view3d')?.addEventListener('pointerleave', () => {
+    solidLine.action = solidLine.group = '';
+    clearReadout('#hover3d');
+  });
+  $('#diagram')?.addEventListener('pointerleave', () => clearReadout('#hover2d'));
 
   installSplitters();
 

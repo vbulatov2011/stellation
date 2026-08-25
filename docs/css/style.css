@@ -550,23 +550,13 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); 
 .help-window a { color: var(--accent-2); }
 
 /*
- * The group label that follows the pointer.
+ * The swatch that shows a group's color inside a readout.
  *
  * A blend answers "which cosets?" with a color, and a color is exactly what
  * you cannot read back — three colors mixed in Oklab is not three colors any
- * more. So the names come to the pointer, with the swatches of the members
- * beside them: the mix on the facet, and what went into it, side by side.
- *
- * pointer-events none, always: it tracks the pointer, so anything else would
- * put it under the cursor and it would flicker against its own hit test.
+ * more. So the readouts name the members and put their colors beside the
+ * numbers: the mix on the facet, and what went into it, side by side.
  */
-.mixtip {
-  position: fixed; z-index: 3000; pointer-events: none;
-  padding: 5px 9px; border-radius: var(--radius);
-  border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
-  font: 11px/1.5 var(--mono, monospace); white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
-}
 .tipsw {
   display: inline-block; width: 9px; height: 9px; margin-right: 3px;
   border-radius: 2px; border: 1px solid rgba(128, 128, 128, 0.5);
