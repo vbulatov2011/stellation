@@ -55,6 +55,14 @@ let faceClassStell = null;
  */
 let cosets = null;
 /*
+ * Which subgroup, by the app's own name for it, produced `cosets`. The
+ * continuity tie-break hands the previous labeling back to cosetClasses so a
+ * tied choice keeps what is on screen — but a labeling is only comparable to
+ * one made under the SAME subgroup, so the name is the guard. Null after a
+ * build: the default G-over-G labeling is nobody's precedent.
+ */
+let cosetsSubName = null;
+/*
  * And the same cosets per facet: facet -> class. Same subgroup, same
  * message; what differs is what wears the color, a whole plane or a single
  * piece of surface.
@@ -467,6 +475,7 @@ self.onmessage = (e) => {
         cosetGroup = matrices;
         // the default coloring is the polyhedron group over itself — one
         // color, and one class per orbit — until the app names a subgroup
+        cosetsSubName = null;
         cosets = stel.planes.length
           ? cosetClasses(stel, cosetGroup, cosetGroup) : null;
         cosetsL = stel.planes.length
@@ -590,10 +599,15 @@ self.onmessage = (e) => {
      * The five tetrahedra are a chiral figure; they want the polyhedron
      * symmetry set to I, and saying so is better than guessing.
      */
+        // the incumbent labeling, if it was made under this same subgroup
+        const prev = (payload.subName && payload.subName === cosetsSubName && cosets)
+          ? cosets.planes : null;
         cosets = (stel.planes.length && cosetGroup && payload.subMatrices)
-          ? cosetClasses(stel, cosetGroup, payload.subMatrices, prefer) : null;
+          ? cosetClasses(stel, cosetGroup, payload.subMatrices, prefer, prev) : null;
         cosetsL = (stel.planes.length && cosetGroup && payload.subMatrices)
-          ? facetCosetClasses(stel, cosetGroup, payload.subMatrices, prefer, { split: true }) : null;
+          ? facetCosetClasses(stel, cosetGroup, payload.subMatrices, prefer,
+                              { split: true, prevPlanes: prev }) : null;
+        cosetsSubName = payload.subName ?? null;
         orbits = (stel.planes.length && payload.subMatrices)
           ? subgroupOrbits(stel, payload.subMatrices) : null;
         reply({ count: cosets ? cosets.count : 0,
@@ -640,11 +654,15 @@ self.onmessage = (e) => {
         }
         const prefer = payload.selected
           ? selectedCells(stel, new Set(payload.selected)) : null;
-        cosets = cosetClasses(stel, cosetGroup, payload.subMatrices, prefer);
+        // continuity: a tied re-steer keeps the labeling already on screen
+        const prev = (payload.subName && payload.subName === cosetsSubName && cosets)
+          ? cosets.planes : null;
+        cosets = cosetClasses(stel, cosetGroup, payload.subMatrices, prefer, prev);
         if (mode !== 'coset') {
           cosetsL = facetCosetClasses(stel, cosetGroup, payload.subMatrices, prefer,
-                                      { split: true });
+                                      { split: true, prevPlanes: prev });
         }
+        cosetsSubName = payload.subName ?? null;
         reply({ faces: facesForMode(mode) });
         break;
       }

@@ -69,6 +69,28 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>A tied coloring keeps the colors already on screen.</b>
+      Select both compounds of five tetrahedra at once and the two candidate
+      labelings score identically &mdash; whichever is chosen, one hand is five
+      solid tetrahedra and the other wears four colors per cell, since no
+      labeling can favor both partitions of the same twenty planes. The tie
+      used to fall to whichever candidate the group enumeration produced
+      first, with a symptom the selection history made visible: adding the
+      second hand to the first could repaint the entire figure, and removing
+      it repainted it back &mdash; two full recolors for a round trip that
+      ended where it began, while the same round trip from the other hand
+      changed nothing at all.
+      <p>
+      Ties are now broken by incumbency: among the equally clean labelings,
+      the one agreeing with the colors on screen wins. Adding cells never
+      recolors what is already there; a recolor happens exactly when the
+      surviving figure strictly demands the other labeling &mdash; remove the
+      hand the coloring is committed to and the survivor must switch, which
+      no rule can avoid. One honest consequence: a saved both-hands figure
+      reopens with no history, so a reload resolves the tie deterministically
+      rather than by the path you took to it.
+    </div></li>
+    <li><div>
       <b>The coloring keeps following the figure you are editing.</b>
       The two compounds of five tetrahedra share the icosahedron&rsquo;s twenty
       planes, and the group cannot tell them apart — it maps one onto the

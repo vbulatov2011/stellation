@@ -1223,7 +1223,7 @@ async function steerColoring() {
   const g = state.symmetry?.[name];
   if (!g || sameSelection(steeredBy, state.selected)) return;
   const info = await call('steer', {
-    subMatrices: g.matrices, selected: [...state.selected], mode,
+    subMatrices: g.matrices, selected: [...state.selected], mode, subName: name,
   });
   steeredBy = new Set(state.selected);
   if (info?.faces?.length) fillFaceSelect(info.faces);
@@ -1248,7 +1248,7 @@ async function applyCosetSub() {
    */
   const info = await call('cosets', {
     subMatrices: g.matrices, selected: [...state.selected],
-    mode: $('#colorMode').value,
+    mode: $('#colorMode').value, subName: name,
   });
   steeredBy = new Set(state.selected);   // this message steers as well
   if (info?.faces?.length) fillFaceSelect(info.faces);
@@ -1998,7 +1998,7 @@ function wireControls() {
     // diagrams and which planes draw different pictures depends on it
     const info = await call('cosets', {
       subMatrices: g.matrices, selected: [...state.selected],
-      mode: $('#colorMode').value,
+      mode: $('#colorMode').value, subName: name,
     });
     steeredBy = new Set(state.selected);
     if (info?.faces?.length) fillFaceSelect(info.faces);

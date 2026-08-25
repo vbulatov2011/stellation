@@ -1905,7 +1905,8 @@ export function facetCosetClasses(stel, matrices, subMatrices, preferCells = nul
    * out facet-equal to their plane labels — but the figure now wins where
    * the figure knows better.
    */
-  const byPlane = cosetClasses(stel, matrices, subMatrices, preferCells);
+  const byPlane = cosetClasses(stel, matrices, subMatrices, preferCells,
+                               opts?.prevPlanes ?? null);
 
   const of = new Map();
   const blends = new Map();
@@ -2393,7 +2394,7 @@ export function subgroupOrbits(stel, subMatrices) {
   return { planes: planeOf, planeCount, facets, facetCount, cells, cellCount };
 }
 
-export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
+export function cosetClasses(stel, matrices, subMatrices, preferCells = null, prevPlanes = null) {
   const sameMat = (a, b) => {
     for (let i = 0; i < 9; i++) if (Math.abs(a[i] - b[i]) > 1e-6) return false;
     return true;
@@ -2497,8 +2498,18 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
      * so when the caller passes its selected cells, each distinct candidate
      * labeling is scored by how coherently it colors them — a cell bounded
      * by planes of one tetrahedron counts clean under the right hand and
-     * mixed under the wrong one — and the cleanest wins. No cells, or a tie
-     * (every achiral figure), falls to the first candidate, deterministically.
+     * mixed under the wrong one — and the cleanest wins.
+     *
+     * Ties are broken by INCUMBENCY, not enumeration. Select both compounds
+     * of five tetrahedra at once and the two labelings score identically —
+     * each leaves the other hand's sixty cells mixed — so "cleanest" says
+     * nothing. Falling to the first candidate here made ADDING the second
+     * hand recolor the entire figure: the labeling already on screen was
+     * among the best, and it was thrown away for one that merely came first.
+     * So among the equally clean candidates, the one agreeing with the
+     * caller's previous labeling on the most planes wins, and the coloring
+     * changes only when the figure strictly demands it. No previous labeling
+     * (or no cells at all) still falls to the first, deterministically.
      */
     const tryRep = (rep) => {
       const out = new Map();
@@ -2515,11 +2526,10 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
       if (!distinct.some(d => d.sig === sig)) distinct.push({ sig, lab });
     }
     let best = distinct[0];
-    if (distinct.length > 1 && preferCells && preferCells.length) {
-      let bestScore = Infinity;
-      for (const cand of distinct) {
+    if (distinct.length > 1 && ((preferCells && preferCells.length) || prevPlanes)) {
+      const scoreOf = (cand) => {
         let score = 0;
-        for (const c of preferCells) {
+        for (const c of preferCells || []) {
           const seen = new Set();
           for (const f of c.top || []) {
             const k = cand.lab.get(f.plane);
@@ -2527,7 +2537,19 @@ export function cosetClasses(stel, matrices, subMatrices, preferCells = null) {
           }
           if (seen.size > 1) score += seen.size - 1;
         }
-        if (score < bestScore) { bestScore = score; best = cand; }
+        return score;
+      };
+      const scored = distinct.map(cand => ({ cand, score: scoreOf(cand) }));
+      const min = Math.min(...scored.map(s => s.score));
+      const finalists = scored.filter(s => s.score === min).map(s => s.cand);
+      best = finalists[0];
+      if (finalists.length > 1 && prevPlanes) {
+        let bestAgree = -1;
+        for (const cand of finalists) {
+          let agree = 0;
+          for (const q of orbit) if (cand.lab.get(q) === prevPlanes[q]) agree++;
+          if (agree > bestAgree) { bestAgree = agree; best = cand; }
+        }
       }
     }
     for (const [j, k] of best.lab) {
