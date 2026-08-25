@@ -298,8 +298,10 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
         sync();
       });
       const name = document.createElement('b');
-      name.textContent = face.sides
-        ? (POLYGON[face.sides] || face.sides + '-gon') : 'plane ' + face.index;
+      // a colouring can make one shape into several diagrams; say which this is
+      const which = face.parts > 1 ? ` ${face.part}/${face.parts}` : '';
+      name.textContent = (face.sides
+        ? (POLYGON[face.sides] || face.sides + '-gon') : 'plane ' + face.index) + which;
       cap.append(box, name);
       const sub = document.createElement('span');
       sub.className = 'ex-pick-sub';

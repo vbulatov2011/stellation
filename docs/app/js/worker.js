@@ -165,9 +165,29 @@ function facesForMode(mode) {
     if (had) { had.count++; continue; }
     // the geometry of the class representative, under this plane's index
     const proto = base[group[i]] || { sides: 0, central: false };
-    const entry = { index: i, sides: proto.sides, central: !!proto.central, count: 1 };
+    const entry = { index: i, sides: proto.sides, central: !!proto.central, count: 1,
+                    cls: group[i] };
     seen.set(key, entry);
     out.push(entry);
+  }
+  /*
+   * Say which is which. Split by colour, the parts are the same shape with the
+   * same number of planes, so they name themselves identically — five entries
+   * reading "triangle · 4 planes" look like a menu that has not changed, which
+   * is how a fixed list of five diagrams can still be invisible. Numbering
+   * them is the smallest thing that says there are five.
+   */
+  const parts = new Map();
+  for (const e of out) parts.set(e.cls, (parts.get(e.cls) || 0) + 1);
+  const nth = new Map();
+  for (const e of out) {
+    const n = parts.get(e.cls);
+    if (n > 1) {
+      const k = (nth.get(e.cls) || 0) + 1;
+      nth.set(e.cls, k);
+      e.part = k; e.parts = n;
+    }
+    delete e.cls;
   }
   return out.length ? out : base;
 }

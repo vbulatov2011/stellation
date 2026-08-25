@@ -33,7 +33,7 @@ const $$ = sel => [...document.querySelectorAll(sel)];
  * app.js and there was no way to tell from the screen. `_headers` stops that
  * happening; this makes it checkable when it does.
  */
-export const BUILD = '2026-08-06';
+export const BUILD = '2026-08-24';
 
 const state = {
   catalog: null, symmetry: null, geometry: null,
@@ -1687,8 +1687,10 @@ function fillFaceSelect(faces) {
   sel.innerHTML = state.faces.map(f => {
     const shape = f.central ? 'central cut'
                 : POLYGON[f.sides] || (f.sides ? `${f.sides}-gon` : 'face');
+    // one geometric class, several colourings — see facesForMode
+    const which = f.parts > 1 ? ` · colouring ${f.part} of ${f.parts}` : '';
     return `<option value="${f.index}"${f.index === state.planeIndex ? ' selected' : ''}>` +
-           `${shape} · ${f.count} plane${f.count === 1 ? '' : 's'}</option>`;
+           `${shape} · ${f.count} plane${f.count === 1 ? '' : 's'}${which}</option>`;
   }).join('');
 }
 
