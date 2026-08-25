@@ -155,10 +155,28 @@ Worker, and `fetch` for `data/*.json`, all of which are blocked on `file://`.
 ```bash
 python -m http.server 8000 --directory docs
 ```
-then open http://localhost:8000.  Any static server will do.
+then open http://localhost:8000.  Any static server will do — but not all of
+them do it equally well, and the difference has cost this project two evenings.
 
-`docs/_headers` is the cache policy for Cloudflare Pages, where the site is
-deployed; it has no effect locally.
+`python -m http.server` sends `Last-Modified` and no `Cache-Control` at all.
+Given no policy, a browser invents one: Chrome guesses a freshness lifetime of
+about a tenth of the file's age, so a module you edited an hour after its last
+edit is served from cache, unasked, for the next six minutes — and a module
+last touched a day ago, for two hours.  Nothing in the page can tell.  The
+symptom is a program that ignores the fix you just made, and the way it usually
+presents is worse than that: the parts of the app age at different rates, so a
+current page drives a stale worker and the screen looks entirely right while
+answering out of date.  Ctrl+shift+R does not reliably dislodge it, and does
+not cover the worker at all.
+
+[Servez](https://github.com/greggman/servez) does the right thing without being
+asked — it sets `Cache-Control: no-cache, no-store, must-revalidate` on every
+static file — so if you use it, none of the above can happen.  With anything
+else, keep devtools open with *Disable cache* ticked.
+
+`docs/_headers` is the same policy for Cloudflare Pages, where the site is
+deployed.  It has no effect locally, which is why the local server is worth a
+thought.
 
 ### Windows, presets and local files
 
