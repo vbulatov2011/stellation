@@ -84,9 +84,16 @@ export function groupsOf(mesh, mode) {
 
 /**
  * How each group is actually used by the figure on screen: for group i,
- * `crisp` is how many facets wear it alone and `mixed` how many wear it inside
- * a blend. Both zero means the group exists in the arithmetic and nowhere in
- * the picture.
+ * `crisp` is how many facets wear it alone, `mixed` how many wear it inside a
+ * blend, and `mixes` the distinct blends it belongs to, each as its full
+ * sorted member list. Both counts zero means the group exists in the
+ * arithmetic and nowhere in the picture.
+ *
+ * Naming the blends is affordable because there are few of them per group.
+ * Counted across the catalogue a group belongs to one to four distinct mixes,
+ * and the mixes themselves run from pairs to ten-way — so "with 5, 10" is
+ * usually the whole truth about a row, and where it is not, the count and the
+ * tooltip carry the rest.
  *
  * The rows are a contiguous 0..max because POSITION IS GROUP NUMBER — that is
  * what lets a palette be pasted from one figure onto another, and what
@@ -102,14 +109,22 @@ export function groupUsage(mesh, mode) {
   const arr = spec && mesh ? spec.of(mesh) : null;
   const use = new Map();
   if (!arr) return use;
-  const bump = (k, key) => {
-    if (!(k >= 0)) return;
-    const e = use.get(k) || { crisp: 0, mixed: 0 };
-    e[key]++; use.set(k, e);
+  const at = (k) => {
+    let e = use.get(k);
+    if (!e) { e = { crisp: 0, mixed: 0, mixes: new Map() }; use.set(k, e); }
+    return e;
   };
   for (const v of arr) {
-    if (Array.isArray(v) || ArrayBuffer.isView(v)) { for (const k of v) bump(k, 'mixed'); }
-    else bump(v, 'crisp');
+    if (Array.isArray(v) || ArrayBuffer.isView(v)) {
+      const members = Array.from(v).filter(k => k >= 0).sort((a, b) => a - b);
+      if (!members.length) continue;
+      const key = members.join(',');
+      for (const k of members) {
+        const e = at(k);
+        e.mixed++;
+        if (!e.mixes.has(key)) e.mixes.set(key, members);
+      }
+    } else if (v >= 0) at(v).crisp++;
   }
   return use;
 }
@@ -253,15 +268,39 @@ export function initColors({ state, renderer, diagram, onChange }) {
       if (i >= 0) {
         const note = document.createElement('i');
         note.className = 'col-use';
+        /*
+         * Who it is mixed WITH, which is the question a mixed row provokes.
+         * The partners are the other members of the blend; the group itself is
+         * dropped, since a row does not need telling that it is in its own mix.
+         * One small mix is named outright, because that is the common case and
+         * "with 5, 10" says everything; more than one, or a wide one, would
+         * outgrow the row, so it keeps the count and the tooltip carries the
+         * list.
+         */
+        const mixes = u ? [...u.mixes.values()] : [];
+        const partnersOf = (m) => m.filter(k => k !== i);
+        const short = (ks, cap) => ks.length <= cap
+          ? ks.join(', ')
+          : `${ks.slice(0, cap).join(', ')} and ${ks.length - cap} more`;
         if (!u) { note.textContent = 'unused here'; row.classList.add('col-idle'); }
-        else if (!u.crisp) note.textContent = `in ${u.mixed} mix${u.mixed === 1 ? '' : 'es'}`;
-        else note.textContent = `${u.crisp} facet${u.crisp === 1 ? '' : 's'}`;
+        else if (!u.crisp) {
+          const only = mixes.length === 1 ? partnersOf(mixes[0]) : null;
+          note.textContent = only && only.length <= 3
+            ? `with ${only.join(', ')}`
+            : `in ${mixes.length} mix${mixes.length === 1 ? '' : 'es'}`;
+        } else note.textContent = `${u.crisp} facet${u.crisp === 1 ? '' : 's'}`;
+        const mixList = mixes.length
+          ? mixes.slice(0, 8).map(m => `with ${short(partnersOf(m), 12)}`).join('; ')
+            + (mixes.length > 8 ? `; and ${mixes.length - 8} more` : '')
+          : '';
         note.title = !u
           ? 'No facet wears this group, on its own or in a mix: changing it changes nothing here'
           : (!u.crisp
-            ? `No facet wears this alone; ${u.mixed} wear it inside a mixed color, so its color is an ingredient of those`
+            ? `No facet wears this alone. It is an ingredient of ${u.mixed} mixed `
+              + `facet${u.mixed === 1 ? '' : 's'}, so changing its color changes `
+              + `${u.mixed === 1 ? 'it' : 'them'} — ${mixList}`
             : `${u.crisp} facet${u.crisp === 1 ? '' : 's'} wear this group`
-              + (u.mixed ? `, and ${u.mixed} more inside a mixed color` : ''));
+              + (u.mixed ? `, and ${u.mixed} more have it mixed in — ${mixList}` : ''));
         name.appendChild(note);
       }
 
