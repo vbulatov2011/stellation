@@ -13,6 +13,21 @@ import {
   formatCellsUnder, regroupSubCells, cosetClasses, facetCosetClasses,
   subgroupOrbits,
 } from '../../lib/core.js';
+import { BUILD } from './build.js';
+
+/*
+ * Announce the build, unasked, as the first thing.
+ *
+ * app.js fetches this worker under a URL carrying the build stamp, so this
+ * file itself is always the current one. What it imports is not: those URLs
+ * carry no stamp, so a stale core.js can be linked into a fresh worker, and
+ * that is invisible - the app's build line is the app's. build.js changes
+ * every build and sits in the same cache alongside them, so if the stamp that
+ * arrives here is not the one the app sent, something on this side came out of
+ * an old cache and the answers cannot be trusted. Saying so beats debugging
+ * geometry that is already fixed.
+ */
+self.postMessage({ hello: BUILD });
 
 let stel = null;
 let meta = null;
@@ -124,24 +139,24 @@ function outline() {
 }
 
 /*
- * Which planes give a genuinely different DIAGRAM, colouring included.
+ * Which planes give a genuinely different DIAGRAM, coloring included.
  *
  * diagramFaces() answers this for the geometry: two planes the stellation
  * symmetry carries onto each other carry their cells with them, so they draw
  * the same picture and only one is worth offering. That was the whole answer
- * while colour was a property of the shell or the face class, which every
+ * while color was a property of the shell or the face class, which every
  * symmetry of the figure preserves.
  *
- * A colouring by cosets or by subgroup orbits is not preserved by them. Its
+ * A coloring by cosets or by subgroup orbits is not preserved by them. Its
  * subgroup is chosen independently of the editing symmetry, so two planes that
- * are the same shape with the same cells can wear different colours — the
- * compound of five tetrahedra is exactly this, five differently coloured
+ * are the same shape with the same cells can wear different colors — the
+ * compound of five tetrahedra is exactly this, five differently colored
  * copies of one picture — and the list offered one of the five, which is the
  * one the user could look at and the one the export wrote.
  *
  * So within each geometric class the planes are split again by what they
- * actually carry: the plane's own label where the colouring gives planes
- * labels, and the multiset of its facets' labels where it colours facets. A
+ * actually carry: the plane's own label where the coloring gives planes
+ * labels, and the multiset of its facets' labels where it colors facets. A
  * signature rather than a symmetry argument, because it is the picture that
  * is being compared, and two planes with the same signature draw the same one.
  */
@@ -171,7 +186,7 @@ function facesForMode(mode) {
     out.push(entry);
   }
   /*
-   * Say which is which. Split by colour, the parts are the same shape with the
+   * Say which is which. Split by color, the parts are the same shape with the
    * same number of planes, so they name themselves identically — five entries
    * reading "triangle · 4 planes" look like a menu that has not changed, which
    * is how a fixed list of five diagrams can still be invisible. Numbering
@@ -192,7 +207,7 @@ function facesForMode(mode) {
   return out.length ? out : base;
 }
 
-/** what a plane carries, as a string, under the colouring now in force */
+/** what a plane carries, as a string, under the coloring now in force */
 function signatureFor(mode) {
   const facetsOf = (i) => stel.arrangement[i] || [];
   if (mode === 'coset') {
@@ -218,7 +233,7 @@ function signatureFor(mode) {
   }
   if (mode === 'orbitC') {
     if (!orbits) return null;
-    // the cells the plane separates, which is what an orbitC colouring paints
+    // the cells the plane separates, which is what an orbitC coloring paints
     return (i) => facetsOf(i).flatMap(f => [f.cellBelow, f.cellAbove]
       .filter(Boolean).map(c => String(orbits.cells.get(c) ?? -1))).sort().join(',');
   }
@@ -586,7 +601,7 @@ self.onmessage = (e) => {
                 orbitCounts: orbits
                   ? [orbits.planeCount, orbits.facetCount, orbits.cellCount] : null,
                 /*
-                 * The diagram list, refreshed: a colouring by cosets or orbits
+                 * The diagram list, refreshed: a coloring by cosets or orbits
                  * can make one geometric class of planes into several different
                  * pictures, and every one of them should be offerable.
                  */

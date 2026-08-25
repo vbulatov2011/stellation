@@ -68,7 +68,7 @@ export class DiagramView {
      *
      * The drawing itself is laid on nothing, so a snapshot of this canvas
      * carries the diagram and the transparency of its facets, with no
-     * background baked in. What a viewer sees behind it is this colour, set
+     * background baked in. What a viewer sees behind it is this color, set
      * on the element, which no toDataURL() or drawImage() can reach.
      */
     this.background = null;

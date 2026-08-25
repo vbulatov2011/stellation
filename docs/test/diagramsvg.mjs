@@ -42,7 +42,7 @@ const opacityOf = (tag) => {
 {
   const white = build({ background: 'white' });
   ok(rects(white).length === 1 && /fill="white"/.test(rects(white)[0]),
-     'a background colour is one rect behind everything');
+     'a background color is one rect behind everything');
 
   const none = build({ background: null });
   ok(rects(none).length === 0, 'background null writes no rect at all — the page shows through');

@@ -140,7 +140,7 @@ export function initExportImage({ state, renderer, currentName, download, setSta
   }
 
   /**
-   * The colour behind the view, as the screen has it.
+   * The color behind the view, as the screen has it.
    *
    * Read off the canvas element rather than kept here: the renderer paints no
    * background of its own any more, it sets one on its element (see

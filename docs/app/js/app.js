@@ -33,7 +33,8 @@ const $$ = sel => [...document.querySelectorAll(sel)];
  * app.js and there was no way to tell from the screen. `_headers` stops that
  * happening; this makes it checkable when it does.
  */
-export const BUILD = '2026-08-24';
+import { BUILD } from './build.js';
+export { BUILD };
 
 const state = {
   catalog: null, symmetry: null, geometry: null,
@@ -91,8 +92,26 @@ function stopBuild() {
 
 function startWorker() {
   worker?.terminate();
-  worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+  /*
+   * The build stamp rides in the URL.
+   *
+   * A worker is a separate script with a cache entry of its own, and nothing
+   * about a fresh app.js obliges the browser to refetch it — so a reload could
+   * leave a current app talking to a worker several commits old, which is a
+   * bad failure because the app looks right: the build line in the help dialog
+   * is the APP's. The plane list, the cell outline and the meshes all come
+   * from the worker, so the screen quietly answers old questions. Naming the
+   * build in the URL makes a new build a new script.
+   */
+  const url = new URL('./worker.js', import.meta.url);
+  url.searchParams.set('v', BUILD);
+  worker = new Worker(url, { type: 'module' });
   worker.onmessage = (e) => {
+    // the unsolicited greeting: which build the worker's modules came from
+    if (e.data.hello !== undefined) {
+      if (e.data.hello !== BUILD) staleWorker(e.data.hello);
+      return;
+    }
     const { id, ok, data, error, progress } = e.data;
     const p = pending.get(id);
     if (!p) return;
@@ -104,6 +123,23 @@ function startWorker() {
     for (const [, p] of pending) p.reject(new Error(e.message || 'worker failed'));
     pending.clear();
   };
+}
+
+/*
+ * The worker is running older code than the page.
+ *
+ * Only reachable through a cache: the worker script is fetched under the
+ * build's name, so a mismatch means one of the modules it imports - core.js,
+ * where the geometry lives - was served from an old entry. The symptom is
+ * nasty precisely because everything looks right, so it is worth a loud say:
+ * this is the shape of an evening spent re-fixing a fixed bug.
+ */
+let staleBuild = null;
+function staleWorker(theirs) {
+  staleBuild = theirs || 'unknown';
+  console.warn(`[stellation] stale worker: page is ${BUILD}, worker is ${staleBuild}` +
+               ' — reload with the cache disabled');
+  setStatus('');   // whatever it currently says, say this instead
 }
 
 function call(type, payload, onProgress) {
@@ -169,7 +205,7 @@ function markSaved() { state.dirty = false; scheduleAutosave(); }
  * The URL alone cannot carry the answer. A link to a document — a preset, or a
  * file of your own — names it and nothing more, so it stops describing what is
  * on screen the moment you change anything; and the state hash that replaces
- * it carries the geometry only, not the colours, the opacities, the line
+ * it carries the geometry only, not the colors, the opacities, the line
  * weights or the coset subgroup. So a reload after editing came back to the
  * same solid wearing a different face, which is what this is for. The whole
  * document is written here instead, in the same JSON a file would hold.
@@ -226,7 +262,7 @@ function scheduleAutosave() {
 /*
  * And once more on the way out, which is the case that matters: a reload fires
  * pagehide, so whatever the timer has not yet written is written now. Settings
- * that never touch the hash or the dirty flag — a colour, an opacity, a line
+ * that never touch the hash or the dirty flag — a color, an opacity, a line
  * weight — are carried by this alone.
  */
 addEventListener('pagehide', writeAutosave);
@@ -557,7 +593,7 @@ function keepLink(hash) {
  *
  * It used to be rewritten on every change with a description of the figure —
  * solid, groups, depth, camera, cells — which was always a partial account:
- * it had no room for the colouring, the coset subgroup, the opacities or the
+ * it had no room for the coloring, the coset subgroup, the opacities or the
  * line weights, so reopening one gave the same solid wearing a different
  * face. Now that the working document is kept in the browser, the URL is
  * relieved of a job it could not do. A document opened from a preset or a
@@ -1166,8 +1202,8 @@ async function applyCosetSub() {
   if (!g) return;
   /*
    * The selection goes too: it decides between enantiomorphic labellings. So
-   * does the colour mode, because the answer includes the list of diagrams —
-   * a colouring by cosets or orbits can turn one class of planes into several
+   * does the color mode, because the answer includes the list of diagrams —
+   * a coloring by cosets or orbits can turn one class of planes into several
    * different pictures, and the plane menu has to offer all of them.
    */
   const info = await call('cosets', {
@@ -1687,8 +1723,8 @@ function fillFaceSelect(faces) {
   sel.innerHTML = state.faces.map(f => {
     const shape = f.central ? 'central cut'
                 : POLYGON[f.sides] || (f.sides ? `${f.sides}-gon` : 'face');
-    // one geometric class, several colourings — see facesForMode
-    const which = f.parts > 1 ? ` · colouring ${f.part} of ${f.parts}` : '';
+    // one geometric class, several colorings — see facesForMode
+    const which = f.parts > 1 ? ` · coloring ${f.part} of ${f.parts}` : '';
     return `<option value="${f.index}"${f.index === state.planeIndex ? ' selected' : ''}>` +
            `${shape} · ${f.count} plane${f.count === 1 ? '' : 's'}${which}</option>`;
   }).join('');
@@ -1898,8 +1934,8 @@ function wireControls() {
     if (wasSplit !== (e.target.value === 'cosetM')) await refresh();
     /*
      * And the list of diagrams, because which planes draw DIFFERENT pictures
-     * depends on the colouring: under a coset or orbit reading, planes the
-     * symmetry treats as one can wear different colours, and each is its own
+     * depends on the coloring: under a coset or orbit reading, planes the
+     * symmetry treats as one can wear different colors, and each is its own
      * diagram to look at and to export.
      */
     await applyCosetSub();
@@ -1915,7 +1951,7 @@ function wireControls() {
     const g = state.symmetry[name];
     if (!g) return;
     // send unconditionally: unlike applyCosetSub, this IS the change. The
-    // colour mode rides along, because the answer carries the list of
+    // color mode rides along, because the answer carries the list of
     // diagrams and which planes draw different pictures depends on it
     const info = await call('cosets', {
       subMatrices: g.matrices, selected: [...state.selected],
@@ -2796,6 +2832,19 @@ function download(filename, text, mime = 'text/plain') {
 }
 
 function setStatus(text, busy, frac) {
+  /*
+   * A stale worker outranks the news.
+   *
+   * The greeting that detects it arrives during boot, well before the document
+   * finishes restoring, so a plain assignment was overwritten by the restore's
+   * own status a moment later and the warning was gone before it could be
+   * read. Since the condition does not go away until the page is reloaded, it
+   * belongs to every message from then on, not to one of them.
+   */
+  if (staleBuild) {
+    text = `stale worker (page ${BUILD}, worker ${staleBuild}) — reload with cache disabled`;
+    busy = false;
+  }
   $('#status').textContent = text;
   $('#status').classList.toggle('busy', !!busy);
   const bar = $('#progress');

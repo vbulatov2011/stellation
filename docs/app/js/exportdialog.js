@@ -69,7 +69,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
    * Which raster is wanted, or null for the vector.
    *
    * Both carry the alpha channel, which is the point of being able to export
-   * without a background at all. They differ in the colours: PNG is exact,
+   * without a background at all. They differ in the colors: PNG is exact,
    * and WebP — as the canvas encodes it — is not. There is no lossless
    * setting to ask for; a canvas writes VP8 at every quality, so 1 is simply
    * the highest fidelity on offer. Measured on a 500px diagram it lands about
@@ -166,7 +166,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     // the look, exactly as the Diagram panel has it — see the note above
     ...(diagram?.styleOptions?.() || {}),
     /*
-     * The paper, and what colour it is. Off, the picture has none at all —
+     * The paper, and what color it is. Off, the picture has none at all —
      * which is the only setting under which the figure's own transparency
      * means anything in the file.
      *
@@ -298,7 +298,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
         sync();
       });
       const name = document.createElement('b');
-      // a colouring can make one shape into several diagrams; say which this is
+      // a coloring can make one shape into several diagrams; say which this is
       const which = face.parts > 1 ? ` ${face.part}/${face.parts}` : '';
       name.textContent = (face.sides
         ? (POLYGON[face.sides] || face.sides + '-gon') : 'plane ' + face.index) + which;
@@ -743,7 +743,7 @@ export function initExportDialog({ state, call, diagram, currentName, download, 
     /*
      * Redraw the cards because something OUTSIDE this dialog changed the way
      * the diagram looks. The preview promises the picture that will be saved
-     * and the picture is now the panel's, so a weight or a colour set there
+     * and the picture is now the panel's, so a weight or a color set there
      * has to arrive here — otherwise the promise quietly stops being true
      * while the dialog sits open beside the diagram it disagrees with.
      */

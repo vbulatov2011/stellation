@@ -1910,7 +1910,7 @@ export class Renderer3D {
    *
    * PNG by default and exact. 'image/webp' is the other one worth asking for:
    * it keeps the alpha channel just as exactly and packs the picture into
-   * roughly half the bytes, at the cost of colours that are very slightly
+   * roughly half the bytes, at the cost of colors that are very slightly
    * lossy — a canvas has no lossless WebP setting to offer, so quality 1 is
    * simply the best of them.
    */

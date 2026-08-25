@@ -69,28 +69,46 @@
   </div>
   <ul class="done">
     <li><div>
-      <b>Every differently coloured diagram can be chosen and exported.</b>
+      <b>The build stamps itself, and the worker cannot be stale.</b>
+      The build line in the help dialog was a date somebody typed, so it said
+      what the last person to remember said, and an evening went on a browser
+      that showed the right date and the wrong program. It is now written by
+      <code>docs/tools/stamp-build.mjs</code> on every commit, to the minute,
+      and a hook installed by <code>docs/tools/install-hooks.mjs</code> runs it.
+      <p>
+      The stamp is also a cache key. A worker is a separate script with a cache
+      entry of its own, and nothing about a fresh page obliges the browser to
+      refetch it: a current app can talk to a worker several commits old, which
+      is a bad failure because the screen looks right — the build line is the
+      page&rsquo;s, while the planes, the cells and the meshes all come from the
+      worker. The worker is now fetched under the build&rsquo;s name, so a new
+      build is a new script. What the worker itself imports still carries no
+      stamp, so it announces which build its modules came from and the status
+      bar says so, and keeps saying so, if that is not the page&rsquo;s.
+    </div></li>
+    <li><div>
+      <b>Every differently colored diagram can be chosen and exported.</b>
       The plane menu offers the diagrams that differ, and it decided that by
       geometry alone: two planes the stellation symmetry carries onto each
       other carry their cells with them, so they draw the same picture and one
-      of them is enough. That was the whole answer while colour came from the
+      of them is enough. That was the whole answer while color came from the
       shell or the face class, which every symmetry of the figure preserves.
       <p>
-      A colouring by cosets or by subgroup orbits is not preserved by them —
+      A coloring by cosets or by subgroup orbits is not preserved by them —
       its subgroup is chosen independently of the editing symmetry — so planes
-      of the same shape carrying the same cells can wear different colours. The
+      of the same shape carrying the same cells can wear different colors. The
       compound of five tetrahedra is exactly that: one picture in five
-      colourings, of which the menu offered one, and the export wrote that one.
+      colorings, of which the menu offered one, and the export wrote that one.
       Now each geometric class is split again by what its planes actually
-      carry — the plane’s own label where the colouring labels planes, the
+      carry — the plane’s own label where the coloring labels planes, the
       multiset of its facets’ labels where it labels facets — so the
-      icosahedron under I with colouring subgroup T offers five diagrams of
-      four planes each, and the export offers five cards. A plain colouring is
+      icosahedron under I with coloring subgroup T offers five diagrams of
+      four planes each, and the export offers five cards. A plain coloring is
       unaffected: twenty planes, one diagram, as before.
       <p>
       The parts are numbered, in the menu and on the export cards — five
       entries all reading <i>triangle · 4 planes</i> are five diagrams that look
-      like a menu which has not changed, so they now read <i>colouring 1 of
+      like a menu which has not changed, so they now read <i>coloring 1 of
       5</i> and so on.
     </div></li>
     <li><div>
@@ -99,7 +117,7 @@
       stops describing what is on screen the moment you change anything, so the
       app replaced it with a hash of the geometry alone: the solid, the groups,
       the depth, the camera, the cells. Everything else the document says — the
-      colouring, the coset subgroup, the opacities, the line weights, an edited
+      coloring, the coset subgroup, the opacities, the line weights, an edited
       palette — had nowhere to go. Reload after an edit and the same solid came
       back wearing a different face, which is a poor thing to discover while
       working.
@@ -124,16 +142,16 @@
     <li><div>
       <b>Coloring folds into Construction; each view gets its own faces.</b>
       The Coloring section held three things that wanted to be in three
-      different places. The reading the colours carry, and the palette editor,
+      different places. The reading the colors carry, and the palette editor,
       are a <i>coloring</i> box in Construction, beside the symmetry the
-      colouring divides by — they describe the figure, not the view. The
+      coloring divides by — they describe the figure, not the view. The
       opacity went the other way: it is a <i>fill</i> box in Solid, and a
       second one in Diagram, each a <i>faces fill</i> switch and a number.
       <p>
       Splitting it was the point. One slider used to drive both, so thinning
       the solid to glass to look inside it faded the diagram beside it for no
       reason — and a lit solid and a drawing on paper do not want the same
-      weight of paint. The colours are still shared; only the paint is not, and
+      weight of paint. The colors are still shared; only the paint is not, and
       an exported diagram now carries the diagram's opacity rather than the
       solid's. The switch is not the same as typing zero: zero is a wireframe
       you asked for and the box keeps it, while the switch puts the faces away
@@ -149,7 +167,7 @@
       looking for, which is not a thing to decide once for everybody.
     </div></li>
     <li><div>
-      <b>The style controls fit on one line each.</b> A switch, its colour and
+      <b>The style controls fit on one line each.</b> A switch, its color and
       its weight were three rows deep — a checkbox, then an indented row with a
       swatch and a slider, then the reading of the slider — so a boxed group of
       two edge kinds ran to six rows before the cylinders switches. Each kind
@@ -168,9 +186,9 @@
       The cylinders switch went with them. It was a checkbox on a line of its
       own reading "as cylinders", which states one of the two answers and
       leaves the other unnamed; it is a choice between <i>lines</i> and
-      <i>cylinders</i> now, on the same line as the colour and the weight. So
+      <i>cylinders</i> now, on the same line as the color and the weight. So
       each kind of edge is one row that reads across as what it is: whether to
-      draw it, in what colour, how heavily, and as what.
+      draw it, in what color, how heavily, and as what.
     </div></li>
     <li><div>
       <b>Symmetry &amp; depth becomes Construction, in two boxes.</b> The two
@@ -215,16 +233,16 @@
       SOLID was already wearing. It is two switches and a weight in the Diagram
       section now, reading the symmetry itself, so the diagram can be marked
       with its mirrors whether or not the solid is showing them. The marks keep
-      the per-class colours, which is what makes a dot here and a cylinder
+      the per-class colors, which is what makes a dot here and a cylinder
       there read as one object, and they are written into the exported SVG and
       PNG as well — over paper, each dot takes a ring of the paper so it stays
       legible on top of the ink.
       <p>
-      The export dialog gains the colour of that paper, rather than only white
+      The export dialog gains the color of that paper, rather than only white
       or nothing. And it listens: with the dialog open, changing anything about
       how the diagram looks repaints its preview cards. The preview promises
       the picture that will be saved, and now that the picture is the panel's,
-      a weight or a colour set there had to arrive here — or the promise would
+      a weight or a color set there had to arrive here — or the promise would
       quietly stop being true while the dialog sat open beside the diagram it
       disagreed with.
     </div></li>
@@ -288,7 +306,7 @@
       would send a figure that looked right on a pale screen back on a black
       square. It is laid on the background currently behind the view instead,
       read off the canvas element where the renderer now keeps it: light
-      rgb(246,247,249) or dark rgb(14,15,20), the colour you were looking at.
+      rgb(246,247,249) or dark rgb(14,15,20), the color you were looking at.
       PNG and WebP are unaffected and stay transparent.
     </div></li>
     <li><div>
@@ -327,7 +345,7 @@
       <p>
       And WebP joins SVG and PNG, in both export dialogs. It keeps the alpha
       channel exactly and lands at about half the bytes of the PNG; its
-      colours are very slightly lossy on the antialiased edges — a canvas
+      colors are very slightly lossy on the antialiased edges — a canvas
       offers no lossless setting, whatever quality it is asked for — so PNG
       remains the one to reach for when the pixels have to match.
     </div></li>
@@ -357,11 +375,11 @@
       out of it.
       <p>
       Nothing on screen changes. The backdrop you see is the canvas element's
-      own CSS colour, set from the same per-theme value callers always set,
+      own CSS color, set from the same per-theme value callers always set,
       and an export reads the drawing buffer, which never had it. The blending
       needed one real correction to make this true: coverage has to accumulate
       down the depth-sorted pass — <code>a + dst·(1−a)</code> — where before
-      the alpha channel was blended with the same rule as a colour, so two
+      the alpha channel was blended with the same rule as a color, so two
       half-transparent facets over empty space left a pixel thinner than
       either. That never showed while the background was opaque, and shows at
       once when it is not. Video is unaffected: it carries no alpha, so its

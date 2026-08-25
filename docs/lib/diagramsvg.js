@@ -86,7 +86,7 @@ export const DIAGRAM_DEFAULTS = {
   colorMode: 'layer',   // 'layer' | 'class' | 'stellClass' | 'none'
   /*
    * The global facet opacity, the same number the 3D view applies over every
-   * facet colour. It multiplies each fill's own alpha, so a figure exported
+   * facet color. It multiplies each fill's own alpha, so a figure exported
    * at half opacity is half transparent on the page it is placed on — which
    * is only visible at all when `background` is null.
    */
