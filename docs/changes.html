@@ -69,6 +69,33 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>A perspective camera that leaves the figure the size it was.</b>
+      Perspective is normally a different camera, and switching to it resizes
+      and re-frames everything at once. This one is a continuous deformation
+      of the parallel camera instead. Put the eye at distance <i>d</i> and let
+      <i>p</i> = R/<i>d</i>, R the polyhedron&rsquo;s own radius: <i>p</i> = 0
+      is the eye at infinity, <i>p</i> = 0.1 an eye ten radii out. Choosing the
+      focal length so the plane through the centre keeps its parallel size
+      collapses the whole projection to a depth-dependent magnification about
+      the view axis, <i>m</i>(z) = 1/(1 &minus; <i>p</i>&middot;z/R).
+      <p>
+      That is what makes it usable here. <i>m</i>(0) = 1 for every <i>p</i>, so
+      turning perspective up never resizes the figure &mdash; it leans the near
+      parts toward you and the far parts away, about a plane that stays put.
+      And <i>m</i> &equiv; 1 at <i>p</i> = 0, analytically, so there is no jump
+      leaving the parallel camera: the slider starts at orthographic and grows
+      out of it.
+      <p>
+      Navigation stays in the image. Pan slides the finished picture, zoom
+      scales it, and <em>fit</em> changes only that zoom &mdash; none of them
+      move the eye, so the perspective you chose survives being looked around.
+      The eye is capped to stay outside the figure, which on a stellation
+      reaching 8.4 core radii means it can come no closer than about 9.3.
+      Picking inverts the same formula, so what you click is what you point at,
+      and the camera travels in the saved view as a ninth number that is absent
+      whenever it is zero.
+    </div></li>
+    <li><div>
       <b>Point at a facet and it says which cosets it belongs to.</b>
       A blend answers &ldquo;which cosets?&rdquo; with a color, and a color is
       the one form of that answer you cannot read back &mdash; three colors
