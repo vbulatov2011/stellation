@@ -154,6 +154,7 @@ function call(type, payload, onProgress) {
 // ------------------------------------------------------------------ boot
 
 let renderer, diagram, cells, docs, presets, workspace, helpWin;
+let syncPerspectiveUI = null;      // set once the controls exist
 /*
  * The #doc= link this session was opened with, held so the URL stays that
  * link until the first edit — at which point the state hash below is the
@@ -328,6 +329,12 @@ async function boot() {
     if (localStorage.getItem('colorMix') === '0') {
       $('#colorMix').checked = false;
       setBlendMixing(false);   // before the first setMesh, like the mode above
+    }
+    const savedPersp = Number(localStorage.getItem('perspective'));
+    if (Number.isFinite(savedPersp) && savedPersp > 0) {
+      renderer.perspective = Math.min(0.9, savedPersp);
+      $('#perspective').value = String(renderer.perspective);
+      $('#perspectiveRange').value = String(renderer.perspective);
     }
     const savedElemSym = localStorage.getItem('elemSym');
     if (savedElemSym) $('#elemSym').dataset.want = savedElemSym;
@@ -1177,7 +1184,10 @@ async function select(item, opts = {}) {
   // that a stopped or failed build never produced
   const ok = await build(opts.cells, opts.cellsIndexing || null);
   // after the build, so the mesh (and therefore the model scale) already exists
-  if (opts.view && renderer?.setView(opts.view)) lastView = renderer.getView().join(',');
+  if (opts.view && renderer?.setView(opts.view)) {
+    lastView = renderer.getView().join(',');
+    syncPerspectiveUI?.();          // the view carries the camera, so the controls move too
+  }
   syncOrient();
   return ok;
 }
@@ -2375,6 +2385,30 @@ function wireControls() {
   // the diagram's fit, replacing the double-click that used to reset the view
   // and kept firing on two quick cell toggles
   $('#fitDiagram').onclick = () => { diagram?.resetView(); setStatus('diagram centered', false); };
+  /*
+   * The camera, which is the one view setting that is not a style: it changes
+   * what the projection IS. Two controls on one value, because a number says
+   * "an eye ten radii out" exactly and a slider is the only way to feel the
+   * lean come on. Remembered like the other view preferences, and carried in
+   * the saved view so a document reopens from the camera it was composed at.
+   */
+  /* the controls, made to agree with whatever the renderer is using */
+  syncPerspectiveUI = () => {
+    const p = renderer?.perspective ?? 0;
+    $('#perspective').value = String(p);
+    $('#perspectiveRange').value = String(p);
+  };
+  const pushPerspective = (v, from) => {
+    const p = Math.min(0.9, Math.max(0, Number(v) || 0));
+    if (from !== 'number') $('#perspective').value = String(p);
+    if (from !== 'range') $('#perspectiveRange').value = String(p);
+    renderer?.setPerspective(p);
+    try { localStorage.setItem('perspective', String(p)); } catch { }
+    mark();                    // the camera is part of the document
+  };
+  $('#perspective').oninput = (e) => pushPerspective(e.target.value, 'number');
+  $('#perspectiveRange').oninput = (e) => pushPerspective(e.target.value, 'range');
+
   $('#fitView').onclick = () => { renderer?.fit(); setStatus('rescaled to fit', false); };
   /*
    * The orientation control is both a readout and a chooser. The menu picks
@@ -3218,7 +3252,7 @@ async function openDocument(text, filename = '', opts = {}) {
     if (ok) commit();          // the look, once the figure is there to wear it
     if (ok) markSaved();       // freshly opened: nothing to lose yet
     if (ok) keepLink(opts.hash);
-    if (ok && doc.view) renderer?.setView(doc.view);
+    if (ok && doc.view) { renderer?.setView(doc.view); syncPerspectiveUI?.(); }
     syncOrient();
     setStatus(ok ? `opened ${doc.name || filename} (custom planes)` : 'could not build that plane sheet', false);
     return !!ok;

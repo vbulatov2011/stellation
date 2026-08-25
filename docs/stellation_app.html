@@ -424,6 +424,17 @@
         <div id="elemLegend" class="legend elem-legend"></div>
       </fieldset>
       <fieldset class="sym-elems">
+        <legend title="Where the eye is. The parallel camera sits at infinity; bringing it in leans the near parts of the figure toward you without changing the size of the plane through the middle.">camera</legend>
+        <div class="ctl-line">
+          <label class="field grow" title="The eye's distance, as the polyhedron's radius divided by it: 0 is the parallel camera at infinity, 0.1 an eye ten radii out, 0.25 four radii. The plane through the centre keeps its size whatever you choose, so the figure does not grow or shrink as you turn this up — only its near parts lean toward you. Capped so the eye stays outside the figure, which on a far-reaching stellation is well below 0.9.">
+            <span>perspective</span>
+            <input id="perspective" type="number" min="0" max="0.9" step="0.01" value="0">
+          </label>
+          <input id="perspectiveRange" type="range" min="0" max="0.9" step="0.01" value="0"
+                 title="Drag to lean the figure toward you" aria-label="Perspective">
+        </div>
+      </fieldset>
+      <fieldset class="sym-elems">
         <legend title="The x, y and z axes through the origin, as arrows spanning the solid — the frame the symmetry groups' matrices are written in. In the front view x points right, y up and z toward you.">coordinate axes</legend>
         <div class="ctl-line">
           <label class="check grow"><input id="showCoordAxes" type="checkbox">

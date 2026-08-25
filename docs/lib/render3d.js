@@ -284,6 +284,12 @@ export class Renderer3D {
     this.rotation = [...ISO_Q];
     this.distance = 1.0;   // relative zoom; the fit distance is computed per frame
     /*
+     * R / (eye distance). 0 is the parallel camera; 0.1 puts the eye ten
+     * polyhedron radii away. Clamped per frame so the eye stays outside the
+     * figure however far the spikes reach — see _camera.
+     */
+    this.perspective = 0;
+    /*
      * Sideways shift of the view, in world units on the camera's own axes.
      *
      * Zooming in to look at one spike puts the rest of the solid outside the
@@ -388,6 +394,14 @@ export class Renderer3D {
     const meshR = (this.lastMaxR || 0) * s;
     if (meshR > 1e-6) return Math.max(1e-3, meshR);
     return Math.max(1e-3, (this.coreWorldR || 0) * s);
+  }
+
+  /** R / (eye distance): 0 parallel, 0.1 ten radii out. See stellationProjection. */
+  setPerspective(p) {
+    const v = Number.isFinite(p) ? Math.min(0.9, Math.max(0, p)) : 0;
+    if (v === this.perspective) return;
+    this.perspective = v;
+    this.draw();
   }
 
   setElements(elements) {
@@ -752,7 +766,16 @@ export class Renderer3D {
   fit() {
     if (!this.mesh) return;
     // screen size goes as R / (distance * fit), so distance = R frames it
-    const R = Math.max(1e-6, (this.lastMaxR || 1) * (this.modelScale || 1));
+    let R = Math.max(1e-6, (this.lastMaxR || 1) * (this.modelScale || 1));
+    /*
+     * Under perspective the silhouette is bigger than the model radius, by
+     * the magnification of whatever leans furthest toward the eye. Fitting to
+     * R alone would cut those parts off. This only changes the 2-D zoom — the
+     * eye stays where the perspective parameter put it, since fitting is a
+     * question about the picture, not about where you are standing.
+     */
+    const cam = this._camera(this.canvas.width || 1, this.canvas.height || 1);
+    if (cam.p > 0) R *= 1 / Math.max(0.1, 1 - cam.p * R / cam.pr);
     // fit means "show me all of it", so it undoes the pan as well as the zoom —
     // a fit that left the model shoved off to one side would not be a fit
     this._ease({ distance: Math.min(40, Math.max(0.05, R)), pan: { x: 0, y: 0 } });
@@ -785,8 +808,13 @@ export class Renderer3D {
      * five numbers is a pre-pan view, seven adds the pan, eight the scale.
      */
     const scale = this.modelScale || 0;
-    if (this.pan.x || this.pan.y || scale) v.push(this.pan.x, this.pan.y);
-    if (scale) v.push(scale);
+    const p = this.perspective || 0;
+    if (this.pan.x || this.pan.y || scale || p) v.push(this.pan.x, this.pan.y);
+    if (scale || p) v.push(scale);
+    // ninth number: the perspective. Absent in every view saved before it
+    // existed, and absent again whenever it is zero, so a parallel view is
+    // written exactly as it always was.
+    if (p) v.push(p);
     return v.map(x => Math.round(x * 1e6) / 1e6);
   }
 
@@ -806,6 +834,7 @@ export class Renderer3D {
      * mesh from disagreeing with the view it is drawn under.
      */
     if (v[7] > 0) this.modelScale = v[7];
+    this.perspective = Math.min(0.9, Math.max(0, v[8] || 0));
     this._pointerReset();
     this.draw();
     return true;
@@ -1327,12 +1356,17 @@ export class Renderer3D {
         !(this.showCoordAxes && this.coordAxesCount)) return;
 
     const cam = this._camera(W, H);
-    // A parallel projection has no eye to fall behind, so the near plane may sit
-    // behind the origin: bracket the scene symmetrically and nothing can clip.
-    const proj = orthographic(cam.halfH, cam.aspect, cam.dist - cam.depth, cam.dist + cam.depth);
-    // the pan rides in the view translation, so it shifts the image on the
-    // camera's own axes whatever the model's orientation
-    const view = mat4mul(translation(-this.pan.x, -this.pan.y, -cam.dist), quatToMat4(this.rotation));
+    /*
+     * The model is only turned. It is not pushed away from the eye, because
+     * the eye's distance is the perspective parameter's business and the
+     * figure is measured from its own centre; and it is not shifted by the
+     * pan, because the pan moves the finished image rather than the model.
+     * Both used to live in this matrix, which is exactly what made panning a
+     * perspective view swing the figure about instead of sliding it.
+     */
+    const proj = stellationProjection(cam.halfH, cam.aspect, this.pan,
+                                      cam.p, cam.pr, cam.depth);
+    const view = quatToMat4(this.rotation);
 
     gl.useProgram(this.prog);
     gl.uniformMatrix4fv(gl.getUniformLocation(this.prog, 'uProj'), false, proj);
@@ -1521,7 +1555,18 @@ export class Renderer3D {
     const narrow = Math.min(1, aspect / Math.cos(fovy / 2));
     const dist = fit * F;
     const zoom = (F / this.distance) * narrow;
-    return { fovy, aspect, fit, R: F, meshR, dist, zoom,
+    /*
+     * The perspective unit is the POLYHEDRON's radius — the core, layer 0 —
+     * not the arrangement's, so "ten radii out" means the same thing however
+     * far a stellation's spikes reach. The eye must nonetheless stay outside
+     * the figure, or geometry passes behind it and is clipped away, so p is
+     * capped at 0.9·R/reach: on a figure eight core-radii across the most
+     * perspective on offer is an eye at about 8.9 radii.
+     */
+    const pr = Math.max(1e-6, (this.coreWorldR || this.lastMaxR || 1) * (this.modelScale || 1));
+    const reach = Math.max(meshR, pr);
+    const p = Math.min(this.perspective || 0, 0.9 * pr / reach);
+    return { fovy, aspect, fit, R: F, meshR, dist, zoom, p, pr,
              halfH: dist * Math.tan(fovy / 2) / zoom,
              depth: Math.max(F, meshR) * 3 + 10 };
   }
@@ -1554,17 +1599,21 @@ export class Renderer3D {
     const ny = 1 - ((e.clientY - r.top) / r.height) * 2;
 
     const cam = this._camera(this.canvas.width, this.canvas.height);
-    // Parallel projection: every ray runs down -Z and it is the *origin* that
-    // moves with the pointer, the reverse of a perspective pick. cam.halfH is
-    // the same value the projection was built from, so picking and drawing
-    // cannot disagree at any zoom.
-    // + pan, because the view translation shifted the world by -pan: picking and
-    // drawing have to agree about where the model is, or a panned view picks the
-    // face that would have been under the pointer before the pan
-    const originView = [nx * cam.halfH * cam.aspect + this.pan.x,
-                        ny * cam.halfH + this.pan.y,
-                        cam.dist + cam.depth];
-    const dirView = [0, 0, -1];
+    /*
+     * The ray, inverted from the projection so that picking and drawing cannot
+     * disagree. Undoing the pan and the zoom gives the point (x', y') where
+     * the ray crosses the MIDDLE plane, since m(0) = 1 there; and since
+     * x' = m(z)·x, the ray is x(z) = x'·(1 - p·z/R), a straight line through
+     * (x', y', 0) with tangent (-p·x'/R, -p·y'/R, 1). Walked from the near
+     * bracket inward, so the first hit is the nearest, as the parallel version
+     * did. At p = 0 it degenerates to the old vertical ray.
+     */
+    const xm = nx * cam.halfH * cam.aspect + this.pan.x;
+    const ym = ny * cam.halfH + this.pan.y;
+    const k = cam.p > 0 && cam.pr > 0 ? cam.p / cam.pr : 0;
+    const z0 = k > 0 ? Math.min(cam.depth, 0.98 / k) : cam.depth;
+    const originView = [xm * (1 - k * z0), ym * (1 - k * z0), z0];
+    const dirView = [k * xm, k * ym, -1];
 
     const R = quatToMat4(this.rotation);
     const origin = rotT(R, originView);
@@ -2188,6 +2237,59 @@ function slerp(a, b, t) {
  * be negative — nothing is divided by z, so a near plane behind the origin is
  * well defined and simply widens the depth range.
  */
+/*
+ * The projection: orthographic at p = 0, and a continuous deformation of it
+ * as p grows.
+ *
+ * Put the eye on the view axis at distance d from the centre and let
+ *
+ *     p = R / d,       R the polyhedron's radius,
+ *
+ * so p = 0 is the eye at infinity and p = 0.1 is the eye ten radii out. A
+ * pinhole with focal length f sends a view-space point (x, y, z) — the viewer
+ * looking along -z, so +z is toward the eye — to f·x/(d - z). Choose f so the
+ * MIDDLE PLANE keeps the size it had under the orthographic camera, f = s·d,
+ * and the whole projection collapses to a depth-dependent magnification about
+ * the view axis:
+ *
+ *     X = s·x·m(z),    m(z) = 1 / (1 - p·z/R)
+ *
+ * m(0) = 1 for every p, which is the property that makes this usable on a
+ * stellation: the plane through the centre never changes size, so turning
+ * perspective up does not resize the figure, it only leans the parts in front
+ * of that plane toward you and the parts behind it away. m ≡ 1 at p = 0, and
+ * m is analytic in p, so the transition from the parallel camera is smooth
+ * rather than a jump between two cameras.
+ *
+ * The divide does the work: with w = 1 - p·z/R, x/w is exactly m(z)·x. The
+ * pan must NOT be magnified — navigation moves the finished image, it does
+ * not move the eye — so it enters as B·w, which the divide turns back into a
+ * constant B. That is why the z column carries -B·k terms below.
+ *
+ * Depth is g(z) = z·m(z), whose derivative 1/(1 - p·z/R)² is positive
+ * wherever the projection is defined, so the ordering is preserved for every
+ * p and a linear row suffices. Anything at or past the eye gets w <= 0 and is
+ * clipped by the pipeline, which is what should happen to geometry behind the
+ * camera.
+ */
+export function stellationProjection(halfH, aspect, pan, p, R, zBound) {
+  const hw = halfH * aspect;
+  const k = p > 0 && R > 0 ? p / R : 0;          // w = 1 - k·z
+  const bx = -pan.x / hw, by = -pan.y / halfH;   // the pan, in NDC
+  // the near bracket stops short of the eye; the far one is the figure's back
+  const zNear = k > 0 ? Math.min(zBound, 0.98 / k) : zBound;
+  const g = (z) => z / (1 - k * z);
+  const gN = g(zNear), gF = g(-zBound);
+  const C = gN > gF ? 2 / (gF - gN) : -1;        // negative: +z is toward the eye
+  const D = 1 - C * gF;
+  return new Float32Array([
+    1 / hw, 0,         0,          0,
+    0,      1 / halfH, 0,          0,
+    -bx * k, -by * k,  C - D * k, -k,
+    bx,      by,       D,          1,
+  ]);
+}
+
 function orthographic(halfH, aspect, near, far) {
   const halfW = halfH * aspect, nf = 1 / (near - far);
   return new Float32Array([
