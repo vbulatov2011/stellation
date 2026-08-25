@@ -1163,8 +1163,18 @@ async function applyCosetSub() {
   const name = $('#cosetSub').value;
   if (!name || name === state.polySym) return;
   const g = state.symmetry[name];
-  // the selection goes too: it decides between enantiomorphic labellings
-  if (g) await call('cosets', { subMatrices: g.matrices, selected: [...state.selected] });
+  if (!g) return;
+  /*
+   * The selection goes too: it decides between enantiomorphic labellings. So
+   * does the colour mode, because the answer includes the list of diagrams —
+   * a colouring by cosets or orbits can turn one class of planes into several
+   * different pictures, and the plane menu has to offer all of them.
+   */
+  const info = await call('cosets', {
+    subMatrices: g.matrices, selected: [...state.selected],
+    mode: $('#colorMode').value,
+  });
+  if (info?.faces?.length) fillFaceSelect(info.faces);
 }
 
 
@@ -1884,6 +1894,13 @@ function wireControls() {
     // the mirror-split mesh has different topology, so entering or leaving
     // the split mode is the one color switch that refetches
     if (wasSplit !== (e.target.value === 'cosetM')) await refresh();
+    /*
+     * And the list of diagrams, because which planes draw DIFFERENT pictures
+     * depends on the colouring: under a coset or orbit reading, planes the
+     * symmetry treats as one can wear different colours, and each is its own
+     * diagram to look at and to export.
+     */
+    await applyCosetSub();
   };
   $('#cosetSubRow').hidden = !($('#colorMode').value.startsWith('coset')
     || $('#colorMode').value.startsWith('orbit'));
@@ -1895,8 +1912,14 @@ function wireControls() {
     const name = $('#cosetSub').value;
     const g = state.symmetry[name];
     if (!g) return;
-    // send unconditionally: unlike applyCosetSub, this IS the change
-    await call('cosets', { subMatrices: g.matrices, selected: [...state.selected] });
+    // send unconditionally: unlike applyCosetSub, this IS the change. The
+    // colour mode rides along, because the answer carries the list of
+    // diagrams and which planes draw different pictures depends on it
+    const info = await call('cosets', {
+      subMatrices: g.matrices, selected: [...state.selected],
+      mode: $('#colorMode').value,
+    });
+    if (info?.faces?.length) fillFaceSelect(info.faces);
     await refresh();
   };
   /*

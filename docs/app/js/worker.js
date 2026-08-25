@@ -52,6 +52,13 @@ let cosetsL = null;
  */
 let orbits = null;
 let cosetGroup = null;
+/*
+ * The group the diagram planes are classed by: the stellation symmetry, since
+ * planes it carries onto each other draw the same picture. Kept because the
+ * list has to be recomputed whenever the COLOURING changes, long after the
+ * build that chose the group — see facesForMode.
+ */
+let groupForFaces = null;
 
 /*
  * A face's coset value for the payloads: the crisp label where one exists,
@@ -114,6 +121,88 @@ function outline() {
       })),
     })),
   }));
+}
+
+/*
+ * Which planes give a genuinely different DIAGRAM, colouring included.
+ *
+ * diagramFaces() answers this for the geometry: two planes the stellation
+ * symmetry carries onto each other carry their cells with them, so they draw
+ * the same picture and only one is worth offering. That was the whole answer
+ * while colour was a property of the shell or the face class, which every
+ * symmetry of the figure preserves.
+ *
+ * A colouring by cosets or by subgroup orbits is not preserved by them. Its
+ * subgroup is chosen independently of the editing symmetry, so two planes that
+ * are the same shape with the same cells can wear different colours — the
+ * compound of five tetrahedra is exactly this, five differently coloured
+ * copies of one picture — and the list offered one of the five, which is the
+ * one the user could look at and the one the export wrote.
+ *
+ * So within each geometric class the planes are split again by what they
+ * actually carry: the plane's own label where the colouring gives planes
+ * labels, and the multiset of its facets' labels where it colours facets. A
+ * signature rather than a symmetry argument, because it is the picture that
+ * is being compared, and two planes with the same signature draw the same one.
+ */
+function facesForMode(mode) {
+  const base = diagramFaces(stel, groupForFaces);
+  const perPlane = { coset: () => cosets, orbitP: () => orbits };
+  const perFacet = { cosetL: () => cosetsL, cosetM: () => cosetsL, orbitF: () => orbits };
+  const perCell = mode === 'orbitC';
+  if (!perPlane[mode] && !perFacet[mode] && !perCell) return base;
+
+  const label = signatureFor(mode);
+  if (!label) return base;
+
+  const { group } = planeClasses(stel, groupForFaces);
+  const seen = new Map();                 // "class|signature" -> entry
+  const out = [];
+  for (let i = 0; i < stel.planes.length; i++) {
+    if (group[i] < 0) continue;
+    const key = group[i] + '|' + label(i);
+    const had = seen.get(key);
+    if (had) { had.count++; continue; }
+    // the geometry of the class representative, under this plane's index
+    const proto = base[group[i]] || { sides: 0, central: false };
+    const entry = { index: i, sides: proto.sides, central: !!proto.central, count: 1 };
+    seen.set(key, entry);
+    out.push(entry);
+  }
+  return out.length ? out : base;
+}
+
+/** what a plane carries, as a string, under the colouring now in force */
+function signatureFor(mode) {
+  const facetsOf = (i) => stel.arrangement[i] || [];
+  if (mode === 'coset') {
+    if (!cosets) return null;
+    return (i) => String(cosets.planes[i]) +
+      (cosets.blends?.[i] ? '+' + Array.from(cosets.blends[i]).join('.') : '');
+  }
+  if (mode === 'orbitP') {
+    if (!orbits) return null;
+    return (i) => String(orbits.planes[i]);
+  }
+  if (mode === 'cosetL' || mode === 'cosetM') {
+    if (!cosetsL) return null;
+    return (i) => facetsOf(i).map(f => {
+      const v = cosetsL.of.get(f);
+      const b = cosetsL.blends?.get(f);
+      return b ? 'b' + Array.from(b).join('.') : String(v ?? -1);
+    }).sort().join(',');
+  }
+  if (mode === 'orbitF') {
+    if (!orbits) return null;
+    return (i) => facetsOf(i).map(f => String(orbits.facets.get(f) ?? -1)).sort().join(',');
+  }
+  if (mode === 'orbitC') {
+    if (!orbits) return null;
+    // the cells the plane separates, which is what an orbitC colouring paints
+    return (i) => facetsOf(i).flatMap(f => [f.cellBelow, f.cellAbove]
+      .filter(Boolean).map(c => String(orbits.cells.get(c) ?? -1))).sort().join(',');
+  }
+  return null;
 }
 
 /**
@@ -339,6 +428,7 @@ self.onmessage = (e) => {
         faceClass = stel.planes.length ? planeClasses(stel, matrices).group : null;
         faceClassStell = stel.planes.length
           ? planeClasses(stel, subMatrices || matrices).group : null;
+        groupForFaces = subMatrices || matrices;
         cosetGroup = matrices;
         // the default coloring is the polyhedron group over itself — one
         // color, and one class per orbit — until the app names a subgroup
@@ -372,7 +462,7 @@ self.onmessage = (e) => {
           planesDegenerate: stel.planes.degenerate ?? 0,
           planesDuplicate: stel.planes.duplicate ?? 0,
           // the inequivalent faces to offer as diagram planes
-          faces: diagramFaces(stel, subMatrices || matrices),
+          faces: facesForMode(null),
           // the buildable arrangement's radius — what the camera should frame
           frameRadius: stel.frameRadius,
           layers: stel.cellLayers.length,
@@ -430,11 +520,12 @@ self.onmessage = (e) => {
         // the stellation group decides this classification, so it moves too
         faceClassStell = stel.planes.length
           ? planeClasses(stel, payload.subMatrices || payload.matrices || null).group : null;
+        groupForFaces = payload.subMatrices || payload.matrices || groupForFaces;
         // the coset coloring is untouched: the stellation group is the
         // editing symmetry, and editing must not repaint the figure
         reply({
           outline: outline(),
-          faces: diagramFaces(stel, payload.subMatrices || payload.matrices || null),
+          faces: facesForMode(payload.mode || null),
         });
         break;
       }
@@ -473,7 +564,13 @@ self.onmessage = (e) => {
         reply({ count: cosets ? cosets.count : 0,
                 countL: cosetsL ? cosetsL.count : 0,
                 orbitCounts: orbits
-                  ? [orbits.planeCount, orbits.facetCount, orbits.cellCount] : null });
+                  ? [orbits.planeCount, orbits.facetCount, orbits.cellCount] : null,
+                /*
+                 * The diagram list, refreshed: a colouring by cosets or orbits
+                 * can make one geometric class of planes into several different
+                 * pictures, and every one of them should be offerable.
+                 */
+                faces: facesForMode(payload.mode || null) });
         break;
       }
 
