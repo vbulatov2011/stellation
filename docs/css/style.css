@@ -514,19 +514,27 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); 
 #footMeta { font-size: 11px; font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #footCount { margin-left: auto; font-size: 11px; white-space: nowrap; }
 
-#helpDialog { max-width: 620px; padding: 22px 26px 20px; line-height: 1.62; }
-#helpDialog h2 { font-size: 18px; text-transform: none; letter-spacing: -0.01em; color: var(--text); margin-bottom: 10px; }
-#helpDialog h3 { margin: 18px 0 6px; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--dim); }
-#helpDialog ul { padding-left: 18px; margin: 6px 0; }
-#helpDialog li { margin: 6px 0; }
-#helpDialog a { color: var(--accent-2); }
-#helpClose {
-  margin-top: 18px; padding: 6px 16px;
-  border: 1px solid var(--line); border-radius: var(--radius);
-  background: var(--panel-2); color: var(--text);
-  font: inherit; cursor: pointer;
+/*
+ * Help.
+ *
+ * It was a <dialog>, which brought its own box and its own close button. As an
+ * internal window the frame, the title bar and the close button belong to the
+ * window, so what is left here is the prose: padding, measure and rhythm. The
+ * interior scrolls because help is longer than any height worth opening at,
+ * and the max-width keeps the line length readable when the window is dragged
+ * wider than prose wants to be.
+ */
+.help-window .iw-interior {
+  padding: 20px 24px 22px;
+  line-height: 1.62;
+  overflow-y: auto;
 }
-#helpClose:hover { border-color: var(--accent); color: var(--accent); }
+.help-window .iw-interior > * { max-width: 62ch; }
+.help-window h2 { font-size: 18px; text-transform: none; letter-spacing: -0.01em; color: var(--text); margin-bottom: 10px; }
+.help-window h3 { margin: 18px 0 6px; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--dim); }
+.help-window ul { padding-left: 18px; margin: 6px 0; }
+.help-window li { margin: 6px 0; }
+.help-window a { color: var(--accent-2); }
 
 /* the key to the Cells bar colors */
 .legend {

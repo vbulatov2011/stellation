@@ -152,7 +152,7 @@ function call(type, payload, onProgress) {
 
 // ------------------------------------------------------------------ boot
 
-let renderer, diagram, cells, docs, presets, workspace;
+let renderer, diagram, cells, docs, presets, workspace, helpWin;
 /*
  * The #doc= link this session was opened with, held so the URL stays that
  * link until the first edit — at which point the state hash below is the
@@ -415,6 +415,10 @@ async function boot() {
     workspace.register({ title: 'Plane set', isOpen: planesWin.isOpen, setOpen: planesWin.setOpen });
   }
   workspace.register({ title: 'Presets', isOpen: presets.isOpen, setOpen: presets.setOpen });
+  if (helpWin) {
+    workspace.register({ title: 'Help', isOpen: () => helpWin.isVisible(),
+                         setOpen: (v) => helpWin.setVisible(v) });
+  }
   /*
    * Both of these windows are built the first time they are asked for, which
    * is what kept them from coming back: internalWindow restores a window's
@@ -2401,12 +2405,31 @@ function wireControls() {
    */
   planesWin = initPlanesDialog({ state, toPoly, buildCustomPlanes, presets, setStatus });
 
+  /*
+   * Help, as a window you can work beside.
+   *
+   * Not modal, deliberately: everything it describes is on the screen behind
+   * it, so dimming and blurring that screen — which is what dialog::backdrop
+   * does — hid the subject to show the caption. Scrollable and resizable
+   * because it is a page of prose, and role 'dialog' so ESC still closes it
+   * like the other transient windows.
+   */
+  helpWin = createInternalWindow({
+    title: 'Help', width: 'min(560px, 92vw)', height: 'min(620px, 82vh)',
+    left: 'calc(50% - min(280px, 46vw))', top: '8%',
+    canClose: true, canResize: true, modal: false, role: 'dialog',
+    storageId: 'stell.help',
+  });
+  helpWin.wnd.classList.add('transient', 'help-window');
+  helpWin.interior.appendChild($('#helpBody').content.cloneNode(true));
+  helpWin.setVisible(false);
+
   $('#help').onclick = () => {
-    const b = $('#buildStamp');
+    // the stamp is written on every open, so it cannot go stale in a session
+    const b = helpWin.interior.querySelector('#buildStamp');
     if (b) b.textContent = BUILD;
-    $('#helpDialog').showModal();
+    helpWin.setVisible(true);
   };
-  $('#helpClose').onclick = () => $('#helpDialog').close();
 
   $('#themeBtn').onclick = cycleTheme;
 

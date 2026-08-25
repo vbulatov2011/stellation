@@ -898,7 +898,18 @@
   </div>
 </template>
 
-<dialog id="helpDialog">
+<!--
+  Help is a window, not a modal.
+
+  It was a <dialog> opened with showModal(), and dialog::backdrop dims the page
+  and blurs it — which is the wrong behaviour for the one panel whose whole job
+  is to be read WHILE looking at the thing it describes. Every instruction in
+  here names something on screen (the Cells table, a shift-click on the solid,
+  the core and + layer buttons), and all of it was blurred out behind the text
+  telling you about it. As an internal window it can sit beside the figure,
+  be moved, be resized, and stay open while you try what it says.
+-->
+<template id="helpBody">
   <h2>Stellation, in one minute</h2>
   <p>
     Take a pentagon and extend its five sides. They cross again, and the crossings
@@ -947,8 +958,7 @@
     six decimal places.
   </p>
   <p class="note">Build <span id="buildStamp" class="mono"></span> · <a href="changes.html">what changed →</a></p>
-  <button id="helpClose">close</button>
-</dialog>
+</template>
 
 <script type="module" src="app/js/app.js"></script>
 </body>
