@@ -1,0 +1,38 @@
+# Line endings, declared here so they do not depend on anyone's core.autocrlf.
+#
+# Without this file every clone decides for itself, and this one had drifted
+# into three states at once: 414 files checked out CRLF, 197 LF, and
+# docs/stellation_app.html carrying seven \r\r\n sequences that no amount of
+# committing would clean.
+#
+# That last one is worth explaining, because it is self-perpetuating and cost
+# several confusing sessions. The first \r of a \r\r\n is a LONE CR, and git
+# reports a file containing lone CRs as "-text" — not text — which means it
+# skips end-of-line normalisation for that file entirely. So the stray CRs
+# caused the classification that prevented the stray CRs from being fixed, and
+# the file stayed broken through every commit that touched it. Patch scripts
+# matching on "\r\n" or "\n" then failed against those lines for no visible
+# reason. Removing the lone CRs is what lets git treat the file as text again.
+#
+# LF in the working tree as well as in the repository. This is a static site
+# served straight from the files, edited as often by scripts as by hand, and
+# uniform LF means a script never has to guess which ending a file is in —
+# guessing wrong is what produced the \r\r\n in the first place.
+* text=auto eol=lf
+
+# Batch files are the exception: cmd.exe is the one consumer here that has a
+# real preference, so they keep CRLF.
+*.bat text eol=crlf
+
+# Declared rather than sniffed, so a heuristic can never decide otherwise.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.jar binary
+*.zip binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
