@@ -319,19 +319,35 @@
       <fieldset class="subsection">
         <legend title="How the pieces are painted — the reading the colors carry, and any colors given by hand. Both views wear it: the solid and the diagram are one figure seen two ways.">coloring</legend>
         <label class="field" title="How the facets are colored. By shell: one color per layer of cells outward from the core, so you can read how deep a piece sits. By face class: one color per kind of face of the ORIGINAL polyhedron — an icosahedron has one kind however you stellate it, so it takes one color (two with the darkened undersides). By stellation face class: the same, but grouped under the stellation symmetry, so dropping to a subgroup splits those faces into the several kinds that symmetry can still tell apart — an icosahedron under a subgroup shows more than one color.">
-          <span>face colors</span>
-          <select id="colorMode">
-            <option value="layer">by shell</option>
-            <option value="class">by face class</option>
-            <option value="stellClass">by stellation face class</option>
-            <option value="coset">by cosets of a subgroup — per plane</option>
-            <option value="cosetL">by cosets of a subgroup — per facet</option>
-            <option value="cosetM">by cosets of a subgroup — per facet, mirror-split</option>
-            <option value="orbitP">by subgroup orbits — per plane</option>
-            <option value="orbitF">by subgroup orbits — per facet</option>
-            <option value="orbitC">by subgroup orbits — per cell</option>
-          </select>
-        </label>
+          <span>face colors</span>
+          <select id="colorFamily">
+            <option value="layer">by shell</option>
+            <option value="class">by face class</option>
+            <option value="stellClass">by stellation face class</option>
+            <option value="coset">by subgroup coset</option>
+            <option value="orbit">by subgroup orbit</option>
+          </select>
+        </label>
+        <label class="field" id="colorPerRow" title="What wears one color. Per plane paints a whole face plane at once — the classical reading, and the one that makes a compound come out as solid pieces. Per facet paints each piece of surface separately, so it can tell apart parts of one plane the reading treats differently. Per split facet also divides a facet where a mirror cuts it; per cell paints whole cells rather than surfaces.">
+          <span>applied</span>
+          <select id="colorPer"></select>
+        </label>
+        <!-- The composed value, and the one everything else reads: the two
+             menus above are a way of choosing it, not a second source of
+             truth. Kept as a real select so a document, a stored preference
+             or a test can set .value exactly as before and the visible menus
+             follow — see syncColorSelects. -->
+        <select id="colorMode" hidden>
+          <option value="layer">by shell</option>
+          <option value="class">by face class</option>
+          <option value="stellClass">by stellation face class</option>
+          <option value="coset">by cosets of a subgroup — per plane</option>
+          <option value="cosetL">by cosets of a subgroup — per facet</option>
+          <option value="cosetM">by cosets of a subgroup — per facet, mirror-split</option>
+          <option value="orbitP">by subgroup orbits — per plane</option>
+          <option value="orbitF">by subgroup orbits — per facet</option>
+          <option value="orbitC">by subgroup orbits — per cell</option>
+        </select>
         <div class="row">
           <button id="editColorsBtn" type="button"
                   title="Give any group of facets a color of its own, and an opacity of its own — the shells, the face classes, the cosets, whichever the menu above is reading. Colors are saved with the document.">Edit colors…</button>

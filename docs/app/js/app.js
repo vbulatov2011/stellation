@@ -305,6 +305,7 @@ async function boot() {
     if (COLOR_MODES.includes(savedColor)) {
       renderer.colorMode = savedColor;         // set before the first setMesh
       $('#colorMode').value = savedColor;
+      syncColorSelects();
     }
     /*
      * The null check is the load-bearing part: Number(null) is 0, so without
@@ -1196,6 +1197,73 @@ function fillCosetSub() {
 }
 
 /*
+ * The coloring menu, in two parts.
+ *
+ * Nine modes in one list made the reader do the work: six of them were the
+ * same two readings — cosets of a subgroup, orbits of a subgroup — repeated
+ * once per thing that can wear the color, and the repetition buried the
+ * choice that actually matters. So the first menu names the READING and the
+ * second what wears it. The second exists only for the readings that have a
+ * choice to offer, and the two offer different things: a coset labeling can
+ * be mirror-split, an orbit labeling can paint whole cells.
+ *
+ * #colorMode keeps all nine values and stays the single source of truth —
+ * documents, stored preferences, the worker, the exports and the colors panel
+ * all read it, and none of them had to change. These two menus compose into
+ * it and follow it; they are a way of choosing, not a second place where the
+ * answer lives.
+ */
+const COLOR_PER = {
+  coset: [['coset', 'per plane'], ['cosetL', 'per facet'], ['cosetM', 'per split facet']],
+  orbit: [['orbitP', 'per plane'], ['orbitF', 'per facet'], ['orbitC', 'per cell']],
+};
+const colorFamilyOf = (mode) => COLOR_PER.coset.some(([v]) => v === mode) ? 'coset'
+  : COLOR_PER.orbit.some(([v]) => v === mode) ? 'orbit' : mode;
+// what each family was last set to, so leaving one and coming back is not a reset
+const lastPer = { coset: 'coset', orbit: 'orbitP' };
+
+/** fill the second menu for a family, selecting `mode` */
+function fillColorPer(family, mode) {
+  const per = $('#colorPer');
+  const row = $('#colorPerRow');
+  if (row) row.hidden = !COLOR_PER[family];
+  if (!per || !COLOR_PER[family]) return;
+  per.innerHTML = COLOR_PER[family]
+    .map(([v, label]) => `<option value="${v}"${v === mode ? ' selected' : ''}>${label}</option>`)
+    .join('');
+}
+
+/** the visible menus, made to agree with #colorMode */
+function syncColorSelects() {
+  const mode = $('#colorMode')?.value || 'layer';
+  const family = colorFamilyOf(mode);
+  const fam = $('#colorFamily');
+  if (fam) fam.value = family;
+  if (COLOR_PER[family]) lastPer[family] = mode;
+  fillColorPer(family, mode);
+}
+
+/**
+ * The other way: the visible menus decide #colorMode, which then does what it
+ * always did. `fromFamily` refills the second menu, restoring that family's
+ * last choice so switching coset to orbit and back does not quietly reset the
+ * reading.
+ */
+function composeColorMode(fromFamily) {
+  const family = $('#colorFamily').value;
+  if (fromFamily) {
+    const want = COLOR_PER[family]?.some(([v]) => v === lastPer[family])
+      ? lastPer[family] : COLOR_PER[family]?.[0][0];
+    fillColorPer(family, want);
+  }
+  const mode = COLOR_PER[family] ? $('#colorPer').value : family;
+  if (COLOR_PER[family]) lastPer[family] = mode;
+  if ($('#colorMode').value === mode) return;
+  $('#colorMode').value = mode;
+  $('#colorMode').dispatchEvent(new Event('change'));   // one handler does the rest
+}
+
+/*
  * The selection the coloring is currently aimed at.
  *
  * Null means "aimed at nothing yet, steer on the next refresh". Held here
@@ -2012,6 +2080,8 @@ function wireControls() {
       pushDiagramLines();
     };
   }
+  $('#colorFamily').onchange = () => composeColorMode(true);
+  $('#colorPer').onchange = () => composeColorMode(false);
   let lastColorMode = $('#colorMode').value;
   $('#colorMode').onchange = async (e) => {
     const wasSplit = lastColorMode === 'cosetM';
@@ -2039,6 +2109,7 @@ function wireControls() {
   };
   $('#cosetSubRow').hidden = !($('#colorMode').value.startsWith('coset')
     || $('#colorMode').value.startsWith('orbit'));
+  syncColorSelects();
   $('#polySym').addEventListener('change', () => syncGroupTitle('#polySym'));
   $('#stellSym').addEventListener('change', () => syncGroupTitle('#stellSym'));
   $('#cosetSub').addEventListener('change', () => syncGroupTitle('#cosetSub'));
@@ -2777,6 +2848,7 @@ function applyDisplaySettings(doc) {
   const mode = doc.colorMode || 'layer';
   $('#showAllFacets').checked = !!doc.showAllFacets;
   $('#colorMode').value = mode;
+  syncColorSelects();
   // set before the first setMesh, exactly as boot does with a stored mode
   if (renderer) renderer.colorMode = mode;
   if (diagram) diagram.colorMode = mode;
