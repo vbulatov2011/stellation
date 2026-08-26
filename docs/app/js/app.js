@@ -324,7 +324,9 @@ async function boot() {
     if (localStorage.getItem('showFaces') === '0') $('#showFaces').checked = false;
     // before the first setMesh, so the first frame is already right
     renderer.faceOpacity = solidFaceOpacity();
+    syncOpacityPair('#faceOpacity', '#faceOpacityRange');
     $('#faceOpacity').disabled = !$('#showFaces').checked;
+    $('#faceOpacityRange').disabled = !$('#showFaces').checked;
     // parked for fillElemSym, which runs once the polyhedron group is known
     if (localStorage.getItem('colorMix') === '0') {
       $('#colorMix').checked = false;
@@ -2340,11 +2342,13 @@ function wireControls() {
    * so the solid has to fade under the thumb. It is only a redraw — no rebuild
    * — so dragging the slider is as cheap as turning the model.
    */
-  $('#faceOpacity').oninput = pushFaces;
-  $('#showFaces').onchange = pushFaces;
-  $('#dgFaceOpacity').oninput = pushDiagramFaces;
-  $('#dgShowFaces').onchange = pushDiagramFaces;
-  $('#shadeOpacity').oninput = pushDiagramFaces;
+  $('#faceOpacity').oninput = () => pushFaces('number');
+  $('#faceOpacityRange').oninput = () => pushFaces('range');
+  $('#showFaces').onchange = () => pushFaces();
+  $('#dgFaceOpacity').oninput = () => pushDiagramFaces('number');
+  $('#dgFaceOpacityRange').oninput = () => pushDiagramFaces('range');
+  $('#dgShowFaces').onchange = () => pushDiagramFaces();
+  $('#shadeOpacity').oninput = () => pushDiagramFaces();
   const pushCoordAxes = () => {
     const w = typedWidth('#coordAxesWidth', 0.1, 5, 1);
     localStorage.setItem('coordAxes', JSON.stringify({ show: $('#showCoordAxes').checked, width: w }));
@@ -2525,7 +2529,7 @@ function wireControls() {
 
   // through the one path, so the tint's strength, the stored preference and
   // the export's preview all follow the switch
-  $('#showAllFacets').onchange = pushDiagramFaces;
+  $('#showAllFacets').onchange = () => pushDiagramFaces();
 
   $('#cellsString').onchange = async (e) => {
     try {
@@ -3043,10 +3047,28 @@ const facePct = (id, dflt = 100) => {
 const solidFaceOpacity = () => ($('#showFaces').checked ? facePct('#faceOpacity') / 100 : 0);
 const diagramFaceOpacity = () => ($('#dgShowFaces').checked ? facePct('#dgFaceOpacity') / 100 : 0);
 
+/*
+ * A number and a slider on one value.
+ *
+ * The number says 45 exactly and the slider is the only way to watch the
+ * solid turn to glass, so both are offered and each follows the other. The
+ * one that raised the event keeps what is in it — rewriting the field while
+ * it is being typed in fights the typing — and the range input clamps its own
+ * value, so a number outside 0..100 is corrected by the round trip anyway.
+ */
+function syncOpacityPair(numId, rangeId, from) {
+  const n = $(numId), r = $(rangeId);
+  if (!n || !r) return;
+  if (from === 'range') n.value = r.value;
+  else r.value = String(facePct(numId));
+}
+
 /** the solid's faces -> the renderer, and remembered */
-function pushFaces() {
+function pushFaces(from) {
+  syncOpacityPair('#faceOpacity', '#faceOpacityRange', from);
   const on = $('#showFaces').checked;
   $('#faceOpacity').disabled = !on;
+  $('#faceOpacityRange').disabled = !on;
   try {
     localStorage.setItem('faceOpacity', String(facePct('#faceOpacity')));
     localStorage.setItem('showFaces', on ? '1' : '0');
@@ -3055,10 +3077,12 @@ function pushFaces() {
 }
 
 /** the diagram's regions -> the diagram, and remembered */
-function pushDiagramFaces() {
+function pushDiagramFaces(from) {
+  syncOpacityPair('#dgFaceOpacity', '#dgFaceOpacityRange', from);
   const on = $('#dgShowFaces').checked;
   const shadeOn = $('#showAllFacets').checked;
   $('#dgFaceOpacity').disabled = !on;
+  $('#dgFaceOpacityRange').disabled = !on;
   $('#shadeOpacity').disabled = !shadeOn;
   try {
     localStorage.setItem('diagramFaces', JSON.stringify(

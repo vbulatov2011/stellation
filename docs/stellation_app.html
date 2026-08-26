@@ -380,9 +380,11 @@
       <fieldset class="subsection">
         <legend title="The painted surfaces of the solid, as opposed to the lines drawn on them">fill</legend>
         <div class="ctl-line">
-          <label class="check grow" title="Paint the facets at all. Off is a wireframe: the edges alone, with the whole arrangement showing through."><input id="showFaces" type="checkbox" checked> faces</label>
+          <label class="check" title="Paint the facets at all. Off is a wireframe: the edges alone, with the whole arrangement showing through."><input id="showFaces" type="checkbox" checked> faces</label>
           <span class="dim">opacity</span>
           <input id="faceOpacity" type="number" min="0" max="100" step="1" value="100" title="How solid the facets are, in percent. Below 100 the solid turns to glass and its hidden edges come through — the interior of a stellation is otherwise the one thing you cannot see.">
+          <input id="faceOpacityRange" class="grow" type="range" min="0" max="100" step="1" value="100"
+                 title="Drag to turn the solid to glass" aria-label="Face opacity">
         </div>
       </fieldset>
       <fieldset class="edge-kinds">
@@ -469,9 +471,11 @@
       <fieldset class="subsection">
         <legend title="The filled regions of the diagram, as opposed to the lines drawn on them">fill</legend>
         <div class="ctl-line">
-          <label class="check grow" title="Fill the chosen regions at all. Off leaves the lines alone, which is how the plates were engraved."><input id="dgShowFaces" type="checkbox" checked> faces</label>
+          <label class="check" title="Fill the chosen regions at all. Off leaves the lines alone, which is how the plates were engraved."><input id="dgShowFaces" type="checkbox" checked> faces</label>
           <span class="dim">opacity</span>
           <input id="dgFaceOpacity" type="number" min="0" max="100" step="1" value="100" title="How solid the filled regions are, in percent. It is the diagram's own, not the solid's — a drawing on paper wants a different weight of paint from a lit solid.">
+          <input id="dgFaceOpacityRange" class="grow" type="range" min="0" max="100" step="1" value="100"
+                 title="Drag to thin the fill" aria-label="Diagram face opacity">
         </div>
         <div class="ctl-line">
           <label class="check grow" title="Tint the cells you have not chosen, so you can see what else is available on this plane — the other paint on this drawing, and the only one that is not about the figure itself"><input id="showAllFacets" type="checkbox" checked> unused cells</label>
