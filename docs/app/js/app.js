@@ -337,8 +337,8 @@ async function boot() {
       renderer.autoZoom = false;
     }
     const savedPersp = Number(localStorage.getItem('perspective'));
-    if (Number.isFinite(savedPersp) && savedPersp > 0) {
-      renderer.perspective = Math.min(0.8, savedPersp);
+    if (Number.isFinite(savedPersp) && savedPersp !== 0) {
+      renderer.perspective = Math.max(-0.8, Math.min(0.8, savedPersp));
       $('#perspective').value = String(renderer.perspective);
       $('#perspectiveRange').value = String(renderer.perspective);
     }
@@ -2406,7 +2406,7 @@ function wireControls() {
   };
   const pushPerspective = (v, from) => {
     const raw = Number(v);
-    const p = Math.min(0.8, Math.max(0, Number.isFinite(raw) ? raw : 0));  // see PERSP_MAX
+    const p = Math.min(0.8, Math.max(-0.8, Number.isFinite(raw) ? raw : 0));  // see PERSP_MAX
     /*
      * The control that raised the event normally keeps whatever is in it —
      * rewriting it mid-edit fights the typing, and "0." on its way to "0.25"
@@ -2414,7 +2414,7 @@ function wireControls() {
      * number on its way anywhere, and leaving it showing 0.95 while the camera
      * uses 0.8 makes the field a liar, so that one case is written back.
      */
-    const outOfRange = Number.isFinite(raw) && (raw > 0.8 || raw < 0);
+    const outOfRange = Number.isFinite(raw) && (raw > 0.8 || raw < -0.8);
     if (from !== 'number' || outOfRange) $('#perspective').value = String(p);
     if (from !== 'range' || outOfRange) $('#perspectiveRange').value = String(p);
     renderer?.setPerspective(p);

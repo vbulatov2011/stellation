@@ -437,10 +437,18 @@
         against, and it does not matter what was on screen before.</dd>
 
       <dt>perspective</dt>
-      <dd>Where the eye is, given as the figure's own radius divided by its
-        distance: <b>0</b> is the parallel camera at infinity, <b>0.1</b> an eye
-        ten radii out, <b>0.25</b> four radii. A number and a slider, on the
-        same value.
+      <dd>Where the centre of projection sits, given as the figure's own
+        radius divided by its distance: <b>0</b> is the parallel camera at
+        infinity, <b>0.1</b> an eye ten radii out, <b>0.25</b> four radii. A
+        number and a slider, on the same value, running from &minus;0.8 to 0.8.
+        <p><b>Negative</b> values put the centre <em>behind</em> the figure and
+        reverse the effect: what leans away from you is drawn larger, what
+        leans toward you smaller. That is the reverse perspective of icon
+        painting, and on a stellation it opens out the far side of the figure
+        rather than the near one. Nothing in the projection asked the sign to
+        be positive &mdash; the middle plane is still fixed, the clip plane
+        simply moves to the far side with the centre &mdash; so the slider
+        passes through the parallel camera at 0 without a seam.
         <p>The unit is the radius of whatever is currently selected, so the eye
         stands off in proportion to it and a bare core and a stellation eight
         times its size look alike at the same setting. The cost is that adding

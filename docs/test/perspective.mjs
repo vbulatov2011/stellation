@@ -216,5 +216,77 @@ console.log('\n-- and it degenerates to the parallel test at k = 0');
   }
 }
 
+/*
+ * Negative p: the centre of projection behind the figure.
+ *
+ * Nothing in the derivation asked p to be positive. m(z) = 1/(1 - p·z/R) with
+ * p < 0 shrinks what leans toward the viewer and enlarges what leans away —
+ * the reverse perspective of icon painting — and the middle plane is still
+ * fixed, because m(0) = 1 has nothing to do with the sign. The clip plane
+ * moves to the other end with it: w = 0 sits at z = 1/k, which is now behind
+ * the figure, so it is the FAR side that runs out of room.
+ */
+console.log('');
+console.log('-- negative p reverses the magnification, and keeps every promise');
+{
+  for (const p of [-0.05, -0.2, -0.5, -0.8]) {
+    const P = stellationProjection(HALF, ASPECT, NOPAN, p, R, Z);
+    // the middle plane is still fixed
+    const flat = project(stellationProjection(HALF, ASPECT, NOPAN, 0, R, Z), 0.9, 0.3, 0);
+    const mid = project(P, 0.9, 0.3, 0);
+    near(mid[0], flat[0], F32, `p=${p}: the middle plane still keeps its size`);
+    // and the magnification is the same formula, now below 1 in front
+    const one = project(stellationProjection(HALF, ASPECT, NOPAN, 0, R, Z), 1, 0, 0)[0];
+    near(project(P, 1, 0, 1)[0], one / (1 - p * 1 / R), F32, `p=${p}: z=+1 follows 1/(1-p·z/R)`);
+    near(project(P, 1, 0, -1)[0], one / (1 + p * 1 / R), F32, `p=${p}: z=-1 follows it too`);
+    ok(Math.abs(project(P, 1, 0, 1)[0]) < Math.abs(one),
+       `p=${p}: what leans toward the viewer is drawn SMALLER`);
+    ok(Math.abs(project(P, 1, 0, -1)[0]) > Math.abs(one),
+       `p=${p}: what leans away is drawn LARGER`);
+  }
+}
+
+console.log('');
+console.log('-- and the clip plane moves to the far side, where it belongs');
+{
+  const p = -0.1;                                  // centre of projection at -10R
+  const P = stellationProjection(HALF, ASPECT, NOPAN, p, R, Z);
+  ok(project(P, 1, 0, 40 * R)[3] > 0, 'the near side is unlimited: z = +40R survives');
+  ok(Math.abs(project(P, 1, 0, -10 * R)[3]) <= F32, 'w = 0 at z = -10R, the centre behind');
+  ok(project(P, 1, 0, -12 * R)[3] < 0, 'and past it w < 0, so it clips');
+}
+
+console.log('');
+console.log('-- depth still orders correctly with the sign reversed');
+{
+  for (const p of [-0.05, -0.3, -0.8]) {
+    const P = stellationProjection(HALF, ASPECT, NOPAN, p, R, Z);
+    let prev = Infinity, mono = true, inRange = true;
+    for (let i = 0; i <= 40; i++) {
+      const z = -Z + (2 * Z * i) / 40;
+      const [, , ndcZ, w] = project(P, 0.1, 0.1, z);
+      if (w <= 0) continue;                        // past the centre: clipped
+      if (ndcZ > prev + 1e-9) mono = false;
+      if (ndcZ < -1.0001 || ndcZ > 1.0001) inRange = false;
+      prev = ndcZ;
+    }
+    ok(mono, `p=${p}: nearer geometry still gets smaller depth`);
+    ok(inRange, `p=${p}: depth stays within [-1, 1]`);
+  }
+}
+
+console.log('');
+console.log('-- continuity through zero: the two signs meet at the parallel camera');
+{
+  const at = (p) => project(stellationProjection(HALF, ASPECT, NOPAN, p, R, Z), 1, 0, 1)[0];
+  const flat = at(0);
+  for (const e of [1e-4, 1e-3, 1e-2]) {
+    const lo = at(-e), hi = at(e);
+    ok(Math.abs((lo + hi) / 2 - flat) < e * e * 10,
+       `p=±${e}: the two sides straddle the parallel value symmetrically`);
+    ok(lo < flat && flat < hi, `p=±${e}: and lie either side of it, in order`);
+  }
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

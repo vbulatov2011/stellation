@@ -435,7 +435,7 @@ export class Renderer3D {
 
   /** R / (eye distance): 0 parallel, 0.1 ten radii out. See stellationProjection. */
   setPerspective(p) {
-    const v = Number.isFinite(p) ? Math.min(PERSP_MAX, Math.max(0, p)) : 0;
+    const v = Number.isFinite(p) ? Math.min(PERSP_MAX, Math.max(-PERSP_MAX, p)) : 0;
     if (v === this.perspective) return;
     this.perspective = v;
     this.draw();
@@ -863,7 +863,7 @@ export class Renderer3D {
      * mesh from disagreeing with the view it is drawn under.
      */
     if (v[7] > 0) this.modelScale = v[7];
-    this.perspective = Math.min(PERSP_MAX, Math.max(0, v[8] || 0));
+    this.perspective = Math.min(PERSP_MAX, Math.max(-PERSP_MAX, v[8] || 0));
     this._pointerReset();
     this.draw();
     return true;
@@ -1331,7 +1331,15 @@ export class Renderer3D {
      * So one expression covers both cameras and they cannot drift apart.
      */
     const cam = this._camera(this.canvas.width || 1, this.canvas.height || 1);
-    const k = cam.p > 0 && cam.pr > 0 ? cam.p / cam.pr : 0;
+    /*
+     * Both signs, and the same expression for both. With p negative the centre
+     * of projection is BEHIND the figure, so the front side of a plane is the
+     * one away from it rather than the one containing it — but the eye's
+     * signed distance is w/k, whose sign already carries the flip, and
+     * sign(w)·sign(k)·sign(k) is sign(w) either way. So the rule below needs
+     * nothing added; it only needed k to stop being zeroed for a negative p.
+     */
+    const k = cam.p !== 0 && cam.pr > 0 ? cam.p / cam.pr : 0;
     for (let p = 0; p < eqs.length; p++) {
       const [nx, ny, nz, d] = eqs[p];
       const zc = R[2] * nx + R[6] * ny + R[10] * nz;
@@ -1650,7 +1658,7 @@ export class Renderer3D {
      */
     const coreR = (this.coreWorldR || 0) * (this.modelScale || 1);
     const pr = Math.max(1e-6, meshR > 1e-3 ? meshR : (coreR || 1));
-    const p = Math.min(PERSP_MAX, Math.max(0, this.perspective || 0));
+    const p = Math.min(PERSP_MAX, Math.max(-PERSP_MAX, this.perspective || 0));
     return { fovy, aspect, fit, R: F, meshR, dist, zoom, p, pr,
              halfH: dist * Math.tan(fovy / 2) / zoom,
              depth: Math.max(F, meshR) * 3 + 10 };
@@ -1695,7 +1703,8 @@ export class Renderer3D {
      */
     const xm = nx * cam.halfH * cam.aspect + this.pan.x;
     const ym = ny * cam.halfH + this.pan.y;
-    const k = cam.p > 0 && cam.pr > 0 ? cam.p / cam.pr : 0;
+    const k = cam.p !== 0 && cam.pr > 0 ? cam.p / cam.pr : 0;
+    // start at the near end, which only a positive p limits — see the bracket
     const z0 = k > 0 ? Math.min(cam.depth, 0.98 / k) : cam.depth;
     const originView = [xm * (1 - k * z0), ym * (1 - k * z0), z0];
     const dirView = [k * xm, k * ym, -1];
@@ -2359,12 +2368,20 @@ function slerp(a, b, t) {
  */
 export function stellationProjection(halfH, aspect, pan, p, R, zBound) {
   const hw = halfH * aspect;
-  const k = p > 0 && R > 0 ? p / R : 0;          // w = 1 - k·z
+  const k = p !== 0 && R > 0 ? p / R : 0;        // w = 1 - k·z
   const bx = -pan.x / hw, by = -pan.y / halfH;   // the pan, in NDC
-  // the near bracket stops short of the eye; the far one is the figure's back
-  const zNear = k > 0 ? Math.min(zBound, 0.98 / k) : zBound;
+  /*
+   * The bracket stops short of the plane w = 0, which sits at z = 1/k — the
+   * centre of projection. Which END that is depends on the sign: a positive p
+   * puts it in front, so it limits the NEAR side; a negative p puts it behind
+   * the figure, so it limits the FAR side instead, and the near side is free.
+   * Everything past it has w <= 0 and the pipeline clips it either way.
+   */
+  const limit = k !== 0 ? 0.98 / k : 0;
+  const zNear = k > 0 ? Math.min(zBound, limit) : zBound;
+  const zFar = k < 0 ? Math.max(-zBound, limit) : -zBound;
   const g = (z) => z / (1 - k * z);
-  const gN = g(zNear), gF = g(-zBound);
+  const gN = g(zNear), gF = g(zFar);
   const C = gN > gF ? 2 / (gF - gN) : -1;        // negative: +z is toward the eye
   const D = 1 - C * gF;
   return new Float32Array([
@@ -2542,13 +2559,19 @@ const DEFAULT_VIEW = STANDARD_VIEWS.findIndex(v => v.name === '+o3');
 const ELEM_EXT = 1.12;
 const AXES_EXT = ELEM_EXT * 1.05;
 /*
- * How far in the eye may come, as radius over distance.
+ * How far the centre of projection may come, as radius over distance, in
+ * either direction.
  *
  * Not the figure that sets this: the coordinate arrows do. They reach
- * AXES_EXT past the figure — 1.176 radii — so with the eye at one radius over
- * p they cross it at p = 1/1.176, about 0.85, and pass through the screen. By
- * 0.8 the arrow tips are already magnified seventeenfold, which is where it
- * starts to look wrong, so that is the ceiling.
+ * AXES_EXT past it — 1.176 radii — so with the centre at one radius over p
+ * they meet at p = 1/1.176, about 0.85, and beyond that the arrows are on the
+ * far side of it and come through the screen. By 0.8 their tips are already
+ * magnified seventeenfold, which is where it starts to look wrong.
+ *
+ * The bound is symmetric because the geometry is. A negative p puts the
+ * centre BEHIND the figure, which reverses the magnification — far parts grow,
+ * near parts shrink, the reverse perspective of icon painting — and the thing
+ * that runs out of room is the arrows again, at the back this time.
  */
 const PERSP_MAX = 0.8;
 

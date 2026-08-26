@@ -426,11 +426,11 @@
       <fieldset class="sym-elems">
         <legend title="Where the eye is. The parallel camera sits at infinity; bringing it in leans the near parts of the figure toward you without changing the size of the plane through the middle.">camera</legend>
         <div class="ctl-line">
-          <label class="field grow" title="The eye's distance, as the figure's own radius divided by it: 0 is the parallel camera at infinity, 0.1 an eye ten radii out, 0.25 four radii. Because the unit is the figure's radius, the eye stands off in proportion to what is on screen, and a small model and a large one look alike. The plane through the centre keeps its size whatever you choose, so turning this up does not resize the figure — it leans the near parts toward you. Adding cells does move the interior, since the eye moves out with the figure; the parallel camera at 0 is the one that holds it still.">
+          <label class="field grow" title="Where the centre of projection sits, as the figure's own radius divided by its distance: 0 is the parallel camera at infinity, 0.1 an eye ten radii out, 0.25 four radii. NEGATIVE values put it behind the figure, which reverses the effect — what leans away from you is drawn larger and what leans toward you smaller, the reverse perspective of icon painting. Because the unit is the figure's radius, the eye stands off in proportion to what is on screen, and a small model and a large one look alike. The plane through the centre keeps its size whatever you choose, so turning this up does not resize the figure — it leans the near parts toward you. Adding cells does move the interior, since the eye moves out with the figure; the parallel camera at 0 is the one that holds it still.">
             <span>perspective</span>
-            <input id="perspective" type="number" min="0" max="0.8" step="0.01" value="0">
+            <input id="perspective" type="number" min="-0.8" max="0.8" step="0.01" value="0">
           </label>
-          <input id="perspectiveRange" type="range" min="0" max="0.8" step="0.01" value="0"
+          <input id="perspectiveRange" type="range" min="-0.8" max="0.8" step="0.01" value="0"
                  title="Drag to lean the figure toward you" aria-label="Perspective">
         </div>
         <div class="ctl-line">
