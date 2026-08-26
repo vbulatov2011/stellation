@@ -460,6 +460,21 @@ export function initAnimation({ renderer, currentName, setStatus }) {
 
   // ---- wiring ------------------------------------------------------------
 
+  /*
+   * What the file will be called if the field is left empty.
+   *
+   * Its own function because it is the one thing here that depends on
+   * something OUTSIDE this section — the document's name — and so goes stale
+   * on its own schedule. It used to be refreshed only when an animation
+   * control was touched, so opening another document left the previous one's
+   * name sitting in the box: the field looked like a fixed label rather than
+   * a placeholder, and the name it offered was wrong.
+   */
+  function syncName() {
+    const ext = mimeFor(fmtSel.value)?.startsWith('video/mp4') ? 'mp4' : 'webm';
+    nameIn.placeholder = `${slug(currentName()) || 'stellation'}-turn.${ext}`;
+  }
+
   function sync() {
     const axis = parseAxis();
     axisIn.classList.toggle('invalid', !axis);
@@ -468,8 +483,7 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     if (recording) return;                       // the recorder owns the line
     const encodable = canRecord && !!mimeFor(fmtSel.value);
     customRow.hidden = sizeSel.value !== 'custom';
-    const ext = mimeFor(fmtSel.value)?.startsWith('video/mp4') ? 'mp4' : 'webm';
-    nameIn.placeholder = `${slug(currentName()) || 'stellation'}-turn.${ext}`;
+    syncName();
     const { w, h } = videoSize();
     info.textContent = !axis
       ? 'the axis needs three numbers, e.g. 0 1 0'
@@ -534,5 +548,7 @@ export function initAnimation({ renderer, currentName, setStatus }) {
   return {
     /** the spin, for anything that needs to hold it still for a moment */
     isSpinning: () => playing && !!parseAxis(),
+    /** the document changed name: the offered file name follows it */
+    refreshName: syncName,
   };
 }

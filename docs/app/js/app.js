@@ -153,7 +153,7 @@ function call(type, payload, onProgress) {
 
 // ------------------------------------------------------------------ boot
 
-let renderer, diagram, cells, docs, presets, workspace, helpWin;
+let renderer, diagram, cells, docs, presets, workspace, helpWin, animation;
 let syncPerspectiveUI = null;      // set once the controls exist
 /*
  * The #doc= link this session was opened with, held so the URL stays that
@@ -2620,7 +2620,7 @@ function wireControls() {
    * because it needs the live renderer — it turns the same quaternion the
    * mouse does.
    */
-  initAnimation({ renderer, currentName: currentDocName, setStatus });
+  animation = initAnimation({ renderer, currentName: currentDocName, setStatus });
 
   const solidDialog = initExportSolid({
     state, renderer, download, setStatus, writeStelText,
@@ -2823,6 +2823,9 @@ function syncDocBar() {
   const nameEl = $('#docName'), metaEl = $('#docMeta');
   if (!nameEl) return;
   nameEl.textContent = currentDocName();
+  // the video's default file name is the document's, so it follows it here —
+  // the one place the name is known to have changed
+  animation?.refreshName();
   const solid = state.current?.name || (state.customPlanes ? 'custom planes' : '');
   metaEl.textContent = [solid, state.polySym, state.stellSym].filter(Boolean).join(' · ');
 }
