@@ -457,6 +457,20 @@
         setting travels with the saved view, so a document reopens from the
         camera it was composed at.</dd>
 
+      <dt>auto zoom</dt>
+      <dd>Keeps the figure framed as you build, and is on by default. When
+        adding or removing cells pushes the figure out of the view &mdash; or
+        leaves it small in the middle of one &mdash; the zoom eases to fit
+        again. Between those it does nothing: while the figure still sits
+        comfortably inside the frame, toggling a cell moves nothing, because a
+        rescale on every edit reads as the model changing rather than the
+        selection.
+        <p>It never re-centres. Adding a cell is not a request to undo a pan
+        you made on purpose, so only the zoom moves &mdash; unlike the fit
+        button, which undoes both because &ldquo;show me all of it&rdquo; means
+        both. Turn it off and the zoom is yours alone, however far the figure
+        outgrows the view.</dd>
+
       <dt>coordinate axes</dt>
       <dd>The x, y and z axes through the origin, drawn as colored arrows
         spanning the solid — red, green and blue, each an arrow whose head is

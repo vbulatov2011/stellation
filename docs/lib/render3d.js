@@ -290,6 +290,13 @@ export class Renderer3D {
      */
     this.perspective = 0;
     /*
+     * Whether the zoom follows the figure as cells come and go. On, an edit
+     * that pushes the content out of the frame — or leaves it a speck in the
+     * middle — eases the zoom to fit again; between those it does nothing, so
+     * ordinary toggling moves nothing. See the framing note in setMesh.
+     */
+    this.autoZoom = true;
+    /*
      * Sideways shift of the view, in world units on the camera's own axes.
      *
      * Zooming in to look at one spike puts the rest of the solid outside the
@@ -394,6 +401,23 @@ export class Renderer3D {
     const meshR = (this.lastMaxR || 0) * s;
     if (meshR > 1e-6) return Math.max(1e-3, meshR);
     return Math.max(1e-3, (this.coreWorldR || 0) * s);
+  }
+
+  /** whether the zoom re-fits itself when an edit changes the framing */
+  setAutoZoom(on) { this.autoZoom = !!on; }
+
+  /**
+   * The zoom that frames content of radius R.
+   *
+   * Under perspective the silhouette is bigger than the model radius, by the
+   * magnification of whatever leans furthest toward the eye, so fitting to R
+   * alone would cut those parts off. Shared by the fit button and the
+   * automatic re-fit, so the two cannot disagree about what "framed" means.
+   */
+  _fitDistance(R) {
+    const cam = this._camera(this.canvas.width || 1, this.canvas.height || 1);
+    const m = cam.p > 0 ? 1 / Math.max(0.1, 1 - cam.p * R / cam.pr) : 1;
+    return Math.min(40, Math.max(0.05, R * m));
   }
 
   /** R / (eye distance): 0 parallel, 0.1 ten radii out. See stellationProjection. */
@@ -765,20 +789,15 @@ export class Renderer3D {
   /** ease the zoom until the whole selection is framed */
   fit() {
     if (!this.mesh) return;
-    // screen size goes as R / (distance * fit), so distance = R frames it
-    let R = Math.max(1e-6, (this.lastMaxR || 1) * (this.modelScale || 1));
-    /*
-     * Under perspective the silhouette is bigger than the model radius, by
-     * the magnification of whatever leans furthest toward the eye. Fitting to
-     * R alone would cut those parts off. This only changes the 2-D zoom — the
-     * eye stays where the perspective parameter put it, since fitting is a
-     * question about the picture, not about where you are standing.
-     */
-    const cam = this._camera(this.canvas.width || 1, this.canvas.height || 1);
-    if (cam.p > 0) R *= 1 / Math.max(0.1, 1 - cam.p * R / cam.pr);
+    // screen size goes as R / (distance * fit), so distance = R frames it, and
+    // _fitDistance adds the magnification perspective gives the leaning parts.
+    // Only the 2-D zoom moves: the eye stays where the perspective parameter
+    // put it, fitting being a question about the picture rather than about
+    // where you are standing.
+    const R = Math.max(1e-6, (this.lastMaxR || 1) * (this.modelScale || 1));
     // fit means "show me all of it", so it undoes the pan as well as the zoom —
     // a fit that left the model shoved off to one side would not be a fit
-    this._ease({ distance: Math.min(40, Math.max(0.05, R)), pan: { x: 0, y: 0 } });
+    this._ease({ distance: this._fitDistance(R), pan: { x: 0, y: 0 } });
   }
 
   /** forget the scale so the next mesh sets it — used when the solid changes */
@@ -996,16 +1015,29 @@ export class Renderer3D {
      * anything, which is precisely why the old camera went to such lengths to
      * hold its distance constant.
      */
+    const contentR = maxR * this.modelScale;
     if (!this._frameWorldR) {
-      const contentR = maxR * this.modelScale;
       this.frameR = contentR;                 // depth bracket follows the content
-      if (firstMesh) {
-        this.distance = contentR;             // opening view: nothing on screen to jar
-      } else {
-        const W = this.canvas.width || this.canvas.clientWidth || 1;
-        const H = this.canvas.height || this.canvas.clientHeight || 1;
-        const fill = contentR / this._camera(W, H).halfH;   // 1.0 touches the frame edge
-        if (fill > FILL_MAX || fill < FILL_MIN) this._ease({ distance: contentR }, 300);
+      if (firstMesh) this.distance = contentR;  // opening view: nothing on screen to jar
+    }
+    /*
+     * The app pins a frame radius — the whole buildable arrangement, so the
+     * depth bracket covers everything the planes could produce — and pinning
+     * it used to switch this off with it. Those are two different questions:
+     * how deep the clip volume reaches, and how big the figure looks. autoZoom
+     * answers the second on its own, so the bracket stays pinned while the
+     * zoom is free to follow what is actually selected.
+     *
+     * The pan is left alone, unlike the fit button. Adding a cell is not a
+     * request to re-centre, and yanking a figure someone has deliberately
+     * shoved aside would be a worse surprise than the rescale it is avoiding.
+     */
+    if (!firstMesh && (this.autoZoom || !this._frameWorldR)) {
+      const W = this.canvas.width || this.canvas.clientWidth || 1;
+      const H = this.canvas.height || this.canvas.clientHeight || 1;
+      const fill = contentR / this._camera(W, H).halfH;     // 1.0 touches the frame edge
+      if (fill > FILL_MAX || fill < FILL_MIN) {
+        this._ease({ distance: this._fitDistance(contentR) }, 300);
       }
     }
     const s = this.modelScale;

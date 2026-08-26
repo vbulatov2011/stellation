@@ -330,6 +330,12 @@ async function boot() {
       $('#colorMix').checked = false;
       setBlendMixing(false);   // before the first setMesh, like the mode above
     }
+    // a view preference, not the document's: restored before the first mesh,
+    // which is the one that would otherwise fit against the wrong setting
+    if (localStorage.getItem('autoZoom') === '0') {
+      $('#autoZoom').checked = false;
+      renderer.autoZoom = false;
+    }
     const savedPersp = Number(localStorage.getItem('perspective'));
     if (Number.isFinite(savedPersp) && savedPersp > 0) {
       renderer.perspective = Math.min(0.9, savedPersp);
@@ -2405,6 +2411,10 @@ function wireControls() {
     renderer?.setPerspective(p);
     try { localStorage.setItem('perspective', String(p)); } catch { }
     mark();                    // the camera is part of the document
+  };
+  $('#autoZoom').onchange = (e) => {
+    renderer?.setAutoZoom(e.target.checked);
+    try { localStorage.setItem('autoZoom', e.target.checked ? '1' : '0'); } catch { }
   };
   $('#perspective').oninput = (e) => pushPerspective(e.target.value, 'number');
   $('#perspectiveRange').oninput = (e) => pushPerspective(e.target.value, 'range');
