@@ -386,6 +386,13 @@
           <input id="faceOpacityRange" class="grow" type="range" min="0" max="100" step="1" value="100"
                  title="Drag to turn the solid to glass" aria-label="Face opacity">
         </div>
+        <div class="ctl-line">
+          <span class="dim">background</span>
+          <input id="bgColor" type="color" value="#f6f7f9" title="The color behind the figure. It is what you see and what an exported image carries — the two are the same picture.">
+          <input id="bgAlpha" type="number" min="0" max="100" step="1" value="100" title="How opaque the background is, in percent. At 0 it is absent altogether, which is how to export a PNG with nothing behind the figure; in between, the image carries a genuinely semi-transparent background.">
+          <input id="bgAlphaRange" class="grow" type="range" min="0" max="100" step="1" value="100"
+                 title="Drag to fade the background out" aria-label="Background opacity">
+        </div>
       </fieldset>
       <fieldset class="edge-kinds">
         <legend title="Every facet lies in one of the original face planes. Where two facets of DIFFERENT planes meet there is a real crease — an edge of the solid. Where two facets of the SAME plane meet the surface runs flat across the join and the line is just how the plane arrangement was cut up. Drawing the two the same buries the shape of the solid in the arrangement that produced it.">edges</legend>

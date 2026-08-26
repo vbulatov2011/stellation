@@ -35,7 +35,7 @@ const $ = (q) => document.querySelector(q);
  * from rather than like the black a canvas would default to.
  */
 const FORMATS = [
-  { id: 'png', label: 'PNG — exact, transparent', ext: 'png', mime: 'image/png',
+  { id: 'png', label: 'PNG — exact, keeps alpha', ext: 'png', mime: 'image/png',
     note: 'Lossless. Every pixel is the one on screen, transparency included.' },
   { id: 'webp', label: 'WebP — transparent, about half the size', ext: 'webp',
     mime: 'image/webp', quality: 1,
@@ -154,6 +154,12 @@ export function initExportImage({ state, renderer, currentName, download, setSta
     return (c && c !== 'transparent' && !/^rgba\(0, 0, 0, 0\)$/.test(c)) ? c : '#ffffff';
   }
 
+  /** the background as it is set, alpha included: [r, g, b, a] in 0..1 */
+  function backgroundRGBA() {
+    const b = renderer?.background;
+    return Array.isArray(b) ? [b[0] ?? 0, b[1] ?? 0, b[2] ?? 0, b[3] ?? 1] : [0, 0, 0, 0];
+  }
+
   /**
    * The picture, as bytes.
    *
@@ -169,12 +175,29 @@ export function initExportImage({ state, renderer, currentName, download, setSta
   async function bytes(f) {
     const { w, h } = pixels();
     let canvas = renderer.image(w, h);
-    if (f.opaque) {
+    /*
+     * The background goes into the file, at the alpha it is set to. The
+     * drawing buffer holds the figure alone — it is cleared to nothing so that
+     * the solid can be exported without one — so the background is laid in
+     * here, which is also what makes a semi-transparent one possible: fill at
+     * alpha 0.4 and the PNG genuinely carries a 40% background rather than
+     * either an opaque one or none.
+     *
+     * An opaque format cannot hold any of that, so it gets white underneath
+     * first — the same white the old code used, and a better guess than the
+     * black a canvas composites onto when asked for a JPEG.
+     */
+    const [br, bg, bb, ba] = backgroundRGBA();
+    if (f.opaque || ba > 0) {
       const flat = document.createElement('canvas');
       flat.width = w; flat.height = h;
       const ctx = flat.getContext('2d');
-      ctx.fillStyle = backdrop();
-      ctx.fillRect(0, 0, w, h);
+      if (f.opaque) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
+      if (ba > 0) {
+        const b255 = (v) => Math.max(0, Math.min(255, Math.round(v * 255)));
+        ctx.fillStyle = `rgba(${b255(br)}, ${b255(bg)}, ${b255(bb)}, ${ba})`;
+        ctx.fillRect(0, 0, w, h);
+      }
       ctx.drawImage(canvas, 0, 0);
       canvas = flat;
     }

@@ -436,6 +436,19 @@
         the selection, so an empty figure has a stable scale to be read
         against, and it does not matter what was on screen before.</dd>
 
+      <dt>background</dt>
+      <dd>The color behind the figure, with its own opacity, in <b>Solid
+        &rsaquo; fill</b>. It follows the theme until you pick one, and is
+        yours from then on &mdash; a background somebody chose should not be
+        repainted because the light outside changed.
+        <p>The opacity is not decoration: what you see is what an exported
+        image carries. At <b>100</b> the picture comes out on a solid ground;
+        in between it carries a genuinely semi-transparent background, so a PNG
+        can sit over whatever it is dropped onto while still tinting it; at
+        <b>0</b> there is no background at all, which is the transparent PNG
+        that used to be the only thing on offer. JPEG has no alpha to carry, so
+        it is laid on white first and then given whatever the background says.</dd>
+
       <dt>perspective</dt>
       <dd>Where the centre of projection sits, given as the figure's own
         radius divided by its distance: <b>0</b> is the parallel camera at

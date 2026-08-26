@@ -334,6 +334,16 @@ async function boot() {
     }
     // a view preference, not the document's: restored before the first mesh,
     // which is the one that would otherwise fit against the wrong setting
+    try {
+      const bg = JSON.parse(localStorage.getItem('background') || 'null');
+      if (bg && bg.chosen) {
+        bgChosen = true;
+        if (typeof bg.color === 'string') $('#bgColor').value = bg.color;
+        if (Number.isFinite(bg.alpha)) $('#bgAlpha').value = String(bg.alpha);
+        syncOpacityPair('#bgAlpha', '#bgAlphaRange');
+        renderer.background = [...hex2rgb($('#bgColor').value), facePct('#bgAlpha') / 100];
+      }
+    } catch { }
     if (localStorage.getItem('autoZoom') === '0') {
       $('#autoZoom').checked = false;
       renderer.autoZoom = false;
@@ -2342,6 +2352,9 @@ function wireControls() {
    * so the solid has to fade under the thumb. It is only a redraw — no rebuild
    * — so dragging the slider is as cheap as turning the model.
    */
+  $('#bgColor').oninput = () => pushBackground('color');
+  $('#bgAlpha').oninput = () => pushBackground('number');
+  $('#bgAlphaRange').oninput = () => pushBackground('range');
   $('#faceOpacity').oninput = () => pushFaces('number');
   $('#faceOpacityRange').oninput = () => pushFaces('range');
   $('#showFaces').onchange = () => pushFaces();
@@ -2791,7 +2804,7 @@ function applyTheme(pref) {
   $('#themeBtn').textContent = pref === 'auto' ? '◐' : pref === 'dark' ? '●' : '○';
   $('#themeBtn').title = `Theme: ${pref}`;
   if (renderer) {
-    renderer.background = dark ? [0.055, 0.06, 0.078] : [0.965, 0.97, 0.977];
+    themeBackground(dark);
     renderer.draw();
   }
   cells?.draw();
@@ -3076,6 +3089,54 @@ function syncOpacityPair(numId, rangeId, from) {
   if (!n || !r) return;
   if (from === 'range') n.value = r.value;
   else r.value = String(facePct(numId));
+}
+
+/*
+ * The color behind the figure.
+ *
+ * Theme-coloured until somebody chooses one, and theirs from then on: a person
+ * who has picked a background does not want it repainted because the light
+ * outside changed. `bgChosen` is that latch, and it is what applyTheme checks.
+ *
+ * The alpha is not decoration. It goes onto the canvas element as rgba(), so
+ * the screen shows it, and the image exporter composites the same value behind
+ * the figure — so what is exported is what is on screen, including a
+ * background that is only half there. At 0 the background is absent
+ * altogether, which is the transparent PNG that used to be the only choice.
+ */
+const THEME_BG = { dark: [0.055, 0.06, 0.078], light: [0.965, 0.97, 0.977] };
+let bgChosen = false;
+
+const hex2rgb = (h) => {
+  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(h || '');
+  return m ? [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255]
+           : [0, 0, 0];
+};
+const rgb2hex = (c) => '#' + [0, 1, 2]
+  .map(i => Math.max(0, Math.min(255, Math.round((c?.[i] ?? 0) * 255))).toString(16).padStart(2, '0'))
+  .join('');
+
+/** the two controls -> the renderer, and remembered */
+function pushBackground(from) {
+  syncOpacityPair('#bgAlpha', '#bgAlphaRange', from);
+  const rgb = hex2rgb($('#bgColor').value);
+  const a = facePct('#bgAlpha') / 100;
+  if (renderer) { renderer.background = [...rgb, a]; renderer.draw(); }
+  if (from) bgChosen = true;                 // an actual choice, not a theme
+  try {
+    localStorage.setItem('background', JSON.stringify(
+      { color: $('#bgColor').value, alpha: facePct('#bgAlpha'), chosen: bgChosen }));
+  } catch { }
+}
+
+/** the theme's own background, unless the reader has picked one */
+function themeBackground(dark) {
+  if (bgChosen) { pushBackground(); return; }
+  const c = dark ? THEME_BG.dark : THEME_BG.light;
+  $('#bgColor').value = rgb2hex(c);
+  $('#bgAlpha').value = '100';
+  syncOpacityPair('#bgAlpha', '#bgAlphaRange');
+  if (renderer) renderer.background = [...c, 1];
 }
 
 /** the solid's faces -> the renderer, and remembered */

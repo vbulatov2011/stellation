@@ -2134,9 +2134,19 @@ export class Renderer3D {
    * drawing buffer and never see it.
    */
   set background(rgb) {
-    this._background = rgb;
+    /*
+     * Four components now, the fourth optional and 1 by default, so an old
+     * caller passing three is unchanged. The alpha is real: it goes onto the
+     * element as rgba(), so a background can be faded on screen, and the image
+     * exporter reads the same value and composites it behind the figure —
+     * which is how an exported PNG comes to carry a semi-transparent
+     * background rather than either an opaque one or nothing at all.
+     */
+    const a = rgb?.[3] ?? 1;
+    this._background = [rgb?.[0] ?? 0, rgb?.[1] ?? 0, rgb?.[2] ?? 0, a];
     const b = (v) => Math.max(0, Math.min(255, Math.round((v ?? 0) * 255)));
-    this.canvas.style.backgroundColor = `rgb(${b(rgb?.[0])}, ${b(rgb?.[1])}, ${b(rgb?.[2])})`;
+    this.canvas.style.backgroundColor =
+      `rgba(${b(rgb?.[0])}, ${b(rgb?.[1])}, ${b(rgb?.[2])}, ${Math.max(0, Math.min(1, a))})`;
   }
 
   get background() { return this._background; }
