@@ -392,7 +392,7 @@
         <div class="ctl-line">
           <label class="check grow" title="The creases: where facets lying in different face planes meet"><input id="showFaceEdges" type="checkbox" checked> face edges</label>
           <input id="faceEdgeColor" type="color" value="#000000" title="Color of the face edges">
-          <input id="faceEdgeWidth" type="number" min="0.1" max="8" step="0.1" value="1" title="Thickness — pixels for lines, scaled radius for cylinders">
+          <input id="faceEdgeWidth" type="number" min="0.1" max="200" step="0.1" value="1" title="Thickness — pixels for lines, or a radius measured against the core for cylinders, so it stays put as the figure grows. Large values are allowed: fat cylinders on a sparse figure are a legitimate picture.">
           <select id="faceEdgeTubes" title="How the edges are drawn: flat lines of constant screen width, or thin lit cylinders — real geometry that shades round and thickens as you zoom. Very thin cylinders can shimmer; lines stay clean at any width.">
             <option value="lines" selected>lines</option>
             <option value="cylinders">cylinders</option>
@@ -401,7 +401,7 @@
         <div class="ctl-line">
           <label class="check grow" title="The subdivision: where facets lying in the same face plane meet, with no crease between them"><input id="showFacetEdges" type="checkbox" checked> facet edges</label>
           <input id="facetEdgeColor" type="color" value="#6b7080" title="Color of the facet edges">
-          <input id="facetEdgeWidth" type="number" min="0.1" max="8" step="0.1" value="1" title="Thickness — pixels for lines, scaled radius for cylinders">
+          <input id="facetEdgeWidth" type="number" min="0.1" max="200" step="0.1" value="1" title="Thickness — pixels for lines, or a radius measured against the core for cylinders, so it stays put as the figure grows. Large values are allowed: fat cylinders on a sparse figure are a legitimate picture.">
           <select id="facetEdgeTubes" title="How the edges are drawn: flat lines of constant screen width, or thin lit cylinders — real geometry that shades round and thickens as you zoom. Very thin cylinders can shimmer; lines stay clean at any width.">
             <option value="lines" selected>lines</option>
             <option value="cylinders">cylinders</option>

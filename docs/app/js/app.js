@@ -2926,6 +2926,18 @@ const hexToRgba = (hex) => {
  * last one typed — so what is drawn mid-edit is a sensible line rather than no
  * line, and the box's own value is left alone for the typing to continue.
  */
+/*
+ * How thick an edge may be asked to be.
+ *
+ * It was 8, which is generous for a line of pixels and mean for a cylinder:
+ * measured against the core, a radius of 8/600 of it is still thin, and a
+ * sparse figure drawn as fat rods is a picture somebody may well want. The
+ * ceiling is kept rather than removed because the field must still refuse a
+ * typo — 1e9 would build a cylinder the size of the scene and take the frame
+ * rate with it — but it is now far enough out to be no one's limit.
+ */
+const EDGE_WIDTH_MAX = 200;
+
 const typedWidth = (id, lo, hi, dflt) => {
   const v = Number($(id).value);
   return Number.isFinite(v) && v > 0 ? Math.max(lo, Math.min(hi, v)) : dflt;
@@ -2936,7 +2948,7 @@ function currentEdgeStyle() {
     face: {
       show: $('#showFaceEdges').checked,
       color: $('#faceEdgeColor').value,
-      width: typedWidth('#faceEdgeWidth', 0.1, 8, 1),
+      width: typedWidth('#faceEdgeWidth', 0.1, EDGE_WIDTH_MAX, 1),
       // this kind drawn as thin lit cylinders instead of flat lines. The
       // control is a two-way choice; the document has always stored a flag,
       // and goes on doing so
@@ -2945,7 +2957,7 @@ function currentEdgeStyle() {
     facet: {
       show: $('#showFacetEdges').checked,
       color: $('#facetEdgeColor').value,
-      width: typedWidth('#facetEdgeWidth', 0.1, 8, 1),
+      width: typedWidth('#facetEdgeWidth', 0.1, EDGE_WIDTH_MAX, 1),
       tubes: $('#facetEdgeTubes').value === 'cylinders',
     },
   };

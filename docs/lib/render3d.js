@@ -590,7 +590,23 @@ export class Renderer3D {
    * them thicker on screen, which is what real geometry does.
    */
   _tubeStyle() {
-    const R = Math.max(1e-3, (this.lastMaxR || 1) * (this.modelScale || 1));
+    /*
+     * The CORE's radius, not the figure's.
+     *
+     * A cylinder is real geometry, so its radius has to be in model units, and
+     * it was taken as a fraction of whatever was on screen. That made the
+     * edges thicken as the figure grew: adding an outer shell multiplied the
+     * radius by the new reach, so the same setting drew hairlines on the core
+     * and cables on the full stellation, and building outward quietly changed
+     * the drawing under you.
+     *
+     * The core is fixed for an arrangement, so measuring against it keeps the
+     * thickness constant however far the spikes go — which is what a width
+     * control is expected to mean. It is the same yardstick the symmetry
+     * elements borrow when nothing is selected, for the same reason: it is the
+     * one length here that does not depend on the selection.
+     */
+    const R = Math.max(1e-3, (this.coreWorldR || this.lastMaxR || 1) * (this.modelScale || 1));
     const wF = this.faceEdges.width ?? this.edgeWidth;
     const wT = this.facetEdges.width ?? this.edgeWidth;
     const cF = this.faceEdges.color || this.edgeColor;
