@@ -576,6 +576,21 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); 
 }
 .col-idle { opacity: 0.55; }
 
+/*
+ * The animation transport: play/pause, rewind, record, and the turn itself.
+ *
+ * The buttons are the app's small ghost icons; the slider takes whatever is
+ * left, since it is the control being read at a glance while the rest are
+ * pressed once. The record dot wears the one warning color in the app, which
+ * is what a record button is for.
+ */
+.anim-transport { display: flex; align-items: center; gap: 6px; }
+.anim-transport .icon { flex: none; font-size: 13px; line-height: 1; }
+.anim-transport .icon.rec { color: #d1494a; }
+.anim-transport .icon.rec:disabled { color: var(--dim); }
+.anim-transport input[type="range"] { min-width: 60px; }
+#animClock { flex: none; font-size: 11px; min-width: 3.4em; text-align: right; }
+
 /* the key to the Cells bar colors */
 .legend {
   display: flex;

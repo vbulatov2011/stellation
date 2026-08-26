@@ -538,14 +538,31 @@
         revolves about itself. The axis holds still on screen while the solid
         goes round it.
       -->
-      <label class="check"><input id="animOn" type="checkbox"> enabled</label>
+      <!--
+        The transport. One button plays and pauses, because those are one
+        question; rewind puts the turn back to its start; record makes the
+        file. The slider is the turn itself — it follows along while playing
+        or recording, and dragging it sets where you are.
+      -->
+      <div class="row anim-transport">
+        <button id="animPlay" class="ghost icon" type="button" aria-label="Play"
+                title="Play the turn from where the slider is. Click again to pause.">&#9654;</button>
+        <button id="animRewind" class="ghost icon" type="button" aria-label="Rewind"
+                title="Back to the start of the turn">&#9198;</button>
+        <button id="animRecord" class="ghost icon rec" type="button" aria-label="Record"
+                title="Record exactly one full turn to a video file">&#9679;</button>
+        <input id="animTime" class="grow" type="range" min="0" max="1" step="0.001" value="0"
+               aria-label="Time in the turn"
+               title="Where in the turn you are. It follows along while playing or recording; drag it to go somewhere.">
+        <span id="animClock" class="dim mono">0.0s</span>
+      </div>
       <label class="field" title="The axis to spin about, in the solid's own coordinates — three numbers, e.g. 0 1 0 for y, or an axis of the figure">
         <span>axis</span>
         <input id="animAxis" type="text" value="0, 1, 0" spellcheck="false">
       </label>
-      <label class="field" title="Full turns per second; negative spins the other way">
-        <span>speed</span>
-        <input id="animSpeed" type="number" value="0.1" step="0.02" min="-2" max="2"> turns/s
+      <label class="field" title="How long one full turn takes, in seconds. To spin the other way, negate the axis — a turn has a length, not a sign.">
+        <span>duration</span>
+        <input id="animDuration" type="number" value="10" step="0.5" min="0.2" max="600"> s
       </label>
       <label class="field" title="What the video is encoded as. WebM plays everywhere a browser is; MP4 is what everything else expects — an option only where this browser can encode it.">
         <span>format</span>
@@ -572,9 +589,6 @@
         <span>name</span>
         <input type="text" id="animName" spellcheck="false">
       </label>
-      <div class="row buttons">
-        <button id="animVideo" title="Record exactly one full turn from the current angle, as a video file">Save to video…</button>
-      </div>
       <div class="row" id="animWhereRow" hidden>
         <span class="dim">folder:</span>
         <span id="animWhere" class="dim">you will be asked once</span>

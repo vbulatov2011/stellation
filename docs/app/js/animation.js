@@ -55,11 +55,13 @@ const mimeFor = (fmt) => typeof MediaRecorder === 'undefined' ? null
   : (VIDEO_MIMES[fmt] || []).find(m => MediaRecorder.isTypeSupported(m)) || null;
 
 export function initAnimation({ renderer, currentName, setStatus }) {
-  const on = $('#animOn'), axisIn = $('#animAxis'), speedIn = $('#animSpeed');
-  const fmtSel = $('#animFormat'), videoBtn = $('#animVideo'), info = $('#animInfo');
+  const playBtn = $('#animPlay'), rewindBtn = $('#animRewind'), recBtn = $('#animRecord');
+  const timeIn = $('#animTime'), clock = $('#animClock');
+  const axisIn = $('#animAxis'), durIn = $('#animDuration');
+  const fmtSel = $('#animFormat'), info = $('#animInfo');
   const sizeSel = $('#animSize'), customRow = $('#animCustomRow');
   const wIn = $('#animW'), hIn = $('#animH');
-  if (!on || !renderer) return null;
+  if (!playBtn || !renderer) return null;
 
   /*
    * The video's resolution: a preset, or the custom fields. Everything is
@@ -120,33 +122,114 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     if (n < 1e-12) return null;
     return [nums[0] / n, nums[1] / n, nums[2] / n];
   }
-  const speedOf = () => {
-    const v = Number(speedIn.value);
-    return Number.isFinite(v) ? Math.max(-2, Math.min(2, v)) : 0;
+  /*
+   * One turn's length, in seconds. It replaced turns-per-second, which read
+   * backwards for the thing anybody actually decides — how long the video
+   * should be — and carried the spin's direction in its sign, where it was
+   * easy to set by accident. A turn has a length, not a sign; to go the other
+   * way, negate the axis, which is where direction belongs.
+   */
+  const durationOf = () => {
+    const v = Number(durIn.value);
+    return Number.isFinite(v) && v >= 0.2 ? Math.min(600, v) : 10;
   };
 
-  // ---- the free spin -----------------------------------------------------
 
-  let raf = null, lastT = 0, recording = false;
+
+  // ---- the turn, as a position in it -------------------------------------
+
+  /*
+   * The spin used to be incremental: each frame multiplied the rotation by a
+   * little more turn. That cannot answer "where am I?", so it could not have
+   * a scrubber — and it drifted, since a thousand small multiplications do
+   * not land exactly back where they started.
+   *
+   * So the turn is now a POSITION. `phase` runs 0..1 over one full turn and
+   * is the only state; the orientation is computed from it against `base`,
+   * the orientation at phase 0. Playing advances the phase, rewinding sets it
+   * to 0, and the slider both shows it and sets it — all three are the same
+   * operation on one number, which is why they agree.
+   *
+   * `base` re-anchors when anything else moves the model. Dragging the solid
+   * while the turn sits at 0.3 should not throw the turn away, so the drag is
+   * read as a new base at the current phase: base = rotation · turn(phase)⁻¹.
+   * Without it, the next frame would snap the model back and the trackball
+   * would feel dead while the animation section was open.
+   */
+  let raf = null, lastT = 0, recording = false, playing = false;
+  let phase = 0;
+  let base = renderer.rotation.slice();
+  let applied = null;                     // the rotation we last wrote, to spot drags
+  let appliedPhase = 0;                   // and the phase it was written at
+
+  const qconj = (q) => [-q[0], -q[1], -q[2], q[3]];
+  const turnAt = (axis, ph) => aboutAxis(axis, TAU * ph);
+
+  /** the orientation this phase means, and the state that says we set it */
+  function applyPhase() {
+    const axis = parseAxis();
+    if (!axis) return;
+    reanchor(axis);
+    renderer.rotation = qnorm(qmul(base, turnAt(axis, phase)));
+    applied = renderer.rotation.slice();
+    appliedPhase = phase;
+    renderer.draw();
+  }
+
+  /**
+   * If someone else turned the model, keep the phase and move the base.
+   *
+   * The undoing has to use the phase the model was LAST DRAWN at, not the one
+   * being asked for now. Using the new phase makes the whole thing a no-op —
+   * base = r·turn(p)⁻¹ followed by base·turn(p) is r again — which is exactly
+   * what happened: dragging the slider moved the number and left the figure
+   * sitting still.
+   */
+  function reanchor(axis) {
+    const r = renderer.rotation;
+    if (!applied) { base = r.slice(); return; }   // nothing spun yet: this IS phase 0
+    if (applied.every((v, i) => Math.abs(v - r[i]) < 1e-9)) return;
+    base = qnorm(qmul(r, qconj(turnAt(axis, appliedPhase))));
+  }
+
+  function setPhase(ph, fromSlider) {
+    phase = ((ph % 1) + 1) % 1;           // one turn, wrapped
+    if (!fromSlider && timeIn) timeIn.value = String(phase);
+    if (clock) clock.textContent = `${(phase * durationOf()).toFixed(1)}s`;
+    applyPhase();
+  }
 
   function tick(t) {
     raf = null;
-    if (!on.checked || recording) return;
-    const axis = parseAxis(), speed = speedOf();
-    if (axis && speed) {
-      // dt is clamped: a background tab hands back seconds of it at once,
-      // and the figure should resume, not leap
-      const dt = Math.min(0.1, (t - lastT) / 1000);
-      renderer.rotation = qnorm(qmul(renderer.rotation, aboutAxis(axis, TAU * speed * dt)));
-      renderer.draw();
-    }
+    if (!playing || recording) { lastT = t; return; }
+    // dt is clamped: a background tab hands back seconds of it at once,
+    // and the figure should resume, not leap
+    const dt = Math.min(0.1, (t - lastT) / 1000);
     lastT = t;
+    setPhase(phase + dt / durationOf());
     raf = requestAnimationFrame(tick);
   }
   function start() {
-    if (raf) return;
+    if (raf || !playing) return;
     lastT = performance.now();
     raf = requestAnimationFrame(tick);
+  }
+  function setPlaying(v) {
+    playing = !!v && !!parseAxis();
+    if (playing) start();
+    else if (raf) { cancelAnimationFrame(raf); raf = null; }
+    syncTransport();
+  }
+
+  /** the three buttons, saying what they will do next */
+  function syncTransport() {
+    playBtn.innerHTML = playing ? '&#9208;' : '&#9654;';
+    playBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+    playBtn.title = playing ? 'Pause the turn where it is'
+                            : 'Play the turn from where the slider is. Click again to pause.';
+    playBtn.disabled = recording || !parseAxis();
+    rewindBtn.disabled = recording;
+    if (timeIn) timeIn.disabled = recording;
   }
 
   // ---- one turn, into a file ---------------------------------------------
@@ -173,9 +256,8 @@ export function initAnimation({ renderer, currentName, setStatus }) {
   }
 
   async function recordTurn() {
-    const axis = parseAxis(), speed = speedOf();
+    const axis = parseAxis();
     if (!axis) { info.textContent = 'the axis needs three numbers, e.g. 0 1 0'; return; }
-    if (!speed) { info.textContent = 'a turn at speed 0 never ends — set a speed first'; return; }
 
     const mime = mimeFor(fmtSel.value);
     if (!mime) { info.textContent = `this browser cannot encode ${fmtSel.value}`; return; }
@@ -203,9 +285,13 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     }
 
     recording = true;
-    videoBtn.disabled = true;
-    const q0 = renderer.rotation.slice();
-    const T = 1 / Math.abs(speed);
+    recBtn.disabled = true;
+    syncTransport();
+    const wasPlaying = playing;
+    playing = false;                        // one turn, recorded, not two at once
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+    const phase0 = phase;
+    const T = durationOf();
     const chunks = [];
     /*
      * The turn is RENDERED at the video's own resolution, not scaled up from
@@ -314,8 +400,8 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     try {
       const t0 = performance.now();
       for (let i = 0; i < frames; i++) {
-        renderer.rotation = qnorm(qmul(q0, aboutAxis(axis, TAU * (i / frames) * Math.sign(speed))));
-        renderer.draw();
+        // through setPhase, so the slider and the clock follow the recording
+        setPhase(i / frames);
         pushFrame();               // hand this exact frame to the encoder
         info.textContent = `recording — frame ${i + 1} of ${frames}`;
         await waitUntil(t0 + (i + 1) * frameMs);
@@ -335,12 +421,15 @@ export function initAnimation({ renderer, currentName, setStatus }) {
       if (kept.style === null) src.removeAttribute('style');
       else src.setAttribute('style', kept.style);
       renderer.lockSize = false;
-      renderer.rotation = q0;      // a turn is a full circle, but exactly
+      // a turn is a full circle, but put the phase back exactly
       src.width = kept.w; src.height = kept.h;
       renderer.resize();           // recomputes from the restored CSS, and draws
     }
     recording = false;
-    videoBtn.disabled = false;
+    recBtn.disabled = false;
+    setPhase(phase0);                       // exactly where the recording began
+    if (wasPlaying) setPlaying(true);
+    syncTransport();
 
     /*
      * A covered tab records, but poorly: the loop keeps going on its timer
@@ -367,14 +456,15 @@ export function initAnimation({ renderer, currentName, setStatus }) {
       setStatus(`saved ${fname} — one turn, ${frames} frames`);
     }
     sync();
-    if (on.checked) start();       // hand the wheel back to the free spin
   }
 
   // ---- wiring ------------------------------------------------------------
 
   function sync() {
-    const axis = parseAxis(), speed = speedOf();
+    const axis = parseAxis();
     axisIn.classList.toggle('invalid', !axis);
+    syncTransport();
+    if (clock) clock.textContent = `${(phase * durationOf()).toFixed(1)}s`;
     if (recording) return;                       // the recorder owns the line
     const encodable = canRecord && !!mimeFor(fmtSel.value);
     customRow.hidden = sizeSel.value !== 'custom';
@@ -383,18 +473,15 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     const { w, h } = videoSize();
     info.textContent = !axis
       ? 'the axis needs three numbers, e.g. 0 1 0'
-      : !speed
-        ? ''
-        : `one turn = ${(1 / Math.abs(speed)).toFixed(1)} s · ${w} × ${h}` +
-          (encodable ? '' : ` — this browser cannot record ${fmtSel.value}`);
-    videoBtn.disabled = !encodable || recording || !axis || !speed;
+      : `one turn = ${durationOf().toFixed(1)} s · ${w} × ${h}` +
+        (encodable ? '' : ` — this browser cannot record ${fmtSel.value}`);
+    recBtn.disabled = !encodable || recording || !axis;
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({
-        axis: axisIn.value, speed: speedIn.value, format: fmtSel.value,
+        axis: axisIn.value, duration: durIn.value, format: fmtSel.value,
         size: sizeSel.value, customW: wIn.value, customH: hIn.value,
       }));
     } catch { }
-    if (on.checked) start();
   }
 
   // axis and speed come back; `enabled` starts off, always
@@ -402,7 +489,15 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
     if (saved) {
       if (typeof saved.axis === 'string') axisIn.value = saved.axis;
-      if (saved.speed !== undefined) speedIn.value = saved.speed;
+      /*
+       * `duration` replaced `speed`, and a stored speed is still worth
+       * honouring rather than silently reset: one turn per `speed` seconds is
+       * exactly 1/speed, and the sign it used to carry is dropped, direction
+       * having moved to the axis.
+       */
+      if (saved.duration !== undefined) durIn.value = saved.duration;
+      else if (saved.speed) durIn.value = String(Math.min(600, Math.max(0.2,
+        1 / Math.abs(Number(saved.speed) || 0.1))));
       // a remembered format this browser cannot encode falls back silently
       if (saved.format && mimeFor(saved.format)) fmtSel.value = saved.format;
       if (saved.size && [...sizeSel.options].some(o => o.value === saved.size)) {
@@ -414,7 +509,10 @@ export function initAnimation({ renderer, currentName, setStatus }) {
   } catch { }
   if (!mimeFor(fmtSel.value) && mimeFor('webm')) fmtSel.value = 'webm';
 
-  for (const c of [on, axisIn, speedIn, fmtSel, sizeSel, wIn, hIn]) c.addEventListener('input', sync);
+  for (const c of [axisIn, durIn, fmtSel, sizeSel, wIn, hIn]) c.addEventListener('input', sync);
+  playBtn.onclick = () => setPlaying(!playing);
+  rewindBtn.onclick = () => { setPhase(0); sync(); };
+  timeIn.addEventListener('input', () => { setPhase(Number(timeIn.value), true); sync(); });
   const whereRow = $('#animWhereRow');
   if (whereRow) whereRow.hidden = !hasFSAccess();
   const changeBtn = $('#animChangeFolder');
@@ -427,14 +525,14 @@ export function initAnimation({ renderer, currentName, setStatus }) {
     };
   }
   showFolder();
-  videoBtn.onclick = () => { recordTurn().catch(err => {
-    recording = false; videoBtn.disabled = false;
+  recBtn.onclick = () => { recordTurn().catch(err => {
+    recording = false; recBtn.disabled = false; syncTransport();
     info.textContent = err && err.message ? err.message : String(err);
   }); };
   sync();
 
   return {
     /** the spin, for anything that needs to hold it still for a moment */
-    isSpinning: () => on.checked && !!parseAxis() && speedOf() !== 0,
+    isSpinning: () => playing && !!parseAxis(),
   };
 }
