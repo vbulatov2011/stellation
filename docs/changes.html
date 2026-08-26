@@ -73,8 +73,16 @@
       Perspective is normally a different camera, and switching to it resizes
       and re-frames everything at once. This one is a continuous deformation
       of the parallel camera instead. Put the eye at distance <i>d</i> and let
-      <i>p</i> = R/<i>d</i>, R the polyhedron&rsquo;s own radius: <i>p</i> = 0
-      is the eye at infinity, <i>p</i> = 0.1 an eye ten radii out. Choosing the
+      <i>p</i> = R/<i>d</i>, R the figure&rsquo;s own radius: <i>p</i> = 0
+      is the eye at infinity, <i>p</i> = 0.1 an eye ten radii out. The unit is
+      the radius of what is actually selected, so the eye stands off in
+      proportion to it and a bare core and a stellation eight times its size
+      look alike at the same setting &mdash; at the price of the eye moving as
+      the figure grows, which shifts the interior on screen. R was the
+      polyhedron&rsquo;s core radius at first, which measured the same absolute
+      distance whatever was built, and put the eye inside a far-reaching
+      stellation&rsquo;s own spikes: they came through the screen like a
+      fisheye. Choosing the
       focal length so the plane through the centre keeps its parallel size
       collapses the whole projection to a depth-dependent magnification about
       the view axis, <i>m</i>(z) = 1/(1 &minus; <i>p</i>&middot;z/R).
@@ -89,8 +97,8 @@
       Navigation stays in the image. Pan slides the finished picture, zoom
       scales it, and <em>fit</em> changes only that zoom &mdash; none of them
       move the eye, so the perspective you chose survives being looked around.
-      The eye is capped to stay outside the figure, which on a stellation
-      reaching 8.4 core radii means it can come no closer than about 9.3.
+      Nothing needs capping: the eye sits at one radius over <i>p</i>, which is
+      outside the figure at every setting on the slider.
       Picking inverts the same formula, so what you click is what you point at,
       and the camera travels in the saved view as a ninth number that is absent
       whenever it is zero.

@@ -437,10 +437,16 @@
         against, and it does not matter what was on screen before.</dd>
 
       <dt>perspective</dt>
-      <dd>Where the eye is, given as the polyhedron's radius divided by its
+      <dd>Where the eye is, given as the figure's own radius divided by its
         distance: <b>0</b> is the parallel camera at infinity, <b>0.1</b> an eye
         ten radii out, <b>0.25</b> four radii. A number and a slider, on the
         same value.
+        <p>The unit is the radius of whatever is currently selected, so the eye
+        stands off in proportion to it and a bare core and a stellation eight
+        times its size look alike at the same setting. The cost is that adding
+        or removing cells moves the eye with the figure, so the interior shifts
+        on screen as it grows &mdash; perspective is for looking, and the
+        parallel camera at 0 is the one that holds the interior still.
         <p>It is a deformation of the parallel camera rather than a second
         camera, and the property that makes it usable on a stellation is that
         the plane through the centre keeps its size for every setting. Turning
@@ -451,10 +457,9 @@
         <p>Navigation stays in the picture: panning slides the finished image,
         zooming scales it, and <em>fit</em> changes only that zoom, so none of
         them move the eye and the perspective you chose survives being looked
-        around. The eye is capped to stay outside the figure, so a far-reaching
-        stellation allows less of it than a compact one &mdash; on one reaching
-        eight core radii the closest the eye can come is about nine. The
-        setting travels with the saved view, so a document reopens from the
+        around. Nothing needs capping: the eye sits at one radius over
+        <i>p</i>, which is outside the figure for every setting on the slider.
+        The setting travels with the saved view, so a document reopens from the
         camera it was composed at.</dd>
 
       <dt>auto zoom</dt>

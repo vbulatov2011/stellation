@@ -1627,16 +1627,30 @@ export class Renderer3D {
     const dist = fit * F;
     const zoom = (F / this.distance) * narrow;
     /*
-     * The perspective unit is the POLYHEDRON's radius — the core, layer 0 —
-     * not the arrangement's, so "ten radii out" means the same thing however
-     * far a stellation's spikes reach. The eye must nonetheless stay outside
-     * the figure, or geometry passes behind it and is clipped away, so p is
-     * capped at 0.9·R/reach: on a figure eight core-radii across the most
-     * perspective on offer is an eye at about 8.9 radii.
+     * The perspective unit is the FIGURE's own radius, so the eye stands off
+     * in proportion to whatever is on screen: p = 0.1 is ten radii out from a
+     * bare core and ten radii out from a stellation eight times its size.
+     *
+     * It was the core's radius, which measures the same eye distance in
+     * absolute terms however far the spikes reach — mathematically tidier, and
+     * wrong to look at. A figure eight core-radii across then had the eye
+     * inside its own reach at any useful setting, and the spikes came through
+     * the screen like a fisheye. Scaling with the figure is what makes a small
+     * model and a large one look alike.
+     *
+     * The price is that adding cells now changes the projection, so the
+     * interior shifts on screen as the figure grows. That is a real cost and
+     * it is accepted: perspective is for looking, and the parallel camera —
+     * p = 0, one click away — is the one that holds the interior still.
+     *
+     * The cap goes with the change. The eye sits at pr/p, which is outside a
+     * figure of radius pr for every p below 1, so nothing needs limiting any
+     * more; an empty selection has no radius to speak of and borrows the
+     * core's, exactly as the element sizing does.
      */
-    const pr = Math.max(1e-6, (this.coreWorldR || this.lastMaxR || 1) * (this.modelScale || 1));
-    const reach = Math.max(meshR, pr);
-    const p = Math.min(this.perspective || 0, 0.9 * pr / reach);
+    const coreR = (this.coreWorldR || 0) * (this.modelScale || 1);
+    const pr = Math.max(1e-6, meshR > 1e-3 ? meshR : (coreR || 1));
+    const p = Math.min(0.9, Math.max(0, this.perspective || 0));
     return { fovy, aspect, fit, R: F, meshR, dist, zoom, p, pr,
              halfH: dist * Math.tan(fovy / 2) / zoom,
              depth: Math.max(F, meshR) * 3 + 10 };
