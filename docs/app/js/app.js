@@ -338,7 +338,7 @@ async function boot() {
     }
     const savedPersp = Number(localStorage.getItem('perspective'));
     if (Number.isFinite(savedPersp) && savedPersp > 0) {
-      renderer.perspective = Math.min(0.9, savedPersp);
+      renderer.perspective = Math.min(0.8, savedPersp);
       $('#perspective').value = String(renderer.perspective);
       $('#perspectiveRange').value = String(renderer.perspective);
     }
@@ -2405,9 +2405,18 @@ function wireControls() {
     $('#perspectiveRange').value = String(p);
   };
   const pushPerspective = (v, from) => {
-    const p = Math.min(0.9, Math.max(0, Number(v) || 0));
-    if (from !== 'number') $('#perspective').value = String(p);
-    if (from !== 'range') $('#perspectiveRange').value = String(p);
+    const raw = Number(v);
+    const p = Math.min(0.8, Math.max(0, Number.isFinite(raw) ? raw : 0));  // see PERSP_MAX
+    /*
+     * The control that raised the event normally keeps whatever is in it —
+     * rewriting it mid-edit fights the typing, and "0." on its way to "0.25"
+     * would be corrected to "0". But a number outside the range is not a
+     * number on its way anywhere, and leaving it showing 0.95 while the camera
+     * uses 0.8 makes the field a liar, so that one case is written back.
+     */
+    const outOfRange = Number.isFinite(raw) && (raw > 0.8 || raw < 0);
+    if (from !== 'number' || outOfRange) $('#perspective').value = String(p);
+    if (from !== 'range' || outOfRange) $('#perspectiveRange').value = String(p);
     renderer?.setPerspective(p);
     try { localStorage.setItem('perspective', String(p)); } catch { }
     mark();                    // the camera is part of the document

@@ -435,7 +435,7 @@ export class Renderer3D {
 
   /** R / (eye distance): 0 parallel, 0.1 ten radii out. See stellationProjection. */
   setPerspective(p) {
-    const v = Number.isFinite(p) ? Math.min(0.9, Math.max(0, p)) : 0;
+    const v = Number.isFinite(p) ? Math.min(PERSP_MAX, Math.max(0, p)) : 0;
     if (v === this.perspective) return;
     this.perspective = v;
     this.draw();
@@ -863,7 +863,7 @@ export class Renderer3D {
      * mesh from disagreeing with the view it is drawn under.
      */
     if (v[7] > 0) this.modelScale = v[7];
-    this.perspective = Math.min(0.9, Math.max(0, v[8] || 0));
+    this.perspective = Math.min(PERSP_MAX, Math.max(0, v[8] || 0));
     this._pointerReset();
     this.draw();
     return true;
@@ -1650,7 +1650,7 @@ export class Renderer3D {
      */
     const coreR = (this.coreWorldR || 0) * (this.modelScale || 1);
     const pr = Math.max(1e-6, meshR > 1e-3 ? meshR : (coreR || 1));
-    const p = Math.min(0.9, Math.max(0, this.perspective || 0));
+    const p = Math.min(PERSP_MAX, Math.max(0, this.perspective || 0));
     return { fovy, aspect, fit, R: F, meshR, dist, zoom, p, pr,
              halfH: dist * Math.tan(fovy / 2) / zoom,
              depth: Math.max(F, meshR) * 3 + 10 };
@@ -2541,6 +2541,16 @@ const DEFAULT_VIEW = STANDARD_VIEWS.findIndex(v => v.name === '+o3');
  */
 const ELEM_EXT = 1.12;
 const AXES_EXT = ELEM_EXT * 1.05;
+/*
+ * How far in the eye may come, as radius over distance.
+ *
+ * Not the figure that sets this: the coordinate arrows do. They reach
+ * AXES_EXT past the figure — 1.176 radii — so with the eye at one radius over
+ * p they cross it at p = 1/1.176, about 0.85, and pass through the screen. By
+ * 0.8 the arrow tips are already magnified seventeenfold, which is where it
+ * starts to look wrong, so that is the ceiling.
+ */
+const PERSP_MAX = 0.8;
 
 // named orientations, for callers that want to jump straight to one
 Renderer3D.STANDARD_VIEWS = STANDARD_VIEWS;
