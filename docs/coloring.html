@@ -76,27 +76,31 @@
     <h2>The four questions a subgroup can answer</h2>
     <p>
       Fix the polyhedron's symmetry group G and choose a subgroup H from the
-      <b>coset subgroup</b> menu (it appears under <b>face colors</b> whenever a
-      coset or orbit coloring is selected). Then:
+      <b>coloring</b> menu, in the <b>Construction</b> section under
+      <b>symmetry</b> — beside the stellation symmetry, and deliberately
+      independent of it. Then pick a reading in <b>Coloring &rsaquo; face
+      colors</b>. Then:
     </p>
     <ul>
       <li><b>By cosets</b> — <em>which copy of the sub-figure is this?</em> The pieces
         fall into [G:H] classes, the translates of one H-symmetric sub-figure. This is
         the compound coloring: one color per tetrahedron, per octahedron, per cube.
-        Offered <em>per plane</em> (whole face planes match — the classical plates),
-        <em>per facet</em> (single pieces of surface — needed whenever one plane
-        carries parts of two components), and <em>per facet, mirror-split</em>
-        (see below).</li>
+        Choose <b>by subgroup coset</b>, then what wears it in the
+        <b>applied</b> menu beside it: <em>per plane</em> (whole face planes
+        match — the classical plates), <em>per facet</em> (single pieces of
+        surface — needed whenever one plane carries parts of two components),
+        or <em>per split facet</em> (see below).</li>
       <li><b>By subgroup orbits</b> — <em>what does H itself preserve?</em> Two pieces
         share a color exactly when some motion of H carries one to the other. This
         exists for every subgroup, never grays, and its smallest classes are the
-        sub-figures H holds invariant. Offered per plane, per facet, and per cell —
-        the cell being the piece a model painter actually holds.</li>
+        sub-figures H holds invariant. Choose <b>by subgroup orbit</b>; its
+        <b>applied</b> menu offers per plane, per facet and per cell — the cell
+        being the piece a model painter actually holds.</li>
       <li><b>Blends</b> happen on their own, inside the coset modes: a piece that no
         single coset can name, but a small set can, wears the mix of that set instead
         of gray.</li>
-      <li><b>Mirror-split</b> goes one further: it cuts such a piece along its own
-        mirror lines, and the halves take crisp colors — the classical
+      <li><b>Per split facet</b> goes one further: it cuts such a piece along its
+        own mirror lines, and the halves take crisp colors — the classical
         "one face, two colors, parted by a mirror".</li>
     </ul>
     <p>
@@ -266,7 +270,7 @@
       <img class="shot" src="coloring/mirror-split-faces.json.png" alt="" width="256" height="256" loading="lazy">
       <h3>One face, two colors, parted by a mirror</h3>
       <p>
-        The <em>mirror-split</em>. A face grays because its own mirrors straddle the
+        The <em>per split facet</em> reading. A face grays because its own mirrors straddle the
         cosets; cut it along those very mirror lines and the sectors have no
         symmetry left to object — each takes a crisp color. Under I<sub>h</sub> by
         cosets of <b>I</b> every face of the icosahedron splits into sectors
@@ -274,7 +278,7 @@
         purely visual: cells, selection and geometry are untouched.
       </p>
       <div class="foot">
-        <span class="recipe">icosahedron · Ih · I · cosets, mirror-split</span>
+        <span class="recipe">icosahedron · Ih · I · cosets, per split facet</span>
         <a class="open" href="stellation_app.html#doc=coloring/mirror-split-faces.json">Open in the app →</a>
       </div>
     </div>
@@ -357,7 +361,7 @@
         wheel to mud, so gray is the honest answer instead. The standard case
         is an <b>index-2</b> subgroup: the icosahedron under I<sub>h</sub> by
         cosets of <b>I</b> is entirely gray, every plane, because each face
-        belongs to both hands equally. That is the picture the mirror-split
+        belongs to both hands equally. That is the picture the split-facet
         above exists to rescue.
       </li>
     </ol>
@@ -404,6 +408,25 @@
       that says so.
     </p>
     <p>
+      <b>The Colors panel names the mixes too.</b> A coset reading gives every
+      coset of H a row, whether or not the figure wears it, because a row's
+      color is an <em>ingredient</em>: a facet showing a mix of two cosets
+      takes its color from both, so changing either changes the picture. Each
+      row therefore says what it is doing — <em>N facets</em> when it is worn
+      on its own, <em>with 5, 10</em> when it only ever appears blended and
+      those are its partners, <em>in N mixes</em> when there are too many
+      partners to fit (the tooltip lists them all), and <em>unused here</em>,
+      dimmed, when this figure never mentions it.
+      <p>
+      The cube under <b>C<sub>4</sub></b> is the case worth opening the panel
+      on. C<sub>4</sub> has order four, so there are twelve cosets and twelve
+      rows over a six-faced solid — but not one of them is worn alone: eight
+      pair off across the four non-axis faces, reading <i>coset 1 with 7</i>,
+      <i>coset 3 with 9</i> and so on, and the remaining four are unused. Switch
+      <em>applied</em> to <em>per split facet</em> and all twelve come into use
+      at four facets each, with nothing left to annotate.
+    </p>
+    <p>
       To read a mix back, rest the pointer on the facet: after a moment still,
       either view names the group along its own bottom edge — <i>cosets 1 +
       8</i> — with the
@@ -438,7 +461,7 @@
         <tr><td>Wenninger's five-color table</td><td>icosahedron · I · T</td><td>cosets, per plane</td><td><a href="stellation_app.html#doc=coloring/great-icosahedron-table.json">open</a></td></tr>
         <tr><td>Opposite faces alike, six colors</td><td>dodecahedron · Ih · D5d(I)</td><td>cosets, per plane</td><td><a href="stellation_app.html#doc=coloring/six-color-dodecahedron.json">open</a></td></tr>
         <tr><td>Twenty duotones, both hands at once</td><td>icosahedron · Ih · T</td><td>cosets, per plane (blend)</td><td><a href="stellation_app.html#doc=coloring/blend-duotones.json">open</a></td></tr>
-        <tr><td>Two colors parted by a mirror</td><td>icosahedron · Ih · I</td><td>cosets, mirror-split</td><td><a href="stellation_app.html#doc=coloring/mirror-split-faces.json">open</a></td></tr>
+        <tr><td>Two colors parted by a mirror</td><td>icosahedron · Ih · I</td><td>cosets, per split facet</td><td><a href="stellation_app.html#doc=coloring/mirror-split-faces.json">open</a></td></tr>
         <tr><td>The invariant tetrahedra, 4+4+12</td><td>icosahedron · Ih · T</td><td>orbits, per plane</td><td><a href="stellation_app.html#doc=coloring/invariant-tetrahedra.json">open</a></td></tr>
         <tr><td>Painter's matching cells</td><td>icosahedron · Ih · T</td><td>orbits, per cell</td><td><a href="stellation_app.html#doc=coloring/painters-orbits.json">open</a></td></tr>
         <tr><td>Honest gray, and a blend beside it</td><td>cube · Oh · C4</td><td>cosets, per plane</td><td><a href="stellation_app.html#doc=coloring/honest-gray-cube.json">open</a></td></tr>

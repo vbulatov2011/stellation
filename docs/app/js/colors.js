@@ -39,7 +39,7 @@ const MODES = {
   stellClass: { of: (m) => m.faceClassesStell, name: 'by stellation face class',   one: (i) => `class ${i}` },
   coset:      { of: (m) => m.faceCosets,       name: 'by cosets — per plane',      one: (i) => `coset ${i}` },
   cosetL:     { of: (m) => m.faceCosetsL,      name: 'by cosets — per facet',      one: (i) => `coset ${i}` },
-  cosetM:     { of: (m) => m.faceCosetsM,      name: 'by cosets — mirror-split',   one: (i) => `coset ${i}` },
+  cosetM:     { of: (m) => m.faceCosetsM,      name: 'by cosets — per split facet', one: (i) => `coset ${i}` },
   orbitP:     { of: (m) => m.faceOrbitP,       name: 'by orbits — per plane',      one: (i) => `orbit ${i}` },
   orbitF:     { of: (m) => m.faceOrbitF,       name: 'by orbits — per facet',      one: (i) => `orbit ${i}` },
   orbitC:     { of: (m) => m.faceOrbitC,       name: 'by orbits — per cell',       one: (i) => `orbit ${i}` },
