@@ -69,6 +69,29 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Merge neighbors: the per-facet readings get a legibility dial.</b>
+      Coloring by cosets or orbits per facet is exact and often unreadable
+      &mdash; inside one big flat face the classes sit side by side in
+      enumeration order, and the face reads as confetti. The new <i>merge
+      neighbors</i> switch in the coloring subsection melts classes whose
+      facets touch inside one face into solid regions, smallest first, each
+      absorbed into the neighbor it shares the most boundary with; the
+      <i>colors</i> count says where to stop, from every-patch-solid up to
+      the untouched reading, and the readout says what was kept of what
+      there was. Regions wear the color most of their facets already wore,
+      so full merge degrades gracefully toward the per-plane picture, the
+      palette keeps its meaning and edited colors keep applying. The
+      merge&rsquo;s units are the classes the coloring itself paints with
+      &mdash; (G-orbit, label) pairs: one tetrahedron of the compound of
+      five, not one T-orbit, which for a non-normal subgroup spans four of
+      the five and would have relabeled the whole compound. Adjacency is
+      geometric &mdash; same plane, same side, a shared boundary of real
+      length &mdash; so the spikes of a compound, which meet only at points,
+      never weld. Saved with the document (<code>display.colorMerge</code>,
+      no release bump); costs nothing when off.
+      <span class="src">lib/core.js · app/js/worker.js · app/js/app.js · app/js/preset.js · test/merge.mjs</span>
+    </div></li>
+    <li><div>
       <b>A perspective camera that leaves the figure the size it was.</b>
       Perspective is normally a different camera, and switching to it resizes
       and re-frames everything at once. This one is a continuous deformation

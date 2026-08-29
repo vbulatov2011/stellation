@@ -333,6 +333,12 @@
           <select id="colorPer"></select>
         </label>
         <label class="check" id="colorMixRow" title="A plane can belong to several cosets at once, and then it has no color of its own. On, the several are mixed; off, it falls to gray — which nothing else in a coset reading wears, so the pieces the coloring cannot name become visible at a glance instead of reading as an oddly muddy color somebody chose."><input id="colorMix" type="checkbox" checked> mix cosets colors</label>
+        <label class="check" id="colorMergeRow" hidden title="Melt neighboring classes together: classes of facets that touch inside one face merge until only a few colors remain, each region wearing the color most of it already wore. The cure for a face that reads as confetti — at the smallest count every connected patch of surface goes solid."><input id="colorMerge" type="checkbox"> merge neighbors</label>
+        <label class="field" id="colorMergeKRow" hidden title="How many distinct colors to keep. 1 asks for the fewest possible — every patch solid. Raising it lets the larger patterns back in while the smallest slivers stay merged; the count is clamped between the number of connected patches and the number of classes, and the readout shows what was actually kept of how many classes there were.">
+          <span>colors</span>
+          <input id="colorMergeK" type="number" min="1" step="1" value="1">
+          <span class="dim" id="colorMergeInfo"></span>
+        </label>
         <!-- The composed value, and the one everything else reads: the two
              menus above are a way of choosing it, not a second source of
              truth. Kept as a real select so a document, a stored preference

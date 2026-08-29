@@ -2413,6 +2413,284 @@ export function subgroupOrbits(stel, subMatrices) {
   return { planes: planeOf, planeCount, facets, facetCount, cells, cellCount };
 }
 
+/* ----------------------------------------------------------- merged coloring
+ *
+ * The per-facet colorings are exact and often unreadable: every class wears
+ * its own color, and the classes of one visible face sit side by side in
+ * whatever order the enumeration dealt them, so a face reads as confetti.
+ * Merging is the dial back toward legibility: classes whose facets touch
+ * inside a face are melted together until only a few colors remain — at the
+ * limit one per connected patch of surface, which turns each face solid.
+ * The classes themselves are untouched; only what they wear is shared.
+ */
+
+/**
+ * Which surface facets are adjacent INSIDE one face: same plane, same side
+ * showing, and sharing a boundary segment of real length. Edges are compared
+ * geometrically — collinear and overlapping by more than a point — rather
+ * than by vertex ids: within one plane the arrangement does subdivide both
+ * sides of a shared edge identically (measured, not assumed), but adjacency
+ * is a statement about geometry and this way it stays true even if some
+ * future construction leaves a T-junction. A corner touch is not adjacency:
+ * the spikes of the compound of five tetrahedra meet at points, and merging
+ * across a point contact would weld what the eye keeps apart.
+ *
+ * Returns pairs of indices into mesh.facetRefs.
+ */
+export function surfaceAdjacency(stel, mesh) {
+  const { pool } = stel;
+  const groups = new Map();                    // plane * 2 + side -> [index]
+  mesh.facetRefs.forEach((f, i) => {
+    const k = f.plane * 2 + (mesh.facetTop[i] ? 1 : 0);
+    const g = groups.get(k);
+    if (g) g.push(i); else groups.set(k, [i]);
+  });
+
+  const EPS = 1e-6;
+  const segsOf = new Map(), boxOf = new Map();
+  const prepare = (i) => {
+    if (segsOf.has(i)) return;
+    const f = mesh.facetRefs[i];
+    const s = [];
+    const box = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+    for (let k = 0; k < f.v.length; k++) {
+      const a = pool.get(f.v[k]), b = pool.get(f.v[(k + 1) % f.v.length]);
+      s.push([a, b]);
+      if (a.x < box[0]) box[0] = a.x; if (a.x > box[3]) box[3] = a.x;
+      if (a.y < box[1]) box[1] = a.y; if (a.y > box[4]) box[4] = a.y;
+      if (a.z < box[2]) box[2] = a.z; if (a.z > box[5]) box[5] = a.z;
+    }
+    segsOf.set(i, s); boxOf.set(i, box);
+  };
+  const near = (p, q) =>
+    p[0] <= q[3] + EPS && q[0] <= p[3] + EPS &&
+    p[1] <= q[4] + EPS && q[1] <= p[4] + EPS &&
+    p[2] <= q[5] + EPS && q[2] <= p[5] + EPS;
+
+  const touching = (sa, sb) => {
+    for (const [a1, a2] of sa) {
+      const dx = a2.x - a1.x, dy = a2.y - a1.y, dz = a2.z - a1.z;
+      const L = Math.hypot(dx, dy, dz);
+      if (L < EPS) continue;
+      const ux = dx / L, uy = dy / L, uz = dz / L;
+      const tol = EPS * Math.max(1, L);
+      for (const [b1, b2] of sb) {
+        const w1x = b1.x - a1.x, w1y = b1.y - a1.y, w1z = b1.z - a1.z;
+        if (Math.hypot(uy * w1z - uz * w1y, uz * w1x - ux * w1z, ux * w1y - uy * w1x) > tol) continue;
+        const w2x = b2.x - a1.x, w2y = b2.y - a1.y, w2z = b2.z - a1.z;
+        if (Math.hypot(uy * w2z - uz * w2y, uz * w2x - ux * w2z, ux * w2y - uy * w2x) > tol) continue;
+        const t1 = w1x * ux + w1y * uy + w1z * uz;
+        const t2 = w2x * ux + w2y * uy + w2z * uz;
+        const lo = Math.max(0, Math.min(t1, t2)), hi = Math.min(L, Math.max(t1, t2));
+        if (hi - lo > tol) return true;
+      }
+    }
+    return false;
+  };
+
+  const pairs = [];
+  for (const idx of groups.values()) {
+    if (idx.length < 2) continue;
+    for (const i of idx) prepare(i);
+    for (let a = 0; a < idx.length; a++) {
+      for (let b = a + 1; b < idx.length; b++) {
+        const i = idx[a], j = idx[b];
+        if (!near(boxOf.get(i), boxOf.get(j))) continue;
+        if (touching(segsOf.get(i), segsOf.get(j))) pairs.push([i, j]);
+      }
+    }
+  }
+  return pairs;
+}
+
+/**
+ * Melt adjacent classes together until `colors` distinct units remain.
+ *
+ * The classes are the units of symmetry the coloring itself paints with:
+ * facets in the same G-orbit wearing the same label. For the coset coloring
+ * these are the gH-classes — one tetrahedron of the compound of five, not
+ * one T-orbit, which for a non-normal subgroup spans four of the five — and
+ * for the orbit coloring they degenerate to the H-orbits, since there the
+ * label IS the orbit. Either way a class wears exactly one label, which is
+ * what lets a merged unit keep speaking the palette's language.
+ *
+ * `gOrbitOf` maps facets to their orbit under the FULL group (subgroupOrbits
+ * with the polyhedron group), and `labelings` is one or more facet -> label
+ * functions (a label being a coset index, an orbit index, a blend array, or
+ * -1). Everything else is graph work, done independently per labeling: one
+ * node per class present on the surface, weighted by its surface facets,
+ * with an edge wherever two classes touch inside a face. Units are then
+ * eaten smallest-first, each absorbed into the neighbor it touches along
+ * the most boundary — so slivers vanish into the regions around them long
+ * before anything big is disturbed, and lowering `colors` reads as turning
+ * up a smoothing dial.
+ *
+ * `colors` is clamped between the number of connected patches (below which
+ * nothing more CAN merge — patches that never touch stay distinct) and the
+ * number of classes (identity). null asks for the floor: every patch solid.
+ *
+ * Each unit then wears, per labeling, the label the MOST of its facets
+ * already wore — so a face that was mostly coset 2 goes solid in coset 2's
+ * color, the palette keeps its meaning, and edited colors keep applying.
+ * Ties fall to the smaller label. Everything is deterministic: same figure,
+ * same selection, same result.
+ *
+ * Returns { labels: {name: Map(facet -> label)}, stats: {name: {floor,
+ * units, classes}} }, the maps covering exactly the surface facets.
+ */
+export function mergeAdjacentFacetClasses(stel, mesh, gOrbitOf, labelings, colors = null) {
+  // labels as strings, so a blend array and its copy count as the same label
+  const lkey = (v) => (Array.isArray(v) || ArrayBuffer.isView(v))
+    ? 'm:' + Array.from(v).slice().sort((x, y) => x - y).join('+')
+    : (v == null || v < 0) ? 'z-gray' : 'c' + String(v).padStart(6, '0');
+
+  const pairs = surfaceAdjacency(stel, mesh);
+  const labels = {}, stats = {};
+
+  for (const [name, labelOf] of Object.entries(labelings)) {
+    const map = new Map();
+    labels[name] = map;
+
+    // the class of each surface facet: its G-orbit, split by what it wears
+    const valAt = mesh.facetRefs.map(f => labelOf(f));
+    const clsAt = mesh.facetRefs.map((f, i) => {
+      const o = gOrbitOf.get(f);
+      return (o == null ? 'x' + i : o) + '|' + lkey(valAt[i]);
+    });
+
+    const weight = new Map(), facetsIn = new Map();
+    clsAt.forEach((c, i) => {
+      weight.set(c, (weight.get(c) || 0) + 1);
+      const l = facetsIn.get(c);
+      if (l) l.push(i); else facetsIn.set(c, [i]);
+    });
+    const total = weight.size;
+    stats[name] = { floor: 0, units: 0, classes: total };
+    if (!total) continue;
+
+    const edges = new Map();                   // "a~b" (a < b) -> touching pairs
+    for (const [i, j] of pairs) {
+      const a = clsAt[i], b = clsAt[j];
+      if (a === b) continue;
+      const k = a < b ? a + '~' + b : b + '~' + a;
+      edges.set(k, (edges.get(k) || 0) + 1);
+    }
+
+    // the floor: how many units full merging leaves — one per connected patch
+    const parent = new Map();
+    for (const c of weight.keys()) parent.set(c, c);
+    const find = (x) => {
+      while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); }
+      return x;
+    };
+    for (const k of edges.keys()) {
+      const [a, b] = k.split('~');
+      const ra = find(a), rb = find(b);
+      if (ra !== rb) parent.set(ra, rb);
+    }
+    const floor = new Set([...weight.keys()].map(find)).size;
+
+    let K = colors == null ? floor : Math.round(Number(colors));
+    if (!Number.isFinite(K)) K = floor;
+    K = Math.max(floor, Math.min(total, K));
+
+    // unit state — a unit starts as one class and keeps its smallest key
+    const uW = new Map(weight);
+    const uMin = new Map(), uMembers = new Map(), uNbr = new Map();
+    for (const c of weight.keys()) { uMin.set(c, c); uMembers.set(c, [c]); uNbr.set(c, new Map()); }
+    for (const [k, w] of edges) {
+      const [a, b] = k.split('~');
+      uNbr.get(a).set(b, w);
+      uNbr.get(b).set(a, w);
+    }
+
+    // a small heap of [weight, min class, unit], stale entries skipped on pop
+    const heap = [];
+    const before = (x, y) => x[0] !== y[0] ? x[0] < y[0] : x[1] < y[1];
+    const hPush = (x) => {
+      heap.push(x);
+      let i = heap.length - 1;
+      while (i > 0) {
+        const par = (i - 1) >> 1;
+        if (before(heap[i], heap[par])) { [heap[i], heap[par]] = [heap[par], heap[i]]; i = par; }
+        else break;
+      }
+    };
+    const hPop = () => {
+      const top = heap[0], last = heap.pop();
+      if (heap.length) {
+        heap[0] = last;
+        let i = 0;
+        for (;;) {
+          const l = 2 * i + 1, r = l + 1;
+          let sm = i;
+          if (l < heap.length && before(heap[l], heap[sm])) sm = l;
+          if (r < heap.length && before(heap[r], heap[sm])) sm = r;
+          if (sm === i) break;
+          [heap[i], heap[sm]] = [heap[sm], heap[i]]; i = sm;
+        }
+      }
+      return top;
+    };
+    for (const c of uW.keys()) hPush([uW.get(c), uMin.get(c), c]);
+
+    let units = total;
+    while (units > K && heap.length) {
+      const [w, m, u] = hPop();
+      if (!uW.has(u) || uW.get(u) !== w || uMin.get(u) !== m) continue;   // stale
+      const nu = uNbr.get(u);
+      if (!nu.size) continue;                  // an already-solid patch
+      // the neighbor it shares the most boundary with; ties to the bigger one
+      let v = null, bw = -1;
+      for (const [n, nw] of nu) {
+        if (v === null || nw > bw
+            || (nw === bw && (uW.get(n) > uW.get(v)
+                || (uW.get(n) === uW.get(v) && uMin.get(n) < uMin.get(v))))) {
+          v = n; bw = nw;
+        }
+      }
+      uW.set(v, uW.get(v) + uW.get(u));
+      if (uMin.get(u) < uMin.get(v)) uMin.set(v, uMin.get(u));
+      uMembers.get(v).push(...uMembers.get(u));
+      const nv = uNbr.get(v);
+      nv.delete(u);
+      for (const [n, nw] of nu) {
+        if (n === v) continue;
+        nv.set(n, (nv.get(n) || 0) + nw);
+        const nn = uNbr.get(n);
+        nn.delete(u);
+        nn.set(v, (nn.get(v) || 0) + nw);
+      }
+      uW.delete(u); uMin.delete(u); uMembers.delete(u); uNbr.delete(u);
+      units--;
+      hPush([uW.get(v), uMin.get(v), v]);
+    }
+    stats[name].floor = floor;
+    stats[name].units = units;
+
+    // each unit wears its majority label; ties fall to the smaller label
+    for (const members of uMembers.values()) {
+      const tally = new Map();
+      for (const c of members) {
+        for (const i of facetsIn.get(c)) {
+          const k = lkey(valAt[i]);
+          const t = tally.get(k);
+          if (t) t.n++; else tally.set(k, { n: 1, value: valAt[i] });
+        }
+      }
+      let best = null, bk = null;
+      for (const [k, t] of tally) {
+        if (!best || t.n > best.n || (t.n === best.n && k < bk)) { best = t; bk = k; }
+      }
+      for (const c of members) {
+        for (const i of facetsIn.get(c)) map.set(mesh.facetRefs[i], best.value);
+      }
+    }
+  }
+
+  return { labels, stats };
+}
+
 export function cosetClasses(stel, matrices, subMatrices, preferCells = null, prevPlanes = null) {
   const sameMat = (a, b) => {
     for (let i = 0; i < 9; i++) if (Math.abs(a[i] - b[i]) > 1e-6) return false;

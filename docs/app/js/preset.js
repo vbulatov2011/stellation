@@ -65,7 +65,8 @@ export function writePreset({
   name, polyhedron, file, polySymmetry, stellSymmetry,
   planeDepth, cells, cellsIndexing = null, diagramFace,
   showEdges = true, showAllFacets = true, colorMode = 'layer',
-  cosetSub = null, cosetPlanes = null, faceOpacity = 1, edges = null, colors = null,
+  cosetSub = null, cosetPlanes = null, colorMerge = null,
+  faceOpacity = 1, edges = null, colors = null,
   view = null, planeRows = null, centralPlanes = false,
   exportLengthUnit = 0.01,
 }) {
@@ -123,6 +124,14 @@ export function writePreset({
        */
       display: { diagramFace, showEdges, showAllFacets, colorMode, cosetSub,
                  cosetPlanes: cosetPlanes?.length ? cosetPlanes : undefined,
+                 /*
+                  * `colorMerge` is the merge-neighbors dial: { on, colors }.
+                  * No release bump — a reader without it shows the raw
+                  * per-facet confetti of the same figure, which is the same
+                  * picture with the smoothing off, not a different figure.
+                  */
+                 colorMerge: colorMerge?.on
+                   ? { on: true, colors: colorMerge.colors ?? 1 } : undefined,
                  faceOpacity, edges, colors: colors?.length ? colors : undefined },
       camera: view ? { view } : undefined,
       /*
@@ -327,6 +336,11 @@ export function readPreset(doc) {
     // the coset colorings carry their subgroup, or they reopen colorless
     cosetSub: typeof p.display?.cosetSub === 'string' ? p.display.cosetSub : null,
     // and the labeling the coloring wore, used only to break ties on reopen
+    colorMerge: p.display?.colorMerge?.on
+      ? { on: true,
+          colors: Number.isFinite(p.display.colorMerge.colors)
+            ? Math.max(1, Math.round(p.display.colorMerge.colors)) : 1 }
+      : null,
     cosetPlanes: Array.isArray(p.display?.cosetPlanes)
         && p.display.cosetPlanes.every(Number.isInteger)
       ? p.display.cosetPlanes : null,

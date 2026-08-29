@@ -219,6 +219,39 @@ const base = {
      'no labeling, no field — the classic envelope is untouched');
   ok(readPreset(doc).cosetPlanes === null, 'and reads back as none');
 }
+
+/*
+ * The merge-neighbors dial round-trips the same way: a display preference
+ * riding in release 1, absent when off, and junk-proof on the way in —
+ * a reader without it shows the same figure with the smoothing off.
+ */
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}',
+    colorMode: 'cosetL', cosetSub: 'O', colorMerge: { on: true, colors: 14 } }));
+  ok(doc.appInfo.fileFormatRelease === 1, 'colorMerge does not bump the release');
+  ok(doc.params.display.colorMerge
+     && doc.params.display.colorMerge.on === true
+     && doc.params.display.colorMerge.colors === 14,
+     'the dial is written as { on, colors }');
+  const read = readPreset(doc);
+  ok(read.colorMerge && read.colorMerge.on === true && read.colorMerge.colors === 14,
+     'and reads back exactly');
+}
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}', colorMode: 'cosetL' }));
+  ok(doc.params.display.colorMerge === undefined,
+     'merge off, no field — the classic envelope is untouched');
+  ok(readPreset(doc).colorMerge === null, 'and reads back as off');
+}
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));
+  doc.params.display.colorMerge = { on: true, colors: 'many' };
+  const read = readPreset(doc);
+  ok(read.colorMerge && read.colorMerge.on === true && read.colorMerge.colors === 1,
+     'a junk colors count falls to 1 — the fewest, never a crash');
+  doc.params.display.colorMerge = 'yes please';
+  ok(readPreset(doc).colorMerge === null, 'junk for the whole field reads as off');
+}
 {
   // a file is anything at all: junk must read as absent, not as a labeling
   const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));

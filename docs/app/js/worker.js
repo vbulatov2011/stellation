@@ -11,7 +11,7 @@ import {
   buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
   atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
   formatCellsUnder, regroupSubCells, cosetClasses, facetCosetClasses,
-  subgroupOrbits,
+  subgroupOrbits, mergeAdjacentFacetClasses,
 } from '../../lib/core.js';
 import { BUILD } from './build.js';
 
@@ -76,6 +76,20 @@ let cosetsL = null;
 let orbits = null;
 let cosetGroup = null;
 /*
+ * Facet orbits under the FULL polyhedron group — the merge's frame. A merged
+ * class is a G-orbit split by what it wears, not an H-orbit: for a
+ * non-normal subgroup the two differ (a T-orbit of facets spans four of the
+ * five tetrahedra), and the H-orbit version quietly relabeled compounds.
+ * Computed once per build; the coloring subgroup cannot move it.
+ */
+let gOrbits = null;
+/*
+ * The merged labeling of the LAST mesh, kept so the diagram — fetched
+ * separately, sometimes long after — paints the same picture the solid
+ * wears. Facet-keyed; anything not on that mesh's surface answers raw.
+ */
+let mergedNow = null;
+/*
  * The group the diagram planes are classed by: the stellation symmetry, since
  * planes it carries onto each other draw the same picture. Kept because the
  * list has to be recomputed whenever the COLOURING changes, long after the
@@ -109,6 +123,12 @@ function cosetOfFacetM(f) {
   if (!cosetsL) return -1;
   const k = cosetsL.of.get(f);
   return k != null && k >= 0 ? k : -1;
+}
+/** the merged label for a facet of the last merged mesh, or null to fall back */
+function mergedLabel(name, f) {
+  const m = mergedNow && mergedNow.labels[name];
+  const v = m ? m.get(f) : undefined;
+  return v === undefined ? null : v;
 }
 
 function toPoly(g) {
@@ -253,7 +273,7 @@ function signatureFor(mode) {
  * the sub-cells on either side of it. Those two references are what turns a
  * click on the solid into "grow here" or "carve this away".
  */
-function meshFor(selected, split = false) {
+function meshFor(selected, split = false, merge = null) {
   const picked = selectedCells(stel, selected);
   const mesh = extractMesh([{ cells: picked }], stel.pool);
   /*
@@ -318,6 +338,25 @@ function meshFor(selected, split = false) {
       volume: picked.reduce((s, x) => s + x.volume, 0),
     },
   };
+  /*
+   * The merged coloring, computed against THIS mesh: classes whose facets
+   * touch inside one face melt into solid regions, and both facet-level
+   * readings ship merged labels in place of raw ones. The app asks whenever
+   * its "merge neighbors" box is on, whatever reading is displayed —
+   * switching readings deliberately does not refetch, so the arrays must
+   * already be merged when a switch lands on one of them. The split mesh
+   * never merges: its pieces are below facet grain and keep their labels.
+   */
+  mergedNow = null;
+  if (merge && merge.on && !split && gOrbits && orbits) {
+    mergedNow = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, {
+      cosetL: (f) => cosetOfFacet(f),
+      orbitF: (f) => (orbits.facets.get(f) ?? 0),
+    }, merge.colors ?? null);
+    out.faceCosetsL = mesh.facetRefs.map(f => mergedNow.labels.cosetL.get(f));
+    out.faceOrbitF = mesh.facetRefs.map(f => mergedNow.labels.orbitF.get(f));
+    out.merge = mergedNow.stats;
+  }
   /*
    * Mirror-split meshes replace each straddling facet's face by its cut
    * pieces, every per-face array following along and faceCosetsM carrying
@@ -398,8 +437,9 @@ function diagramFor(planeIndex, selected) {
         selected: f.selected,
         // the diagram is one plane, so its regions share that plane's coset
         coset: cosetOfPlane(d.planeIndex),
-        // by facet, each region wears its own facet's coset
-        cosetL: cosetOfFacet(f.facet),
+        // by facet, each region wears its own facet's coset — through the
+        // merged labeling when one is in force, like the mesh it mirrors
+        cosetL: mergedLabel('cosetL', f.facet) ?? cosetOfFacet(f.facet),
         // subgroup orbits at the three sizes. Per cell the region wears the
         // SOLID side's cell, matching the 3-D mesh: an outward region caps
         // the cell below it, an inward one (facing 0, lining a cavity) is
@@ -423,7 +463,8 @@ function diagramFor(planeIndex, selected) {
           return ps.map(p => ({ poly: p.poly.map(prj), label: p.label }));
         })(),
         orbitP: orbits ? orbits.planes[d.planeIndex] : 0,
-        orbitF: orbits ? (orbits.facets.get(f.facet) ?? 0) : 0,
+        orbitF: mergedLabel('orbitF', f.facet)
+          ?? (orbits ? (orbits.facets.get(f.facet) ?? 0) : 0),
         orbitC: (() => {
           if (!orbits) return 0;
           const own = (f.facing === 0 ? f.facet.cellAbove : f.facet.cellBelow)
@@ -481,6 +522,10 @@ self.onmessage = (e) => {
         cosetsL = stel.planes.length
           ? facetCosetClasses(stel, cosetGroup, cosetGroup, null, { split: true }) : null;
         orbits = stel.planes.length ? subgroupOrbits(stel, cosetGroup) : null;
+        // at build the subgroup IS the polyhedron group, so the merge's frame
+        // is this very sweep; 'cosets' will move orbits, never gOrbits
+        gOrbits = orbits;
+        mergedNow = null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
@@ -522,7 +567,7 @@ self.onmessage = (e) => {
       }
 
       case 'mesh':
-        reply(meshFor(new Set(payload.selected), !!payload.split));
+        reply(meshFor(new Set(payload.selected), !!payload.split, payload.merge || null));
         break;
 
       case 'diagram':
@@ -531,7 +576,7 @@ self.onmessage = (e) => {
 
       case 'both':
         reply({
-          mesh: meshFor(new Set(payload.selected), !!payload.split),
+          mesh: meshFor(new Set(payload.selected), !!payload.split, payload.merge || null),
           diagram: diagramFor(payload.planeIndex, new Set(payload.selected)),
         });
         break;
@@ -621,6 +666,7 @@ self.onmessage = (e) => {
         cosetsSubName = payload.subName ?? null;
         orbits = (stel.planes.length && payload.subMatrices)
           ? subgroupOrbits(stel, payload.subMatrices) : null;
+        mergedNow = null;                 // stale against the new labeling
         reply({ count: cosets ? cosets.count : 0,
                 countL: cosetsL ? cosetsL.count : 0,
                 // the labeling itself, for the app to save with the document
@@ -676,6 +722,7 @@ self.onmessage = (e) => {
                                       { split: true, prevPlanes: prev });
         }
         cosetsSubName = payload.subName ?? null;
+        mergedNow = null;                 // stale against the re-steered labels
         reply({ faces: facesForMode(mode),
                 planeLabels: cosets ? Array.from(cosets.planes) : null });
         break;

@@ -1450,6 +1450,7 @@ function syncColorSelects() {
   if (fam) fam.value = family;
   if (COLOR_PER[family]) lastPer[family] = mode;
   fillColorPer(family, mode);
+  syncMergeRow();
 }
 
 /**
@@ -1470,6 +1471,39 @@ function composeColorMode(fromFamily) {
   if ($('#colorMode').value === mode) return;
   $('#colorMode').value = mode;
   $('#colorMode').dispatchEvent(new Event('change'));   // one handler does the rest
+}
+
+/*
+ * The "merge neighbors" dial: melt adjacent facet classes into solid
+ * regions. The request rides on EVERY mesh fetch while the box is on,
+ * whatever reading is displayed, because switching readings deliberately
+ * does not refetch — the arrays for both facet readings must already be
+ * merged when a switch lands on one of them.
+ */
+const mergeApplies = (mode) => mode === 'cosetL' || mode === 'orbitF';
+function mergeRequest() {
+  if (!$('#colorMerge')?.checked) return null;
+  const k = Number($('#colorMergeK')?.value);
+  return { on: true, colors: Number.isFinite(k) && k >= 1 ? Math.round(k) : null };
+}
+/** the two rows show only where merging means something */
+function syncMergeRow() {
+  const mode = $('#colorMode')?.value || 'layer';
+  const on = mergeApplies(mode);
+  const row = $('#colorMergeRow');
+  if (row) row.hidden = !on;
+  const krow = $('#colorMergeKRow');
+  if (krow) krow.hidden = !on || !$('#colorMerge')?.checked;
+}
+/** "8 of 90": what the dial actually kept, of what there was to merge */
+function syncMergeInfo() {
+  const el = $('#colorMergeInfo');
+  if (!el) return;
+  const mode = $('#colorMode')?.value;
+  const stats = state.mesh?.merge;
+  const s = stats && $('#colorMerge')?.checked
+    ? (mode === 'orbitF' ? stats.orbitF : stats.cosetL) : null;
+  el.textContent = s ? `${s.units} of ${s.classes}` : '';
 }
 
 /*
@@ -2010,9 +2044,10 @@ async function refresh() {
   await steerColoring();
   const selected = [...state.selected];
   const { mesh, diagram: dia } = await call('both', { selected, planeIndex: state.planeIndex,
-    split: $('#colorMode')?.value === 'cosetM' });
+    split: $('#colorMode')?.value === 'cosetM', merge: mergeRequest() });
 
   state.mesh = mesh;
+  syncMergeInfo();
   renderer?.setMesh(mesh, mesh.faceLayers,
     { classes: mesh.faceClasses, classesStell: mesh.faceClassesStell,
       cosets: mesh.faceCosets, cosetsL: mesh.faceCosetsL, cosetsM: mesh.faceCosetsM,
@@ -2289,6 +2324,8 @@ function wireControls() {
       pushDiagramLines();
     };
   }
+  $('#colorMerge').onchange = async () => { syncMergeRow(); await refresh(); };
+  $('#colorMergeK').onchange = async () => { await refresh(); };
   $('#colorMix').onchange = (e) => {
     setBlendMixing(e.target.checked);
     localStorage.setItem('colorMix', e.target.checked ? '1' : '0');
@@ -2313,6 +2350,8 @@ function wireControls() {
     const mark = $('#colorsEdited');
     if (mark) mark.hidden = !hasColorOverrides(e.target.value);
     colorsDialog?.refresh();
+    syncMergeRow();
+    syncMergeInfo();
     // the mirror-split mesh has different topology, so entering or leaving
     // the split mode is the one color switch that refetches
     if (wasSplit !== (e.target.value === 'cosetM')) await refresh();
@@ -2874,6 +2913,11 @@ function currentPresetText(docName) {
                   && $('#cosetSub').value && $('#cosetSub').value !== state.polySym
                   && Array.isArray(state.cosetPlanes))
       ? state.cosetPlanes : null,
+    // the merge-neighbors dial; written whenever it is armed, so a document
+    // reopens with the same regions even if saved while another reading shows
+    colorMerge: $('#colorMerge').checked
+      ? { on: true, colors: Math.max(1, Math.round(Number($('#colorMergeK').value) || 1)) }
+      : null,
     faceOpacity: solidFaceOpacity(),
     view: renderer?.getView() || null,
     planeRows: state.customPlanes ? state.planeRows : null,
@@ -3260,6 +3304,10 @@ function applyDisplaySettings(doc) {
   // the labeling the document was saved wearing — see applyCosetSub
   pendingCosetPlanes = doc.cosetSub && doc.cosetPlanes
     ? { sub: doc.cosetSub, planes: doc.cosetPlanes } : null;
+  // the merge-neighbors dial, exactly as saved; absent means off
+  $('#colorMerge').checked = !!doc.colorMerge;
+  $('#colorMergeK').value = String(doc.colorMerge?.colors ?? 1);
+  syncMergeRow();
   /*
    * The palette is parked for the same reason the coset subgroup is: its rows
    * are the groups the built figure wears, and nothing is built yet. A
