@@ -1486,12 +1486,30 @@ function mergeRequest() {
   const k = Number($('#colorMergeK')?.value);
   return { on: true, colors: Number.isFinite(k) && k >= 1 ? Math.round(k) : null };
 }
-/** the two rows show only where merging means something */
+/*
+ * The two rows show where merging means something — and in the one place a
+ * user would reasonably LOOK for it and not find it, they stay visible but
+ * disabled, saying why. That place is per split facet: a document saved
+ * there opens there, the merge row used to vanish, and the checkbox left
+ * standing beside the colors is "mix cosets colors" — near enough in name
+ * that toggling it read as "merging does nothing on this model". A control
+ * that explains itself beats one that hides.
+ */
 function syncMergeRow() {
   const mode = $('#colorMode')?.value || 'layer';
   const on = mergeApplies(mode);
+  const split = mode === 'cosetM';
   const row = $('#colorMergeRow');
-  if (row) row.hidden = !on;
+  const box = $('#colorMerge');
+  if (row) {
+    if (!row.dataset.fullTitle) row.dataset.fullTitle = row.title;
+    row.hidden = !on && !split;
+    row.classList.toggle('dim', split);
+    row.title = split
+      ? 'Merging applies to the per facet readings. Switch "applied" to per facet to use it — per split facet keeps every mirror-cut piece distinct, which is the opposite of melting them together.'
+      : row.dataset.fullTitle;
+  }
+  if (box) box.disabled = split;
   const krow = $('#colorMergeKRow');
   if (krow) krow.hidden = !on || !$('#colorMerge')?.checked;
 }
