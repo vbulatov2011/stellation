@@ -69,6 +69,26 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Painting cosets: the assignment becomes yours.</b>
+      The coset coloring computes which facets can share a color; painting
+      decides which ones do. A brush button on the diagram opens a palette
+      of the current coset colors — the ones the Colors panel edits — and a
+      bare click hands the region the chosen coset. It is a label, not a
+      tint: the paint overlays the computed labeling at the one point every
+      reader reads, so the pointer readouts name it, both exports carry it,
+      the diagram list splits planes a paint has made different, and merge
+      neighbors votes with it. <kbd>shift</kbd>-click adds the chosen coset
+      to what a region wears, or takes it out — a region belonging to
+      several cosets at once shows their blend and a small dot, and falls
+      to gray when mixing is off. <i>gray</i> paints no-coset, <i>auto</i>
+      erases, <i>clear</i> takes everything back. Saved with the document
+      (<code>display.cosetPaint</code>, keyed by the arrangement's own
+      plane.facet order, no release bump); cleared when the coloring
+      subgroup changes or a different arrangement is built. Painting on the
+      solid comes next.
+      <span class="src">app/js/app.js · app/js/worker.js · lib/diagram.js · app/js/preset.js</span>
+    </div></li>
+    <li><div>
       <b>Merge neighbors: the per-facet readings get a legibility dial.</b>
       Coloring by cosets or orbits per facet is exact and often unreadable
       &mdash; inside one big flat face the classes sit side by side in

@@ -243,6 +243,38 @@ const base = {
      'merge off, no field — the classic envelope is untouched');
   ok(readPreset(doc).colorMerge === null, 'and reads back as off');
 }
+/*
+ * The hand-painted labeling rides the same way: display-only, release 1,
+ * junk-proof. Keys are 'plane.facetIndex'; values a coset, a blend array,
+ * or -1 for gray.
+ */
+{
+  const paint = { '0.5': 2, '3.1': [0, 2], '7.4': -1 };
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}',
+    colorMode: 'cosetL', cosetSub: 'O', cosetPaint: paint }));
+  ok(doc.appInfo.fileFormatRelease === 1, 'cosetPaint does not bump the release');
+  ok(JSON.stringify(doc.params.display.cosetPaint) === JSON.stringify(paint),
+     'the painted labels are written as given');
+  const read = readPreset(doc);
+  ok(JSON.stringify(read.cosetPaint) === JSON.stringify(paint), 'and read back exactly');
+}
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}', colorMode: 'cosetL' }));
+  ok(doc.params.display.cosetPaint === undefined,
+     'no paint, no field — the classic envelope is untouched');
+  ok(readPreset(doc).cosetPaint === null, 'and reads back as none');
+}
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));
+  doc.params.display.cosetPaint = { 'x.y': 1, '2.3': 1.5, '4.5': ['a'], '6.7': 3, '8.9': [1, 2] };
+  const read = readPreset(doc);
+  ok(read.cosetPaint && Object.keys(read.cosetPaint).length === 2
+     && read.cosetPaint['6.7'] === 3 && JSON.stringify(read.cosetPaint['8.9']) === '[1,2]',
+     'junk entries are dropped, honest ones survive');
+  doc.params.display.cosetPaint = 'painted, honest';
+  ok(readPreset(doc).cosetPaint === null, 'junk for the whole field reads as none');
+}
+
 {
   const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));
   doc.params.display.colorMerge = { on: true, colors: 'many' };

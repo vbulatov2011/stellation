@@ -90,6 +90,17 @@ let gOrbits = null;
  */
 let mergedNow = null;
 /*
+ * Hand-painted coset labels, region by region: 'plane.index' -> coset, a
+ * blend array, or -1 for gray. An overlay over the computed labeling,
+ * applied at the one place every reader reads (cosetOfFacet), so the mesh,
+ * the diagram, both exports, the diagram list's signatures and the merge
+ * all see the painted figure without knowing painting exists. The app owns
+ * the map and re-sends it on every refresh, which also heals the clean
+ * slate a rebuild leaves here.
+ */
+let paint = new Map();
+let facetIdx = null;               // facet -> its index within its plane, lazily
+/*
  * The group the diagram planes are classed by: the stellation symmetry, since
  * planes it carries onto each other draw the same picture. Kept because the
  * list has to be recomputed whenever the COLOURING changes, long after the
@@ -111,6 +122,8 @@ function cosetOfPlane(p) {
   return b ? Array.from(b) : -1;
 }
 function cosetOfFacet(f) {
+  const painted = paintedLabel(f);
+  if (painted !== undefined) return painted;
   if (!cosetsL) return -1;
   const k = cosetsL.of.get(f);
   if (k != null && k >= 0) return k;
@@ -120,9 +133,25 @@ function cosetOfFacet(f) {
 // the mirror-split mode's value for an UNSPLIT face: the crisp label or
 // gray — split faces carry their piece labels instead (see meshFor)
 function cosetOfFacetM(f) {
+  const painted = paintedLabel(f);
+  if (painted !== undefined) return painted;
   if (!cosetsL) return -1;
   const k = cosetsL.of.get(f);
   return k != null && k >= 0 ? k : -1;
+}
+/** a facet's position within its plane — the identity paint is keyed by */
+function indexOfFacet(f) {
+  if (!facetIdx) {
+    facetIdx = new Map();
+    stel.arrangement.forEach(fs => fs.forEach((x, i) => facetIdx.set(x, i)));
+  }
+  return facetIdx.get(f);
+}
+/** the hand-painted label for this facet, or undefined where nobody painted */
+function paintedLabel(f) {
+  if (!paint.size) return undefined;
+  const v = paint.get(f.plane + '.' + indexOfFacet(f));
+  return v === undefined ? undefined : Array.isArray(v) ? Array.from(v) : v;
 }
 /** the merged label for a facet of the last merged mesh, or null to fall back */
 function mergedLabel(name, f) {
@@ -249,10 +278,12 @@ function signatureFor(mode) {
   }
   if (mode === 'cosetL' || mode === 'cosetM') {
     if (!cosetsL) return null;
+    // through cosetOfFacet, paint included: two planes the symmetry treats
+    // as one drawing stop sharing a diagram the moment a paint parts them
     return (i) => facetsOf(i).map(f => {
-      const v = cosetsL.of.get(f);
-      const b = cosetsL.blends?.get(f);
-      return b ? 'b' + Array.from(b).join('.') : String(v ?? -1);
+      const v = cosetOfFacet(f);
+      return (Array.isArray(v) || ArrayBuffer.isView(v))
+        ? 'b' + Array.from(v).join('.') : String(v ?? -1);
     }).sort().join(',');
   }
   if (mode === 'orbitF') {
@@ -447,6 +478,8 @@ function diagramFor(planeIndex, selected) {
         poly: f.poly,
         layer: f.layer,
         selected: f.selected,
+        // this region's position within its plane — how a paint names it
+        fi: indexOfFacet(f.facet),
         // the diagram is one plane, so its regions share that plane's coset
         coset: cosetOfPlane(d.planeIndex),
         // by facet, each region wears its own facet's coset — through the
@@ -538,6 +571,9 @@ self.onmessage = (e) => {
         // is this very sweep; 'cosets' will move orbits, never gOrbits
         gOrbits = orbits;
         mergedNow = null;
+        // new facets, new identities: the app re-sends its paint on refresh
+        paint = new Map();
+        facetIdx = null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
@@ -737,6 +773,13 @@ self.onmessage = (e) => {
         mergedNow = null;                 // stale against the re-steered labels
         reply({ faces: facesForMode(mode),
                 planeLabels: cosets ? Array.from(cosets.planes) : null });
+        break;
+      }
+
+      /** the hand-painted labels, replacing the previous set wholesale */
+      case 'paint': {
+        paint = new Map(payload.entries || []);
+        reply({ count: paint.size });
         break;
       }
 

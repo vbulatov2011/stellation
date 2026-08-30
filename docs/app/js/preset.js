@@ -65,7 +65,7 @@ export function writePreset({
   name, polyhedron, file, polySymmetry, stellSymmetry,
   planeDepth, cells, cellsIndexing = null, diagramFace,
   showEdges = true, showAllFacets = true, colorMode = 'layer',
-  cosetSub = null, cosetPlanes = null, colorMerge = null,
+  cosetSub = null, cosetPlanes = null, colorMerge = null, cosetPaint = null,
   faceOpacity = 1, edges = null, colors = null,
   view = null, planeRows = null, centralPlanes = false,
   exportLengthUnit = 0.01,
@@ -132,6 +132,16 @@ export function writePreset({
                   */
                  colorMerge: colorMerge?.on
                    ? { on: true, colors: colorMerge.colors ?? 1 } : undefined,
+                 /*
+                  * `cosetPaint` is the hand-painted labeling: region ->
+                  * coset, blend array, or -1, keyed 'plane.facetIndex' in
+                  * the arrangement's own deterministic order — the same
+                  * stability cosetPlanes already leans on. No release bump:
+                  * a reader without it shows the computed labeling of the
+                  * same figure.
+                  */
+                 cosetPaint: cosetPaint && Object.keys(cosetPaint).length
+                   ? cosetPaint : undefined,
                  faceOpacity, edges, colors: colors?.length ? colors : undefined },
       camera: view ? { view } : undefined,
       /*
@@ -341,6 +351,17 @@ export function readPreset(doc) {
           colors: Number.isFinite(p.display.colorMerge.colors)
             ? Math.max(1, Math.round(p.display.colorMerge.colors)) : 1 }
       : null,
+    cosetPaint: (() => {
+      const raw = p.display?.cosetPaint;
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+      const out = {};
+      for (const [k, v] of Object.entries(raw)) {
+        if (!/^\d+\.\d+$/.test(k)) continue;
+        if (Number.isInteger(v)) out[k] = v;
+        else if (Array.isArray(v) && v.length && v.every(Number.isInteger)) out[k] = v.slice();
+      }
+      return Object.keys(out).length ? out : null;
+    })(),
     cosetPlanes: Array.isArray(p.display?.cosetPlanes)
         && p.display.cosetPlanes.every(Number.isInteger)
       ? p.display.cosetPlanes : null,

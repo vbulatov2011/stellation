@@ -446,6 +446,34 @@
   </section>
 
   <!-- ══════════════════════════════════════════════ -->
+  <section id="painting">
+    <h2>Painting cosets by hand</h2>
+    <p>
+      The coset coloring is computed, and the computation has no taste: it
+      knows which facets <em>can</em> share a color, not which ones you want
+      to. Painting hands you the assignment. The brush button on the diagram
+      opens a palette of the current coset colors — the same swatches the
+      Colors panel edits — and a bare click gives a region the chosen coset.
+      Not merely the color: the <em>label</em>. The pointer readout names the
+      painted coset, the exports carry it, and merge neighbors counts it in
+      its majorities, because the paint is applied where the computed
+      labeling itself lives.
+    </p>
+    <p>
+      <kbd>shift</kbd>-click adds the chosen coset to what a region already
+      wears — or takes it back out — so a region can honestly belong to
+      several cosets at once. Such a region shows the Oklab blend of its
+      cosets and carries a small dot, since a mixed color cannot announce
+      itself; with <em>mix cosets colors</em> off it falls to gray like every
+      other shared piece. <em>gray</em> paints "no coset", <em>auto</em>
+      erases paint click by click, and <em>clear</em> takes it all back.
+      Painted labels are saved with the document, and cleared when the
+      coloring subgroup changes — they named that subgroup&rsquo;s cosets —
+      or when a different arrangement is built.
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
   <section id="merge">
     <h2>When per facet is too honest: merge neighbors</h2>
     <p>

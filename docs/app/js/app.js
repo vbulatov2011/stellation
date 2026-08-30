@@ -46,6 +46,10 @@ const state = {
   outline: null,
   selected: new Set(),
   planeIndex: 0,
+  // hand-painted coset labels, 'plane.index' -> coset | [cosets] | -1 —
+  // document state: saved, restored, cleared when the arrangement changes
+  paint: new Map(),
+  cosetCount: 0,             // how many cosets the current subgroup has
   /*
    * Keep planes through the center in the arrangement. Off by default and
    * saved with the document (format release 4): a build that dropped the
@@ -387,7 +391,7 @@ async function boot() {
   }
 
   diagram = new DiagramView($('#diagram'), {
-    onToggle: (facet, mod) => applyToFacet(facet, mod),
+    onToggle: (facet, mod) => (paintMode ? paintFacet(facet, mod) : applyToFacet(facet, mod)),
     /*
      * The diagram answers in the corner of its own view rather than at the
      * pointer. It already had a readout there naming the two cells a region
@@ -1451,6 +1455,7 @@ function syncColorSelects() {
   if (COLOR_PER[family]) lastPer[family] = mode;
   fillColorPer(family, mode);
   syncMergeRow();
+  syncPaintBtn();
 }
 
 /**
@@ -1531,6 +1536,119 @@ function syncMergeInfo() {
 }
 
 /*
+ * Coset painting: hand-assigning coset labels region by region, with the
+ * coset colors as the palette. The brush is one coset (or gray, or "auto"
+ * — back to the computed label); a plain click assigns it, shift adds it
+ * to or removes it from a mix, and a region wearing several cosets renders
+ * as their blend, dotted in the diagram so a mix cannot pass for a plain
+ * color. The labels live in state.paint and ride to the worker on every
+ * refresh, where they overlay cosetOfFacet — so readouts, exports, the
+ * diagram list and merge neighbors all see the painted figure.
+ */
+let paintMode = false;
+let paintBrush = 0;
+let pendingPaint = null;       // a reopened document's paint, parked until refresh
+
+const paintAvailable = () =>
+  $('#colorMode')?.value === 'cosetL'
+  && !!$('#cosetSub')?.value && $('#cosetSub').value !== state.polySym;
+
+function syncPaintBtn() {
+  const btn = $('#paintBtn');
+  if (!btn) return;
+  const ok = paintAvailable();
+  btn.disabled = !ok;
+  btn.title = ok
+    ? 'Paint cosets — pick a color in the bar and click regions to hand-assign them. Shift-click mixes; auto erases.'
+    : 'Painting needs face colors by subgroup coset, per facet, with a coloring subgroup chosen';
+  if (!ok && paintMode) setPaintMode(false);
+}
+
+function setPaintMode(on) {
+  paintMode = !!on && paintAvailable();
+  $('#paintBtn')?.setAttribute('aria-pressed', paintMode ? 'true' : 'false');
+  const bar = $('#paintBar');
+  if (bar) bar.hidden = !paintMode;
+  if (diagram) { diagram.paintMarks = paintMode; diagram.draw(); }
+  if (paintMode) {
+    rebuildPaintBar();
+    setStatus('painting: click a region to give it the chosen coset — shift-click mixes, auto restores the computed label', false);
+  }
+}
+
+/** the palette: one swatch per coset, wearing its current (edited) color */
+function rebuildPaintBar() {
+  const bar = $('#paintBar');
+  if (!bar || bar.hidden) return;
+  const n = state.cosetCount || 0;
+  if (typeof paintBrush === 'number' && paintBrush >= n) paintBrush = 0;
+  const sw = [];
+  for (let k = 0; k < n; k++) {
+    sw.push(`<button class="paint-sw${paintBrush === k ? ' sel' : ''}" data-brush="${k}"`
+      + ` style="background:${rgbaToHex(faceColor('cosetL', k, true)).slice(0, 7)}"`
+      + ` title="coset ${k} — click a region to paint it; shift-click to mix it in or out"></button>`);
+  }
+  sw.push(`<button class="paint-sw${paintBrush === 'gray' ? ' sel' : ''}" data-brush="gray"`
+    + ` style="background:${rgbaToHex(faceColor('cosetL', -1, true)).slice(0, 7)}"`
+    + ` title="gray — no coset at all"></button>`);
+  sw.push('<span class="gap"></span>');
+  sw.push(`<button class="paint-word${paintBrush === 'auto' ? ' sel' : ''}" data-brush="auto"`
+    + ' title="Back to the computed labeling — click painted regions to erase their paint">auto</button>');
+  sw.push('<button class="paint-word" data-act="edit"'
+    + ' title="Edit the coset colors — the same palette every view wears">edit…</button>');
+  sw.push('<button class="paint-word" data-act="clear" title="Remove every painted label">clear</button>');
+  bar.innerHTML = sw.join('');
+  for (const b of bar.querySelectorAll('[data-brush]')) {
+    b.onclick = () => {
+      const v = b.dataset.brush;
+      paintBrush = (v === 'gray' || v === 'auto') ? v : Number(v);
+      rebuildPaintBar();
+    };
+  }
+  bar.querySelector('[data-act="edit"]').onclick = () => $('#editColorsBtn')?.click();
+  bar.querySelector('[data-act="clear"]').onclick = async () => {
+    if (!state.paint.size) { setStatus('nothing is painted', false); return; }
+    if (!confirm(`Remove painted labels from ${state.paint.size} regions?`)) return;
+    state.paint.clear();
+    touch();
+    await refresh();
+    setStatus('painted labels cleared', false);
+  };
+}
+
+/** a paint-mode click on a diagram region */
+function paintFacet(facet, mod) {
+  if (!facet || facet.fi == null) { setStatus('nothing to paint here', false); return; }
+  const key = state.planeIndex + '.' + facet.fi;
+  let painted = null;
+  if (paintBrush === 'auto') {
+    if (!state.paint.delete(key)) { setStatus('no paint on this region — it wears its computed label', false); return; }
+  } else if (paintBrush === 'gray') {
+    state.paint.set(key, -1);
+  } else if (mod.shift) {
+    // shift builds mixes: the brush coset joins what the region wears now —
+    // or leaves, if it was already in — so a mix is made and unmade by the
+    // same gesture
+    const cur = facet.cosetL;
+    const set = new Set(Array.isArray(cur) ? cur
+      : (typeof cur === 'number' && cur >= 0 ? [cur] : []));
+    if (set.has(paintBrush)) set.delete(paintBrush); else set.add(paintBrush);
+    const arr = [...set].sort((a, b) => a - b);
+    painted = arr.length === 0 ? -1 : arr.length === 1 ? arr[0] : arr;
+    state.paint.set(key, painted);
+  } else {
+    painted = paintBrush;
+    state.paint.set(key, painted);
+  }
+  touch();                       // document state: dirty, and autosaved soon
+  refresh().then(() => {
+    if (Array.isArray(painted)) {
+      setStatus(`this region now wears cosets ${painted.join(' + ')} — mixed, marked with a dot`, false);
+    }
+  });
+}
+
+/*
  * The selection the coloring is currently aimed at.
  *
  * Null means "aimed at nothing yet, steer on the next refresh". Held here
@@ -1606,6 +1724,9 @@ async function applyCosetSub() {
   steeredBy = new Set(state.selected);   // this message steers as well
   if (Array.isArray(info?.planeLabels)) state.cosetPlanes = info.planeLabels;
   if (info?.faces?.length) fillFaceSelect(info.faces);
+  if (Number.isFinite(info?.count)) state.cosetCount = info.count;
+  syncPaintBtn();
+  rebuildPaintBar();
 }
 
 
@@ -1939,6 +2060,7 @@ async function build(cellsString, cellsIndexing = null, preserve = false) {
     if (renderer && state.pendingScale) { renderer.modelScale = state.pendingScale; }
     state.pendingScale = 0;
     clearHistory();            // a different arrangement: nothing earlier applies
+    state.paint.clear();       // painted labels named facets of the old one
   }
   const polyM = state.symmetry[state.polySym]?.matrices || state.symmetry.E.matrices;
   const subM = state.symmetry[state.stellSym]?.matrices || null;
@@ -2066,6 +2188,10 @@ async function changeStellSym() {
 async function refresh() {
   if (!state.outline) return;
   await steerColoring();
+  if (pendingPaint) { state.paint = new Map(pendingPaint); pendingPaint = null; }
+  // the whole map every time: cheap, stateless, and it heals the clean
+  // slate a rebuild leaves in the worker
+  await call('paint', { entries: [...state.paint] });
   const selected = [...state.selected];
   const { mesh, diagram: dia } = await call('both', { selected, planeIndex: state.planeIndex,
     split: $('#colorMode')?.value === 'cosetM', merge: mergeRequest() });
@@ -2379,6 +2505,7 @@ function wireControls() {
     colorsDialog?.refresh();
     syncMergeRow();
     syncMergeInfo();
+    syncPaintBtn();
     // the mirror-split mesh has different topology, so entering or leaving
     // the split mode is the one color switch that refetches
     if (wasSplit !== (e.target.value === 'cosetM')) await refresh();
@@ -2411,6 +2538,13 @@ function wireControls() {
     steeredBy = new Set(state.selected);
     if (Array.isArray(info?.planeLabels)) state.cosetPlanes = info.planeLabels;
     if (info?.faces?.length) fillFaceSelect(info.faces);
+    if (Number.isFinite(info?.count)) state.cosetCount = info.count;
+    if (state.paint.size) {
+      state.paint.clear();
+      setStatus('painted labels cleared — they named the previous subgroup\'s cosets', false);
+    }
+    syncPaintBtn();
+    rebuildPaintBar();
     await refresh();
   };
   /*
@@ -2474,6 +2608,7 @@ function wireControls() {
   // the diagram's fit, replacing the double-click that used to reset the view
   // and kept firing on two quick cell toggles
   $('#fitDiagram').onclick = () => { diagram?.resetView(); setStatus('diagram centered', false); };
+  $('#paintBtn').onclick = () => setPaintMode(!paintMode);
   /*
    * The camera, which is the one view setting that is not a style: it changes
    * what the projection IS. Two controls on one value, because a number says
@@ -2945,6 +3080,10 @@ function currentPresetText(docName) {
     colorMerge: $('#colorMerge').checked
       ? { on: true, colors: Math.max(1, Math.round(Number($('#colorMergeK').value) || 1)) }
       : null,
+    // the hand-painted labels, sorted so the same figure writes the same bytes
+    cosetPaint: state.paint.size
+      ? Object.fromEntries([...state.paint].sort((a, b) => (a[0] < b[0] ? -1 : 1)))
+      : null,
     faceOpacity: solidFaceOpacity(),
     view: renderer?.getView() || null,
     planeRows: state.customPlanes ? state.planeRows : null,
@@ -3335,6 +3474,10 @@ function applyDisplaySettings(doc) {
   $('#colorMerge').checked = !!doc.colorMerge;
   $('#colorMergeK').value = String(doc.colorMerge?.colors ?? 1);
   syncMergeRow();
+  // the painted labels, parked like the palette: they apply to the built
+  // figure, and the build about to happen wipes the worker's slate anyway
+  pendingPaint = doc.cosetPaint ? Object.entries(doc.cosetPaint) : null;
+  state.paint = new Map();
   /*
    * The palette is parked for the same reason the coset subgroup is: its rows
    * are the groups the built figure wears, and nothing is built yet. A

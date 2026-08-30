@@ -157,12 +157,33 @@
           <li><b>fit</b> — center the diagram and reset the zoom</li>
           <li><kbd>shift</kbd>-click a region — <b class="below">toggle the cell beneath it</b></li>
           <li><kbd class="kSub">ctrl</kbd>-click — <b class="above">toggle the cell on top of it</b></li>
+          <li><b>paint</b> (the brush button) — hand-assign coset colors, region
+            by region</li>
         </ul>
         <p class="tip">
           This is the classic stellation diagram, and it draws the <em>surface</em> of
           the solid, not its volume. A region filled solid is a face looking outward;
           a region filled very pale is a face looking <em>inward</em>, lining a
           cavity. Pale therefore means there is a hole behind it.
+        </p>
+        <p class="tip">
+          <b>Painting cosets.</b> With face colors reading <em>by subgroup
+          coset, per facet</em>, the brush button opens a palette of the
+          current coset colors across the top of the diagram — the same
+          colors the Colors panel edits. While it is down, a bare click gives
+          the region the chosen coset; <kbd>shift</kbd>-click adds the coset
+          to what the region already wears, or takes it back out, so a mix is
+          made and unmade by one gesture. A region wearing several cosets at
+          once shows their blend and carries a small dot — a mixed color
+          cannot announce itself, so the dot does — and falls to gray when
+          <em>mix cosets colors</em> is off, like every other shared piece.
+          <em>gray</em> paints "no coset"; <em>auto</em> is the eraser, click
+          by click, and <em>clear</em> takes all of it back at once. Painted
+          labels are part of the document — saved, restored, exported — and
+          they are labels, not just colors: the readouts name them, and merge
+          neighbors melts with them. They are cleared when the coloring
+          subgroup changes (they named its cosets) and when a different
+          arrangement is built.
         </p>
       </article>
 

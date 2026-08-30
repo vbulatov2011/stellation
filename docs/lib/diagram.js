@@ -20,6 +20,7 @@ export class DiagramView {
     this.zoom = 1;
     this.pan = { x: 0, y: 0 };
     this.showAll = true;
+    this.paintMarks = false;       // paint mode: dot the regions wearing a mix
     /*
      * How strongly the unchosen cells are tinted. It was a pair of constants,
      * 0.17 in the dark theme and 0.13 in the light, which is a judgement about
@@ -149,7 +150,9 @@ export class DiagramView {
       canvas.style.cursor = 'grab';
       if (wasDrag) return;
       const m = mods(e);
-      if (!m.shift && !m.ctrl) return;      // a bare click pans, nothing more
+      // a bare click pans, nothing more — except while painting, where the
+      // bare click IS the brush and dragging still pans past the threshold
+      if (!m.shift && !m.ctrl && !this.paintMarks) return;
       const i = this.hitTest(e);
       if (i >= 0) this.onToggle?.(this.data.facets[i], m);
     };
@@ -450,6 +453,27 @@ export class DiagramView {
       ctx.fillStyle = this._rgba(c, fade * c[3] * gA);
       this._path(ctx, facet.poly, f);
       ctx.fill();
+    }
+
+    /*
+     * 2½. the mix dots. While painting, a region wearing several cosets at
+     * once is marked with a dot at its centroid: a mixed color is exactly
+     * the thing a color cannot announce about itself, and the readout only
+     * answers where the pointer already is.
+     */
+    if (this.paintMarks) {
+      ctx.fillStyle = dark ? 'rgba(255,255,255,0.85)' : 'rgba(20,25,40,0.8)';
+      for (const facet of facets) {
+        const v = this._group(facet);
+        if (!(Array.isArray(v) || ArrayBuffer.isView(v))) continue;
+        let mx = 0, my = 0;
+        for (const [x, y] of facet.poly) { mx += x; my += y; }
+        mx /= facet.poly.length || 1; my /= facet.poly.length || 1;
+        ctx.beginPath();
+        ctx.arc(f.cx + mx * f.scale, f.cy - my * f.scale,
+                Math.max(1.5, 2.2 * f.dpr), 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     /*
