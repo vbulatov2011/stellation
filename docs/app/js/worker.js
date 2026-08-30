@@ -349,13 +349,25 @@ function meshFor(selected, split = false, merge = null) {
    */
   mergedNow = null;
   if (merge && merge.on && !split && gOrbits && orbits) {
-    mergedNow = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, cosetGroup, {
-      cosetL: (f) => cosetOfFacet(f),
-      orbitF: (f) => (orbits.facets.get(f) ?? 0),
-    }, merge.colors ?? null);
-    out.faceCosetsL = mesh.facetRefs.map(f => mergedNow.labels.cosetL.get(f));
-    out.faceOrbitF = mesh.facetRefs.map(f => mergedNow.labels.orbitF.get(f));
-    out.merge = mergedNow.stats;
+    /*
+     * A failure here must not fail the whole fetch, and must not be silent
+     * either: the one time this threw in the wild — a browser cache pairing
+     * this worker with another build's core.js — the rejection vanished into
+     * the merge checkbox's handler and the toggle simply seemed dead. Raw
+     * labels ship instead, with the reason for the app to say out loud.
+     */
+    try {
+      mergedNow = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, cosetGroup, {
+        cosetL: (f) => cosetOfFacet(f),
+        orbitF: (f) => (orbits.facets.get(f) ?? 0),
+      }, merge.colors ?? null);
+      out.faceCosetsL = mesh.facetRefs.map(f => mergedNow.labels.cosetL.get(f));
+      out.faceOrbitF = mesh.facetRefs.map(f => mergedNow.labels.orbitF.get(f));
+      out.merge = mergedNow.stats;
+    } catch (err) {
+      mergedNow = null;
+      out.mergeError = String(err && err.message || err);
+    }
   }
   /*
    * Mirror-split meshes replace each straddling facet's face by its cut

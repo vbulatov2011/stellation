@@ -1495,11 +1495,17 @@ function syncMergeRow() {
   const krow = $('#colorMergeKRow');
   if (krow) krow.hidden = !on || !$('#colorMerge')?.checked;
 }
-/** "8 of 90": what the dial actually kept, of what there was to merge */
+/** "4 of 45": what the dial actually kept, of what there was to merge */
 function syncMergeInfo() {
   const el = $('#colorMergeInfo');
   if (!el) return;
   const mode = $('#colorMode')?.value;
+  if (state.mesh?.mergeError && $('#colorMerge')?.checked) {
+    // a failed merge shows the raw reading; saying so beats a dead-looking toggle
+    el.textContent = 'failed';
+    setStatus(`merge neighbors failed — showing the unmerged coloring (${state.mesh.mergeError})`, false);
+    return;
+  }
   const stats = state.mesh?.merge;
   const s = stats && $('#colorMerge')?.checked
     ? (mode === 'orbitF' ? stats.orbitF : stats.cosetL) : null;
@@ -2324,8 +2330,11 @@ function wireControls() {
       pushDiagramLines();
     };
   }
-  $('#colorMerge').onchange = async () => { syncMergeRow(); await refresh(); };
-  $('#colorMergeK').onchange = async () => { await refresh(); };
+  // a rejected refresh must SAY so — a swallowed one reads as a dead toggle
+  const mergeRefresh = () => refresh().catch(err =>
+    setStatus('merge neighbors failed: ' + (err && err.message || err), false));
+  $('#colorMerge').onchange = () => { syncMergeRow(); mergeRefresh(); };
+  $('#colorMergeK').onchange = () => { mergeRefresh(); };
   $('#colorMix').onchange = (e) => {
     setBlendMixing(e.target.checked);
     localStorage.setItem('colorMix', e.target.checked ? '1' : '0');
