@@ -349,7 +349,7 @@ function meshFor(selected, split = false, merge = null) {
    */
   mergedNow = null;
   if (merge && merge.on && !split && gOrbits && orbits) {
-    mergedNow = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, {
+    mergedNow = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, cosetGroup, {
       cosetL: (f) => cosetOfFacet(f),
       orbitF: (f) => (orbits.facets.get(f) ?? 0),
     }, merge.colors ?? null);

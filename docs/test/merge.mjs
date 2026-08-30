@@ -1,31 +1,35 @@
 /*
- * Merged facet coloring: adjacent classes melt into solid regions.
+ * Merged facet coloring: adjacent classes melt into solid regions,
+ * EQUIVARIANTLY — every stop of the dial is a symmetric picture.
  *
  *   node docs/test/merge.mjs
  *
- * The first fixture is the figure this feature was asked for: a custom Oh
- * arrangement of 48 planes (one row, normal 1 0.3 0.6), colored by cosets of
- * O per facet. The index is 2, so every facet wears red or green, and inside
- * one triangular face the two sit side by side in enumeration order —
- * confetti. There are 90 classes on the surface, and the surface falls apart
- * into 8 connected patches: per plane orbit, the big triangle, a detached
- * 2-facet patch, and the underside slivers.
+ * Three fixtures, each guarding a mistake actually made.
  *
- * The checks pin the whole contract: full merge (colors = null) leaves
- * exactly one unit per patch, every patch single-labeled, and the two big
- * triangles wearing their MAJORITY coset — 0 on the first orbit, 1 on the
- * mirror orbit, which is what makes full merge degrade gracefully toward
- * the per-plane reading. A colors target between floor and classes is hit
- * exactly; at the class count the merge is the identity.
+ * The first is the figure the feature was asked for: a custom Oh arrangement
+ * of 48 planes (one row, normal 1 0.3 0.6), colored by cosets of O per
+ * facet — index 2, red and green confetti inside big triangular faces. Full
+ * merge must leave each face solid in its MAJORITY coset (0 on one plane
+ * orbit, 1 on the mirror orbit), the dial must hit its targets exactly, and
+ * the identity setting must reproduce the raw reading byte for byte.
  *
- * The second fixture is the compound of five tetrahedra, and it exists
- * because of a real mistake: the merge's classes were first taken to be the
- * facet orbits under the coloring subgroup H, which for the color_o figure
- * they are (O is normal in Oh) — but T is not normal in I, a T-orbit of
- * facets spans four of the five tetrahedra, and the "identity" merge quietly
- * relabeled the whole compound. The classes are (G-orbit, label) pairs. On
- * this figure the spikes of one plane meet only at points, so there is no
- * adjacency at all and the merge must be an exact identity.
+ * The second is the compound of five tetrahedra under I/T. Its spikes touch
+ * only at points, so there is no adjacency at all and the merge must change
+ * nothing — which the first version failed: its units were facet orbits
+ * under the coloring subgroup H, and T is not normal in I, so a T-orbit
+ * spans four of the five tetrahedra and the "identity" quietly relabeled
+ * the whole compound.
+ *
+ * The third is the same 48-plane figure under D3d(O) — index 4, and again
+ * not normal. This is the fixture that forced the equivariant rewrite: with
+ * global classes the surface chained into one component that majority-voted
+ * everything a single color, and the one-at-a-time greedy merged the copies
+ * of a face at different moments, so every intermediate setting was
+ * lopsided. Now the merge runs on the quotient by the full group and a
+ * majority TIE is worn as the blend of the tied labels (the only rule
+ * symmetry cannot tell apart on different copies) — so every plane must
+ * carry the same count-pattern at every K, and the floor must be an honest
+ * four-coloring, not all red.
  */
 
 import { readFileSync } from 'node:fs';
@@ -54,121 +58,107 @@ const labelerFor = (cl) => (f) => {
   return b ? Array.from(b) : -1;
 };
 
-// ---------------------------------------------------------------- the figure
-
+// the 48-plane figure both custom fixtures share
 const ROWS = [{ normal: [1, 0.3, 0.6], distance: 1, symmetry: 'Oh' }];
 const CELLS = '{0,1,2,3,4,5,6,7,8(0,2,3,4,5,6,7,8,9,10,11,12)'
   + '9(0,1,2,3,5,6,8,9,10,11,12)10(0,1,2,4,5,6,9,10,12,13,14)'
   + '11(0,2,4,5,7,8,9,10,12,14)12(0,2,4,7,9,12,14,15)13(0,4,7,8,9,11,13)'
   + '14(1,2,7,9,10,16)15(0,1,2,8,14)16(0,3,8,12,13)17(0,11)18(2)}';
-const STEER = [...Array(48)].map((_, i) => (i < 24 ? 0 : 1));
 
-const planes = expandPlaneRows(normalizePlaneRows(ROWS), symmetry);
-ok(planes.length === 48, 'one Oh row expands to 48 planes');
+function custom(subName, steer) {
+  const planes = expandPlaneRows(normalizePlaneRows(ROWS), symmetry);
+  const G = symmetry.Oh.matrices, H = symmetry[subName].matrices;
+  const stel = buildStellation(null, G, {
+    planes, subMatrices: G, maxIntersection: 20, maxLayer: 1000,
+  });
+  const sel = parseCellsAny(stel, CELLS);
+  const mesh = extractMesh(selectedSubCells(stel, sel), stel.pool);
+  const cl = facetCosetClasses(stel, G, H, selectedCells(stel, sel),
+    { split: true, prevPlanes: steer });
+  const gOrbits = subgroupOrbits(stel, G);
+  const hOrbits = subgroupOrbits(stel, H);
+  const planeOf = new Map();
+  stel.arrangement.forEach((fs, p) => fs.forEach(f => planeOf.set(f, p)));
+  return { stel, mesh, G, gOrbits, planeOf,
+           lab: { cosetL: labelerFor(cl), orbitF: (f) => (hOrbits.facets.get(f) ?? 0) } };
+}
 
-const G = symmetry.Oh.matrices, H = symmetry.O.matrices;
-const stel = buildStellation(null, G, {
-  planes, subMatrices: G, maxIntersection: 20, maxLayer: 1000,
-});
-const sel = parseCellsAny(stel, CELLS);
-const mesh = extractMesh(selectedSubCells(stel, sel), stel.pool);
-const cl = facetCosetClasses(stel, G, H, selectedCells(stel, sel),
-  { split: true, prevPlanes: STEER });
-const gOrbits = subgroupOrbits(stel, G);
-const hOrbits = subgroupOrbits(stel, H);
+/** how many distinct per-plane count-patterns the merged labels show — 1 = symmetric */
+function planePatterns(ctx, map) {
+  const per = new Map();
+  ctx.mesh.facetRefs.forEach((f) => {
+    const p = ctx.planeOf.get(f);
+    let c = per.get(p);
+    if (!c) per.set(p, c = new Map());
+    const k = JSON.stringify(map.get(f));
+    c.set(k, (c.get(k) || 0) + 1);
+  });
+  const vs = new Set();
+  for (const c of per.values()) vs.add(JSON.stringify([...c.values()].sort((a, b) => a - b)));
+  return vs.size;
+}
 
-const labelOfL = labelerFor(cl);
-const labelings = { cosetL: labelOfL, orbitF: (f) => (hOrbits.facets.get(f) ?? 0) };
+// ------------------------------------------------- O: the red-green triangles
 
-const planeOf = new Map();
-stel.arrangement.forEach((fs, p) => fs.forEach(f => planeOf.set(f, p)));
+console.log('-- cosets of O: the figure the feature was asked for');
+const co = custom('O', [...Array(48)].map((_, i) => (i < 24 ? 0 : 1)));
 
-// ------------------------------------------------------------- the adjacency
-
-const pairs = surfaceAdjacency(stel, mesh);
+const pairs = surfaceAdjacency(co.stel, co.mesh);
 ok(pairs.length > 0, `adjacency found (${pairs.length} pairs)`);
 ok(pairs.every(([i, j]) =>
-  planeOf.get(mesh.facetRefs[i]) === planeOf.get(mesh.facetRefs[j])
-  && mesh.facetTop[i] === mesh.facetTop[j]),
+  co.planeOf.get(co.mesh.facetRefs[i]) === co.planeOf.get(co.mesh.facetRefs[j])
+  && co.mesh.facetTop[i] === co.mesh.facetTop[j]),
   'every pair is same plane, same side');
 
-// patches: connected components of the pairs, for checking solidity below
-const par = new Map(mesh.facetRefs.map((_, i) => [i, i]));
-const find = (x) => {
-  while (par.get(x) !== x) { par.set(x, par.get(par.get(x))); x = par.get(x); }
-  return x;
+const m = mergeAdjacentFacetClasses(co.stel, co.mesh, co.gOrbits.facets, co.G, co.lab, null);
+ok(m.stats.cosetL.classes === 45,
+  `45 kinds of piece up to symmetry (got ${m.stats.cosetL.classes})`);
+ok(m.stats.cosetL.floor === 4,
+  `floor 4 — big triangle, detached patch, two sliver kinds (got ${m.stats.cosetL.floor})`);
+ok(m.stats.cosetL.units === 4, `full merge reaches the floor (got ${m.stats.cosetL.units})`);
+
+const topWear = (p) => {
+  const c = new Map();
+  co.mesh.facetRefs.forEach((f, i) => {
+    if (co.planeOf.get(f) !== p || !co.mesh.facetTop[i]) return;
+    const k = JSON.stringify(m.labels.cosetL.get(f));
+    c.set(k, (c.get(k) || 0) + 1);
+  });
+  return [...c.entries()].sort((a, b) => b[1] - a[1]);
 };
-for (const [i, j] of pairs) { const a = find(i), b = find(j); if (a !== b) par.set(a, b); }
+ok(JSON.stringify(topWear(0)[0]) === '["0",40]',
+  'the big triangle of the first orbit goes solid coset 0');
+ok(JSON.stringify(topWear(24)[0]) === '["1",40]',
+  'the big triangle of the mirror orbit goes solid coset 1');
+ok(JSON.stringify(topWear(0)[1]) === '["[0,1]",2]',
+  'the half-and-half detached patch honestly wears the blend');
 
-// ------------------------------------------------------------- the full merge
-
-const m = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, labelings, null);
-ok(m.stats.cosetL.classes === 90, `90 coset classes on the surface (got ${m.stats.cosetL.classes})`);
-ok(m.stats.cosetL.floor === 8, `floor is 8 — one unit per patch orbit (got ${m.stats.cosetL.floor})`);
-ok(m.stats.cosetL.units === 8, `full merge reaches the floor (got ${m.stats.cosetL.units})`);
-
-let multi = 0;
-{
-  const seen = new Map();
-  mesh.facetRefs.forEach((f, i) => {
-    const r = find(i), v = JSON.stringify(m.labels.cosetL.get(f));
-    if (!seen.has(r)) seen.set(r, v);
-    else if (seen.get(r) !== v) multi++;
-  });
-}
-ok(multi === 0, 'every connected patch is a single color');
-
-const bigLabel = (p) => {
-  const count = new Map();
-  mesh.facetRefs.forEach((f, i) => {
-    if (planeOf.get(f) !== p || !mesh.facetTop[i]) return;
-    const r = find(i);
-    count.set(r, (count.get(r) || 0) + 1);
-  });
-  const r = [...count.entries()].sort((a, b) => b[1] - a[1])[0][0];
-  return m.labels.cosetL.get(mesh.facetRefs[r]);
-};
-ok(bigLabel(0) === 0, 'the big triangle of the first orbit goes solid coset 0');
-ok(bigLabel(24) === 1, 'the big triangle of the mirror orbit goes solid coset 1');
-
-{
-  const vals = new Set();
-  mesh.facetRefs.forEach((f, i) => {
-    if (planeOf.get(f) === 0 && mesh.facetTop[i]) vals.add(m.labels.orbitF.get(f));
-  });
-  ok(vals.size === 2, `merged orbit labels: plane 0 top wears 2 (big + detached patch), got ${vals.size}`);
-}
-
-// ------------------------------------------------------- the colors dial
-
-const m20 = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, labelings, 20);
+const m20 = mergeAdjacentFacetClasses(co.stel, co.mesh, co.gOrbits.facets, co.G, co.lab, 20);
 ok(m20.stats.cosetL.units === 20,
   `a colors target between floor and classes is hit exactly (got ${m20.stats.cosetL.units})`);
-const mAll = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, labelings, 9999);
-ok(mAll.stats.cosetL.units === 90, 'a target above the class count clamps to the identity');
+const mAll = mergeAdjacentFacetClasses(co.stel, co.mesh, co.gOrbits.facets, co.G, co.lab, 9999);
+ok(mAll.stats.cosetL.units === 45, 'a target above the class count clamps to the identity');
 {
   let diffs = 0;
-  mesh.facetRefs.forEach((f) => {
-    if (JSON.stringify(mAll.labels.cosetL.get(f)) !== JSON.stringify(labelOfL(f))) diffs++;
+  co.mesh.facetRefs.forEach((f) => {
+    if (JSON.stringify(mAll.labels.cosetL.get(f)) !== JSON.stringify(co.lab.cosetL(f))) diffs++;
   });
   ok(diffs === 0, 'at the identity, merged labels equal the raw labels');
 }
-const mLow = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, labelings, 1);
-ok(mLow.stats.cosetL.units === 8, 'a target below the floor clamps to the floor');
-
-// determinism: the same question twice gives byte-equal answers
+ok(mergeAdjacentFacetClasses(co.stel, co.mesh, co.gOrbits.facets, co.G, co.lab, 1)
+  .stats.cosetL.units === 4, 'a target below the floor clamps to the floor');
 {
-  const a = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, labelings, 20);
-  const b = mergeAdjacentFacetClasses(stel, mesh, gOrbits.facets, labelings, 20);
-  let same = a.stats.cosetL.units === b.stats.cosetL.units;
-  mesh.facetRefs.forEach((f) => {
-    if (JSON.stringify(a.labels.cosetL.get(f)) !== JSON.stringify(b.labels.cosetL.get(f))) same = false;
+  const a = mergeAdjacentFacetClasses(co.stel, co.mesh, co.gOrbits.facets, co.G, co.lab, 20);
+  let same = a.stats.cosetL.units === m20.stats.cosetL.units;
+  co.mesh.facetRefs.forEach((f) => {
+    if (JSON.stringify(a.labels.cosetL.get(f)) !== JSON.stringify(m20.labels.cosetL.get(f))) same = false;
   });
   ok(same, 'the merge is deterministic');
 }
 
-// -------------------------------------- five tetrahedra: the non-normal case
+// ------------------------------------- five tetrahedra: nothing touches, I/T
 
+console.log('-- five tetrahedra: the non-normal identity');
 {
   const g = geometry.u27;                     // icosahedron
   const vertices = [];
@@ -188,15 +178,49 @@ ok(mLow.stats.cosetL.units === 8, 'a target below the floor clamps to the floor'
   const pr = surfaceAdjacency(st, me);
   ok(pr.length === 0, 'its spikes touch only at points — no adjacency at all');
 
-  const r = mergeAdjacentFacetClasses(st, me, gO.facets, lab2, null);
-  ok(r.stats.cosetL.classes === 20 && r.stats.cosetL.units === 20,
-    `its 20 gH-classes all survive (got ${r.stats.cosetL.units} of ${r.stats.cosetL.classes})`);
+  const r = mergeAdjacentFacetClasses(st, me, gO.facets, symmetry.I.matrices, lab2, null);
+  ok(r.stats.cosetL.classes === 4 && r.stats.cosetL.units === 4,
+    `4 kinds of piece up to symmetry, all surviving (got ${r.stats.cosetL.units} of ${r.stats.cosetL.classes})`);
   let relabeled = 0;
   me.facetRefs.forEach((f) => {
     if (JSON.stringify(r.labels.cosetL.get(f)) !== JSON.stringify(lab2.cosetL(f))) relabeled++;
   });
   ok(relabeled === 0,
     'nothing touching means nothing relabeled — T-orbits spanning four tetrahedra must not vote');
+}
+
+// --------------------------- D3d(O): the fixture that forced the equivariance
+
+console.log('-- cosets of D3d(O): four colors, symmetric at every stop');
+{
+  // the labeling the failing document was saved wearing
+  const steer = [1, 2, 3, 0, 2, 0, 3, 0, 2, 3, 3, 2, 3, 0, 1, 1, 2, 0, 1, 2, 0, 1, 1, 3,
+                 3, 0, 1, 2, 0, 2, 1, 2, 0, 1, 1, 0, 1, 2, 3, 3, 0, 2, 3, 0, 2, 3, 3, 1];
+  const dd = custom('D3d(O)', steer);
+  const f0 = mergeAdjacentFacetClasses(dd.stel, dd.mesh, dd.gOrbits.facets, dd.G, dd.lab, null);
+  ok(f0.stats.cosetL.floor === 4 && f0.stats.cosetL.units === 4,
+    `floor 4 (got ${f0.stats.cosetL.units} of floor ${f0.stats.cosetL.floor})`);
+  const worn = new Map();
+  dd.mesh.facetRefs.forEach(f => {
+    const k = JSON.stringify(f0.labels.cosetL.get(f));
+    worn.set(k, (worn.get(k) || 0) + 1);
+  });
+  ok(worn.size === 4 && [...worn.values()].every(n => n === 540),
+    `full merge is an honest four-coloring in exact quarters, not all one color (${
+      [...worn.entries()].map(([k, n]) => k + ':' + n).join(' ')})`);
+  // every plane fully solid at the floor
+  ok(planePatterns(dd, f0.labels.cosetL) === 1, 'every plane wears the same pattern at the floor');
+  for (const K of [8, 20, 33]) {
+    const mk = mergeAdjacentFacetClasses(dd.stel, dd.mesh, dd.gOrbits.facets, dd.G, dd.lab, K);
+    ok(mk.stats.cosetL.units === K && planePatterns(dd, mk.labels.cosetL) === 1,
+      `K=${K}: hit exactly and symmetric on every plane`);
+  }
+  const idd = mergeAdjacentFacetClasses(dd.stel, dd.mesh, dd.gOrbits.facets, dd.G, dd.lab, 9999);
+  let diffs = 0;
+  dd.mesh.facetRefs.forEach((f) => {
+    if (JSON.stringify(idd.labels.cosetL.get(f)) !== JSON.stringify(dd.lab.cosetL(f))) diffs++;
+  });
+  ok(diffs === 0, 'identity exact under the non-normal subgroup too');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

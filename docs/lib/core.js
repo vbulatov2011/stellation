@@ -2504,115 +2504,185 @@ export function surfaceAdjacency(stel, mesh) {
 }
 
 /**
- * Melt adjacent classes together until `colors` distinct units remain.
+ * Melt adjacent color classes together until `colors` distinct kinds remain
+ * — equivariantly, so every stop of the dial is a symmetric picture.
  *
- * The classes are the units of symmetry the coloring itself paints with:
- * facets in the same G-orbit wearing the same label. For the coset coloring
- * these are the gH-classes — one tetrahedron of the compound of five, not
- * one T-orbit, which for a non-normal subgroup spans four of the five — and
- * for the orbit coloring they degenerate to the H-orbits, since there the
- * label IS the orbit. Either way a class wears exactly one label, which is
- * what lets a merged unit keep speaking the palette's language.
+ * The first version merged global classes and learned two lessons the hard
+ * way. Its classes were label-sets spanning many faces, which for a
+ * NON-NORMAL coloring subgroup entangle across the figure: class X touches Y
+ * on one face and Z on another, X is one paintable unit, so Y and Z weld
+ * without ever touching — and at the floor the whole surface chained into
+ * one component that majority-voted a single color. And its greedy merged
+ * one unit at a time with arbitrary tie-breaks, so the copies of a face
+ * merged at different moments and every intermediate setting was visibly
+ * lopsided. Both faults have the same cure: work on the QUOTIENT by the
+ * full group.
  *
- * `gOrbitOf` maps facets to their orbit under the FULL group (subgroupOrbits
- * with the polyhedron group), and `labelings` is one or more facet -> label
- * functions (a label being a coset index, an orbit index, a blend array, or
- * -1). Everything else is graph work, done independently per labeling: one
- * node per class present on the surface, weighted by its surface facets,
- * with an edge wherever two classes touch inside a face. Units are then
- * eaten smallest-first, each absorbed into the neighbor it touches along
- * the most boundary — so slivers vanish into the regions around them long
- * before anything big is disturbed, and lowering `colors` reads as turning
- * up a smoothing dial.
+ * The atoms are nodes (plane, side, G-orbit of the facet, label) — the
+ * finest pieces both symmetric and single-colored; with nothing merged the
+ * picture is exactly the raw reading. Nodes fall into orbits under the
+ * polyhedron group (matched facet-by-facet through `matrices`, centroids
+ * interned as everywhere else), and the merge graph is the quotient: one
+ * vertex per node-orbit, weighted by its facets, an edge wherever two
+ * orbits touch inside a face. The greedy runs THERE — smallest orbit
+ * absorbed into the neighbor it shares the most boundary with — so one step
+ * merges every copy at once and the result cannot help being symmetric.
  *
- * `colors` is clamped between the number of connected patches (below which
- * nothing more CAN merge — patches that never touch stay distinct) and the
- * number of classes (identity). null asks for the floor: every patch solid.
+ * Colors are then per face: adjacent nodes whose orbits landed in one
+ * quotient unit weld into concrete regions (a region never leaves its
+ * plane and side — faces cannot chain), and each region wears the label
+ * MOST of its facets already wore. A face that was speckled goes solid in
+ * its own majority, its symmetric copies go solid in the permuted
+ * majorities, and a four-coset figure melts to four colors, not one.
  *
- * Each unit then wears, per labeling, the label the MOST of its facets
- * already wore — so a face that was mostly coset 2 goes solid in coset 2's
- * color, the palette keeps its meaning, and edited colors keep applying.
- * Ties fall to the smaller label. Everything is deterministic: same figure,
- * same selection, same result.
+ * `colors` counts up to symmetry — node-orbits, "kinds of piece" — and is
+ * clamped between the number of connected patch-kinds (the floor: patches
+ * that never touch are never merged) and the number of node-orbits (the
+ * identity). null asks for the floor. Ties everywhere fall to the smaller
+ * node key, so the answer is a function of the figure alone.
  *
  * Returns { labels: {name: Map(facet -> label)}, stats: {name: {floor,
  * units, classes}} }, the maps covering exactly the surface facets.
  */
-export function mergeAdjacentFacetClasses(stel, mesh, gOrbitOf, labelings, colors = null) {
-  // labels as strings, so a blend array and its copy count as the same label
+export function mergeAdjacentFacetClasses(stel, mesh, gOrbitOf, matrices, labelings, colors = null) {
   const lkey = (v) => (Array.isArray(v) || ArrayBuffer.isView(v))
     ? 'm:' + Array.from(v).slice().sort((x, y) => x - y).join('+')
     : (v == null || v < 0) ? 'z-gray' : 'c' + String(v).padStart(6, '0');
 
+  const S = mesh.facetRefs.length;
+  const empty = () => {
+    const out = { labels: {}, stats: {} };
+    for (const name of Object.keys(labelings)) {
+      out.labels[name] = new Map();
+      out.stats[name] = { floor: 0, units: 0, classes: 0 };
+    }
+    return out;
+  };
+  if (!S) return empty();
+
   const pairs = surfaceAdjacency(stel, mesh);
-  const labels = {}, stats = {};
+
+  /*
+   * The group's action on surface facets, as lists of surface indices: for
+   * facet i, every distinct surface facet some group element carries it to.
+   * Matched by centroid like subgroupOrbits; an image outside the surface
+   * (an asymmetric selection, or the sparse deep end of the arrangement) is
+   * simply absent, and the orbits come out finer — degraded, never wrong.
+   */
+  const pool = new VertexPool(1e-6);
+  const byCenter = new Map();
+  const cc = new Map();
+  const centro = (f) => {
+    let c = cc.get(f);
+    if (c) return c;
+    let x = 0, y = 0, z = 0;
+    for (const id of f.v) { const q = stel.pool.get(id); x += q.x; y += q.y; z += q.z; }
+    const n = f.v.length || 1;
+    c = v3(x / n, y / n, z / n);
+    cc.set(f, c);
+    return c;
+  };
+  for (const plane of stel.arrangement) {
+    for (const f of plane) byCenter.set(pool.intern(centro(f)), f);
+  }
+  const surfIndex = new Map(mesh.facetRefs.map((f, i) => [f, i]));
+  const images = new Array(S);
+  mesh.facetRefs.forEach((f, i) => {
+    const seen = new Set([i]);
+    const list = [];
+    for (const g of matrices || []) {
+      const m = byCenter.get(pool.intern(matMul(g, centro(f))));
+      const j = m === undefined ? undefined : surfIndex.get(m);
+      if (j !== undefined && !seen.has(j)) { seen.add(j); list.push(j); }
+    }
+    images[i] = list;
+  });
+
+  const out = empty();
 
   for (const [name, labelOf] of Object.entries(labelings)) {
-    const map = new Map();
-    labels[name] = map;
-
-    // the class of each surface facet: its G-orbit, split by what it wears
     const valAt = mesh.facetRefs.map(f => labelOf(f));
-    const clsAt = mesh.facetRefs.map((f, i) => {
+
+    // the nodes, and which facets each holds
+    const nodeAt = new Array(S);
+    const nodeFacets = new Map();
+    mesh.facetRefs.forEach((f, i) => {
       const o = gOrbitOf.get(f);
-      return (o == null ? 'x' + i : o) + '|' + lkey(valAt[i]);
+      const key = f.plane + (mesh.facetTop[i] ? 't' : 'b') + '|'
+        + (o == null ? 'x' + i : o) + '|' + lkey(valAt[i]);
+      nodeAt[i] = key;
+      const l = nodeFacets.get(key);
+      if (l) l.push(i); else nodeFacets.set(key, [i]);
     });
 
-    const weight = new Map(), facetsIn = new Map();
-    clsAt.forEach((c, i) => {
-      weight.set(c, (weight.get(c) || 0) + 1);
-      const l = facetsIn.get(c);
-      if (l) l.push(i); else facetsIn.set(c, [i]);
-    });
-    const total = weight.size;
-    stats[name] = { floor: 0, units: 0, classes: total };
-    if (!total) continue;
-
-    const edges = new Map();                   // "a~b" (a < b) -> touching pairs
-    for (const [i, j] of pairs) {
-      const a = clsAt[i], b = clsAt[j];
-      if (a === b) continue;
-      const k = a < b ? a + '~' + b : b + '~' + a;
-      edges.set(k, (edges.get(k) || 0) + 1);
-    }
-
-    // the floor: how many units full merging leaves — one per connected patch
-    const parent = new Map();
-    for (const c of weight.keys()) parent.set(c, c);
+    // node-orbits: nodes related through any group element are one kind
+    const par = new Map();
+    for (const k of nodeFacets.keys()) par.set(k, k);
     const find = (x) => {
-      while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); }
+      while (par.get(x) !== x) { par.set(x, par.get(par.get(x))); x = par.get(x); }
       return x;
     };
-    for (const k of edges.keys()) {
-      const [a, b] = k.split('~');
+    const union = (a, b) => {
       const ra = find(a), rb = find(b);
-      if (ra !== rb) parent.set(ra, rb);
+      if (ra === rb) return;
+      // the smaller key survives, so orbit names are canonical
+      if (ra < rb) par.set(rb, ra); else par.set(ra, rb);
+    };
+    for (let i = 0; i < S; i++) {
+      for (const j of images[i]) union(nodeAt[i], nodeAt[j]);
     }
-    const floor = new Set([...weight.keys()].map(find)).size;
+
+    // the quotient graph
+    const qW = new Map(), qMin = new Map();
+    for (const [k, l] of nodeFacets) {
+      const r = find(k);
+      qW.set(r, (qW.get(r) || 0) + l.length);
+      if (!qMin.has(r) || k < qMin.get(r)) qMin.set(r, k);
+    }
+    const total = qW.size;
+    const qEdges = new Map();
+    for (const [i, j] of pairs) {
+      const a = find(nodeAt[i]), b = find(nodeAt[j]);
+      if (a === b) continue;
+      const k = a < b ? a + '~' + b : b + '~' + a;
+      qEdges.set(k, (qEdges.get(k) || 0) + 1);
+    }
+
+    // the floor: what full merging leaves — one unit per patch-kind
+    const par2 = new Map();
+    for (const q of qW.keys()) par2.set(q, q);
+    const find2 = (x) => {
+      while (par2.get(x) !== x) { par2.set(x, par2.get(par2.get(x))); x = par2.get(x); }
+      return x;
+    };
+    for (const k of qEdges.keys()) {
+      const [a, b] = k.split('~');
+      const ra = find2(a), rb = find2(b);
+      if (ra !== rb) par2.set(ra, rb);
+    }
+    const floor = new Set([...qW.keys()].map(find2)).size;
 
     let K = colors == null ? floor : Math.round(Number(colors));
     if (!Number.isFinite(K)) K = floor;
     K = Math.max(floor, Math.min(total, K));
 
-    // unit state — a unit starts as one class and keeps its smallest key
-    const uW = new Map(weight);
-    const uMin = new Map(), uMembers = new Map(), uNbr = new Map();
-    for (const c of weight.keys()) { uMin.set(c, c); uMembers.set(c, [c]); uNbr.set(c, new Map()); }
-    for (const [k, w] of edges) {
+    // greedy on the quotient: eat the smallest kind, feed its best neighbor
+    const uW = new Map(qW);
+    const uMin = new Map(qMin), uMembers = new Map(), uNbr = new Map();
+    for (const q of qW.keys()) { uMembers.set(q, [q]); uNbr.set(q, new Map()); }
+    for (const [k, w] of qEdges) {
       const [a, b] = k.split('~');
       uNbr.get(a).set(b, w);
       uNbr.get(b).set(a, w);
     }
-
-    // a small heap of [weight, min class, unit], stale entries skipped on pop
     const heap = [];
     const before = (x, y) => x[0] !== y[0] ? x[0] < y[0] : x[1] < y[1];
     const hPush = (x) => {
       heap.push(x);
       let i = heap.length - 1;
       while (i > 0) {
-        const par = (i - 1) >> 1;
-        if (before(heap[i], heap[par])) { [heap[i], heap[par]] = [heap[par], heap[i]]; i = par; }
+        const p2 = (i - 1) >> 1;
+        if (before(heap[i], heap[p2])) { [heap[i], heap[p2]] = [heap[p2], heap[i]]; i = p2; }
         else break;
       }
     };
@@ -2632,15 +2702,14 @@ export function mergeAdjacentFacetClasses(stel, mesh, gOrbitOf, labelings, color
       }
       return top;
     };
-    for (const c of uW.keys()) hPush([uW.get(c), uMin.get(c), c]);
+    for (const q of uW.keys()) hPush([uW.get(q), uMin.get(q), q]);
 
     let units = total;
     while (units > K && heap.length) {
       const [w, m, u] = hPop();
       if (!uW.has(u) || uW.get(u) !== w || uMin.get(u) !== m) continue;   // stale
       const nu = uNbr.get(u);
-      if (!nu.size) continue;                  // an already-solid patch
-      // the neighbor it shares the most boundary with; ties to the bigger one
+      if (!nu.size) continue;                  // an already-solid patch-kind
       let v = null, bw = -1;
       for (const [n, nw] of nu) {
         if (v === null || nw > bw
@@ -2665,30 +2734,75 @@ export function mergeAdjacentFacetClasses(stel, mesh, gOrbitOf, labelings, color
       units--;
       hPush([uW.get(v), uMin.get(v), v]);
     }
-    stats[name].floor = floor;
-    stats[name].units = units;
 
-    // each unit wears its majority label; ties fall to the smaller label
-    for (const members of uMembers.values()) {
-      const tally = new Map();
-      for (const c of members) {
-        for (const i of facetsIn.get(c)) {
-          const k = lkey(valAt[i]);
-          const t = tally.get(k);
-          if (t) t.n++; else tally.set(k, { n: 1, value: valAt[i] });
-        }
-      }
-      let best = null, bk = null;
-      for (const [k, t] of tally) {
-        if (!best || t.n > best.n || (t.n === best.n && k < bk)) { best = t; bk = k; }
-      }
-      for (const c of members) {
-        for (const i of facetsIn.get(c)) map.set(mesh.facetRefs[i], best.value);
-      }
+    // which quotient unit each node-orbit ended in
+    const unitOf = new Map();
+    for (const [u, members] of uMembers) {
+      for (const q of members) unitOf.set(q, u);
     }
+
+    /*
+     * Down from the quotient: concrete regions. Facets of one node stay
+     * together; adjacent facets weld when their kinds share a unit. Both
+     * relations live inside one plane and side, so regions do too.
+     */
+    const cpar = new Int32Array(S);
+    for (let i = 0; i < S; i++) cpar[i] = i;
+    const cfind = (x) => {
+      while (cpar[x] !== x) { cpar[x] = cpar[cpar[x]]; x = cpar[x]; }
+      return x;
+    };
+    const cunion = (a, b) => {
+      const ra = cfind(a), rb = cfind(b);
+      if (ra !== rb) cpar[ra] = rb;
+    };
+    for (const l of nodeFacets.values()) {
+      for (let i = 1; i < l.length; i++) cunion(l[0], l[i]);
+    }
+    for (const [i, j] of pairs) {
+      if (unitOf.get(find(nodeAt[i])) === unitOf.get(find(nodeAt[j]))) cunion(i, j);
+    }
+
+    /*
+     * Each region wears its majority. A TIE is worn honestly, as the blend
+     * of everything tied (gray if gray is among them) — not broken toward
+     * the smaller label, because that rule is not equivariant: on a copy of
+     * the face the labels arrive permuted, "smaller" lands elsewhere, and
+     * tied regions came out wearing different colors on different copies —
+     * the last asymmetry this rewrite had to chase out. The blend of a tied
+     * set maps to the blend of the permuted set, which is the same color in
+     * the same place, so symmetry cannot tell the copies apart.
+     */
+    const tallies = new Map();
+    for (let i = 0; i < S; i++) {
+      const r = cfind(i);
+      let t = tallies.get(r);
+      if (!t) tallies.set(r, t = new Map());
+      const k = lkey(valAt[i]);
+      const e = t.get(k);
+      if (e) e.n++; else t.set(k, { n: 1, value: valAt[i] });
+    }
+    const wear = new Map();
+    for (const [r, t] of tallies) {
+      let bestN = 0;
+      for (const e of t.values()) if (e.n > bestN) bestN = e.n;
+      const tied = [...t.values()].filter(e => e.n === bestN).map(e => e.value);
+      if (tied.length === 1) { wear.set(r, tied[0]); continue; }
+      let gray = false;
+      const idx = new Set();
+      for (const v of tied) {
+        if (v == null || (typeof v === 'number' && v < 0)) { gray = true; break; }
+        if (Array.isArray(v) || ArrayBuffer.isView(v)) { for (const k of v) idx.add(k); }
+        else idx.add(v);
+      }
+      wear.set(r, gray ? -1 : [...idx].sort((x, y) => x - y));
+    }
+    const map = out.labels[name];
+    for (let i = 0; i < S; i++) map.set(mesh.facetRefs[i], wear.get(cfind(i)));
+    out.stats[name] = { floor, units, classes: total };
   }
 
-  return { labels, stats };
+  return out;
 }
 
 export function cosetClasses(stel, matrices, subMatrices, preferCells = null, prevPlanes = null) {

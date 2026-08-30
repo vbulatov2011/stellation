@@ -81,14 +81,23 @@
       there was. Regions wear the color most of their facets already wore,
       so full merge degrades gracefully toward the per-plane picture, the
       palette keeps its meaning and edited colors keep applying. The
-      merge&rsquo;s units are the classes the coloring itself paints with
-      &mdash; (G-orbit, label) pairs: one tetrahedron of the compound of
-      five, not one T-orbit, which for a non-normal subgroup spans four of
-      the five and would have relabeled the whole compound. Adjacency is
-      geometric &mdash; same plane, same side, a shared boundary of real
-      length &mdash; so the spikes of a compound, which meet only at points,
-      never weld. Saved with the document (<code>display.colorMerge</code>,
-      no release bump); costs nothing when off.
+      merging runs on the QUOTIENT by the figure&rsquo;s full symmetry
+      group: its atoms are the finest pieces both symmetric and
+      single-colored, one step of the dial merges every copy of a face at
+      once, and majorities are taken face by face &mdash; with an exact tie
+      worn as the blend of the tied labels, the one rule symmetry cannot
+      tell apart on different copies. All of that was learned from a
+      four-coset figure under D3d(O), which is not normal in Oh: the first
+      version merged global label-classes, whose members entangle across
+      faces for a non-normal subgroup, so the whole surface chained into one
+      component and majority-voted itself a single color &mdash; and its
+      one-at-a-time greedy merged the copies of a face at different moments,
+      so every intermediate setting was lopsided. Both fixtures are pinned
+      in the tests, beside the compound of five tetrahedra under I/T, whose
+      point-touching spikes must never weld &mdash; adjacency is geometric:
+      same plane, same side, a shared boundary of real length. Saved with
+      the document (<code>display.colorMerge</code>, no release bump); costs
+      nothing when off.
       <span class="src">lib/core.js · app/js/worker.js · app/js/app.js · app/js/preset.js · test/merge.mjs</span>
     </div></li>
     <li><div>

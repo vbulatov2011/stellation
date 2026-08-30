@@ -5,4 +5,4 @@
  * worker's cache key so that a new build can never be answered by an old
  * worker. See the tool for why both of those matter.
  */
-export const BUILD = '2026-08-29 23:07 UTC';
+export const BUILD = '2026-08-30 00:41 UTC';
