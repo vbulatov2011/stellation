@@ -323,6 +323,20 @@
         &mdash; and its tooltip says where to find it working. Both views
         and both exports follow, like everything else the palette decides;
         the dial is saved with the document.</p>
+        <p><b>texture</b> lays one image over every face of the solid,
+        replicated by the polyhedron&rsquo;s symmetry: each face wears an
+        exact symmetric copy, centered on the face, mirrored where the
+        symmetry that carries it there is a reflection. The image is
+        <em>multiplied</em> under the face colors, so whatever coloring is
+        chosen tints it &mdash; with cosets, each coset colorizes the same
+        picture in its own color, which is why the bundled patterns are
+        light: white shows the coset color pure, gray shades it.
+        <b>scale</b> is the size of one tile in face widths &mdash; 1 spans
+        the original face once &mdash; and the image repeats outward over
+        the star&rsquo;s wings. The images live in
+        <code>img/textures/</code>; drop a file there and rerun
+        <code>node docs/tools/make-textures.mjs</code> to list it in the
+        menu. File and scale are saved with the document.</p>
         <p>To read a mix back, rest the pointer on the facet. Each view
         answers along its own bottom edge, once the pointer has been still for
         a moment &mdash; so that sweeping across a figure never fires it. The

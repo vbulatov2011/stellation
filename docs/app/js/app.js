@@ -1559,6 +1559,112 @@ function syncMergeInfo() {
 }
 
 /*
+ * Face texture: one image laid over every face of the solid, replicated by
+ * the polyhedron's symmetry — the worker ships one chart per plane,
+ * transported over each plane orbit, and the renderer multiplies the sampled
+ * image under whatever color the face already wears. So the coset colorings
+ * tint one picture per coset, the shell coloring tints it per shell, and
+ * "none" is exactly the flat coloring there has always been. The chosen
+ * file and scale are the document's (display.texture); the images
+ * themselves live in img/textures/, listed by its index.json.
+ */
+const texBitmaps = new Map();       // file -> ImageBitmap, fetched once
+
+function texScaleValue() {
+  const v = Number($('#texScale')?.value);
+  return Number.isFinite(v) && v > 0 ? Math.min(100, Math.max(0.05, v)) : 1;
+}
+
+function syncTexRows() {
+  const row = $('#texScaleRow');
+  if (row) row.hidden = !$('#texSelect')?.value;
+}
+
+/** an option for `file`, made if the menu lacks it (a document may name one
+    the manifest forgot), then selected — '' selects "none" */
+function setTextureChoice(file) {
+  const sel = $('#texSelect');
+  if (!sel) return;
+  if (file && ![...sel.options].some(o => o.value === file)) {
+    const o = document.createElement('option');
+    o.value = file;
+    o.textContent = file.replace(/\.\w+$/, '');
+    sel.append(o);
+  }
+  sel.value = file || '';
+}
+
+/** the texture menu, from img/textures/index.json — absent manifest, empty menu */
+async function fillTextureSelect() {
+  let files = [];
+  try {
+    const r = await fetch('img/textures/index.json');
+    if (r.ok) {
+      const list = await r.json();
+      if (Array.isArray(list)) files = list.filter(f => typeof f === 'string');
+    }
+  } catch { /* no manifest: the menu stays at "none" */ }
+  const sel = $('#texSelect');
+  if (!sel) return;
+  const have = new Set([...sel.options].map(o => o.value));
+  for (const f of files) {
+    if (have.has(f)) continue;
+    const o = document.createElement('option');
+    o.value = f;
+    o.textContent = f.replace(/\.\w+$/, '');
+    sel.append(o);
+  }
+}
+
+/** fetch and decode one texture — SVGs rasterize through a canvas where
+    createImageBitmap will not take them directly */
+async function loadTextureImage(file) {
+  const r = await fetch('img/textures/' + encodeURIComponent(file));
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const blob = await r.blob();
+  try { return await createImageBitmap(blob); }
+  catch {
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise((res, rej) => {
+        const i = new Image();
+        i.onload = () => res(i);
+        i.onerror = () => rej(new Error('not a loadable image'));
+        i.src = url;
+      });
+      const w = img.naturalWidth || 512, h = img.naturalHeight || 512;
+      const k = 512 / Math.max(w, h);
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(w * k));
+      cv.height = Math.max(1, Math.round(h * k));
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      return cv;
+    } finally { URL.revokeObjectURL(url); }
+  }
+}
+
+/** put the chosen image (or none) on the renderer, fetching it once */
+async function applyTexture() {
+  if (!renderer) return;
+  const file = $('#texSelect')?.value || '';
+  renderer.texScale = texScaleValue();
+  if (!file) { renderer.setTexture(null); return; }
+  let bmp = texBitmaps.get(file);
+  if (!bmp) {
+    try {
+      bmp = await loadTextureImage(file);
+      texBitmaps.set(file, bmp);
+    } catch (err) {
+      setStatus(`texture "${file}" failed to load (${err && err.message || err})`, false);
+      renderer.setTexture(null);
+      return;
+    }
+  }
+  // the fetch was awaited: only the still-current choice may land
+  if (($('#texSelect')?.value || '') === file) renderer.setTexture(bmp);
+}
+
+/*
  * Coset painting: hand-assigning coset labels region by region, with the
  * coset colors as the palette. The brush is one coset (or gray, or "auto"
  * — back to the computed label); a plain click — on the diagram or on the
@@ -2243,6 +2349,8 @@ async function refresh() {
 
   state.mesh = mesh;
   syncMergeInfo();
+  // the per-plane texture charts ride the mesh; setMesh turns them into uv
+  if (renderer) renderer.texCharts = mesh.texCharts || null;
   renderer?.setMesh(mesh, mesh.faceLayers,
     { classes: mesh.faceClasses, classesStell: mesh.faceClassesStell,
       cosets: mesh.faceCosets, cosetsL: mesh.faceCosetsL, cosetsM: mesh.faceCosetsM,
@@ -2524,6 +2632,18 @@ function wireControls() {
     setStatus('merge neighbors failed: ' + (err && err.message || err), false));
   $('#colorMerge').onchange = () => { syncMergeRow(); mergeRefresh(); };
   $('#colorMergeK').onchange = () => { mergeRefresh(); };
+  $('#texSelect').onchange = () => {
+    syncTexRows();
+    touch();
+    applyTexture().catch(err =>
+      setStatus('texture failed: ' + (err && err.message || err), false));
+  };
+  $('#texScale').onchange = () => {
+    touch();
+    // the image is untouched; only the uv coordinates carry the scale
+    if (renderer) { renderer.texScale = texScaleValue(); renderer.refreshColors(); }
+  };
+  fillTextureSelect().catch(() => {});
   $('#colorMix').onchange = (e) => {
     setBlendMixing(e.target.checked);
     localStorage.setItem('colorMix', e.target.checked ? '1' : '0');
@@ -3129,6 +3249,9 @@ function currentPresetText(docName) {
     cosetPaint: state.paint.size
       ? Object.fromEntries([...state.paint].sort((a, b) => (a[0] < b[0] ? -1 : 1)))
       : null,
+    // the face image and its tile size; absent means plain colors
+    texture: $('#texSelect').value
+      ? { file: $('#texSelect').value, scale: texScaleValue() } : null,
     faceOpacity: solidFaceOpacity(),
     view: renderer?.getView() || null,
     planeRows: state.customPlanes ? state.planeRows : null,
@@ -3519,6 +3642,18 @@ function applyDisplaySettings(doc) {
   $('#colorMerge').checked = !!doc.colorMerge;
   $('#colorMergeK').value = String(doc.colorMerge?.colors ?? 1);
   syncMergeRow();
+  /*
+   * The face image, exactly as saved; absent means plain colors. Staged, not
+   * committed: the renderer's scale must be in place before the build's
+   * first setMesh writes uv coordinates, and the image fetch runs while the
+   * arrangement builds — whichever finishes first, the other completes the
+   * picture.
+   */
+  setTextureChoice(doc.texture ? doc.texture.file : '');
+  $('#texScale').value = String(doc.texture?.scale ?? 1);
+  syncTexRows();
+  applyTexture().catch(err =>
+    setStatus('texture failed: ' + (err && err.message || err), false));
   // the painted labels, parked like the palette: they apply to the built
   // figure, and the build about to happen wipes the worker's slate anyway
   pendingPaint = doc.cosetPaint ? Object.entries(doc.cosetPaint) : null;

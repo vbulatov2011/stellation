@@ -538,6 +538,45 @@
   </section>
 
   <!-- ══════════════════════════════════════════════ -->
+  <section id="texture">
+    <h2>An image on every face</h2>
+    <p>
+      Everything above assigns colors; <b>texture</b>, beside the merge dial,
+      assigns a picture. One image is laid over the solid&rsquo;s faces,
+      replicated by the polyhedron&rsquo;s full symmetry: each plane orbit
+      keeps a single chart, drawn on one representative face and carried onto
+      every other by a group element, so what lands on any face is an
+      <em>exact symmetric copy</em> of what lands on the first &mdash;
+      centered on the face&rsquo;s own center, turned as the symmetry turns
+      it, and mirrored where the element that carries it there is a
+      reflection, because a reflected copy of a picture is its mirror image.
+      The chart belongs to the plane, so the picture runs unbroken across a
+      face&rsquo;s facets, over every layer of the stellation alike, and out
+      along the star&rsquo;s wings, where the image simply repeats as a tile.
+      <b>scale</b> sets the size of one tile in face widths.
+    </p>
+    <p>
+      The image is <em>multiplied</em> under the face colors &mdash; sampled
+      where the surface sits in the chart, then tinted by whatever the
+      current coloring says there, and lit like any plain face. That one rule
+      composes with everything on this page: by shell, each shell tints the
+      picture its own way; by coset, each coset colorizes the same image in
+      its own color, so a four-coset figure wears one pattern four ways;
+      merge neighbors and the hand-painted labels change the tint exactly as
+      they change the flat colors. It is why the bundled patterns are drawn
+      light &mdash; white shows the group&rsquo;s color pure, gray ink shades
+      it, and a dark image would crush every coloring toward black.
+    </p>
+    <p>
+      The images live in <code>img/textures/</code> and the menu lists what
+      its <code>index.json</code> names; drop a file in the folder and rerun
+      <code>node docs/tools/make-textures.mjs</code> to include it. The
+      chosen file and scale are saved with the document &mdash; a reader
+      without this feature draws the same figure in plain colors.
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
   <section id="recap">
     <h2>All the recipes at a glance</h2>
     <table class="keys-table">

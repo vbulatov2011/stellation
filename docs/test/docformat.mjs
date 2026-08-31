@@ -284,6 +284,42 @@ const base = {
   doc.params.display.colorMerge = 'yes please';
   ok(readPreset(doc).colorMerge === null, 'junk for the whole field reads as off');
 }
+/*
+ * The face texture rides the same way: display-only, release 1, absent when
+ * none. The file is a bare name into img/textures/ — anything that walks a
+ * path is dropped, since a document must not send the app fetching outside
+ * its own texture folder.
+ */
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}',
+    texture: { file: 'checker.png', scale: 2.5 } }));
+  ok(doc.appInfo.fileFormatRelease === 1, 'texture does not bump the release');
+  ok(doc.params.display.texture
+     && doc.params.display.texture.file === 'checker.png'
+     && doc.params.display.texture.scale === 2.5,
+     'the texture is written as { file, scale }');
+  const read = readPreset(doc);
+  ok(read.texture && read.texture.file === 'checker.png' && read.texture.scale === 2.5,
+     'and reads back exactly');
+}
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));
+  ok(doc.params.display.texture === undefined,
+     'no texture, no field — the classic envelope is untouched');
+  ok(readPreset(doc).texture === null, 'and reads back as none');
+}
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));
+  doc.params.display.texture = { file: '../../../etc/passwd', scale: 1 };
+  ok(readPreset(doc).texture === null, 'a path-walking file name is dropped');
+  doc.params.display.texture = { file: 'img/other.png', scale: 1 };
+  ok(readPreset(doc).texture === null, 'a path of any kind is dropped');
+  doc.params.display.texture = { file: 'checker.png', scale: 'big' };
+  const read = readPreset(doc);
+  ok(read.texture && read.texture.scale === 1, 'a junk scale falls to 1');
+  doc.params.display.texture = 'checker please';
+  ok(readPreset(doc).texture === null, 'junk for the whole field reads as none');
+}
 {
   // a file is anything at all: junk must read as absent, not as a labeling
   const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));

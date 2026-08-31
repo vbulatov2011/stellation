@@ -346,6 +346,14 @@
           <input id="colorMergeK" type="number" min="1" step="1" value="1">
           <span class="dim" id="colorMergeInfo"></span>
         </label>
+        <label class="field" id="texRow" title="Lay one image over every face of the solid, replicated by the polyhedron's symmetry — each face wears an exact symmetric copy, centered on the face, mirrored where the symmetry is a reflection. The image is multiplied under the face colors, so whatever coloring is chosen tints it: with cosets, each coset colorizes the same picture its own way. Images live in img/textures/.">
+          <span>texture</span>
+          <select id="texSelect"><option value="">none</option></select>
+        </label>
+        <label class="field" id="texScaleRow" hidden title="The size of one texture tile, in face widths: 1 spans the original face once, smaller repeats it more densely, larger blows it up. The image repeats outward over the star's wings either way.">
+          <span>scale</span>
+          <input id="texScale" type="number" min="0.05" step="0.25" value="1">
+        </label>
         <!-- The composed value, and the one everything else reads: the two
              menus above are a way of choosing it, not a second source of
              truth. Kept as a real select so a document, a stored preference

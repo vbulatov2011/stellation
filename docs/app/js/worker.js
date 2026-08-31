@@ -11,7 +11,7 @@ import {
   buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
   atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
   formatCellsUnder, regroupSubCells, cosetClasses, facetCosetClasses,
-  subgroupOrbits, mergeAdjacentFacetClasses, paintOrbit,
+  subgroupOrbits, mergeAdjacentFacetClasses, paintOrbit, planeCharts,
 } from '../../lib/core.js';
 import { BUILD } from './build.js';
 
@@ -100,6 +100,13 @@ let mergedNow = null;
  */
 let paint = new Map();
 let facetIdx = null;               // facet -> its index within its plane, lazily
+/*
+ * One affine texture chart per plane, transported over each plane orbit of
+ * the FULL polyhedron group — how one image lands on every face as symmetric
+ * copies. Geometry-only (arrangement + group), so computed once per build,
+ * lazily: meshes ship it, and the renderer turns it into uv coordinates.
+ */
+let texCharts = null;
 /*
  * The group the diagram planes are classed by: the stellation symmetry, since
  * planes it carries onto each other draw the same picture. Kept because the
@@ -338,6 +345,10 @@ function meshFor(selected, split = false, merge = null) {
     // each facet's name in the paint overlay — how a click ON THE SOLID names
     // the region it paints, the same key the diagram's clicks arrive under
     faceKeys: mesh.facetRefs.map(f => f.plane + '.' + indexOfFacet(f)),
+    // one texture chart per plane, under the FULL group — the renderer maps
+    // vertices through the chart of facePlanes[i] to lay one image on every
+    // face as symmetric copies; per plane, so the split mesh needs no copying
+    texCharts: (texCharts ||= planeCharts(stel, cosetGroup)),
     // "inside" is the solid cell this face belongs to, "outside" the empty
     // neighbor across it — which is what a click means, and what the two
     // gestures act on. The top/bottom orientation mirrors cellsAcrossFace;
@@ -577,6 +588,7 @@ self.onmessage = (e) => {
         // new facets, new identities: the app re-sends its paint on refresh
         paint = new Map();
         facetIdx = null;
+        texCharts = null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +

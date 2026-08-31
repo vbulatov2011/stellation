@@ -18,16 +18,21 @@ in vec3 aNormal;
 // rgbA: the fourth component is the group's own opacity. Buffers that upload
 // only three (edges, cylinders, mirror discs, axes) get w = 1 by GL default.
 in vec4 aColor;
+// texture coordinates; buffers that carry none read (0,0) and the sample is
+// gated off by uTexOn in the fragment shader
+in vec2 aUV;
 uniform mat4 uProj;
 uniform mat4 uView;
 out vec3 vNormal;
 out vec4 vColor;
 out vec3 vEye;
+out vec2 vUV;
 void main() {
   vec4 p = uView * vec4(aPos, 1.0);
   vEye = p.xyz;
   vNormal = mat3(uView) * aNormal;
   vColor = aColor;
+  vUV = aUV;
   gl_Position = uProj * p;
 }`;
 
@@ -36,8 +41,15 @@ precision highp float;
 in vec3 vNormal;
 in vec4 vColor;
 in vec3 vEye;
+in vec2 vUV;
 uniform float uEdgeDark;
 uniform float uAlpha;      // the global facet opacity: a modifier over every color
+// the face texture, multiplied under the group color BEFORE lighting: the
+// image is colorized by whatever the coloring says there, then lit like any
+// plain face. uTexOn gates it per draw call — the same program also draws
+// tubes, axes and mirror discs, whose buffers carry no texture coordinates.
+uniform sampler2D uTex;
+uniform float uTexOn;
 out vec4 fragColor;
 void main() {
   vec3 n = normalize(vNormal);
@@ -49,7 +61,8 @@ void main() {
   vec3 V = normalize(-vEye);
   vec3 H = normalize(L1 + V);
   float spec = pow(max(dot(n, H), 0.0), 48.0) * 0.35;
-  vec3 c = vColor.rgb * (0.34 + d) + spec;   // keep shadowed faces light enough that black edges still read
+  vec3 base = vColor.rgb * mix(vec3(1.0), texture(uTex, vUV).rgb, uTexOn);
+  vec3 c = base * (0.34 + d) + spec;   // keep shadowed faces light enough that black edges still read
   // slight rim to separate touching facets
   float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0) * 0.12;
   fragColor = vec4(c + rim, vColor.a * uAlpha);
@@ -250,7 +263,20 @@ export class Renderer3D {
     this.posBuf = gl.createBuffer();
     this.normBuf = gl.createBuffer();
     this.colBuf = gl.createBuffer();
+    this.uvBuf = gl.createBuffer();
     this.count = 0;
+
+    /*
+     * The face texture: one image laid over every face through per-plane
+     * charts (see setMesh), multiplied under the face's group color. The
+     * charts come with the mesh; the image via setTexture(); texScale is a
+     * plain dial over the charts' own tile size. All three must be present
+     * for uTexOn to switch the sampler in.
+     */
+    this.texture = null;         // the GL texture, or null for none
+    this.texCharts = null;       // per-plane {m, ox, oy, s}, set by the app
+    this.texScale = 1;
+    this._hasUV = false;         // did the LAST setMesh write real uv data
 
     /*
      * Edges come in two kinds, drawn from two buffers — see setMesh.
@@ -971,7 +997,7 @@ export class Renderer3D {
    */
   setMesh(mesh, faceLayers, faceClass = null) {
     const gl = this.gl;
-    const pos = [], norm = [], col = [];
+    const pos = [], norm = [], col = [], uv = [];
     this.pickTris = [];      // {a,b,c, face} in model space, for ray picking
     this.mesh = mesh;
     this.lastFaceLayers = faceLayers;
@@ -999,6 +1025,18 @@ export class Renderer3D {
      */
     const edges = new Map();
     const planes = faceClass?.planes || null;
+    /*
+     * Texture coordinates, from the per-plane charts the worker computed:
+     * uv is a pure function of (plane, position), so every mesh — split
+     * ones included — gets its coordinates here from nine multiplies per
+     * corner, and no per-corner data ever crosses the worker boundary. The
+     * chart's own tile size s makes "scale 1" mean one image per core face;
+     * the y flip puts the image right side up (charts are y-up, images
+     * y-down). Vertices are charted UNSCALED — the chart lives in world
+     * units, modelScale is a display affair.
+     */
+    const charts = this.texCharts;
+    this._hasUV = !!(charts && planes);
 
     /*
      * The model scale is sticky.
@@ -1114,12 +1152,19 @@ export class Renderer3D {
       const nl = Math.hypot(nx, ny, nz) || 1;
       nx /= nl; ny /= nl; nz /= nl;
 
+      const ch = this._hasUV ? charts[planes[fi]] : null;
+      const k = ch ? 1 / (ch.s * (this.texScale > 0 ? this.texScale : 1)) : 0;
       for (let i = 1; i < p.length - 1; i++) {
         const tri = [p[0], p[i], p[i + 1]];
         for (const v of tri) {
           pos.push(v.x * s, v.y * s, v.z * s);
           norm.push(nx, ny, nz);
           col.push(c[0], c[1], c[2], c[3]);
+          if (ch) {
+            const m = ch.m;
+            uv.push((m[0] * v.x + m[1] * v.y + m[2] * v.z - ch.ox) * k + 0.5,
+                    0.5 - (m[3] * v.x + m[4] * v.y + m[5] * v.z - ch.oy) * k);
+          } else uv.push(0, 0);
         }
         this.pickTris.push({
           a: [tri[0].x * s, tri[0].y * s, tri[0].z * s],
@@ -1180,6 +1225,7 @@ export class Renderer3D {
     upload(this.vao, this.posBuf, 'aPos', pos, 3, this.prog);
     upload(this.vao, this.normBuf, 'aNormal', norm, 3, this.prog);
     upload(this.vao, this.colBuf, 'aColor', col, 4, this.prog);
+    upload(this.vao, this.uvBuf, 'aUV', uv, 2, this.prog);
     this.count = pos.length / 3;
     this._sortData = null;         // new geometry: the translucency order tables are stale
     // kept for the cylinder edges, built lazily so line mode never pays for them
@@ -1221,6 +1267,39 @@ export class Renderer3D {
    */
   refreshColors() {
     if (this.mesh) this.setMesh(this.mesh, this.lastFaceLayers, this.lastFaceClass);
+  }
+
+  /**
+   * The face texture: any TexImageSource (an ImageBitmap, image, canvas), or
+   * null to go back to plain colors. Repeat-wrapped and mipmapped — the
+   * charts tile the image outward from each face's pole, and the far wings
+   * of a star sample it at grazing angles, which is what the anisotropy is
+   * for. The geometry and its uv coordinates are untouched: turning the
+   * texture on or off costs one redraw.
+   */
+  setTexture(image) {
+    const gl = this.gl;
+    if (!image) {
+      if (this.texture) gl.deleteTexture(this.texture);
+      this.texture = null;
+      this.draw();
+      return;
+    }
+    if (!this.texture) this.texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    const aniso = gl.getExtension('EXT_texture_filter_anisotropic');
+    if (aniso) {
+      gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT,
+        Math.min(8, gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+    }
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    this.draw();
   }
 
   /**
@@ -1475,6 +1554,19 @@ export class Renderer3D {
     gl.useProgram(this.prog);
     gl.uniformMatrix4fv(gl.getUniformLocation(this.prog, 'uProj'), false, proj);
     gl.uniformMatrix4fv(gl.getUniformLocation(this.prog, 'uView'), false, view);
+    /*
+     * The texture rides unit 0 for the whole frame; uTexOn is what scopes it
+     * to the SOLID passes alone — everything else this program draws (tubes,
+     * elements, axes, discs) has no texture coordinates and must stay plain,
+     * so the flag is raised around the two solid draws and lowered after.
+     */
+    const texOn = this.texture && this._hasUV ? 1 : 0;
+    if (texOn) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.texture);
+      gl.uniform1i(gl.getUniformLocation(this.prog, 'uTex'), 0);
+    }
+    gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexOn'), 0);
     gl.bindVertexArray(this.vao);
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const drawLines = (vao, count, rgba, cssWidth) => {
@@ -1565,7 +1657,9 @@ export class Renderer3D {
         gl.enable(gl.POLYGON_OFFSET_FILL);
         gl.polygonOffset(1.2, 1.2);  // sink the faces so the ink sits cleanly on top
         gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
+        gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexOn'), texOn);
         gl.drawArrays(gl.TRIANGLES, 0, this.count);
+        gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexOn'), 0);
         gl.disable(gl.POLYGON_OFFSET_FILL);
       }
       drawInk();
@@ -1576,6 +1670,7 @@ export class Renderer3D {
         gl.useProgram(this.prog);
         if (!n) gl.bindVertexArray(this.vao);
         gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), alpha);
+        gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexOn'), texOn);
         gl.enable(gl.POLYGON_OFFSET_FILL);
         gl.polygonOffset(1.2, 1.2);
         gl.enable(gl.BLEND);
@@ -1587,6 +1682,7 @@ export class Renderer3D {
         gl.disable(gl.BLEND);
         gl.disable(gl.POLYGON_OFFSET_FILL);
         gl.uniform1f(gl.getUniformLocation(this.prog, 'uAlpha'), 1.0);
+        gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexOn'), 0);
       }
     }
     // mirror planes last: translucent, so they must read over what is behind

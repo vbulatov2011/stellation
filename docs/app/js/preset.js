@@ -66,6 +66,7 @@ export function writePreset({
   planeDepth, cells, cellsIndexing = null, diagramFace,
   showEdges = true, showAllFacets = true, colorMode = 'layer',
   cosetSub = null, cosetPlanes = null, colorMerge = null, cosetPaint = null,
+  texture = null,
   faceOpacity = 1, edges = null, colors = null,
   view = null, planeRows = null, centralPlanes = false,
   exportLengthUnit = 0.01,
@@ -142,6 +143,15 @@ export function writePreset({
                   */
                  cosetPaint: cosetPaint && Object.keys(cosetPaint).length
                    ? cosetPaint : undefined,
+                 /*
+                  * `texture` is the face image: { file, scale }, the file a
+                  * name under img/textures/. Multiplied under the group
+                  * colors, laid over every face through symmetry-transported
+                  * charts. No release bump: a reader without it draws the
+                  * same figure in plain colors.
+                  */
+                 texture: texture?.file
+                   ? { file: texture.file, scale: texture.scale ?? 1 } : undefined,
                  faceOpacity, edges, colors: colors?.length ? colors : undefined },
       camera: view ? { view } : undefined,
       /*
@@ -361,6 +371,19 @@ export function readPreset(doc) {
         else if (Array.isArray(v) && v.length && v.every(Number.isInteger)) out[k] = v.slice();
       }
       return Object.keys(out).length ? out : null;
+    })(),
+    /*
+     * The face image, held to a plain file NAME — a texture is looked up
+     * under the app's own img/textures/, and a path that climbs out of it
+     * is dropped rather than fetched.
+     */
+    texture: (() => {
+      const raw = p.display?.texture;
+      const file = raw && typeof raw.file === 'string' ? raw.file : '';
+      if (!file || file.includes('/') || file.includes('\\') || file.includes('..')) return null;
+      const scale = Number.isFinite(raw.scale) && raw.scale > 0
+        ? Math.min(100, Math.max(0.01, raw.scale)) : 1;
+      return { file, scale };
     })(),
     cosetPlanes: Array.isArray(p.display?.cosetPlanes)
         && p.display.cosetPlanes.every(Number.isInteger)

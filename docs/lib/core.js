@@ -1147,6 +1147,70 @@ export function planeClasses(stel, matrices) {
   return { group, reps };
 }
 
+/*
+ * A flat 2D chart per plane, for laying one image over every face so the
+ * copies correspond under the symmetry group.
+ *
+ * Each orbit of planes gets ONE chart, drawn on its representative: origin at
+ * the plane's pole (the point nearest the center — intrinsic, so it transports
+ * exactly), axes by rotating the normal to +Z. Every other plane of the orbit
+ * wears that chart carried over by a group element g taking the representative
+ * onto it: chart_j(v) = chart_rep(g⁻¹·v). So the image on plane j IS the
+ * g-image of the image on the representative — replication by symmetry, not
+ * 48 independent decals. Where several g reach the same plane the first in
+ * matrix order is used; they differ by the representative's own stabilizer,
+ * so the copies differ at most by a symmetry of the face itself.
+ *
+ * Reflections land mirrored, which is what a reflected copy of a picture is.
+ *
+ * Returned per plane as one affine map, precomposed: { m, ox, oy, s } with
+ * uv-space point = ( (m·v).x − ox, (m·v).y − oy ), and s the face's own
+ * yardstick — the diameter of the innermost facet (the solid's original
+ * polygon) about the pole, the natural "one texture tile" size. m = R·gᵀ and
+ * (ox,oy) = R·pole, so a consumer does nine multiplies per vertex and never
+ * sees the group.
+ */
+export function planeCharts(stel, matrices) {
+  const { planes, arrangement } = stel;
+  if (!planes || !planes.length) return [];
+  const mapPlane = planeMatcher(planes);
+  const { group, reps } = planeClasses(stel, matrices);
+  const t = (g) => [g[0], g[3], g[6], g[1], g[4], g[7], g[2], g[5], g[8]];
+  const repChart = reps.map(i => {
+    const p = planes[i];
+    const c = p.central ? v3() : mul(p.n, p.d);
+    const R = rotationBetween(normalize(p.n), v3(0, 0, 1));
+    // the innermost original-polygon facet sets the tile size
+    let core = null, rmin = Infinity;
+    for (const f of (arrangement[i] || [])) {
+      if ((f.rank ?? f.layer) !== 0) continue;
+      const fc = facetCenter(f, stel.pool);
+      const r = dot(fc, fc);
+      if (r < rmin) { rmin = r; core = f; }
+    }
+    let s = 0;
+    if (core) {
+      for (const id of core.v) {
+        const d = sub(stel.pool.get(id), c);
+        s = Math.max(s, 2 * Math.sqrt(dot(d, d)));
+      }
+    }
+    return { c, R, s: s > 1e-9 ? s : 1 };
+  });
+  return planes.map((_, j) => {
+    const rep = group[j], i = reps[rep];
+    const { c, R, s } = repChart[rep];
+    let g = null;
+    if (j === i) g = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+    else for (const m of (matrices || [])) if (mapPlane(m, i) === j) { g = m; break; }
+    // unreachable in a consistent group; an identity chart beats a hole
+    if (!g) g = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+    const m = mat3mul(R, t(g));
+    const o = matMul(R, c);
+    return { m, ox: o.x, oy: o.y, s };
+  });
+}
+
 export function diagramFaces(stel, matrices) {
   const { arrangement } = stel;
   const { group, reps } = planeClasses(stel, matrices);
