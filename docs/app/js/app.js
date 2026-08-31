@@ -1576,8 +1576,11 @@ function texScaleValue() {
 }
 
 function syncTexRows() {
-  const row = $('#texScaleRow');
-  if (row) row.hidden = !$('#texSelect')?.value;
+  const on = !$('#texSelect')?.value;
+  const srow = $('#texScaleRow');
+  if (srow) srow.hidden = on;
+  const brow = $('#texBlendRow');
+  if (brow) brow.hidden = on;
 }
 
 /** an option for `file`, made if the menu lacks it (a document may name one
@@ -1616,31 +1619,46 @@ async function fillTextureSelect() {
   }
 }
 
-/** fetch and decode one texture — SVGs rasterize through a canvas where
-    createImageBitmap will not take them directly */
+/*
+ * Fetch and decode one texture, always handing back a CANVAS. The canvas is
+ * the one decode target whose alpha story is unambiguous: its backing store
+ * is premultiplied by definition, so the renderer's premultiplied upload is
+ * a passthrough in every browser — createImageBitmap's premultiplication is
+ * implementation-defined, and going through the canvas ends the question.
+ * SVGs (which some browsers refuse to bitmap directly) rasterize on the
+ * same path, upscaled to 512 so a vector glyph stays crisp on the solid.
+ */
 async function loadTextureImage(file) {
   const r = await fetch('img/textures/' + encodeURIComponent(file));
   if (!r.ok) throw new Error('HTTP ' + r.status);
   const blob = await r.blob();
-  try { return await createImageBitmap(blob); }
+  let src = null;
+  try { src = await createImageBitmap(blob); }
   catch {
     const url = URL.createObjectURL(blob);
     try {
-      const img = await new Promise((res, rej) => {
+      src = await new Promise((res, rej) => {
         const i = new Image();
         i.onload = () => res(i);
         i.onerror = () => rej(new Error('not a loadable image'));
         i.src = url;
       });
-      const w = img.naturalWidth || 512, h = img.naturalHeight || 512;
-      const k = 512 / Math.max(w, h);
+      // the object URL may only be revoked once the draw below has happened,
+      // so the image is drawn here, inside the url's lifetime
+      const w = src.naturalWidth || 512, h = src.naturalHeight || 512;
+      const k = 512 / Math.max(w, h);       // vectors upscale cleanly
       const cv = document.createElement('canvas');
       cv.width = Math.max(1, Math.round(w * k));
       cv.height = Math.max(1, Math.round(h * k));
-      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height);
       return cv;
     } finally { URL.revokeObjectURL(url); }
   }
+  const cv = document.createElement('canvas');
+  cv.width = src.width; cv.height = src.height;
+  cv.getContext('2d').drawImage(src, 0, 0);
+  src.close?.();
+  return cv;
 }
 
 /** put the chosen image (or none) on the renderer, fetching it once */
@@ -1648,6 +1666,7 @@ async function applyTexture() {
   if (!renderer) return;
   const file = $('#texSelect')?.value || '';
   renderer.texScale = texScaleValue();
+  renderer.texStamp = $('#texBlend')?.value === 'stamp';
   if (!file) { renderer.setTexture(null); return; }
   let bmp = texBitmaps.get(file);
   if (!bmp) {
@@ -2643,6 +2662,11 @@ function wireControls() {
     // the image is untouched; only the uv coordinates carry the scale
     if (renderer) { renderer.texScale = texScaleValue(); renderer.refreshColors(); }
   };
+  $('#texBlend').onchange = () => {
+    touch();
+    // a uniform, nothing else: the geometry, uv and image all stand
+    if (renderer) { renderer.texStamp = $('#texBlend').value === 'stamp'; renderer.draw(); }
+  };
   fillTextureSelect().catch(() => {});
   $('#colorMix').onchange = (e) => {
     setBlendMixing(e.target.checked);
@@ -3249,9 +3273,11 @@ function currentPresetText(docName) {
     cosetPaint: state.paint.size
       ? Object.fromEntries([...state.paint].sort((a, b) => (a[0] < b[0] ? -1 : 1)))
       : null,
-    // the face image and its tile size; absent means plain colors
+    // the face image, its tile size and how it meets the colors
     texture: $('#texSelect').value
-      ? { file: $('#texSelect').value, scale: texScaleValue() } : null,
+      ? { file: $('#texSelect').value, scale: texScaleValue(),
+          blend: $('#texBlend').value === 'stamp' ? 'stamp' : null }
+      : null,
     faceOpacity: solidFaceOpacity(),
     view: renderer?.getView() || null,
     planeRows: state.customPlanes ? state.planeRows : null,
@@ -3651,6 +3677,7 @@ function applyDisplaySettings(doc) {
    */
   setTextureChoice(doc.texture ? doc.texture.file : '');
   $('#texScale').value = String(doc.texture?.scale ?? 1);
+  $('#texBlend').value = doc.texture?.blend === 'stamp' ? 'stamp' : 'tint';
   syncTexRows();
   applyTexture().catch(err =>
     setStatus('texture failed: ' + (err && err.message || err), false));

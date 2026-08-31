@@ -144,14 +144,18 @@ export function writePreset({
                  cosetPaint: cosetPaint && Object.keys(cosetPaint).length
                    ? cosetPaint : undefined,
                  /*
-                  * `texture` is the face image: { file, scale }, the file a
-                  * name under img/textures/. Multiplied under the group
-                  * colors, laid over every face through symmetry-transported
-                  * charts. No release bump: a reader without it draws the
+                  * `texture` is the face image: { file, scale, blend? }, the
+                  * file a name under img/textures/. Laid over every face
+                  * through symmetry-transported charts; `blend` is 'stamp'
+                  * for source-over compositing and absent for the default
+                  * tint (multiply), so a tint document writes what it always
+                  * wrote. No release bump: a reader without it draws the
                   * same figure in plain colors.
                   */
                  texture: texture?.file
-                   ? { file: texture.file, scale: texture.scale ?? 1 } : undefined,
+                   ? { file: texture.file, scale: texture.scale ?? 1,
+                       blend: texture.blend === 'stamp' ? 'stamp' : undefined }
+                   : undefined,
                  faceOpacity, edges, colors: colors?.length ? colors : undefined },
       camera: view ? { view } : undefined,
       /*
@@ -383,7 +387,8 @@ export function readPreset(doc) {
       if (!file || file.includes('/') || file.includes('\\') || file.includes('..')) return null;
       const scale = Number.isFinite(raw.scale) && raw.scale > 0
         ? Math.min(100, Math.max(0.01, raw.scale)) : 1;
-      return { file, scale };
+      // two blends exist; anything else is the default tint
+      return { file, scale, blend: raw.blend === 'stamp' ? 'stamp' : 'tint' };
     })(),
     cosetPlanes: Array.isArray(p.display?.cosetPlanes)
         && p.display.cosetPlanes.every(Number.isInteger)

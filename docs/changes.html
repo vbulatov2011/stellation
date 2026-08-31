@@ -69,6 +69,26 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Textures honor transparency, and learn to stamp.</b>
+      A texture with an alpha channel used to show its transparent
+      background as solid black — the shader multiplied by the texel's rgb
+      and never asked about alpha, and a transparent pixel's rgb is
+      meaningless (usually zero). Now texels ride PREMULTIPLIED — decoded
+      through a canvas, whose backing store is premultiplied by definition,
+      ending every browser's createImageBitmap ambiguity, and filtered and
+      mipmapped fringe-free — and transparency means what it should: the
+      face color shows through untouched, semi-transparent pixels blend by
+      their alpha. And because multiplication can only darken, a white
+      glyph on a transparent ground (the bundled arrow, the SVG figures)
+      was invisible under tinting by construction — so a <i>blend</i> menu
+      joins the texture controls: <i>tint</i> multiplies as before, both
+      formulas one line in premultiplied space, and <i>stamp</i> lays the
+      image over the face in its own colors — the arrow as engraving or as
+      sticker. Saved as <code>display.texture.blend</code>, written only
+      when stamp, so tint documents write the same bytes as before.
+      <span class="src">lib/render3d.js · app/js/app.js · app/js/preset.js · test/docformat.mjs</span>
+    </div></li>
+    <li><div>
       <b>An image on every face, replicated by symmetry.</b>
       The new <i>texture</i> menu beside the merge dial lays one image over
       the solid: each plane orbit keeps a single chart, drawn on one

@@ -298,9 +298,20 @@ const base = {
      && doc.params.display.texture.file === 'checker.png'
      && doc.params.display.texture.scale === 2.5,
      'the texture is written as { file, scale }');
+  ok(doc.params.display.texture.blend === undefined,
+     'the default tint blend writes no field');
   const read = readPreset(doc);
-  ok(read.texture && read.texture.file === 'checker.png' && read.texture.scale === 2.5,
-     'and reads back exactly');
+  ok(read.texture && read.texture.file === 'checker.png' && read.texture.scale === 2.5
+     && read.texture.blend === 'tint',
+     'and reads back exactly, blend defaulting to tint');
+}
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}',
+    texture: { file: 'arrow_white.png', scale: 1, blend: 'stamp' } }));
+  ok(doc.params.display.texture.blend === 'stamp', 'stamp is written out');
+  ok(readPreset(doc).texture.blend === 'stamp', 'and reads back');
+  doc.params.display.texture.blend = 'multiply-screen-dodge';
+  ok(readPreset(doc).texture.blend === 'tint', 'an unknown blend falls to tint');
 }
 {
   const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));

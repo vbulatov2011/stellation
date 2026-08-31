@@ -556,16 +556,34 @@
       <b>scale</b> sets the size of one tile in face widths.
     </p>
     <p>
-      The image is <em>multiplied</em> under the face colors &mdash; sampled
-      where the surface sits in the chart, then tinted by whatever the
-      current coloring says there, and lit like any plain face. That one rule
-      composes with everything on this page: by shell, each shell tints the
-      picture its own way; by coset, each coset colorizes the same image in
-      its own color, so a four-coset figure wears one pattern four ways;
-      merge neighbors and the hand-painted labels change the tint exactly as
-      they change the flat colors. It is why the bundled patterns are drawn
-      light &mdash; white shows the group&rsquo;s color pure, gray ink shades
-      it, and a dark image would crush every coloring toward black.
+      How the image meets the colors is the <b>blend</b>. Under
+      <em>tint</em>, the default, the image is <em>multiplied</em> under the
+      face colors &mdash; sampled where the surface sits in the chart, then
+      tinted by whatever the current coloring says there, and lit like any
+      plain face. That one rule composes with everything on this page: by
+      shell, each shell tints the picture its own way; by coset, each coset
+      colorizes the same image in its own color, so a four-coset figure
+      wears one pattern four ways; merge neighbors and the hand-painted
+      labels change the tint exactly as they change the flat colors. It is
+      why the bundled patterns are drawn light &mdash; white shows the
+      group&rsquo;s color pure, gray ink shades it, and a dark image would
+      crush every coloring toward black. Under <em>stamp</em> the image
+      instead lies over the face in its own colors, ordinary compositing
+      &mdash; the mode for a picture that should keep its identity rather
+      than lend its shape.
+    </p>
+    <p>
+      Transparency is honored in both blends. A transparent background
+      leaves the face color exactly as it was &mdash; under tint the alpha
+      fades the multiplier to one, under stamp it fades the cover to
+      nothing &mdash; and semi-transparent pixels blend by their alpha. So
+      a glyph drawn on a transparent ground, like the bundled arrow or the
+      SVG figures, reads two ways: under <em>tint</em> its white fill
+      vanishes into the coset color and the dark outline carries the shape,
+      an engraving; under <em>stamp</em> the glyph pops in its own white, a
+      sticker. Multiplication can only darken, which is why a white-filled
+      glyph needs the stamp to be seen as white &mdash; and why both blends
+      exist.
     </p>
     <p>
       The images live in <code>img/textures/</code> and the menu lists what

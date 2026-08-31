@@ -354,6 +354,13 @@
           <span>scale</span>
           <input id="texScale" type="number" min="0.05" step="0.25" value="1">
         </label>
+        <label class="field" id="texBlendRow" hidden title="How the image meets the face colors. Tint multiplies them: white shows the face color pure, dark ink shades it, and a transparent background leaves the color untouched — the coloring stays in charge. Stamp lays the image over the face in its own colors, transparency showing the face through — a white glyph stays white. Semi-transparent pixels blend, in both modes.">
+          <span>blend</span>
+          <select id="texBlend">
+            <option value="tint">tint — multiply the face colors</option>
+            <option value="stamp">stamp — lie over them</option>
+          </select>
+        </label>
         <!-- The composed value, and the one everything else reads: the two
              menus above are a way of choosing it, not a second source of
              truth. Kept as a real select so a document, a stored preference

@@ -44,12 +44,19 @@ in vec3 vEye;
 in vec2 vUV;
 uniform float uEdgeDark;
 uniform float uAlpha;      // the global facet opacity: a modifier over every color
-// the face texture, multiplied under the group color BEFORE lighting: the
-// image is colorized by whatever the coloring says there, then lit like any
-// plain face. uTexOn gates it per draw call — the same program also draws
-// tubes, axes and mirror discs, whose buffers carry no texture coordinates.
+// the face texture, folded into the color BEFORE lighting. Texels arrive
+// with rgb PREMULTIPLIED by alpha (see setTexture), which is what makes
+// both formulas one line and keeps filtered glyph edges free of fringes:
+//   tint  — the image multiplies the face color, and transparency fades the
+//           multiplier to 1, so a see-through background leaves the face
+//           color untouched: (1-a) + rgb·a, premultiplied = (1-a) + rgb
+//   stamp — the image lies OVER the face in its own colors, ordinary
+//           source-over compositing: face·(1-a) + rgb
+// uTexOn gates it per draw call — the same program also draws tubes, axes
+// and mirror discs, whose buffers carry no texture coordinates.
 uniform sampler2D uTex;
 uniform float uTexOn;
+uniform float uTexStamp;
 out vec4 fragColor;
 void main() {
   vec3 n = normalize(vNormal);
@@ -61,7 +68,10 @@ void main() {
   vec3 V = normalize(-vEye);
   vec3 H = normalize(L1 + V);
   float spec = pow(max(dot(n, H), 0.0), 48.0) * 0.35;
-  vec3 base = vColor.rgb * mix(vec3(1.0), texture(uTex, vUV).rgb, uTexOn);
+  vec4 t = texture(uTex, vUV);
+  vec3 tinted  = vColor.rgb * (vec3(1.0 - t.a) + t.rgb);
+  vec3 stamped = vColor.rgb * (1.0 - t.a) + t.rgb;
+  vec3 base = mix(vColor.rgb, mix(tinted, stamped, uTexStamp), uTexOn);
   vec3 c = base * (0.34 + d) + spec;   // keep shadowed faces light enough that black edges still read
   // slight rim to separate touching facets
   float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0) * 0.12;
@@ -276,6 +286,7 @@ export class Renderer3D {
     this.texture = null;         // the GL texture, or null for none
     this.texCharts = null;       // per-plane {m, ox, oy, s}, set by the app
     this.texScale = 1;
+    this.texStamp = false;       // false: tint (multiply); true: stamp (lay over)
     this._hasUV = false;         // did the LAST setMesh write real uv data
 
     /*
@@ -1287,7 +1298,18 @@ export class Renderer3D {
     }
     if (!this.texture) this.texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    /*
+     * Premultiplied on the way in, deliberately. The shader's two blend
+     * formulas consume premultiplied rgb directly, and — the real reason —
+     * filtering and mipmapping average texels: averaged straight-alpha
+     * texels bleed a transparent pixel's meaningless color into every glyph
+     * edge (the classic dark fringe), while averaged premultiplied texels
+     * are simply correct. The app hands in a canvas, whose backing store is
+     * premultiplied by definition, so this flag is a passthrough.
+     */
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
     gl.generateMipmap(gl.TEXTURE_2D);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
@@ -1565,6 +1587,7 @@ export class Renderer3D {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.texture);
       gl.uniform1i(gl.getUniformLocation(this.prog, 'uTex'), 0);
+      gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexStamp'), this.texStamp ? 1 : 0);
     }
     gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexOn'), 0);
     gl.bindVertexArray(this.vao);
