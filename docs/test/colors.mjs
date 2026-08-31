@@ -116,5 +116,35 @@ const sameColor = (a, b) => a.length === b.length && a.every((v, i) => near(v, b
   ok(!hasColorOverrides(), 'and leaves no overrides behind');
 }
 
+// ------------------------------------------------ the texture's ink palette
+
+/*
+ * The ink palette is the same machinery under 'tex.' + mode keys: same rows
+ * off the same mesh arrays, its own overrides, and a default of WHITE — no
+ * tint — so an untouched figure shows the image its own colors.
+ */
+{
+  setColorOverrides(null);
+  const mesh = { faceCosets: [0, 2, 2, -1, 4] };
+  ok(groupsOf(mesh, 'tex.coset').join(',') === groupsOf(mesh, 'coset').join(','),
+     'the ink palette lists exactly the mode\'s own rows');
+  ok(sameColor(faceColor('tex.coset', 2), [1, 1, 1, 1]),
+     'and every group defaults to white — no tint');
+  ok(sameColor(faceColor('tex.coset', [0, 2]), [1, 1, 1, 1]),
+     'a blend of untouched inks is still white');
+
+  setColorOverride('tex.coset', 0, '#00cc44ff');
+  ok(sameColor(faceColor('coset', 0), defaultColor('coset', 0)),
+     'inking a group leaves its face color alone');
+  const saved = colorsArray(mesh, 'tex.coset');
+  setColorOverrides(null);
+  applyColorsArray(mesh, 'tex.coset', saved);
+  ok(sameColor(faceColor('tex.coset', 0), [0, 0.8, 0.267, 1]),
+     'the ink round-trips through the saved array');
+  ok(colorOverrides().size === 1,
+     'and white rows are not stored — the default needs no saving');
+  setColorOverrides(null);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

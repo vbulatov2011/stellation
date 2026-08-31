@@ -144,17 +144,27 @@ export function writePreset({
                  cosetPaint: cosetPaint && Object.keys(cosetPaint).length
                    ? cosetPaint : undefined,
                  /*
-                  * `texture` is the face image: { file, scale, blend? }, the
-                  * file a name under img/textures/. Laid over every face
-                  * through symmetry-transported charts; `blend` is 'stamp'
-                  * for source-over compositing and absent for the default
-                  * tint (multiply), so a tint document writes what it always
-                  * wrote. No release bump: a reader without it draws the
-                  * same figure in plain colors.
+                  * `texture` is the face image: { file, scale, blend?,
+                  * opacity?, colors? }, the file a name under img/textures/.
+                  * Laid over every face through symmetry-transported charts.
+                  * `blend` is 'stamp' (source-over) or 'replace' (the image
+                  * IS the face, alpha and all) and absent for the default
+                  * tint (multiply); `opacity` is the layer's own dial,
+                  * absent at 1; `colors` is the ink palette — the texture's
+                  * per-group tints, hex by row like display.colors — absent
+                  * when untouched. A tint document with defaults writes what
+                  * it always wrote. No release bump: a reader without any of
+                  * it draws the same figure in plain colors.
                   */
                  texture: texture?.file
                    ? { file: texture.file, scale: texture.scale ?? 1,
-                       blend: texture.blend === 'stamp' ? 'stamp' : undefined }
+                       blend: texture.blend === 'stamp' || texture.blend === 'replace'
+                         ? texture.blend : undefined,
+                       opacity: Number.isFinite(texture.opacity) && texture.opacity !== 1
+                         ? texture.opacity : undefined,
+                       // tiling is the default; only "once per face" is news
+                       tile: texture.tile === false ? false : undefined,
+                       colors: texture.colors?.length ? texture.colors : undefined }
                    : undefined,
                  faceOpacity, edges, colors: colors?.length ? colors : undefined },
       camera: view ? { view } : undefined,
@@ -387,8 +397,15 @@ export function readPreset(doc) {
       if (!file || file.includes('/') || file.includes('\\') || file.includes('..')) return null;
       const scale = Number.isFinite(raw.scale) && raw.scale > 0
         ? Math.min(100, Math.max(0.01, raw.scale)) : 1;
-      // two blends exist; anything else is the default tint
-      return { file, scale, blend: raw.blend === 'stamp' ? 'stamp' : 'tint' };
+      return {
+        file, scale,
+        // three blends exist; anything else is the default tint
+        blend: raw.blend === 'stamp' || raw.blend === 'replace' ? raw.blend : 'tint',
+        opacity: clamp01(raw.opacity, 1),
+        tile: raw.tile !== false,
+        colors: Array.isArray(raw.colors)
+          ? raw.colors.filter(c => typeof c === 'string') : null,
+      };
     })(),
     cosetPlanes: Array.isArray(p.display?.cosetPlanes)
         && p.display.cosetPlanes.every(Number.isInteger)

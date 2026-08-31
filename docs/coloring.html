@@ -570,7 +570,28 @@
       crush every coloring toward black. Under <em>stamp</em> the image
       instead lies over the face in its own colors, ordinary compositing
       &mdash; the mode for a picture that should keep its identity rather
-      than lend its shape.
+      than lend its shape. And under <em>replace</em> the image <em>is</em>
+      the face: its alpha becomes the surface&rsquo;s, so where the picture
+      is clear there is nothing there at all, and a glyph on a transparent
+      ground hangs in the air, forty-eight symmetric copies deep.
+    </p>
+    <p>
+      The two layers are independent. The faces keep their palette &mdash;
+      color and opacity per group, in the Colors panel as always &mdash;
+      and the texture carries its own: an <b>opacity</b> dial for the whole
+      layer, and an <em>ink palette</em>, a second color and opacity per
+      group that the sampled image is multiplied by before it meets the
+      face. The Colors panel gains an <em>editing</em> switch while a
+      texture is armed &mdash; <em>face colors</em> or <em>texture
+      ink</em> &mdash; and the ink rows default to white, no tint. Which is
+      what makes the crossed picture possible: a solid red face carrying
+      green arrows beside a solid green face carrying red ones, each layer
+      colored by cosets, neither consulting the other. <b>tile the
+      image</b> is the last dial: on, the image repeats endlessly over the
+      wings, the right reading for a pattern; off, it exists exactly once
+      per face, centered and clear beyond its edge, the right reading for
+      an emblem &mdash; and under <em>replace</em>, one floating figure per
+      face.
     </p>
     <p>
       Transparency is honored in both blends. A transparent background

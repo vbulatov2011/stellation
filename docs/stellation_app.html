@@ -354,13 +354,19 @@
           <span>scale</span>
           <input id="texScale" type="number" min="0.05" step="0.25" value="1">
         </label>
-        <label class="field" id="texBlendRow" hidden title="How the image meets the face colors. Tint multiplies them: white shows the face color pure, dark ink shades it, and a transparent background leaves the color untouched — the coloring stays in charge. Stamp lays the image over the face in its own colors, transparency showing the face through — a white glyph stays white. Semi-transparent pixels blend, in both modes.">
+        <label class="field" id="texBlendRow" hidden title="How the image meets the face colors. Tint multiplies them: white shows the face color pure, dark ink shades it, and a transparent background leaves the color untouched — the coloring stays in charge. Stamp lays the image over the face in its own colors, transparency showing the face through — a white glyph stays white. Replace makes the image the face itself: where it is transparent there is no face at all, and the glyphs float in the air. Semi-transparent pixels blend by their alpha in every mode.">
           <span>blend</span>
           <select id="texBlend">
             <option value="tint">tint — multiply the face colors</option>
             <option value="stamp">stamp — lie over them</option>
+            <option value="replace">replace — be the face</option>
           </select>
         </label>
+        <label class="field" id="texOpacityRow" hidden title="The texture layer's own opacity, independent of the faces': at 0 the image is gone and the plain coloring stands; in replace blend this fades the floating glyphs themselves.">
+          <span>opacity</span>
+          <input id="texOpacity" type="number" min="0" max="100" step="5" value="100">
+        </label>
+        <label class="check" id="texTileRow" hidden title="On, the image repeats endlessly over the star's wings — right for patterns. Off, it exists exactly once per face, centered, and beyond its edge there is nothing — right for a glyph or emblem, and in the replace blend it leaves one floating figure per face."><input id="texTile" type="checkbox" checked> tile the image</label>
         <!-- The composed value, and the one everything else reads: the two
              menus above are a way of choosing it, not a second source of
              truth. Kept as a real select so a document, a stored preference
@@ -724,6 +730,18 @@
     is the group's color and the slider its opacity — at 0 the group is not drawn
     at all, so you can look past it at what it hides.
   </p>
+
+  <!-- offered only while a texture is armed: the ink is the texture's own
+       palette, a second color and opacity per group, defaulting to white -->
+  <div class="ex-section" id="colTargetRow" hidden>
+    <label class="row" title="Which palette the rows edit: the colors of the faces themselves, or the ink the texture image is tinted with — a second full palette per group. Ink defaults to white, the image's own colors; a red face can carry green arrows.">
+      <span>editing</span>
+      <select id="colTarget">
+        <option value="face">face colors</option>
+        <option value="ink">texture ink</option>
+      </select>
+    </label>
+  </div>
 
   <div class="ex-section">
     <div class="row">

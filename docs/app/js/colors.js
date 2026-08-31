@@ -62,6 +62,8 @@ const MODES = {
  * one is what changes the blend.
  */
 export function groupsOf(mesh, mode) {
+  // 'tex.cosetL' is the ink palette of cosetL: same groups, same mesh array
+  mode = String(mode).replace(/^tex\./, '');
   const spec = MODES[mode];
   const arr = spec && mesh ? spec.of(mesh) : null;
   if (!arr) return [];
@@ -105,6 +107,7 @@ export function groupsOf(mesh, mode) {
  * question, and this is the answer to it.
  */
 export function groupUsage(mesh, mode) {
+  mode = String(mode).replace(/^tex\./, '');
   const spec = MODES[mode];
   const arr = spec && mesh ? spec.of(mesh) : null;
   const use = new Map();
@@ -130,8 +133,10 @@ export function groupUsage(mesh, mode) {
 }
 
 /** the label a group wears in the list */
-const labelOf = (mode, i) =>
-  (i < 0 ? 'gray — no coset fits' : (MODES[mode]?.one(i) ?? `group ${i}`));
+const labelOf = (mode, i) => {
+  mode = String(mode).replace(/^tex\./, '');
+  return i < 0 ? 'gray — no coset fits' : (MODES[mode]?.one(i) ?? `group ${i}`);
+};
 
 /**
  * The colors of `mode` as an array of hex strings, in row order — what the
@@ -200,20 +205,33 @@ export function initColors({ state, renderer, diagram, onChange }) {
   const el = (id) => dlg.querySelector(id);
   const list = el('#colList'), modeLabel = el('#colMode');
   const hexBox = el('#colHex'), info = el('#colInfo');
+  const targetRow = el('#colTargetRow'), targetSel = el('#colTarget');
 
   const mode = () => $('#colorMode')?.value || 'layer';
+  /*
+   * Which of the two palettes the rows edit: the FACE colors, or the INK the
+   * texture is tinted with — a second full palette per group, offered only
+   * while a texture is armed. Same rows, same machinery; the ink set lives
+   * under 'tex.' + mode keys and defaults to white (no tint).
+   */
+  const inkAvailable = () => !!$('#texSelect')?.value;
+  const editKey = () =>
+    (targetSel?.value === 'ink' && inkAvailable() ? 'tex.' + mode() : mode());
 
   /* the view, the diagram and the "edited" mark, after any change */
   const repaint = () => {
     renderer?.refreshColors();
     diagram?.draw();
     const mark = $('#colorsEdited');
-    if (mark) mark.hidden = !hasColorOverrides(mode());
+    if (mark) mark.hidden = !hasColorOverrides(mode()) && !hasColorOverrides('tex.' + mode());
     onChange?.();
   };
 
   function build() {
     const m = mode();
+    if (targetRow) targetRow.hidden = !inkAvailable();
+    if (targetSel && !inkAvailable()) targetSel.value = 'face';
+    const mk = editKey();
     const groups = groupsOf(state.mesh, m);
     const usage = groupUsage(state.mesh, m);
     /*
@@ -228,7 +246,8 @@ export function initColors({ state, renderer, diagram, onChange }) {
     if (onlyMixed.length) extra.push(`${onlyMixed.length} only in mixes`);
     if (unused.length) extra.push(`${unused.length} unused here`);
     modeLabel.textContent = MODES[m]
-      ? `${MODES[m].name} · ${groups.length} group${groups.length === 1 ? '' : 's'}`
+      ? `${MODES[m].name}${mk === m ? '' : ' · texture ink'}`
+        + ` · ${groups.length} group${groups.length === 1 ? '' : 's'}`
         + (extra.length ? ` · ${extra.join(', ')}` : '')
       : 'no colorable groups';
     list.textContent = '';
@@ -248,7 +267,7 @@ export function initColors({ state, renderer, diagram, onChange }) {
       const row = document.createElement('div');
       row.className = 'col-row';
 
-      const c = faceColor(m, i, true);
+      const c = faceColor(mk, i, true);
       const sw = document.createElement('input');
       sw.type = 'color';
       sw.value = rgbaToHex(c).slice(0, 7);       // <input type=color> is rgb only
@@ -324,11 +343,11 @@ export function initColors({ state, renderer, diagram, onChange }) {
         if (!rgba) return;
         rgba[3] = Number(alpha.value) / 100;
         pct.textContent = alpha.value;
-        const d = defaultColor(m, i);
+        const d = defaultColor(mk, i);
         const same = Math.abs(d[0] - rgba[0]) < 0.002 && Math.abs(d[1] - rgba[1]) < 0.002
                   && Math.abs(d[2] - rgba[2]) < 0.002 && Math.abs(d[3] - rgba[3]) < 0.002;
-        setColorOverride(m, i, same ? null : rgba);
-        hexBox.value = colorsArray(state.mesh, m).join(' ');
+        setColorOverride(mk, i, same ? null : rgba);
+        hexBox.value = colorsArray(state.mesh, mk).join(' ');
         repaint();
       };
       sw.oninput = push;
@@ -337,26 +356,28 @@ export function initColors({ state, renderer, diagram, onChange }) {
       row.append(sw, name, alpha, pct);
       list.appendChild(row);
     }
-    hexBox.value = colorsArray(state.mesh, m).join(' ');
+    hexBox.value = colorsArray(state.mesh, mk).join(' ');
     info.textContent = '';
   }
 
+  if (targetSel) targetSel.onchange = () => { build(); };
+
   el('#colReset').onclick = () => {
-    const m = mode();
-    for (const i of groupsOf(state.mesh, m)) setColorOverride(m, i, null);
+    const mk = editKey();
+    for (const i of groupsOf(state.mesh, mk)) setColorOverride(mk, i, null);
     build();
     repaint();
     info.textContent = 'back to the palette';
   };
 
   el('#colApply').onclick = () => {
-    const m = mode();
+    const mk = editKey();
     const parts = hexBox.value.split(/[\s,]+/).filter(Boolean);
     if (!parts.length) { info.textContent = 'nothing to apply'; return; }
-    const n = applyColorsArray(state.mesh, m, parts);
+    const n = applyColorsArray(state.mesh, mk, parts);
     build();
     repaint();
-    const rows = groupsOf(state.mesh, m).length;
+    const rows = groupsOf(state.mesh, mk).length;
     info.textContent = n
       ? `${n} of ${rows} row${rows === 1 ? '' : 's'} colored` +
         (parts.length > rows ? ` — ${parts.length - rows} spare ignored` : '')

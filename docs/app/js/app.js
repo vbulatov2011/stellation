@@ -181,6 +181,7 @@ let docLinkHash = null;
  * open, then dropped.
  */
 let pendingColors = null;
+let pendingTexColors = null;       // the texture-ink palette, parked the same way
 let colorsDialog = null;
 let catalogWin = null;
 let planesWin = null;
@@ -1576,12 +1577,22 @@ function texScaleValue() {
 }
 
 function syncTexRows() {
-  const on = !$('#texSelect')?.value;
-  const srow = $('#texScaleRow');
-  if (srow) srow.hidden = on;
-  const brow = $('#texBlendRow');
-  if (brow) brow.hidden = on;
+  const off = !$('#texSelect')?.value;
+  for (const id of ['#texScaleRow', '#texBlendRow', '#texOpacityRow', '#texTileRow']) {
+    const row = $(id);
+    if (row) row.hidden = off;
+  }
+  // the Colors panel offers its "texture ink" palette only while one is armed
+  colorsDialog?.refresh();
 }
+
+/** 0..1, from the texture opacity field's 0..100 */
+function texOpacityValue() {
+  const v = Number($('#texOpacity')?.value);
+  return Number.isFinite(v) ? Math.min(1, Math.max(0, v / 100)) : 1;
+}
+
+const TEX_MODES = { tint: 0, stamp: 1, replace: 2 };
 
 /** an option for `file`, made if the menu lacks it (a document may name one
     the manifest forgot), then selected — '' selects "none" */
@@ -1666,7 +1677,9 @@ async function applyTexture() {
   if (!renderer) return;
   const file = $('#texSelect')?.value || '';
   renderer.texScale = texScaleValue();
-  renderer.texStamp = $('#texBlend')?.value === 'stamp';
+  renderer.texMode = TEX_MODES[$('#texBlend')?.value] ?? 0;
+  renderer.texAlpha = texOpacityValue();
+  renderer.texTile = $('#texTile')?.checked !== false;
   if (!file) { renderer.setTexture(null); return; }
   let bmp = texBitmaps.get(file);
   if (!bmp) {
@@ -2382,12 +2395,15 @@ async function refresh() {
    * screen, and doing it here rather than at open time is what lets the rows
    * line up with the groups actually built.
    */
-  if (pendingColors) {
-    applyColorsArray(mesh, $('#colorMode').value, pendingColors);
-    pendingColors = null;
+  if (pendingColors || pendingTexColors) {
+    if (pendingColors) applyColorsArray(mesh, $('#colorMode').value, pendingColors);
+    // the ink palette rides the same way, under the texture's own keys
+    if (pendingTexColors) applyColorsArray(mesh, 'tex.' + $('#colorMode').value, pendingTexColors);
+    pendingColors = pendingTexColors = null;
     renderer?.refreshColors();
     const mark = $('#colorsEdited');
-    if (mark) mark.hidden = !hasColorOverrides($('#colorMode').value);
+    if (mark) mark.hidden = !hasColorOverrides($('#colorMode').value)
+      && !hasColorOverrides('tex.' + $('#colorMode').value);
   }
   diagram.setData(dia);
   state.diagramFrame = dia?.frame || null;
@@ -2665,7 +2681,15 @@ function wireControls() {
   $('#texBlend').onchange = () => {
     touch();
     // a uniform, nothing else: the geometry, uv and image all stand
-    if (renderer) { renderer.texStamp = $('#texBlend').value === 'stamp'; renderer.draw(); }
+    if (renderer) { renderer.texMode = TEX_MODES[$('#texBlend').value] ?? 0; renderer.draw(); }
+  };
+  $('#texOpacity').onchange = () => {
+    touch();
+    if (renderer) { renderer.texAlpha = texOpacityValue(); renderer.draw(); }
+  };
+  $('#texTile').onchange = () => {
+    touch();
+    if (renderer) { renderer.texTile = $('#texTile').checked; renderer.draw(); }
   };
   fillTextureSelect().catch(() => {});
   $('#colorMix').onchange = (e) => {
@@ -2688,9 +2712,10 @@ function wireControls() {
     $('#cosetSubRow').hidden =
       !(e.target.value.startsWith('coset') || e.target.value.startsWith('orbit'));
     // each mode keeps its own overrides, so the mark and the panel both
-    // answer for the mode now in force
+    // answer for the mode now in force — ink edits count too
     const mark = $('#colorsEdited');
-    if (mark) mark.hidden = !hasColorOverrides(e.target.value);
+    if (mark) mark.hidden = !hasColorOverrides(e.target.value)
+      && !hasColorOverrides('tex.' + e.target.value);
     colorsDialog?.refresh();
     syncMergeRow();
     syncMergeInfo();
@@ -3273,10 +3298,16 @@ function currentPresetText(docName) {
     cosetPaint: state.paint.size
       ? Object.fromEntries([...state.paint].sort((a, b) => (a[0] < b[0] ? -1 : 1)))
       : null,
-    // the face image, its tile size and how it meets the colors
+    // the face image: tile size, how it meets the colors, its own opacity,
+    // and the ink palette — the texture's per-group colors, when edited
     texture: $('#texSelect').value
       ? { file: $('#texSelect').value, scale: texScaleValue(),
-          blend: $('#texBlend').value === 'stamp' ? 'stamp' : null }
+          blend: ['stamp', 'replace'].includes($('#texBlend').value)
+            ? $('#texBlend').value : null,
+          opacity: texOpacityValue(),
+          tile: $('#texTile').checked,
+          colors: hasColorOverrides('tex.' + $('#colorMode').value)
+            ? colorsArray(state.mesh, 'tex.' + $('#colorMode').value) : null }
       : null,
     faceOpacity: solidFaceOpacity(),
     view: renderer?.getView() || null,
@@ -3677,7 +3708,13 @@ function applyDisplaySettings(doc) {
    */
   setTextureChoice(doc.texture ? doc.texture.file : '');
   $('#texScale').value = String(doc.texture?.scale ?? 1);
-  $('#texBlend').value = doc.texture?.blend === 'stamp' ? 'stamp' : 'tint';
+  $('#texBlend').value = ['stamp', 'replace'].includes(doc.texture?.blend)
+    ? doc.texture.blend : 'tint';
+  $('#texOpacity').value = String(Math.round((doc.texture?.opacity ?? 1) * 100));
+  $('#texTile').checked = doc.texture?.tile !== false;
+  // the ink palette is parked like the face palette: it lines up with the
+  // groups of the mesh about to be built, not whatever is on screen now
+  pendingTexColors = doc.texture?.colors?.length ? doc.texture.colors.slice() : null;
   syncTexRows();
   applyTexture().catch(err =>
     setStatus('texture failed: ' + (err && err.message || err), false));

@@ -204,6 +204,15 @@ export function hasColorOverrides(mode) {
 
 /** the DEFAULT color of one group, ignoring any override: [r, g, b, a] */
 export function defaultColor(mode, i) {
+  /*
+   * Texture-ink palettes ride the same store under 'tex.' + mode keys — a
+   * second color and opacity per group, for the image laid over the faces —
+   * and their default is NO tint at all: white leaves the image its own
+   * colors, so a figure that never opens the panel sees the texture as
+   * shipped. Everything else (blend mixing, overrides, undersides, the
+   * documents' hex arrays) follows from sharing the machinery.
+   */
+  if (String(mode).startsWith('tex.')) return [1, 1, 1, 1];
   if (mode === 'class' || mode === 'stellClass') {
     const c = CLASS_COLORS[(i || 0) % CLASS_COLORS.length];
     return [c[0], c[1], c[2], 1];

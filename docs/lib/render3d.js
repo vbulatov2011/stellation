@@ -18,21 +18,25 @@ in vec3 aNormal;
 // rgbA: the fourth component is the group's own opacity. Buffers that upload
 // only three (edges, cylinders, mirror discs, axes) get w = 1 by GL default.
 in vec4 aColor;
-// texture coordinates; buffers that carry none read (0,0) and the sample is
-// gated off by uTexOn in the fragment shader
+// texture coordinates and the ink tint — the texture palette's color for
+// this facet's group. Buffers that carry neither read zeros and the sample
+// is gated off by uTexOn in the fragment shader.
 in vec2 aUV;
+in vec4 aTexTint;
 uniform mat4 uProj;
 uniform mat4 uView;
 out vec3 vNormal;
 out vec4 vColor;
 out vec3 vEye;
 out vec2 vUV;
+out vec4 vTexTint;
 void main() {
   vec4 p = uView * vec4(aPos, 1.0);
   vEye = p.xyz;
   vNormal = mat3(uView) * aNormal;
   vColor = aColor;
   vUV = aUV;
+  vTexTint = aTexTint;
   gl_Position = uProj * p;
 }`;
 
@@ -42,21 +46,26 @@ in vec3 vNormal;
 in vec4 vColor;
 in vec3 vEye;
 in vec2 vUV;
+in vec4 vTexTint;
 uniform float uEdgeDark;
 uniform float uAlpha;      // the global facet opacity: a modifier over every color
-// the face texture, folded into the color BEFORE lighting. Texels arrive
-// with rgb PREMULTIPLIED by alpha (see setTexture), which is what makes
-// both formulas one line and keeps filtered glyph edges free of fringes:
-//   tint  — the image multiplies the face color, and transparency fades the
-//           multiplier to 1, so a see-through background leaves the face
-//           color untouched: (1-a) + rgb·a, premultiplied = (1-a) + rgb
-//   stamp — the image lies OVER the face in its own colors, ordinary
-//           source-over compositing: face·(1-a) + rgb
+// The face texture, folded into the color BEFORE lighting. Texels arrive
+// with rgb PREMULTIPLIED by alpha (see setTexture), which keeps every
+// formula one line and filtered glyph edges free of fringes. The ink is
+// first colorized by its group's tint (the texture palette, vTexTint) and
+// faded by the tint's own alpha times the texture opacity dial; then:
+//   tint    — the ink multiplies the face color, transparency fading the
+//             multiplier to 1: face · ((1-a) + ink)
+//   stamp   — the ink lies OVER the face, source-over: face·(1-a) + ink
+//   replace — the ink IS the face: what the image leaves clear is not
+//             there at all, and the fragment carries the ink's coverage
 // uTexOn gates it per draw call — the same program also draws tubes, axes
 // and mirror discs, whose buffers carry no texture coordinates.
 uniform sampler2D uTex;
 uniform float uTexOn;
-uniform float uTexStamp;
+uniform float uTexMode;    // 0 tint · 1 stamp · 2 replace
+uniform float uTexAlpha;   // the texture layer's own opacity dial
+uniform float uTexTile;    // 1: repeat everywhere · 0: one copy, clear beyond it
 out vec4 fragColor;
 void main() {
   vec3 n = normalize(vNormal);
@@ -68,14 +77,32 @@ void main() {
   vec3 V = normalize(-vEye);
   vec3 H = normalize(L1 + V);
   float spec = pow(max(dot(n, H), 0.0), 48.0) * 0.35;
-  vec4 t = texture(uTex, vUV);
-  vec3 tinted  = vColor.rgb * (vec3(1.0 - t.a) + t.rgb);
-  vec3 stamped = vColor.rgb * (1.0 - t.a) + t.rgb;
-  vec3 base = mix(vColor.rgb, mix(tinted, stamped, uTexStamp), uTexOn);
+  vec3 base = vColor.rgb;
+  float aOut = vColor.a;
+  if (uTexOn > 0.5) {
+    vec4 t = texture(uTex, vUV);                 // rgb premultiplied by t.a
+    // untiled, the image exists once, over the face's center: outside the
+    // unit tile the texel is simply clear — premultiplied, one multiply
+    if (uTexTile < 0.5) {
+      t *= step(0.0, vUV.x) * step(vUV.x, 1.0) * step(0.0, vUV.y) * step(vUV.y, 1.0);
+    }
+    float f = vTexTint.a * uTexAlpha;
+    vec3 ink = t.rgb * vTexTint.rgb * f;         // still premultiplied
+    float a2 = t.a * f;
+    if (uTexMode < 0.5) {
+      base = vColor.rgb * (vec3(1.0 - a2) + ink);
+    } else if (uTexMode < 1.5) {
+      base = vColor.rgb * (1.0 - a2) + ink;
+    } else {
+      // straight color for the blender: the premultiplication cancels
+      base = ink / max(a2, 1e-4);
+      aOut = a2;
+    }
+  }
   vec3 c = base * (0.34 + d) + spec;   // keep shadowed faces light enough that black edges still read
   // slight rim to separate touching facets
   float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0) * 0.12;
-  fragColor = vec4(c + rim, vColor.a * uAlpha);
+  fragColor = vec4(c + rim, aOut * uAlpha);
 }`;
 
 /*
@@ -274,6 +301,7 @@ export class Renderer3D {
     this.normBuf = gl.createBuffer();
     this.colBuf = gl.createBuffer();
     this.uvBuf = gl.createBuffer();
+    this.texTintBuf = gl.createBuffer();
     this.count = 0;
 
     /*
@@ -286,7 +314,9 @@ export class Renderer3D {
     this.texture = null;         // the GL texture, or null for none
     this.texCharts = null;       // per-plane {m, ox, oy, s}, set by the app
     this.texScale = 1;
-    this.texStamp = false;       // false: tint (multiply); true: stamp (lay over)
+    this.texMode = 0;            // 0 tint (multiply) · 1 stamp (lay over) · 2 replace
+    this.texAlpha = 1;           // the texture layer's own opacity dial
+    this.texTile = true;         // repeat over the wings, or one copy per face
     this._hasUV = false;         // did the LAST setMesh write real uv data
 
     /*
@@ -1008,7 +1038,7 @@ export class Renderer3D {
    */
   setMesh(mesh, faceLayers, faceClass = null) {
     const gl = this.gl;
-    const pos = [], norm = [], col = [], uv = [];
+    const pos = [], norm = [], col = [], uv = [], tint = [];
     this.pickTris = [];      // {a,b,c, face} in model space, for ray picking
     this.mesh = mesh;
     this.lastFaceLayers = faceLayers;
@@ -1165,12 +1195,16 @@ export class Renderer3D {
 
       const ch = this._hasUV ? charts[planes[fi]] : null;
       const k = ch ? 1 / (ch.s * (this.texScale > 0 ? this.texScale : 1)) : 0;
+      // the texture palette's answer for this group — the INK color the
+      // sampled image is multiplied by, white (no tint) unless edited
+      const tc = ch ? faceColor('tex.' + this.colorMode, groupOf(fi), top) : [1, 1, 1, 1];
       for (let i = 1; i < p.length - 1; i++) {
         const tri = [p[0], p[i], p[i + 1]];
         for (const v of tri) {
           pos.push(v.x * s, v.y * s, v.z * s);
           norm.push(nx, ny, nz);
           col.push(c[0], c[1], c[2], c[3]);
+          tint.push(tc[0], tc[1], tc[2], tc[3]);
           if (ch) {
             const m = ch.m;
             uv.push((m[0] * v.x + m[1] * v.y + m[2] * v.z - ch.ox) * k + 0.5,
@@ -1237,6 +1271,7 @@ export class Renderer3D {
     upload(this.vao, this.normBuf, 'aNormal', norm, 3, this.prog);
     upload(this.vao, this.colBuf, 'aColor', col, 4, this.prog);
     upload(this.vao, this.uvBuf, 'aUV', uv, 2, this.prog);
+    upload(this.vao, this.texTintBuf, 'aTexTint', tint, 4, this.prog);
     this.count = pos.length / 3;
     this._sortData = null;         // new geometry: the translucency order tables are stale
     // kept for the cylinder edges, built lazily so line mode never pays for them
@@ -1587,7 +1622,9 @@ export class Renderer3D {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.texture);
       gl.uniform1i(gl.getUniformLocation(this.prog, 'uTex'), 0);
-      gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexStamp'), this.texStamp ? 1 : 0);
+      gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexMode'), this.texMode);
+      gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexAlpha'), this.texAlpha);
+      gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexTile'), this.texTile ? 1 : 0);
     }
     gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexOn'), 0);
     gl.bindVertexArray(this.vao);
@@ -1675,7 +1712,11 @@ export class Renderer3D {
     const alpha = Math.max(0, Math.min(1, this.faceOpacity ?? 1));
     // per-face alpha needs the same back-to-front compositing the global
     // opacity does, so one translucent group puts the whole pass on that path
-    if (alpha >= 1 && !this._anyFaceAlpha) {
+    // replace mode carries the texture's alpha per PIXEL — the whole surface
+    // becomes translucent geometry and must composite back-to-front, or the
+    // clear parts of the image would render as solid darkness
+    const perPixelAlpha = texOn && this.texMode === 2;
+    if (alpha >= 1 && !this._anyFaceAlpha && !perPixelAlpha) {
       if (this.count) {
         gl.enable(gl.POLYGON_OFFSET_FILL);
         gl.polygonOffset(1.2, 1.2);  // sink the faces so the ink sits cleanly on top

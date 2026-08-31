@@ -69,6 +69,30 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>Two layers, each its own: the replace blend, the ink palette,
+      texture opacity and tiling.</b>
+      The texture becomes a full second layer over the faces, independently
+      colored and independently transparent. <i>replace</i> joins the
+      blends: the image IS the face, its alpha the surface's, so a glyph on
+      a transparent ground floats in the air — the renderer routes the
+      whole surface through the back-to-front compositing path, since every
+      pixel now carries its own coverage. <i>opacity</i> is the layer's own
+      dial. <i>tile the image</i> chooses repetition over the wings
+      (patterns) or one copy per face, clear beyond its edge (emblems) —
+      one premultiplied step function in the shader. And the ink palette:
+      while a texture is armed the Colors panel gains an <i>editing</i>
+      switch, and its <i>texture ink</i> rows are a second color and
+      opacity per group — the same override machinery under
+      <code>tex.</code>-prefixed keys, defaulting to white — multiplied
+      into the sampled image before it meets the face. So a solid red face
+      carries green arrows and a solid green face red ones, each layer
+      coset-colored, neither consulting the other. All of it rides
+      <code>display.texture</code> (blend/opacity/tile/colors, defaults
+      absent), release 1; the ink tints reach the shader as a second color
+      attribute, so blends and gray mix in Oklab exactly like face colors.
+      <span class="src">lib/render3d.js · lib/palette.js · app/js/colors.js · app/js/app.js · app/js/preset.js · test/colors.mjs · test/docformat.mjs</span>
+    </div></li>
+    <li><div>
       <b>Textures honor transparency, and learn to stamp.</b>
       A texture with an alpha channel used to show its transparent
       background as solid black — the shader multiplied by the texel's rgb

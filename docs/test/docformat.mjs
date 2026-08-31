@@ -313,6 +313,44 @@ const base = {
   doc.params.display.texture.blend = 'multiply-screen-dodge';
   ok(readPreset(doc).texture.blend === 'tint', 'an unknown blend falls to tint');
 }
+/*
+ * The texture layer's independent controls: the replace blend (the image IS
+ * the face, alpha and all), the layer's own opacity, and the ink palette —
+ * per-group tints for the image, hex by row like display.colors.
+ */
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}',
+    texture: { file: 'arrow_white.png', scale: 1, blend: 'replace',
+               opacity: 0.6, colors: ['#00cc44ff', '#cc2222ff'] } }));
+  const t = doc.params.display.texture;
+  ok(t.blend === 'replace' && t.opacity === 0.6
+     && Array.isArray(t.colors) && t.colors.length === 2,
+     'replace, opacity and the ink palette are written out');
+  const read = readPreset(doc);
+  ok(read.texture.blend === 'replace' && read.texture.opacity === 0.6
+     && read.texture.colors.join(' ') === '#00cc44ff #cc2222ff',
+     'and read back exactly');
+}
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}',
+    texture: { file: 'checker.png', scale: 1, opacity: 1, tile: true, colors: [] } }));
+  const t = doc.params.display.texture;
+  ok(t.opacity === undefined && t.colors === undefined && t.tile === undefined,
+     'full opacity, tiling on and an untouched ink palette write no fields');
+  const read = readPreset(doc);
+  ok(read.texture.opacity === 1 && read.texture.colors === null && read.texture.tile === true,
+     'and read back as the defaults');
+  const once = JSON.parse(writePreset({ ...base, cells: '{0}',
+    texture: { file: 'arrow_white.png', scale: 1, tile: false } }));
+  ok(once.params.display.texture.tile === false
+     && readPreset(once).texture.tile === false,
+     'once-per-face is written and read back');
+  doc.params.display.texture.opacity = 'mostly';
+  doc.params.display.texture.colors = ['#00cc44ff', 7, null, '#cc2222ff'];
+  const junk = readPreset(doc);
+  ok(junk.texture.opacity === 1, 'a junk opacity falls to 1');
+  ok(junk.texture.colors.length === 2, 'junk ink entries are dropped, honest ones kept');
+}
 {
   const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));
   ok(doc.params.display.texture === undefined,

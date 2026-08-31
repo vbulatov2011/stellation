@@ -329,19 +329,30 @@
         symmetry that carries it there is a reflection. <b>blend</b> says
         how the image meets the face colors. <em>tint</em>, the default,
         multiplies them &mdash; white shows the coset color pure, dark ink
-        shades it, which is why the bundled patterns are light &mdash; and
+        shades it, which is why the bundled patterns are light.
         <em>stamp</em> lays the image over the face in its own colors, a
-        white glyph staying white. Transparency is honored in both: a
-        transparent background leaves the face color untouched, and
-        semi-transparent pixels blend by their alpha &mdash; so a glyph
-        drawn on a transparent ground, like the bundled arrow, reads as
-        outline ink under <em>tint</em> and pops as itself under
-        <em>stamp</em>. <b>scale</b> is the size of one tile in face widths
-        &mdash; 1 spans the original face once &mdash; and the image
-        repeats outward over the star&rsquo;s wings. The images live in
+        white glyph staying white. <em>replace</em> makes the image the
+        face itself: where it is transparent there is no face at all, and
+        the glyphs float in the air. Transparency is honored throughout
+        &mdash; a transparent background leaves the face color untouched,
+        semi-transparent pixels blend by their alpha &mdash; so the bundled
+        arrow reads as outline ink under <em>tint</em>, pops as itself
+        under <em>stamp</em>, and hangs alone under <em>replace</em>.
+        <b>opacity</b> is the texture layer&rsquo;s own dial, independent
+        of the faces&rsquo;; <b>scale</b> is the size of one tile in face
+        widths; and <b>tile the image</b> chooses between repeating over
+        the star&rsquo;s wings (right for patterns) and existing exactly
+        once per face, clear beyond its edge (right for a glyph or an
+        emblem). The image can also be <em>colorized per group</em>: the
+        Colors panel gains an <em>editing</em> switch while a texture is
+        armed, and its <em>texture ink</em> palette is a second color and
+        opacity per coset, defaulting to white &mdash; so a red face can
+        carry green arrows and a green face red ones, independent of the
+        face colors entirely. The images live in
         <code>img/textures/</code>; drop a file there and rerun
         <code>node docs/tools/make-textures.mjs</code> to list it in the
-        menu. File, scale and blend are saved with the document.</p>
+        menu. Everything &mdash; file, scale, blend, opacity, tiling and
+        the ink palette &mdash; is saved with the document.</p>
         <p>To read a mix back, rest the pointer on the facet. Each view
         answers along its own bottom edge, once the pointer has been still for
         a moment &mdash; so that sweeping across a figure never fires it. The
