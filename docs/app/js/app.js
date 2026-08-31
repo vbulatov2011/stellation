@@ -867,6 +867,9 @@ function applyToFacet(facet, mod) {
 function onPick3D(hit, mod) {
   const mesh = state.mesh;
   if (!mesh) return;
+  // brush down: every click is a stroke, on this canvas like the other one —
+  // the facet names the same region a diagram click would, by the same key
+  if (paintMode) { paintKey(mesh.faceKeys?.[hit.face], mod); return; }
   const inside = mesh.faceInside[hit.face];
   const outside = mesh.faceOutside[hit.face];
 
@@ -1037,6 +1040,15 @@ function onHover3D(hit, mod) {
   if (!hit || !mesh) {
     solidLine.action = '';
     renderer?.setHighlight(-1);
+    pushSolidLine();
+    return;
+  }
+
+  // brush down: the outline is the brush's footprint — always something to
+  // act on, never a promise of adding or carving, so never green or red
+  if (paintMode) {
+    renderer?.setHighlight(hit.face, null);
+    solidLine.action = '';
     pushSolidLine();
     return;
   }
@@ -1549,7 +1561,8 @@ function syncMergeInfo() {
 /*
  * Coset painting: hand-assigning coset labels region by region, with the
  * coset colors as the palette. The brush is one coset (or gray, or "auto"
- * — back to the computed label); a plain click assigns it, shift adds it
+ * — back to the computed label); a plain click — on the diagram or on the
+ * solid itself, both name the same regions — assigns it, shift adds it
  * to or removes it from a mix, and a region wearing several cosets renders
  * as their blend, dotted in the diagram so a mix cannot pass for a plain
  * color. The labels live in state.paint and ride to the worker on every
@@ -1570,7 +1583,7 @@ function syncPaintBtn() {
   const ok = paintAvailable();
   btn.disabled = !ok;
   btn.title = ok
-    ? 'Paint cosets — pick a color in the bar and click regions to hand-assign them. Shift-click mixes; auto erases.'
+    ? 'Paint cosets — pick a color in the bar and click regions, on the diagram or the solid itself. Shift-click mixes; auto erases.'
     : 'Painting needs face colors by subgroup coset, per facet, with a coloring subgroup chosen';
   if (!ok && paintMode) setPaintMode(false);
 }
@@ -1582,9 +1595,15 @@ function setPaintMode(on) {
   const bar = $('#paintBar');
   if (bar) bar.hidden = !paintMode;
   if (diagram) { diagram.paintMarks = paintMode; diagram.draw(); }
+  // the solid paints too: bare clicks become picks there while the brush is
+  // down (drags still turn it — the renderer tells the two apart)
+  if (renderer) {
+    renderer.pickPlain = paintMode;
+    if (!paintMode) renderer.setHighlight(-1);
+  }
   if (paintMode) {
     rebuildPaintBar();
-    setStatus('painting: a click paints every symmetric copy, the coset permuting with each — shift-click mixes, auto erases'
+    setStatus('painting: a click — on the diagram or the solid — paints every symmetric copy, the coset permuting with each; shift-click mixes, auto erases'
       + ($('#colorMerge')?.checked ? ' · merge neighbors is set aside while the brush is down' : ''), false);
   }
   // entering suspends the merge, leaving re-melts — either way the labels
@@ -1644,7 +1663,12 @@ function rebuildPaintBar() {
  */
 async function paintFacet(facet, mod) {
   if (!facet || facet.fi == null) { setStatus('nothing to paint here', false); return; }
-  const key = state.planeIndex + '.' + facet.fi;
+  await paintKey(state.planeIndex + '.' + facet.fi, mod);
+}
+
+/** one stroke by region identity — the diagram and the solid funnel into this */
+async function paintKey(key, mod) {
+  if (key == null) { setStatus('nothing to paint here', false); return; }
   let res;
   try {
     res = await call('paintOrbit', { key, brush: paintBrush, shift: !!mod.shift });

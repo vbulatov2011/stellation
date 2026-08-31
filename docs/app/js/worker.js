@@ -335,6 +335,9 @@ function meshFor(selected, split = false, merge = null) {
     // which face plane each facet lies in — what separates a crease between two
     // planes (a face edge) from a join within one plane (a facet edge)
     facePlanes: mesh.facetRefs.map(f => f.plane),
+    // each facet's name in the paint overlay — how a click ON THE SOLID names
+    // the region it paints, the same key the diagram's clicks arrive under
+    faceKeys: mesh.facetRefs.map(f => f.plane + '.' + indexOfFacet(f)),
     // "inside" is the solid cell this face belongs to, "outside" the empty
     // neighbor across it — which is what a click means, and what the two
     // gestures act on. The top/bottom orientation mirrors cellsAcrossFace;
@@ -421,8 +424,8 @@ function meshFor(selected, split = false, merge = null) {
       return i;
     };
     const arrays = ['faceLayers', 'faceClasses', 'faceClassesStell', 'faceTop', 'facePlanes',
-      'faceCosets', 'faceCosetsL', 'faceCosetsM', 'faceOrbitP', 'faceOrbitF', 'faceOrbitC',
-      'faceInside', 'faceOutside'];
+      'faceKeys', 'faceCosets', 'faceCosetsL', 'faceCosetsM', 'faceOrbitP', 'faceOrbitF',
+      'faceOrbitC', 'faceInside', 'faceOutside'];
     const dst = {};
     for (const a of arrays) dst[a] = [];
     const faces = [];

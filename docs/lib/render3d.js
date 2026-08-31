@@ -357,6 +357,15 @@ export class Renderer3D {
     this.faceEdges = { show: true, color: null, width: null, tubes: false };
     this.facetEdges = { show: true, color: [0.42, 0.44, 0.50, 1.0], width: null, tubes: false };
 
+    /*
+     * Plain clicks pick too. Off, a pick needs a modifier and a bare drag is
+     * the trackball; on — the app's coset brush — a bare hover outlines the
+     * face under the pointer and a bare CLICK reaches onPick, while a bare
+     * drag still turns the solid: the click handler tells the two apart by
+     * how far the pointer travelled since it went down.
+     */
+    this.pickPlain = false;
+
     this._installControls();
     this._raf = null;
     this.resize();
@@ -1964,6 +1973,8 @@ export class Renderer3D {
         return;
       }
       if (picking(e) || e.button === 2) return;
+      // where the bare drag began — the click handler's was-it-a-drag test
+      this._downXY = { x: e.clientX, y: e.clientY };
       this.cancelEase();
       this.dragging = true;
       const p = point(e, c);
@@ -1982,7 +1993,7 @@ export class Renderer3D {
       if (gesture) { stepGesture(); return; }
       if (!this.dragging) {
         this._lastMove = e;
-        const hit = picking(e) ? this.pick(e) : null;
+        const hit = picking(e) || this.pickPlain ? this.pick(e) : null;
         c.style.cursor = hit ? 'crosshair' : 'grab';
         // the app knows whether the gesture can actually do anything here, so it
         // owns the highlight color; without it, fall back to a plain outline
@@ -2010,7 +2021,7 @@ export class Renderer3D {
           const now = performance.now();
           if (now - (this._hoverInfoAt || 0) >= 40) {
             this._hoverInfoAt = now;
-            this.onHoverInfo(picking(e) ? hit : this.pick(e));
+            this.onHoverInfo(hit || this.pick(e));
           }
         }
         return;
@@ -2078,7 +2089,15 @@ export class Renderer3D {
     addEventListener('blur', () => { this.setHighlight(-1); this.onPickHover?.(null); });
 
     c.addEventListener('click', (e) => {
-      if (!picking(e) || !this.onPick) return;
+      if (!this.onPick) return;
+      if (!picking(e)) {
+        // A bare click picks only when the app asked (pickPlain), and only if
+        // it really was a click — a trackball drag ends in this same event,
+        // told apart by how far the pointer travelled since it went down.
+        if (!this.pickPlain) return;
+        const d = this._downXY;
+        if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 4) return;
+      }
       const hit = this.pick(e);
       if (hit) this.onPick(hit, mods(e));
     });

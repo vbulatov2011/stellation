@@ -69,6 +69,24 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>The brush reaches the solid.</b>
+      With the brush down, a plain click on the 3D view paints the facet
+      under the pointer — the same stroke a diagram click makes, by the same
+      region identity, expanded over the same orbit with the same permuted
+      cosets. Turning the solid is untouched: a drag is still the trackball,
+      and only a click whose pointer has not travelled counts as a stroke,
+      so painting and orbiting share the left button without stepping on
+      each other. Hovering with the brush down outlines the facet neutrally
+      — no green or red, since the gesture promises neither adding nor
+      carving — and the corner line still names the coset under the pointer.
+      Each surface facet's paint identity now rides along with the mesh, so
+      a click needs no second trip to the worker to learn what it hit.
+      Also fixed: the palette bar's explicit <code>display</code> was
+      beating the <code>hidden</code> attribute, so the bar never visually
+      left when the brush was put away.
+      <span class="src">lib/render3d.js · app/js/app.js · app/js/worker.js · css/style.css</span>
+    </div></li>
+    <li><div>
       <b>Painting cosets: the assignment becomes yours, and the symmetry
       carries the brush.</b>
       The coset coloring computes which facets can share a color; painting

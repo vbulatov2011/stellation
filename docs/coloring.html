@@ -452,12 +452,19 @@
       The coset coloring is computed, and the computation has no taste: it
       knows which facets <em>can</em> share a color, not which ones you want
       to. Painting hands you the assignment — and it obeys the same law the
-      coloring does. A click never paints one region: it paints the
+      coloring does. The brush works in both views: click a region of the
+      diagram, or the facet itself on the solid — turning the solid stays a
+      drag, and only a true click, one that has not travelled, is a stroke.
+      Either way a click never paints one region: it paints the
       region&rsquo;s entire orbit under the figure&rsquo;s full symmetry,
       each copy taking the coset the chosen one <em>becomes</em> under that
       symmetry. Paint one face solid green, and every other face comes out
       solid in its own coset — the four-color model, made by hand, agreeing
-      exactly with the per-plane reading. Painting a region with the label
+      exactly with the per-plane reading. Which is worth knowing before you
+      reach for a color: brushed with its own plane&rsquo;s coset — read it
+      off the per-plane coloring — a face comes out solid, while a coset
+      the face&rsquo;s own symmetries move around lands together with its
+      images, and the face honestly shows them side by side. Painting a region with the label
       it already wears changes nothing anywhere, which is the sanity check
       the implementation is tested by: the brush and the coloring speak the
       same language.

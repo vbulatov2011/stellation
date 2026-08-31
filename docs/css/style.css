@@ -1230,6 +1230,8 @@ button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   z-index: 4;
 }
+/* the explicit display above would otherwise beat the UA's [hidden] rule */
+.paint-bar[hidden] { display: none; }
 .paint-sw {
   width: 20px; height: 20px; padding: 0; border-radius: 5px;
   border: 1px solid var(--line); cursor: pointer;
