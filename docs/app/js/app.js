@@ -1488,6 +1488,13 @@ function composeColorMode(fromFamily) {
 const mergeApplies = (mode) => mode === 'cosetL' || mode === 'orbitF';
 function mergeRequest() {
   if (!$('#colorMerge')?.checked) return null;
+  /*
+   * Set aside while painting. Merged regions vote by majority, so a fresh
+   * paint inside one was simply outvoted — the brush looked dead until the
+   * colors count was raised. While the brush is down the raw labels show;
+   * leaving paint mode lets the dial melt them again, painted and all.
+   */
+  if (paintMode) return null;
   const k = Number($('#colorMergeK')?.value);
   return { on: true, colors: Number.isFinite(k) && k >= 1 ? Math.round(k) : null };
 }
@@ -1522,6 +1529,10 @@ function syncMergeRow() {
 function syncMergeInfo() {
   const el = $('#colorMergeInfo');
   if (!el) return;
+  if (paintMode && $('#colorMerge')?.checked) {
+    el.textContent = 'set aside while painting';
+    return;
+  }
   const mode = $('#colorMode')?.value;
   if (state.mesh?.mergeError && $('#colorMerge')?.checked) {
     // a failed merge shows the raw reading; saying so beats a dead-looking toggle
@@ -1565,6 +1576,7 @@ function syncPaintBtn() {
 }
 
 function setPaintMode(on) {
+  const was = paintMode;
   paintMode = !!on && paintAvailable();
   $('#paintBtn')?.setAttribute('aria-pressed', paintMode ? 'true' : 'false');
   const bar = $('#paintBar');
@@ -1572,8 +1584,15 @@ function setPaintMode(on) {
   if (diagram) { diagram.paintMarks = paintMode; diagram.draw(); }
   if (paintMode) {
     rebuildPaintBar();
-    setStatus('painting: click a region to give it the chosen coset — shift-click mixes, auto restores the computed label', false);
+    setStatus('painting: a click paints every symmetric copy, the coset permuting with each — shift-click mixes, auto erases'
+      + ($('#colorMerge')?.checked ? ' · merge neighbors is set aside while the brush is down' : ''), false);
   }
+  // entering suspends the merge, leaving re-melts — either way the labels
+  // on screen must follow
+  if (was !== paintMode && $('#colorMerge')?.checked) {
+    refresh().catch(err => setStatus('view update failed: ' + (err && err.message || err), false));
+  }
+  syncMergeInfo();
 }
 
 /** the palette: one swatch per coset, wearing its current (edited) color */
@@ -1616,36 +1635,38 @@ function rebuildPaintBar() {
   };
 }
 
-/** a paint-mode click on a diagram region */
-function paintFacet(facet, mod) {
+/*
+ * A paint-mode click. The gesture is one region; the paint is the whole
+ * figure: the worker expands it over the region's full orbit, every copy
+ * taking the PERMUTED coset — which is what lets one face painted solid
+ * green turn every other face solid in its own color. A copy whose own
+ * symmetry is forced into several cosets comes back as a blend, dotted.
+ */
+async function paintFacet(facet, mod) {
   if (!facet || facet.fi == null) { setStatus('nothing to paint here', false); return; }
   const key = state.planeIndex + '.' + facet.fi;
-  let painted = null;
-  if (paintBrush === 'auto') {
-    if (!state.paint.delete(key)) { setStatus('no paint on this region — it wears its computed label', false); return; }
-  } else if (paintBrush === 'gray') {
-    state.paint.set(key, -1);
-  } else if (mod.shift) {
-    // shift builds mixes: the brush coset joins what the region wears now —
-    // or leaves, if it was already in — so a mix is made and unmade by the
-    // same gesture
-    const cur = facet.cosetL;
-    const set = new Set(Array.isArray(cur) ? cur
-      : (typeof cur === 'number' && cur >= 0 ? [cur] : []));
-    if (set.has(paintBrush)) set.delete(paintBrush); else set.add(paintBrush);
-    const arr = [...set].sort((a, b) => a - b);
-    painted = arr.length === 0 ? -1 : arr.length === 1 ? arr[0] : arr;
-    state.paint.set(key, painted);
-  } else {
-    painted = paintBrush;
-    state.paint.set(key, painted);
+  let res;
+  try {
+    res = await call('paintOrbit', { key, brush: paintBrush, shift: !!mod.shift });
+  } catch (err) {
+    setStatus('paint failed: ' + (err && err.message || err), false);
+    return;
   }
-  touch();                       // document state: dirty, and autosaved soon
-  refresh().then(() => {
-    if (Array.isArray(painted)) {
-      setStatus(`this region now wears cosets ${painted.join(' + ')} — mixed, marked with a dot`, false);
-    }
-  });
+  if (paintBrush === 'auto') {
+    let removed = 0;
+    for (const k of res.del) if (state.paint.delete(k)) removed++;
+    if (!removed) { setStatus('no paint on this region or its symmetric copies', false); return; }
+    touch();
+    await refresh();
+    setStatus(`paint erased from ${removed} regions`, false);
+    return;
+  }
+  for (const [k, v] of res.set) state.paint.set(k, v);
+  touch();
+  await refresh();
+  setStatus(res.mixed
+    ? `painted ${res.set.length} symmetric regions — ${res.mixed} straddle cosets and wear the mix, dotted`
+    : `painted ${res.set.length} symmetric regions, the coset permuted with each copy`, false);
 }
 
 /*

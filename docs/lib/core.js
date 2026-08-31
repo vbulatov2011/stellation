@@ -2805,6 +2805,108 @@ export function mergeAdjacentFacetClasses(stel, mesh, gOrbitOf, matrices, labeli
   return out;
 }
 
+/* ----------------------------------------------------------- painted cosets
+
+ * Painting a facet does not paint a facet. It paints the whole figure, the
+ * way color symmetry demands: give one facet coset k, and every symmetric
+ * copy g·f must take the PERMUTED coset — the one k becomes under g's
+ * action on the cosets. That is what lets a person paint one face solid
+ * green and watch every other face come out solid in its own color: the
+ * gesture is a statement about the coloring, and the group carries it.
+ */
+
+/**
+ * Expand one paint gesture over the whole orbit of `facet` under the full
+ * group. `brush` is a Set of crisp coset labels (usually one; several after
+ * a shift-mix), or 'gray', or 'auto' (erase).
+ *
+ * The permutation of labels is never computed as group theory. The computed
+ * labeling is already equivariant — label(g·f) is label(f) pushed through
+ * g, whatever anchors and steering produced it — so the image of label k
+ * under g can be READ OFF: take any facet that wears k (a witness) and ask
+ * what its g-image wears. Gray is fixed by everything; a brush label with
+ * no crisp witness anywhere cannot be transported and contributes nothing.
+ *
+ * Where several group elements land on the SAME facet with different label
+ * images — a facet whose own symmetry straddles cosets — the images pile
+ * up into a blend: the facet is honestly forced into several cosets at
+ * once, which is the mixed color the caller marks.
+ *
+ * `labelOf` must be the COMPUTED labeling, never the painted overlay: the
+ * paint must ride on the symmetry, not warp it.
+ *
+ * Returns { set: [[key, label]], del: [key], mixed }, keys 'plane.index'
+ * in the arrangement's own order.
+ */
+export function paintOrbit(stel, matrices, labelOf, facet, brush) {
+  const idx = new Map();
+  stel.arrangement.forEach(fs => fs.forEach((x, i) => idx.set(x, i)));
+  const keyOf = (f) => f.plane + '.' + idx.get(f);
+
+  // the action, matched by centroid like subgroupOrbits and the merge
+  const pool = new VertexPool(1e-6);
+  const byCenter = new Map();
+  const cc = new Map();
+  const centro = (f) => {
+    let c = cc.get(f);
+    if (c) return c;
+    let x = 0, y = 0, z = 0;
+    for (const id of f.v) { const q = stel.pool.get(id); x += q.x; y += q.y; z += q.z; }
+    const n = f.v.length || 1;
+    c = v3(x / n, y / n, z / n);
+    cc.set(f, c);
+    return c;
+  };
+  for (const fs of stel.arrangement) for (const f of fs) byCenter.set(pool.intern(centro(f)), f);
+  const image = (g, f) => byCenter.get(pool.intern(matMul(g, centro(f))));
+
+  // one crisp witness per label, for reading the permutation off the labeling
+  const witness = new Map();
+  if (brush !== 'auto' && brush !== 'gray') {
+    outer:
+    for (const fs of stel.arrangement) {
+      for (const f of fs) {
+        const v = labelOf(f);
+        if (typeof v === 'number' && v >= 0 && !witness.has(v)) {
+          witness.set(v, f);
+          let done = true;
+          for (const x of brush) if (!witness.has(x)) { done = false; break; }
+          if (done) break outer;
+        }
+      }
+    }
+  }
+
+  const acc = new Map();
+  const del = new Set();
+  for (const g of matrices || []) {
+    const T = image(g, facet);
+    if (!T) continue;
+    const key = keyOf(T);
+    if (brush === 'auto') { del.add(key); continue; }
+    if (brush === 'gray') { acc.set(key, 'gray'); continue; }
+    let s = acc.get(key);
+    if (!s || s === 'gray') acc.set(key, s = new Set(s === 'gray' ? [] : s));
+    for (const x of brush) {
+      const w = witness.get(x);
+      const t = w && image(g, w);
+      const y = t === undefined ? undefined : labelOf(t);
+      if (typeof y === 'number' && y >= 0) s.add(y);
+    }
+  }
+
+  if (brush === 'auto') return { set: [], del: [...del].sort(), mixed: 0 };
+  const set = [];
+  let mixed = 0;
+  for (const [key, s] of [...acc.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    if (s === 'gray' || !s.size) { set.push([key, -1]); continue; }
+    const arr = [...s].sort((a, b) => a - b);
+    if (arr.length > 1) mixed++;
+    set.push([key, arr.length === 1 ? arr[0] : arr]);
+  }
+  return { set, del: [], mixed };
+}
+
 export function cosetClasses(stel, matrices, subMatrices, preferCells = null, prevPlanes = null) {
   const sameMat = (a, b) => {
     for (let i = 0; i < 9; i++) if (Math.abs(a[i] - b[i]) > 1e-6) return false;

@@ -11,7 +11,7 @@ import {
   buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
   atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
   formatCellsUnder, regroupSubCells, cosetClasses, facetCosetClasses,
-  subgroupOrbits, mergeAdjacentFacetClasses,
+  subgroupOrbits, mergeAdjacentFacetClasses, paintOrbit,
 } from '../../lib/core.js';
 import { BUILD } from './build.js';
 
@@ -780,6 +780,41 @@ self.onmessage = (e) => {
       case 'paint': {
         paint = new Map(payload.entries || []);
         reply({ count: paint.size });
+        break;
+      }
+
+      /*
+       * One brush gesture, expanded over the whole orbit the way color
+       * symmetry demands — see paintOrbit. The gesture itself is resolved
+       * here, against what the clicked facet currently wears (paint
+       * included), but the expansion runs on the COMPUTED labeling only:
+       * the paint rides on the symmetry, it must not warp it.
+       */
+      case 'paintOrbit': {
+        if (!stel) { fail('nothing built yet'); break; }
+        const m = /^(\d+)\.(\d+)$/.exec(String(payload.key || ''));
+        const f = m && stel.arrangement[+m[1]] && stel.arrangement[+m[1]][+m[2]];
+        if (!f) { fail('no such region'); break; }
+        const rawLabel = (x) => {
+          if (!cosetsL) return -1;
+          const k = cosetsL.of.get(x);
+          if (k != null && k >= 0) return k;
+          const b = cosetsL.blends && cosetsL.blends.get(x);
+          return b ? Array.from(b) : -1;
+        };
+        let brush;
+        if (payload.brush === 'auto' || payload.brush === 'gray') {
+          brush = payload.brush;
+        } else if (payload.shift) {
+          const worn = paintedLabel(f) ?? rawLabel(f);
+          const s = new Set(Array.isArray(worn) ? worn
+            : (typeof worn === 'number' && worn >= 0 ? [worn] : []));
+          if (s.has(payload.brush)) s.delete(payload.brush); else s.add(payload.brush);
+          brush = s.size ? s : 'gray';
+        } else {
+          brush = new Set([payload.brush]);
+        }
+        reply(paintOrbit(stel, cosetGroup, rawLabel, f, brush));
         break;
       }
 

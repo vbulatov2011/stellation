@@ -69,24 +69,36 @@
   </div>
   <ul class="done">
     <li><div>
-      <b>Painting cosets: the assignment becomes yours.</b>
+      <b>Painting cosets: the assignment becomes yours, and the symmetry
+      carries the brush.</b>
       The coset coloring computes which facets can share a color; painting
       decides which ones do. A brush button on the diagram opens a palette
       of the current coset colors — the ones the Colors panel edits — and a
-      bare click hands the region the chosen coset. It is a label, not a
-      tint: the paint overlays the computed labeling at the one point every
-      reader reads, so the pointer readouts name it, both exports carry it,
-      the diagram list splits planes a paint has made different, and merge
-      neighbors votes with it. <kbd>shift</kbd>-click adds the chosen coset
-      to what a region wears, or takes it out — a region belonging to
-      several cosets at once shows their blend and a small dot, and falls
-      to gray when mixing is off. <i>gray</i> paints no-coset, <i>auto</i>
-      erases, <i>clear</i> takes everything back. Saved with the document
+      click paints not one region but its whole orbit under the full group,
+      each copy taking the coset the chosen one becomes under that
+      symmetry. So painting one face solid green turns every face solid in
+      its own coset: the four-color model, made by hand, agreeing exactly
+      with the per-plane reading — a property the tests pin, along with its
+      converse, that painting a region with the label it already wears
+      changes nothing anywhere. The permutation is never computed as group
+      theory: the labeling is already equivariant, so a label's image under
+      g is read off a witness — the computed label of g's image of any
+      facet wearing it. It is a label, not a tint: readouts name it, both
+      exports carry it, the diagram list splits planes a paint has made
+      different, and merge neighbors votes with it — though while the brush
+      is down the merge is set aside, because its majority vote quietly
+      outvoted fresh paint and the brush looked dead. <kbd>shift</kbd>-click
+      adds the chosen coset to what a region wears, or takes it out; a
+      region carrying several cosets — by gesture, or forced where a copy's
+      own symmetry straddles them — shows their blend and a small dot, and
+      falls to gray when mixing is off. <i>gray</i> paints no-coset
+      orbit-wide, <i>auto</i> erases orbit-wide, <i>clear</i> takes
+      everything back. Saved with the document
       (<code>display.cosetPaint</code>, keyed by the arrangement's own
       plane.facet order, no release bump); cleared when the coloring
       subgroup changes or a different arrangement is built. Painting on the
       solid comes next.
-      <span class="src">app/js/app.js · app/js/worker.js · lib/diagram.js · app/js/preset.js</span>
+      <span class="src">lib/core.js: paintOrbit · app/js/app.js · app/js/worker.js · lib/diagram.js · test/paint.mjs</span>
     </div></li>
     <li><div>
       <b>Merge neighbors: the per-facet readings get a legibility dial.</b>

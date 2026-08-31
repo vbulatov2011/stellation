@@ -170,20 +170,25 @@
           <b>Painting cosets.</b> With face colors reading <em>by subgroup
           coset, per facet</em>, the brush button opens a palette of the
           current coset colors across the top of the diagram — the same
-          colors the Colors panel edits. While it is down, a bare click gives
-          the region the chosen coset; <kbd>shift</kbd>-click adds the coset
-          to what the region already wears, or takes it back out, so a mix is
-          made and unmade by one gesture. A region wearing several cosets at
-          once shows their blend and carries a small dot — a mixed color
-          cannot announce itself, so the dot does — and falls to gray when
-          <em>mix cosets colors</em> is off, like every other shared piece.
-          <em>gray</em> paints "no coset"; <em>auto</em> is the eraser, click
-          by click, and <em>clear</em> takes all of it back at once. Painted
-          labels are part of the document — saved, restored, exported — and
-          they are labels, not just colors: the readouts name them, and merge
-          neighbors melts with them. They are cleared when the coloring
-          subgroup changes (they named its cosets) and when a different
-          arrangement is built.
+          colors the Colors panel edits. A click never paints one region: it
+          paints the region&rsquo;s every symmetric copy across the whole
+          figure, each copy taking the coset the chosen one BECOMES under
+          that symmetry — which is what color symmetry demands, and what
+          lets you paint one face solid green and watch every other face
+          come out solid in its own coset: the four-color model, made by
+          hand. <kbd>shift</kbd>-click adds the chosen coset to what the
+          region wears, or takes it back out; a region carrying several
+          cosets — by your gesture, or forced, where a copy&rsquo;s own
+          symmetry straddles cosets — shows their blend and a small dot, and
+          falls to gray when <em>mix cosets colors</em> is off. <em>gray</em>
+          paints "no coset" everywhere at once; <em>auto</em> erases a
+          region and all its copies; <em>clear</em> takes everything back.
+          While the brush is down, <em>merge neighbors</em> is set aside —
+          its regions vote by majority and would quietly outvote a fresh
+          paint — and re-melts, painted labels included, when you leave.
+          Painted labels are part of the document — saved, restored,
+          exported, named by the readouts — and are cleared when the
+          coloring subgroup changes or a different arrangement is built.
         </p>
       </article>
 
