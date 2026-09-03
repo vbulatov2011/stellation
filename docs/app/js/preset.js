@@ -57,6 +57,100 @@ export function newDocumentName(date = new Date()) {
   return PARAM_PREFIX + date2s(date);
 }
 
+// ---------------------------------------------------------------- decal layer
+
+const r4 = (v) => Math.round(v * 1e4) / 1e4;
+/** a texture is looked up under the app's own img/textures/: a bare name,
+    never a path that could climb out of it */
+const safeFile = (f) => typeof f === 'string' && !!f
+  && !f.includes('/') && !f.includes('\\') && !f.includes('..');
+
+/** the layer's dials, shared by the decal form and the one-image form */
+function layerDials(raw) {
+  return {
+    // three blends exist; anything else is the default tint
+    blend: raw.blend === 'stamp' || raw.blend === 'replace' ? raw.blend : 'tint',
+    opacity: clamp01(raw.opacity, 1),
+    colors: Array.isArray(raw.colors) ? raw.colors.filter(c => typeof c === 'string') : null,
+  };
+}
+
+/** one decal for the file: its placement, defaults absent */
+function writeDecal(d) {
+  const out = { file: d.file };
+  const num = (k, def) => {
+    const v = Number(d[k]);
+    if (Number.isFinite(v) && r4(v) !== def) out[k] = r4(v);
+  };
+  num('x', 0); num('y', 0); num('size', 1); num('angle', 0); num('z', 0);
+  num('tiltAngle', 0); num('tilt', 0); num('opacity', 1);
+  if (d.flip) out.flip = true;
+  if (d.tile) out.tile = true;
+  if (Array.isArray(d.pivot) && d.pivot.length === 2 && (r4(d.pivot[0]) || r4(d.pivot[1]))) {
+    out.pivot = [r4(d.pivot[0]), r4(d.pivot[1])];
+  }
+  return out;
+}
+
+function writeTextures(t) {
+  if (!t || !Array.isArray(t.planes)) return undefined;
+  const planes = t.planes
+    .filter(p => p && Number.isInteger(p.plane) && p.plane >= 0 && Array.isArray(p.decals))
+    .map(p => ({ plane: p.plane, decals: p.decals.filter(d => d && safeFile(d.file)).map(writeDecal) }))
+    .filter(p => p.decals.length);
+  if (!planes.length) return undefined;
+  return {
+    blend: t.blend === 'stamp' || t.blend === 'replace' ? t.blend : undefined,
+    opacity: Number.isFinite(t.opacity) && t.opacity !== 1 ? t.opacity : undefined,
+    colors: t.colors?.length ? t.colors : undefined,
+    planes,
+  };
+}
+
+/** a decal from the file: defaults filled, numbers clamped, junk dropped */
+function readDecal(raw) {
+  if (!raw || typeof raw !== 'object' || !safeFile(raw.file)) return null;
+  const num = (v, def, lo, hi) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : def);
+  const pivot = Array.isArray(raw.pivot) && raw.pivot.length === 2 && raw.pivot.every(Number.isFinite)
+    ? [num(raw.pivot[0], 0, -1, 1), num(raw.pivot[1], 0, -1, 1)] : [0, 0];
+  return {
+    file: raw.file,
+    x: num(raw.x, 0, -100, 100),
+    y: num(raw.y, 0, -100, 100),
+    size: num(raw.size, 1, 0.01, 100),
+    angle: num(raw.angle, 0, -1e6, 1e6),
+    flip: raw.flip === true,
+    z: Math.round(num(raw.z, 0, -1000, 1000)),
+    tiltAngle: num(raw.tiltAngle, 0, -1e6, 1e6),
+    tilt: num(raw.tilt, 0, 0, 10),
+    tile: raw.tile === true,
+    opacity: clamp01(raw.opacity, 1),
+    pivot,
+  };
+}
+
+function readTextures(display) {
+  const raw = display?.textures;
+  if (raw && typeof raw === 'object' && Array.isArray(raw.planes)) {
+    const planes = [];
+    for (const pl of raw.planes.slice(0, 256)) {
+      if (!pl || typeof pl !== 'object' || !Number.isInteger(pl.plane) || pl.plane < 0
+          || !Array.isArray(pl.decals)) continue;
+      const decals = pl.decals.slice(0, 64).map(readDecal).filter(Boolean);
+      if (decals.length) planes.push({ plane: pl.plane, decals });
+    }
+    return planes.length ? { ...layerDials(raw), planes } : null;
+  }
+  // the one-image form: the same picture on every plane orbit
+  const legacy = display?.texture;
+  if (legacy && typeof legacy === 'object' && safeFile(legacy.file)) {
+    const scale = Number.isFinite(legacy.scale) && legacy.scale > 0
+      ? Math.min(100, Math.max(0.01, legacy.scale)) : 1;
+    return { ...layerDials(legacy), legacy: { file: legacy.file, scale, tile: legacy.tile !== false } };
+  }
+  return null;
+}
+
 /**
  * Everything needed to rebuild what is on screen. Only inputs go in `params` —
  * vertex counts and volumes are derived, so they would only ever go stale.
@@ -66,7 +160,7 @@ export function writePreset({
   planeDepth, cells, cellsIndexing = null, diagramFace,
   showEdges = true, showAllFacets = true, colorMode = 'layer',
   cosetSub = null, cosetPlanes = null, colorMerge = null, cosetPaint = null,
-  texture = null,
+  texture = null, textures = null,
   faceOpacity = 1, edges = null, colors = null,
   view = null, planeRows = null, centralPlanes = false,
   exportLengthUnit = 0.01,
@@ -166,6 +260,19 @@ export function writePreset({
                        tile: texture.tile === false ? false : undefined,
                        colors: texture.colors?.length ? texture.colors : undefined }
                    : undefined,
+                 /*
+                  * `textures` is the decal layer that replaced the one image:
+                  * per plane orbit (named by its representative plane under
+                  * the document's stellation symmetry), the images placed on
+                  * it — file, position and size in face widths, angle, mirror,
+                  * stack level, tilt, tiling, opacity, pivot — each replicated
+                  * by the symmetry. The layer's own dials ride beside them as
+                  * they did on `texture`. Placement defaults are absent, so an
+                  * image at the face's center writes little more than its
+                  * name. No release bump: a reader without it draws plain
+                  * colors, and a document with no images writes nothing.
+                  */
+                 textures: writeTextures(textures),
                  faceOpacity, edges, colors: colors?.length ? colors : undefined },
       camera: view ? { view } : undefined,
       /*
@@ -407,6 +514,9 @@ export function readPreset(doc) {
           ? raw.colors.filter(c => typeof c === 'string') : null,
       };
     })(),
+    // the decal layer — or the one-image form of older documents, marked
+    // `legacy` for the app to lay on every plane orbit
+    textures: readTextures(p.display),
     cosetPlanes: Array.isArray(p.display?.cosetPlanes)
         && p.display.cosetPlanes.every(Number.isInteger)
       ? p.display.cosetPlanes : null,

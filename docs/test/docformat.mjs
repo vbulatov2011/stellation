@@ -378,5 +378,73 @@ const base = {
   ok(readPreset(doc).cosetPlanes === null, 'a stray string reads as absent');
 }
 
+/*
+ * The decal layer that replaced the one image: per plane orbit, the images
+ * placed on it and their placements, with the layer's dials beside them.
+ * Defaults are absent, junk is dropped or clamped, and the one-image form
+ * of older documents reads as a `legacy` layer for every orbit.
+ */
+{
+  const placed = { file: 'arrow_white.png', x: 0.25, y: -0.1, size: 0.5, angle: 30, flip: true,
+                   z: 1, tiltAngle: 90, tilt: 0.5, tile: false, opacity: 1, pivot: [0, 0] };
+  const plain = { file: 'checker.png', x: 0, y: 0, size: 1, angle: 0, flip: false,
+                  z: 0, tiltAngle: 0, tilt: 0, tile: true, opacity: 1, pivot: [0.5, 0] };
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}',
+    textures: { blend: 'stamp', opacity: 0.8, colors: ['#ff0000ff'],
+                planes: [{ plane: 0, decals: [placed] }, { plane: 3, decals: [plain] }] } }));
+  ok(doc.appInfo.fileFormatRelease === 1, 'decals do not bump the release');
+  const t = doc.params.display.textures;
+  ok(t && t.blend === 'stamp' && t.opacity === 0.8 && t.colors.length === 1 && t.planes.length === 2,
+     'the layer dials and both planes are written');
+  const w = t.planes[0].decals[0];
+  ok(w.file === 'arrow_white.png' && w.x === 0.25 && w.y === -0.1 && w.size === 0.5 && w.angle === 30
+     && w.flip === true && w.z === 1 && w.tiltAngle === 90 && w.tilt === 0.5
+     && w.tile === undefined && w.opacity === undefined && w.pivot === undefined,
+     'a placed decal writes its placement, defaults absent');
+  const p = t.planes[1].decals[0];
+  ok(Object.keys(p).sort().join() === 'file,pivot,tile' && p.tile === true && p.pivot[0] === 0.5,
+     'an unplaced tiled decal writes only its file, tiling and pivot');
+  ok(doc.params.display.texture === undefined, 'the one-image field is not written beside it');
+  const read = readPreset(doc);
+  ok(read.textures.blend === 'stamp' && read.textures.opacity === 0.8
+     && read.textures.colors[0] === '#ff0000ff', 'the dials read back');
+  const rd = read.textures.planes[0].decals[0];
+  ok(read.textures.planes[0].plane === 0 && rd.x === 0.25 && rd.y === -0.1 && rd.size === 0.5
+     && rd.angle === 30 && rd.flip === true && rd.z === 1 && rd.tiltAngle === 90 && rd.tilt === 0.5
+     && rd.tile === false && rd.opacity === 1, 'and the placement reads back exactly');
+  const rp = read.textures.planes[1].decals[0];
+  ok(rp.x === 0 && rp.size === 1 && rp.flip === false && rp.tile === true
+     && rp.pivot[0] === 0.5 && rp.pivot[1] === 0, 'absent fields read as the defaults');
+  ok(read.texture === null, 'the decal form does not masquerade as the one-image form');
+}
+{
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}' }));
+  ok(doc.params.display.textures === undefined && readPreset(doc).textures === null,
+     'no decals, no field, and none read');
+  doc.params.display.textures = { planes: [
+    { plane: 2, decals: [{ file: '../../secret.png' },
+                         { file: 'dots.png', size: 'huge', x: 1e9, tilt: -3, z: 2.7 }, 'junk', null] },
+    { plane: -1, decals: [{ file: 'dots.png' }] }, 'junk' ] };
+  const r = readPreset(doc).textures;
+  ok(r && r.planes.length === 1 && r.planes[0].decals.length === 1,
+     'path-walking files, junk decals and negative planes are dropped');
+  const d = r.planes[0].decals[0];
+  ok(d.size === 1 && d.x === 100 && d.tilt === 0 && d.z === 3,
+     'junk numbers fall to defaults or clamp, the stack rounds');
+  ok(r.blend === 'tint' && r.opacity === 1 && r.colors === null, 'missing dials read as defaults');
+  const empty = JSON.parse(writePreset({ ...base, cells: '{0}',
+    textures: { planes: [{ plane: 0, decals: [{ file: 'no/way.png' }] }] } }));
+  ok(empty.params.display.textures === undefined, 'a layer with nothing writable writes no field');
+}
+{
+  // a document from before per-plane decals: one image, everywhere
+  const doc = JSON.parse(writePreset({ ...base, cells: '{0}',
+    texture: { file: 'checker.png', scale: 2, blend: 'replace', opacity: 0.5, tile: false } }));
+  const r = readPreset(doc).textures;
+  ok(r && r.legacy && r.legacy.file === 'checker.png' && r.legacy.scale === 2
+     && r.legacy.tile === false && r.blend === 'replace' && r.opacity === 0.5,
+     'the one-image form reads as a legacy layer with its dials');
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

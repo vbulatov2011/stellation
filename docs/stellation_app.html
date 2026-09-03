@@ -346,15 +346,40 @@
           <input id="colorMergeK" type="number" min="1" step="1" value="1">
           <span class="dim" id="colorMergeInfo"></span>
         </label>
-        <label class="field" id="texRow" title="Lay one image over every face of the solid, replicated by the polyhedron's symmetry — each face wears an exact symmetric copy, centered on the face, mirrored where the symmetry is a reflection. The image is multiplied under the face colors, so whatever coloring is chosen tints it: with cosets, each coset colorizes the same picture its own way. Images live in img/textures/.">
-          <span>texture</span>
+        <label class="field" id="texRow" title="The image on this plane — the plane class the diagram shows. It is placed once, and the stellation symmetry does the rest: the face wears as many copies as it has symmetries, mirrored where a symmetry is a reflection, and every plane of the class wears the same picture. Where copies overlap, the stack and tilt below decide which lies on top. Images live in img/textures/.">
+          <span>image</span>
           <select id="texSelect"><option value="">none</option></select>
         </label>
-        <label class="field" id="texScaleRow" hidden title="The size of one texture tile, in face widths: 1 spans the original face once, smaller repeats it more densely, larger blows it up. The image repeats outward over the star's wings either way.">
-          <span>scale</span>
-          <input id="texScale" type="number" min="0.05" step="0.25" value="1">
+        <label class="field" id="texWhichRow" hidden title="Several images lie on this plane — a change of symmetry can turn the copies of one image into several — and the controls below edit the one chosen here.">
+          <span>which</span>
+          <select id="texWhich"></select>
         </label>
-        <label class="field" id="texBlendRow" hidden title="How the image meets the face colors. Tint multiplies them: white shows the face color pure, dark ink shades it, and a transparent background leaves the color untouched — the coloring stays in charge. Stamp lays the image over the face in its own colors, transparency showing the face through — a white glyph stays white. Replace makes the image the face itself: where it is transparent there is no face at all, and the glyphs float in the air. Semi-transparent pixels blend by their alpha in every mode.">
+        <label class="field" id="texScaleRow" hidden title="The width of the image in face widths: 1 spans the original face once.">
+          <span>size</span>
+          <input id="texScale" type="number" min="0.01" step="0.1" value="1">
+        </label>
+        <label class="field" id="texPosRow" hidden title="Where the image's center lies, in face widths from the face's center, along the diagram's axes.">
+          <span>position</span>
+          <input id="texX" type="number" step="0.05" value="0">
+          <input id="texY" type="number" step="0.05" value="0">
+        </label>
+        <label class="field" id="texAngleRow" hidden title="The image's turn about its center, in degrees, counterclockwise in the diagram.">
+          <span>angle</span>
+          <input id="texAngle" type="number" step="5" value="0">
+        </label>
+        <label class="field" id="texDepthRow" hidden title="Where images overlap, the higher stack lies on top. The copies of ONE image share its stack, so among themselves only the tilt can decide — with no tilt they blend evenly, as coset colors do.">
+          <span>stack</span>
+          <input id="texZ" type="number" step="1" value="0">
+        </label>
+        <label class="field" id="texTiltRow" hidden title="A tilt in the image's own frame: how steeply the image rises toward one of its edges, and in which direction (degrees; 0 lifts its right edge, 90 its top). Tilted copies weave over and under one another where they overlap — each passes over one neighbor and under the next — instead of blending. 0 is flat.">
+          <span>tilt</span>
+          <input id="texTilt" type="number" min="0" max="10" step="0.1" value="0">
+          <input id="texTiltAngle" type="number" step="15" value="0">
+        </label>
+        <label class="check" id="texFlipRow" hidden title="Mirror the image. Under a symmetry with reflections the mirror image is on the face anyway; this says which of the two you placed."><input id="texFlip" type="checkbox"> mirror the image</label>
+        <label class="check" id="texTileRow" hidden title="On, the image repeats endlessly over the plane from where it is placed — right for patterns. Off, it exists exactly once per copy and beyond its edge there is nothing — right for a glyph or emblem."><input id="texTile" type="checkbox"> tile the image</label>
+        <div class="field" id="texResetRow" hidden><span></span><button id="texReset" type="button" title="Put the image back at the face's center, upright and unmirrored.">center the image</button></div>
+        <label class="field" id="texBlendRow" hidden title="How the images meet the face colors. Tint multiplies them: white shows the face color pure, dark ink shades it, and a transparent background leaves the color untouched — the coloring stays in charge. Stamp lays the image over the face in its own colors, transparency showing the face through — a white glyph stays white. Replace makes the image the face itself: where it is transparent there is no face at all, and the glyphs float in the air. Semi-transparent pixels blend by their alpha in every mode.">
           <span>blend</span>
           <select id="texBlend">
             <option value="tint">tint — multiply the face colors</option>
@@ -362,11 +387,10 @@
             <option value="replace">replace — be the face</option>
           </select>
         </label>
-        <label class="field" id="texOpacityRow" hidden title="The texture layer's own opacity, independent of the faces': at 0 the image is gone and the plain coloring stands; in replace blend this fades the floating glyphs themselves.">
+        <label class="field" id="texOpacityRow" hidden title="The texture layer's own opacity, independent of the faces': at 0 the images are gone and the plain coloring stands; in replace blend this fades the floating glyphs themselves.">
           <span>opacity</span>
           <input id="texOpacity" type="number" min="0" max="100" step="5" value="100">
         </label>
-        <label class="check" id="texTileRow" hidden title="On, the image repeats endlessly over the star's wings — right for patterns. Off, it exists exactly once per face, centered, and beyond its edge there is nothing — right for a glyph or emblem, and in the replace blend it leaves one floating figure per face."><input id="texTile" type="checkbox" checked> tile the image</label>
         <!-- The composed value, and the one everything else reads: the two
              menus above are a way of choosing it, not a second source of
              truth. Kept as a real select so a document, a stored preference

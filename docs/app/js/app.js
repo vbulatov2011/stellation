@@ -35,7 +35,8 @@ const $$ = sel => [...document.querySelectorAll(sel)];
  * happening; this makes it checkable when it does.
  */
 import { BUILD } from './build.js';
-import { decalCopies, makeDecal } from '../../lib/decals.js';
+import { decalCopies, makeDecal, transportDecals, decalToLocal, localToDecal,
+  diagramToChart, AFF_ID } from '../../lib/decals.js';
 export { BUILD };
 
 const state = {
@@ -186,6 +187,7 @@ let docLinkHash = null;
  */
 let pendingColors = null;
 let pendingTexColors = null;       // the texture-ink palette, parked the same way
+let pendingTextures = null;        // a document's decal layer, parked until its orbits exist
 let colorsDialog = null;
 let catalogWin = null;
 let planesWin = null;
@@ -1195,6 +1197,10 @@ async function select(item, opts = {}) {
    */
   state.centralPlanes = !!opts.centralPlanes || !!item.central;
   state.current = item;
+  // decals name plane orbits of the solid they were placed on; a document
+  // brings its own, parked in pendingTextures until that solid is built
+  state.decals = new Map();
+  texWhich = 0;
   state.polySym = opts.polySym || item.symmetry || 'Ih';
   state.stellSym = opts.stellSym || defaultStellSym(state.polySym);
 
@@ -1564,30 +1570,163 @@ function syncMergeInfo() {
 }
 
 /*
- * Face texture: one image laid over every face of the solid, replicated by
- * the polyhedron's symmetry — the worker ships one chart per plane,
- * transported over each plane orbit, and the renderer multiplies the sampled
- * image under whatever color the face already wears. So the coset colorings
- * tint one picture per coset, the shell coloring tints it per shell, and
- * "none" is exactly the flat coloring there has always been. The chosen
- * file and scale are the document's (display.texture); the images
- * themselves live in img/textures/, listed by its index.json.
+ * The texture layer: images placed on the solid's plane orbits and
+ * replicated by the stellation symmetry — decals (lib/decals.js). The worker
+ * ships the orbits with their charts and stabilizers; the app keeps the
+ * placements in state.decals, keyed by orbit representative, and hands the
+ * renderer the copies they make; the renderer samples the images through
+ * them and folds the result under whatever color the face already wears.
+ * The panel edits the decals of ONE plane class — the one the diagram
+ * shows — in the diagram's own frame, so its numbers match the picture;
+ * the document carries them all (display.textures). The images live in
+ * img/textures/, listed by its index.json.
  */
-const texBitmaps = new Map();       // file -> ImageBitmap, fetched once
+const texBitmaps = new Map();       // file -> canvas, fetched once (null: unloadable)
+let texWhich = 0;                   // which of the plane's decals the panel edits
 
-function texScaleValue() {
-  const v = Number($('#texScale')?.value);
-  return Number.isFinite(v) && v > 0 ? Math.min(100, Math.max(0.05, v)) : 1;
+const round3 = (v) => Math.round(v * 1000) / 1000;
+
+/** the image's width over its height, 1 until it is loaded */
+function aspectOf(file) {
+  const im = texBitmaps.get(file);
+  return im ? im.width / Math.max(1, im.height) : 1;
 }
 
-function syncTexRows() {
-  const off = !$('#texSelect')?.value;
-  for (const id of ['#texScaleRow', '#texBlendRow', '#texOpacityRow', '#texTileRow']) {
+/** the diagram's plane: its orbit, and the map from diagram coordinates into
+    the orbit's chart — or null before anything is built */
+function texContext() {
+  const orbits = state.mesh?.texOrbits;
+  if (!orbits || !orbits.orbits.length) return null;
+  const orbit = orbits.orbits[orbits.orbitOf[state.planeIndex]];
+  if (!orbit) return null;
+  const chart = orbits.charts[state.planeIndex];
+  const B = state.diagramFrame && chart ? diagramToChart(state.diagramFrame, chart) : AFF_ID;
+  return { orbits, orbit, B };
+}
+
+/** the decal the panel edits, on the diagram's plane */
+function activeDecal(ctx) {
+  const list = state.decals.get(ctx.orbit.rep) || [];
+  if (!list.length) return null;
+  texWhich = Math.min(texWhich, list.length - 1);
+  return list[texWhich];
+}
+
+/** the active decal read in the diagram's frame — what the panel shows */
+function activeLocal() {
+  const ctx = texContext();
+  const d = ctx && activeDecal(ctx);
+  return d ? decalToLocal(d, ctx.B, ctx.orbit.s, aspectOf(d.file)) : null;
+}
+
+/** an edit made in the diagram's frame, written back into the decal */
+function setActiveLocal(patch) {
+  const ctx = texContext();
+  const d = ctx && activeDecal(ctx);
+  if (!d) return;
+  const aspect = aspectOf(d.file);
+  const local = { ...decalToLocal(d, ctx.B, ctx.orbit.s, aspect), ...patch };
+  const list = state.decals.get(ctx.orbit.rep);
+  list[texWhich] = makeDecal(localToDecal(local, ctx.B, ctx.orbit.s, aspect));
+  touch();
+  syncTexPanel();
+  syncTextures().catch(texFail);
+}
+
+const texFail = (err) => setStatus('texture failed: ' + (err && err.message || err), false);
+
+/** the panel, from the diagram's plane: its image, its placement, which
+    rows apply — the layer dials show while any plane carries an image */
+function syncTexPanel() {
+  const ctx = texContext();
+  const list = ctx ? (state.decals.get(ctx.orbit.rep) || []) : [];
+  const d = ctx ? activeDecal(ctx) : null;
+  const local = d ? decalToLocal(d, ctx.B, ctx.orbit.s, aspectOf(d.file)) : null;
+  setTextureChoice(d ? d.file : '');
+  const which = $('#texWhich');
+  if (which) {
+    which.replaceChildren(...list.map((x, i) => {
+      const o = document.createElement('option');
+      o.value = String(i);
+      o.textContent = `${i + 1} · ${x.file.replace(/\.\w+$/, '')}`;
+      return o;
+    }));
+    which.value = String(texWhich);
+  }
+  // a field being typed into keeps the user's text
+  const set = (id, v) => { const el = $(id); if (el && document.activeElement !== el) el.value = String(v); };
+  if (local) {
+    set('#texScale', round3(local.size));
+    set('#texX', round3(local.x));
+    set('#texY', round3(local.y));
+    set('#texAngle', round3(local.angle));
+    set('#texZ', local.z);
+    set('#texTilt', round3(local.tilt));
+    set('#texTiltAngle', round3(local.tiltAngle));
+    if ($('#texFlip')) $('#texFlip').checked = !!local.flip;
+    if ($('#texTile')) $('#texTile').checked = !!local.tile;
+  }
+  const off = !d;
+  for (const id of ['#texScaleRow', '#texPosRow', '#texAngleRow', '#texDepthRow', '#texTiltRow',
+                    '#texFlipRow', '#texTileRow', '#texResetRow']) {
     const row = $(id);
     if (row) row.hidden = off;
   }
+  if ($('#texWhichRow')) $('#texWhichRow').hidden = list.length < 2;
+  const none = off && !state.decals.size;
+  for (const id of ['#texBlendRow', '#texOpacityRow']) {
+    const row = $(id);
+    if (row) row.hidden = none;
+  }
   // the Colors panel offers its "texture ink" palette only while one is armed
   colorsDialog?.refresh();
+}
+
+/**
+ * A document's decal layer, once the orbits it names exist: the parked
+ * placements land (a legacy one-image layer goes on every orbit), and
+ * anything naming an orbit this arrangement lacks is dropped.
+ */
+function settleDecals(orbits) {
+  if (!orbits) return;
+  if (pendingTextures) {
+    const t = pendingTextures;
+    pendingTextures = null;
+    state.decals = new Map();
+    if (t.legacy) {
+      for (const o of orbits.orbits) {
+        state.decals.set(o.rep, [makeDecal({ file: t.legacy.file, size: t.legacy.scale, tile: t.legacy.tile })]);
+      }
+    } else {
+      for (const pl of t.planes) {
+        const o = orbits.orbits[orbits.orbitOf[pl.plane]];
+        if (!o) continue;
+        const list = state.decals.get(o.rep) || [];
+        list.push(...pl.decals.map(d => makeDecal(d)));
+        state.decals.set(o.rep, list);
+      }
+    }
+    texWhich = 0;
+  }
+  for (const k of [...state.decals.keys()]) {
+    if (!orbits.orbits.some(o => o.rep === k)) state.decals.delete(k);
+  }
+}
+
+/** the decal layer as the document carries it, null when there is none */
+function texturesForDocument() {
+  const planes = [];
+  for (const [rep, list] of [...state.decals].sort((a, b) => a[0] - b[0])) {
+    if (list.length) planes.push({ plane: rep, decals: list });
+  }
+  if (!planes.length) return null;
+  const mode = $('#colorMode').value;
+  return {
+    planes,
+    blend: ['stamp', 'replace'].includes($('#texBlend').value) ? $('#texBlend').value : null,
+    opacity: texOpacityValue(),
+    colors: hasColorOverrides('tex.' + mode) ? colorsArray(state.mesh, 'tex.' + mode) : null,
+  };
 }
 
 /** 0..1, from the texture opacity field's 0..100 */
@@ -1676,24 +1815,11 @@ async function loadTextureImage(file) {
   return cv;
 }
 
-/** the decals the panel's one choice makes: the same image, size and tiling
-    on every plane orbit, centered on the pole — "none" is an empty map */
-function decalsFromControls() {
-  const orbits = state.mesh?.texOrbits?.orbits;
-  const file = $('#texSelect')?.value || '';
-  const map = new Map();
-  if (!orbits || !file) return map;
-  const size = texScaleValue(), tile = $('#texTile')?.checked !== false;
-  for (const o of orbits) map.set(o.rep, [makeDecal({ file, size, tile })]);
-  return map;
-}
-
-/** put the panel's choice on the solid: the blend dials, then the decals */
+/** the layer's dials onto the renderer, then whatever decals there are */
 async function applyTexture() {
   if (!renderer) return;
   renderer.texMode = TEX_MODES[$('#texBlend')?.value] ?? 0;
   renderer.texAlpha = texOpacityValue();
-  state.decals = decalsFromControls();
   await syncTextures();
 }
 
@@ -2401,6 +2527,13 @@ async function changeStellSym() {
     fillFaceSelect(info.faces);
     refreshElements();
     renderLegend();
+    // the decals go across losslessly: every copy they made stays on the
+    // solid, as more decals under a smaller group or fewer under a larger
+    if (info.texOrbits && state.mesh?.texOrbits && state.decals.size) {
+      state.decals = transportDecals(state.mesh.texOrbits, info.texOrbits, state.decals,
+        f => ({ aspect: aspectOf(f) }));
+      texWhich = 0;
+    }
     state.building = false;
     // the coset coloring is a property of the polyhedron group, and a
     // stellation-symmetry change is editing — nothing to recolor here
@@ -2451,12 +2584,14 @@ async function refresh() {
     if (mark) mark.hidden = !hasColorOverrides($('#colorMode').value)
       && !hasColorOverrides('tex.' + $('#colorMode').value);
   }
-  // the decals, on the orbits this mesh came with
-  applyTexture().catch(err =>
-    setStatus('texture failed: ' + (err && err.message || err), false));
   diagram.setData(dia);
   state.diagramFrame = dia?.frame || null;
   refreshDiagramOverlay();
+  // the decals, on the orbits this mesh came with — and the panel, in the
+  // frame of the diagram just shown
+  settleDecals(mesh.texOrbits);
+  applyTexture().catch(texFail);
+  syncTexPanel();
   cells.setSelected(state.selected);
   colorsDialog?.refresh();
 
@@ -2652,7 +2787,7 @@ function wireControls() {
     setDepth(Math.max(2, Math.min(NO_LIMIT, Math.round(n))), false);
   };
   $('#depth').onchange = () => { touch(); build(); };
-  $('#planeIndex').onchange = (e) => { state.planeIndex = Number(e.target.value) || 0; refresh(); };
+  $('#planeIndex').onchange = (e) => { state.planeIndex = Number(e.target.value) || 0; texWhich = 0; refresh(); };
 
   $('#selectCore').onclick = async () => {
     const { keys } = await call('layerKeys', { n: 1 });
@@ -2716,18 +2851,44 @@ function wireControls() {
     setStatus('merge neighbors failed: ' + (err && err.message || err), false));
   $('#colorMerge').onchange = () => { syncMergeRow(); mergeRefresh(); };
   $('#colorMergeK').onchange = () => { mergeRefresh(); };
+  /*
+   * The image menu edits the diagram's plane: a file replaces the active
+   * decal's image, or starts one at the face's center when the plane has
+   * none; "none" removes the active decal. Everything else in the panel is
+   * a field of that decal, read and written in the diagram's frame.
+   */
   $('#texSelect').onchange = () => {
-    syncTexRows();
+    const ctx = texContext();
+    if (!ctx) return;
+    const file = $('#texSelect').value;
+    const list = state.decals.get(ctx.orbit.rep) || [];
+    const at = Math.min(texWhich, Math.max(0, list.length - 1));
+    if (!file) { if (list.length) list.splice(at, 1); texWhich = 0; }
+    else if (list.length) list[at] = makeDecal({ ...list[at], file });
+    else { list.push(makeDecal({ file, tile: $('#texTile').checked })); texWhich = 0; }
+    if (list.length) state.decals.set(ctx.orbit.rep, list);
+    else state.decals.delete(ctx.orbit.rep);
     touch();
-    applyTexture().catch(err =>
-      setStatus('texture failed: ' + (err && err.message || err), false));
+    syncTexPanel();
+    syncTextures().catch(texFail);
   };
-  $('#texScale').onchange = () => {
-    touch();
-    // the image and the geometry are untouched; only the copy tables move
-    applyTexture().catch(err =>
-      setStatus('texture failed: ' + (err && err.message || err), false));
+  $('#texWhich').onchange = () => { texWhich = Number($('#texWhich').value) || 0; syncTexPanel(); };
+  const decalField = (id, key, parse) => {
+    $(id).onchange = () => {
+      const v = parse(Number($(id).value));
+      if (Number.isFinite(v)) setActiveLocal({ [key]: v });
+      else syncTexPanel();
+    };
   };
+  decalField('#texScale', 'size', v => Math.min(100, Math.max(0.01, v)));
+  decalField('#texX', 'x', v => v);
+  decalField('#texY', 'y', v => v);
+  decalField('#texAngle', 'angle', v => v);
+  decalField('#texZ', 'z', v => Math.round(v));
+  decalField('#texTilt', 'tilt', v => Math.min(10, Math.max(0, v)));
+  decalField('#texTiltAngle', 'tiltAngle', v => v);
+  $('#texFlip').onchange = () => setActiveLocal({ flip: $('#texFlip').checked });
+  $('#texReset').onclick = () => setActiveLocal({ x: 0, y: 0, angle: 0, flip: false });
   $('#texBlend').onchange = () => {
     touch();
     // a uniform, nothing else: the geometry, uv and image all stand
@@ -2737,11 +2898,7 @@ function wireControls() {
     touch();
     if (renderer) { renderer.texAlpha = texOpacityValue(); renderer.draw(); }
   };
-  $('#texTile').onchange = () => {
-    touch();
-    applyTexture().catch(err =>
-      setStatus('texture failed: ' + (err && err.message || err), false));
-  };
+  $('#texTile').onchange = () => setActiveLocal({ tile: $('#texTile').checked });
   fillTextureSelect().catch(() => {});
   $('#colorMix').onchange = (e) => {
     setBlendMixing(e.target.checked);
@@ -3241,6 +3398,8 @@ async function buildCustomPlanes(planeRows) {
   // plane-sheet DOCUMENT gets its own back through keepLink afterwards
   docLinkHash = null;
   state.current = { file: 'custom', name: `custom planes (${rows.length} rows → ${expanded.length})`, symmetry: null };
+  state.decals = new Map();          // a new sheet of planes: the old orbits are gone
+  texWhich = 0;
   syncSymmetrySelects();
   const ok = await build();
   if (!ok) {
@@ -3349,17 +3508,9 @@ function currentPresetText(docName) {
     cosetPaint: state.paint.size
       ? Object.fromEntries([...state.paint].sort((a, b) => (a[0] < b[0] ? -1 : 1)))
       : null,
-    // the face image: tile size, how it meets the colors, its own opacity,
-    // and the ink palette — the texture's per-group colors, when edited
-    texture: $('#texSelect').value
-      ? { file: $('#texSelect').value, scale: texScaleValue(),
-          blend: ['stamp', 'replace'].includes($('#texBlend').value)
-            ? $('#texBlend').value : null,
-          opacity: texOpacityValue(),
-          tile: $('#texTile').checked,
-          colors: hasColorOverrides('tex.' + $('#colorMode').value)
-            ? colorsArray(state.mesh, 'tex.' + $('#colorMode').value) : null }
-      : null,
+    // the decal layer: every plane's images and placements, how the layer
+    // meets the colors, its own opacity, and the ink palette when edited
+    textures: texturesForDocument(),
     faceOpacity: solidFaceOpacity(),
     view: renderer?.getView() || null,
     planeRows: state.customPlanes ? state.planeRows : null,
@@ -3757,18 +3908,19 @@ function applyDisplaySettings(doc) {
    * arrangement builds — whichever finishes first, the other completes the
    * picture.
    */
-  setTextureChoice(doc.texture ? doc.texture.file : '');
-  $('#texScale').value = String(doc.texture?.scale ?? 1);
-  $('#texBlend').value = ['stamp', 'replace'].includes(doc.texture?.blend)
-    ? doc.texture.blend : 'tint';
-  $('#texOpacity').value = String(Math.round((doc.texture?.opacity ?? 1) * 100));
-  $('#texTile').checked = doc.texture?.tile !== false;
+  const tex = doc.textures;
+  $('#texBlend').value = ['stamp', 'replace'].includes(tex?.blend) ? tex.blend : 'tint';
+  $('#texOpacity').value = String(Math.round((tex?.opacity ?? 1) * 100));
+  // the decals are parked like the palette: they name plane orbits of the
+  // figure about to be built, and land in refresh once it exists
+  pendingTextures = tex && (tex.planes || tex.legacy) ? tex : null;
+  state.decals = new Map();
+  texWhich = 0;
   // the ink palette is parked like the face palette: it lines up with the
   // groups of the mesh about to be built, not whatever is on screen now
-  pendingTexColors = doc.texture?.colors?.length ? doc.texture.colors.slice() : null;
-  syncTexRows();
-  applyTexture().catch(err =>
-    setStatus('texture failed: ' + (err && err.message || err), false));
+  pendingTexColors = tex?.colors?.length ? tex.colors.slice() : null;
+  syncTexPanel();
+  applyTexture().catch(texFail);
   // the painted labels, parked like the palette: they apply to the built
   // figure, and the build about to happen wipes the worker's slate anyway
   pendingPaint = doc.cosetPaint ? Object.entries(doc.cosetPaint) : null;
