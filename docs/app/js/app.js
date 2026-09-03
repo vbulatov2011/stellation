@@ -36,7 +36,8 @@ const $$ = sel => [...document.querySelectorAll(sel)];
  */
 import { BUILD } from './build.js';
 import { decalCopies, makeDecal, transportDecals, decalToLocal, localToDecal,
-  diagramToChart, AFF_ID } from '../../lib/decals.js';
+  diagramToChart, decalTransform, decomposeTransform, stabAffine,
+  affMul, affInv, affClose, AFF_ID } from '../../lib/decals.js';
 export { BUILD };
 
 const state = {
@@ -44,8 +45,10 @@ const state = {
   current: null,
   polySym: 'Ih', stellSym: 'I',
   // the texture layer: plane-orbit representative -> its decals, under the
-  // stellation grouping on screen (lib/decals.js)
+  // stellation grouping on screen (lib/decals.js), and whether the diagram
+  // shows their placement handles
   decals: new Map(),
+  placing: false,
   depth: 20,
   depthAuto: true,          // until the user moves the slider
   outline: null,
@@ -1630,7 +1633,76 @@ function setActiveLocal(patch) {
   list[texWhich] = makeDecal(localToDecal(local, ctx.B, ctx.orbit.s, aspect));
   touch();
   syncTexPanel();
+  syncRig();
   syncTextures().catch(texFail);
+}
+
+/*
+ * The placement rig in the diagram (lib/decalrig.js): every copy of every
+ * decal on the diagram's plane as a map from image space into diagram
+ * coordinates, with the stabilizer element that made it carried along in
+ * the same frame — so a gesture on ANY copy writes back to the decal
+ * through that element's inverse.
+ */
+function syncRig() {
+  if (!diagram) return;
+  const ctx = state.placing ? texContext() : null;
+  const list = ctx ? (state.decals.get(ctx.orbit.rep) || []) : [];
+  const d = ctx && list.length ? activeDecal(ctx) : null;
+  if (!d) { diagram.setRig(null); return; }
+  const Binv = affInv(ctx.B);
+  const copies = [];
+  list.forEach((decal, di) => {
+    const T = decalTransform(decal, ctx.orbit.s, aspectOf(decal.file));
+    for (const S of ctx.orbit.stab) {
+      const Sa = stabAffine(S);
+      copies.push({
+        C: affMul(Binv, affMul(Sa, T)),
+        S: affMul(Binv, affMul(Sa, ctx.B)),
+        decal: di,
+        primary: affClose(Sa, AFF_ID),
+      });
+    }
+  });
+  diagram.setRig({ copies, active: texWhich, aspect: aspectOf(d.file),
+                   pivot: d.pivot, tilt: d.tilt, tiltAngle: d.tiltAngle });
+}
+
+/** a gesture's step from the diagram: the grabbed copy's new map, a new
+    pivot or tilt, or another decal chosen — written back to the decal */
+function onRigChange(upd) {
+  if (upd.select != null) {
+    texWhich = upd.select;
+    syncTexPanel();
+    syncRig();
+    return;
+  }
+  const ctx = texContext();
+  const d = ctx && activeDecal(ctx);
+  if (!d) return;
+  const patch = {};
+  if (upd.C) {
+    // the decal's own map, in the diagram's frame, is the copy's map
+    // undone by its stabilizer element
+    const p = decomposeTransform(affMul(affInv(upd.copy.S), upd.C), ctx.orbit.s, aspectOf(d.file));
+    Object.assign(patch, { x: p.x, y: p.y, size: p.size, angle: p.angle, flip: p.flip });
+  }
+  if (upd.pivot) patch.pivot = upd.pivot;
+  if (upd.tilt != null) { patch.tilt = upd.tilt; patch.tiltAngle = upd.tiltAngle; }
+  setActiveLocal(patch);
+}
+
+/** the placement handles in the diagram, on or off */
+function setPlaceMode(on) {
+  state.placing = !!on;
+  $('#texPlace')?.setAttribute('aria-pressed', state.placing ? 'true' : 'false');
+  if (diagram) {
+    diagram.placing = state.placing;
+    diagram.onRigChange = onRigChange;
+    diagram.onRigEnd = () => syncRig();
+  }
+  syncRig();
+  diagram?.draw();
 }
 
 const texFail = (err) => setStatus('texture failed: ' + (err && err.message || err), false);
@@ -2592,6 +2664,7 @@ async function refresh() {
   settleDecals(mesh.texOrbits);
   applyTexture().catch(texFail);
   syncTexPanel();
+  syncRig();
   cells.setSelected(state.selected);
   colorsDialog?.refresh();
 
@@ -2870,9 +2943,24 @@ function wireControls() {
     else state.decals.delete(ctx.orbit.rep);
     touch();
     syncTexPanel();
+    syncRig();
     syncTextures().catch(texFail);
   };
-  $('#texWhich').onchange = () => { texWhich = Number($('#texWhich').value) || 0; syncTexPanel(); };
+  $('#texWhich').onchange = () => { texWhich = Number($('#texWhich').value) || 0; syncTexPanel(); syncRig(); };
+  $('#texPlace').onclick = () => setPlaceMode(!state.placing);
+  // the arrow keys nudge the active decal while placing, a hundredth of a
+  // face width at a time, a tenth with shift — unless a field has the keys
+  document.addEventListener('keydown', (e) => {
+    if (!state.placing) return;
+    if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || '')) return;
+    const step = e.shiftKey ? 0.1 : 0.01;
+    const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[e.key];
+    if (!d) return;
+    const l = activeLocal();
+    if (!l) return;
+    e.preventDefault();
+    setActiveLocal({ x: l.x + d[0], y: l.y + d[1] });
+  });
   const decalField = (id, key, parse) => {
     $(id).onchange = () => {
       const v = parse(Number($(id).value));

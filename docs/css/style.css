@@ -1244,3 +1244,6 @@ button[aria-pressed="true"].win-btn { color: var(--accent); border-color: var(--
 .paint-sw.sel, .paint-word.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
 .paint-bar .gap { width: 4px; }
 #paintBtn[aria-pressed="true"] { color: var(--accent); }
+
+/* the placement rig's toggle, lit like the paint brush while it is down */
+#texPlace[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }

@@ -8,6 +8,7 @@
 import { ACTION } from './render3d.js';
 import { layerColor, classColor, cosetColor, faceColor } from './palette.js';
 import { diagramSVG, figureEdges } from './diagramsvg.js';
+import { rigHit, rigBegin, rigDrag, drawRig, RIG_CURSOR } from './decalrig.js';
 
 export class DiagramView {
   constructor(canvas, { onToggle, onHover } = {}) {
@@ -21,6 +22,17 @@ export class DiagramView {
     this.pan = { x: 0, y: 0 };
     this.showAll = true;
     this.paintMarks = false;       // paint mode: dot the regions wearing a mix
+    /*
+     * The placement rig (lib/decalrig.js): while `placing`, the decals of
+     * this plane wear handles, and a drag on one is a gesture reported to
+     * onRigChange rather than a pan. The rig itself is built by the app,
+     * which knows the decals; setRig() hands it over.
+     */
+    this.rig = null;
+    this.placing = false;
+    this.onRigChange = null;
+    this.onRigEnd = null;
+    this._gesture = null;
     /*
      * How strongly the unchosen cells are tinted. It was a pair of constants,
      * 0.17 in the dark theme and 0.13 in the light, which is a judgement about
@@ -87,12 +99,29 @@ export class DiagramView {
 
     canvas.addEventListener('pointerdown', (e) => {
       if (e.button === 2) return;           // secondary press is inert, never pans
+      // a press on the rig is a gesture, not a pan; a press on another
+      // decal's ghost makes that decal the active one
+      if (this.placing && this.rig) {
+        const hit = this._rigHit(e);
+        if (hit && hit.kind === 'select') { this.onRigChange?.({ select: hit.copy.decal }); return; }
+        if (hit) {
+          this._gesture = rigBegin(hit, this._world(e));
+          capture(e, true);
+          e.preventDefault();
+          return;
+        }
+      }
       down = { x: e.clientX, y: e.clientY, pan: { ...this.pan } };
       moved = 0;
       capture(e, true);
     });
 
     canvas.addEventListener('pointermove', (e) => {
+      if (this._gesture) {
+        const upd = rigDrag(this._gesture, this._world(e), this.rig);
+        if (upd) this.onRigChange?.({ ...upd, copy: this._gesture.hit.copy });
+        return;
+      }
       if (down) {
         const dx = e.clientX - down.x, dy = e.clientY - down.y;
         moved = Math.max(moved, Math.hypot(dx, dy));
@@ -116,6 +145,11 @@ export class DiagramView {
         this.canvas.style.cursor = i >= 0 ? 'pointer' : 'grab';
         this.draw();
         this.onHover?.(i >= 0 ? this.data.facets[i] : null);
+      }
+      // over the rig the cursor says which gesture a press would start
+      if (this.placing && this.rig) {
+        const hit = this._rigHit(e);
+        this.canvas.style.cursor = hit ? RIG_CURSOR[hit.kind] : (i >= 0 ? 'pointer' : 'grab');
       }
     });
 
@@ -143,6 +177,12 @@ export class DiagramView {
      * inconsistency you have to memorise rather than learn.
      */
     const release = (e) => {
+      if (this._gesture) {
+        this._gesture = null;
+        capture(e, false);
+        this.onRigEnd?.();
+        return;
+      }
       if (!down) return;
       const wasDrag = moved > 3;
       down = null;
@@ -157,7 +197,15 @@ export class DiagramView {
       if (i >= 0) this.onToggle?.(this.data.facets[i], m);
     };
     canvas.addEventListener('pointerup', release);
-    canvas.addEventListener('pointercancel', () => { down = null; });
+    canvas.addEventListener('pointercancel', () => { down = null; this._gesture = null; });
+
+    // the one double-click there is: on the pivot, which puts it back at
+    // the image's center — the view itself has no double-click, see below
+    canvas.addEventListener('dblclick', (e) => {
+      if (!this.placing || !this.rig) return;
+      const hit = this._rigHit(e);
+      if (hit && hit.kind === 'pivot') this.onRigChange?.({ pivot: [0, 0], copy: hit.copy });
+    });
 
     canvas.addEventListener('pointerleave', () => {
       if (this.hover !== -1) { this.hover = -1; this.draw(); this.onHover?.(null); }
@@ -577,6 +625,11 @@ export class DiagramView {
       }
     }
 
+    // 4¾. the placement rig, over everything the plane draws
+    if (this.placing && this.rig) {
+      drawRig(ctx, this.rig, (x, y) => [f.cx + x * f.scale, f.cy - y * f.scale], f.dpr, dark);
+    }
+
     /*
      * 5. hover highlight, colored by what a click would do.
      *
@@ -616,7 +669,32 @@ export class DiagramView {
     return best;
   }
 
-  /** PNG data URL of the diagram as drawn */
+  /** the pointer in diagram coordinates */
+  _world(e) {
+    const f = this._frame();
+    const r = this.canvas.getBoundingClientRect();
+    const px = (e.clientX - r.left) * (f.w / r.width);
+    const py = (e.clientY - r.top) * (f.h / r.height);
+    return [(px - f.cx) / f.scale, -(py - f.cy) / f.scale];
+  }
+
+  /** what the pointer is over on the rig, or null */
+  _rigHit(e) {
+    const f = this._frame();
+    const r = this.canvas.getBoundingClientRect();
+    const sx = (e.clientX - r.left) * (f.w / r.width);
+    const sy = (e.clientY - r.top) * (f.h / r.height);
+    const [wx, wy] = this._world(e);
+    return rigHit(this.rig, { sx, sy, wx, wy },
+      (x, y) => [f.cx + x * f.scale, f.cy - y * f.scale], f.dpr);
+  }
+
+  /** the placement rig for this plane's decals, or null; see decalrig.js */
+  setRig(rig) {
+    this.rig = rig;
+    this.draw();
+  }
+
   /** a PNG data URL of the diagram, transparent where nothing is drawn */
   snapshot() { this.draw(); return this.canvas.toDataURL('image/png'); }
 

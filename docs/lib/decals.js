@@ -46,7 +46,8 @@ export function affClose(p, q, eps = 1e-6) {
 }
 
 /** a stabilizer element (2×2, row-major) as an affine map */
-const lin = (S) => [S[0], S[1], 0, S[2], S[3], 0];
+export const stabAffine = (S) => [S[0], S[1], 0, S[2], S[3], 0];
+const lin = stabAffine;
 
 /** image space [-1,1]² → texture coordinates [0,1]², row 0 at the top */
 export const BOX_TO_UV = [0.5, 0, 0.5, 0, -0.5, 0.5];
@@ -110,7 +111,7 @@ export function decalCopies(orbit, decals, info = () => null) {
     });
     for (const S of orbit.stab) {
       const C = affMul(lin(S), T);
-      out.copies.push({ A: affMul(BOX_TO_UV, affInv(C)), C, decal: di });
+      out.copies.push({ A: affMul(BOX_TO_UV, affInv(C)), C, S, decal: di });
     }
   });
   return out;
