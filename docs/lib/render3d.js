@@ -45,6 +45,37 @@ void main() {
   gl_Position = uProj * p;
 }`;
 
+/*
+ * The diagram's preview of the texture layer: the same texMix, run over a
+ * rectangle of one plane's chart frame into an offscreen buffer and read
+ * back for the diagram to draw. One shader for the solid and the preview,
+ * so the two cannot disagree about an overlap.
+ */
+const PREVIEW_VERT = /*glsl*/`#version 300 es
+precision highp float;
+in vec2 aPos;
+uniform vec4 uRect;      // x0, y0, x1, y1 of the chart frame
+uniform vec2 uRange;     // the plane orbit's slice of the copy table
+out vec2 vUV;
+flat out vec2 vTexRange;
+void main() {
+  vec2 t = (aPos + 1.0) * 0.5;
+  // the first row read back is the buffer's bottom, so it gets the rect's TOP
+  vUV = vec2(mix(uRect.x, uRect.z, t.x), mix(uRect.w, uRect.y, t.y));
+  vTexRange = uRange;
+  gl_Position = vec4(aPos, 0.0, 1.0);
+}`;
+const PREVIEW_FRAG = (defs) => /*glsl*/`#version 300 es
+${defs}
+precision highp float;
+in vec2 vUV;
+${TEXMIX_GLSL}
+out vec4 fragColor;
+void main() {
+  vec4 t = texMix(vUV);
+  fragColor = vec4(t.rgb / max(t.a, 1e-4), t.a);   // straight alpha, for an ImageData
+}`;
+
 // the fragment shader is sized to the GL limits it is compiled under: the
 // copy and decal tables are uniform arrays (see the constructor)
 const FRAG = (defs) => /*glsl*/`#version 300 es
@@ -309,6 +340,18 @@ export class Renderer3D {
     this.texDefs = `#define MAX_COPIES ${this.maxCopies}\n#define MAX_DECALS ${this.maxDecals}\n#define MAX_RANGE 24`;
     this.prog = program(gl, VERT, FRAG(this.texDefs));
     this.lineProg = program(gl, LINE_VERT, LINE_FRAG);
+    // the diagram's preview pass: a quad over a rectangle of a chart frame
+    this.previewProg = program(gl, PREVIEW_VERT, PREVIEW_FRAG(this.texDefs));
+    this.previewVao = gl.createVertexArray();
+    gl.bindVertexArray(this.previewVao);
+    const quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const qp = gl.getAttribLocation(this.previewProg, 'aPos');
+    gl.enableVertexAttribArray(qp);
+    gl.vertexAttribPointer(qp, 2, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+    this._fbo = null;
 
     this.vao = gl.createVertexArray();
     this.posBuf = gl.createBuffer();
@@ -1442,11 +1485,63 @@ export class Renderer3D {
     const moved = ranges.length !== this._ranges.length ||
       ranges.some((r, i) => !this._ranges[i] || r[0] !== this._ranges[i][0] || r[1] !== this._ranges[i][1]);
     this._ranges = ranges;
-    gl.useProgram(this.prog);
-    if (copies.length) gl.uniform4fv(gl.getUniformLocation(this.prog, 'uCopy'), new Float32Array(copies));
-    if (decals.length) gl.uniform4fv(gl.getUniformLocation(this.prog, 'uDecal'), new Float32Array(decals));
+    // both programs read the same tables
+    for (const prog of [this.prog, this.previewProg]) {
+      gl.useProgram(prog);
+      if (copies.length) gl.uniform4fv(gl.getUniformLocation(prog, 'uCopy'), new Float32Array(copies));
+      if (decals.length) gl.uniform4fv(gl.getUniformLocation(prog, 'uDecal'), new Float32Array(decals));
+    }
     if (moved) this._uploadRanges();
     this.draw();
+  }
+
+  /**
+   * The texture layer over a rectangle of one plane orbit's chart frame, as
+   * an ImageData (straight alpha, row 0 the top of the rect): the diagram's
+   * preview. Rendered offscreen with the solid's own texMix, so overlaps
+   * come out exactly as the solid draws them. null when there is nothing
+   * to show.
+   */
+  previewPlane({ range, rect, w, h }) {
+    const gl = this.gl;
+    if (!this.texture || !range || !range[1] || !(w > 0) || !(h > 0)) return null;
+    if (!this._fbo) {
+      this._fbo = gl.createFramebuffer();
+      this._fboTex = gl.createTexture();
+      this._fboSize = [0, 0];
+    }
+    gl.bindTexture(gl.TEXTURE_2D, this._fboTex);
+    if (this._fboSize[0] !== w || this._fboSize[1] !== h) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      this._fboSize = [w, h];
+    }
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this._fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this._fboTex, 0);
+    gl.viewport(0, 0, w, h);
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(this.previewProg);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.texture);
+    gl.uniform1i(gl.getUniformLocation(this.previewProg, 'uTexArr'), 0);
+    gl.uniform4f(gl.getUniformLocation(this.previewProg, 'uRect'), rect[0], rect[1], rect[2], rect[3]);
+    gl.uniform2f(gl.getUniformLocation(this.previewProg, 'uRange'), range[0], range[1]);
+    gl.bindVertexArray(this.previewVao);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindVertexArray(null);
+    const buf = new Uint8Array(w * h * 4);
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.enable(gl.DEPTH_TEST);
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    return new ImageData(new Uint8ClampedArray(buf.buffer), w, h);
   }
 
   /** the per-vertex (start, count) of each vertex's orbit in the copy table */

@@ -9,6 +9,7 @@ import { ACTION } from './render3d.js';
 import { layerColor, classColor, cosetColor, faceColor } from './palette.js';
 import { diagramSVG, figureEdges } from './diagramsvg.js';
 import { rigHit, rigBegin, rigDrag, drawRig, RIG_CURSOR } from './decalrig.js';
+import { affMul } from './decals.js';
 
 export class DiagramView {
   constructor(canvas, { onToggle, onHover } = {}) {
@@ -33,6 +34,14 @@ export class DiagramView {
     this.onRigChange = null;
     this.onRigEnd = null;
     this._gesture = null;
+    /*
+     * The texture layer as the solid draws it on this plane, rendered by the
+     * solid's own shader (Renderer3D.previewPlane) over a rectangle of the
+     * plane's chart frame; setPreview() hands it over with the map from that
+     * frame into diagram coordinates.
+     */
+    this.preview = null;
+    this._previewCanvas = null;
     /*
      * How strongly the unchosen cells are tinted. It was a pair of constants,
      * 0.17 in the dark theme and 0.13 in the light, which is a judgement about
@@ -525,6 +534,28 @@ export class DiagramView {
     }
 
     /*
+     * 2¾. the texture layer, under the lines as it is on the solid. The
+     * image is a rectangle of the plane's chart frame, so it is drawn
+     * through pixel → chart → diagram → canvas as one transform; tint
+     * multiplies the fills as the shader does, the other blends lie over.
+     */
+    if (this.preview && this._previewCanvas) {
+      const p = this.preview;
+      const [x0, y0, x1, y1] = p.rect;
+      const cw = this._previewCanvas.width, ch = this._previewCanvas.height;
+      const pix = [(x1 - x0) / cw, 0, x0, 0, -(y1 - y0) / ch, y1];    // pixel → chart
+      const D = affMul(p.toDiagram, pix);                             // pixel → diagram
+      ctx.save();
+      ctx.setTransform(f.scale * D[0], -f.scale * D[3], f.scale * D[1], -f.scale * D[4],
+                       f.cx + f.scale * D[2], f.cy - f.scale * D[5]);
+      ctx.globalCompositeOperation = p.blend || 'source-over';
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha ?? 1));
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(this._previewCanvas, 0, 0);
+      ctx.restore();
+    }
+
+    /*
      * 3. the plane traces — every facet outline drawn thin.
      *
      * Zoomed far out the traces crowd to within a pixel of each other and the
@@ -692,6 +723,25 @@ export class DiagramView {
   /** the placement rig for this plane's decals, or null; see decalrig.js */
   setRig(rig) {
     this.rig = rig;
+    this.draw();
+  }
+
+  /**
+   * The texture layer's preview: { image: ImageData, rect: [x0, y0, x1, y1]
+   * of the chart frame, toDiagram: affine chart → diagram, blend: a canvas
+   * composite operation, alpha } — or null for none.
+   */
+  setPreview(p) {
+    this.preview = p;
+    if (p && p.image) {
+      if (!this._previewCanvas) this._previewCanvas = document.createElement('canvas');
+      const c = this._previewCanvas;
+      if (c.width !== p.image.width || c.height !== p.image.height) {
+        c.width = p.image.width;
+        c.height = p.image.height;
+      }
+      c.getContext('2d').putImageData(p.image, 0, 0);
+    }
     this.draw();
   }
 

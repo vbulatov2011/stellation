@@ -37,7 +37,7 @@ const $$ = sel => [...document.querySelectorAll(sel)];
 import { BUILD } from './build.js';
 import { decalCopies, makeDecal, transportDecals, decalToLocal, localToDecal,
   diagramToChart, decalTransform, decomposeTransform, stabAffine,
-  affMul, affInv, affClose, AFF_ID } from '../../lib/decals.js';
+  affMul, affInv, affApply, affClose, AFF_ID } from '../../lib/decals.js';
 export { BUILD };
 
 const state = {
@@ -1927,7 +1927,7 @@ async function syncTextures() {
     renderer.setTextures(usable.map(f => texBitmaps.get(f)));
   }
   const orbits = state.mesh?.texOrbits;
-  if (!orbits) return;
+  if (!orbits) { syncPreview(); return; }
   const info = (f) => texLayerOf.get(f) || null;
   const perOrbit = orbits.orbits.map(o => {
     const list = (state.decals.get(o.rep) || []).filter(d => texLayerOf.has(d.file));
@@ -1937,6 +1937,49 @@ async function syncTextures() {
   if (renderer.texOverflow) {
     setStatus(`too many image copies for this GPU (${renderer.texOverflow.copies} of ${renderer.maxCopies}) — some planes go without`, false);
   }
+  syncPreview();
+}
+
+/*
+ * The diagram's picture of the layer on its plane: the solid's shader run
+ * over the rectangle the copies cover (the whole plane for a tiled decal),
+ * handed to the diagram with the map from the chart frame into its own.
+ * Redone with every placement change — an offscreen quad and a readback,
+ * cheap enough to follow a drag.
+ */
+function syncPreview() {
+  if (!renderer || !diagram) return;
+  const ctx = texContext();
+  const list = ctx ? (state.decals.get(ctx.orbit.rep) || []).filter(d => texLayerOf.has(d.file)) : [];
+  const range = ctx ? renderer._ranges[ctx.orbits.orbitOf[state.planeIndex]] : null;
+  if (!ctx || !list.length || !range || !range[1] || !renderer.texture) { diagram.setPreview(null); return; }
+  const ext = (diagram.data?.extent || 1) * 1.02;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, tiled = false;
+  for (const d of list) {
+    if (d.tile) tiled = true;
+    const T = decalTransform(d, ctx.orbit.s, aspectOf(d.file));
+    for (const S of ctx.orbit.stab) {
+      const C = affMul(stabAffine(S), T);
+      for (const q of [[-1, 1], [1, 1], [1, -1], [-1, -1]]) {
+        const [x, y] = affApply(C, q[0], q[1]);
+        x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+      }
+    }
+  }
+  if (tiled) { x0 = y0 = -ext; x1 = y1 = ext; }
+  else {
+    const pad = 0.02 * Math.max(x1 - x0, y1 - y0);
+    x0 = Math.max(-ext, x0 - pad); y0 = Math.max(-ext, y0 - pad);
+    x1 = Math.min(ext, x1 + pad); y1 = Math.min(ext, y1 + pad);
+  }
+  if (!(x1 > x0) || !(y1 > y0)) { diagram.setPreview(null); return; }
+  const k = 1024 / Math.max(x1 - x0, y1 - y0);
+  const w = Math.max(2, Math.round((x1 - x0) * k)), h = Math.max(2, Math.round((y1 - y0) * k));
+  const image = renderer.previewPlane({ range, rect: [x0, y0, x1, y1], w, h });
+  diagram.setPreview(image ? {
+    image, rect: [x0, y0, x1, y1], toDiagram: affInv(ctx.B),
+    blend: renderer.texMode === 0 ? 'multiply' : 'source-over', alpha: renderer.texAlpha,
+  } : null);
 }
 
 /*
@@ -2979,12 +3022,15 @@ function wireControls() {
   $('#texReset').onclick = () => setActiveLocal({ x: 0, y: 0, angle: 0, flip: false });
   $('#texBlend').onchange = () => {
     touch();
-    // a uniform, nothing else: the geometry, uv and image all stand
+    // a uniform, nothing else: the geometry, uv and image all stand — and
+    // the diagram's preview composites the same way
     if (renderer) { renderer.texMode = TEX_MODES[$('#texBlend').value] ?? 0; renderer.draw(); }
+    syncPreview();
   };
   $('#texOpacity').onchange = () => {
     touch();
     if (renderer) { renderer.texAlpha = texOpacityValue(); renderer.draw(); }
+    syncPreview();
   };
   $('#texTile').onchange = () => setActiveLocal({ tile: $('#texTile').checked });
   fillTextureSelect().catch(() => {});
