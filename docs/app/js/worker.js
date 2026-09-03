@@ -11,7 +11,7 @@ import {
   buildStellation, extractMesh, createDiagram, diagramFaces, planeClasses,
   atomKey, atomKeyOf, selectedCells, parseCellsAny, formatCellsAtoms,
   formatCellsUnder, regroupSubCells, cosetClasses, facetCosetClasses,
-  subgroupOrbits, mergeAdjacentFacetClasses, paintOrbit, planeCharts,
+  subgroupOrbits, mergeAdjacentFacetClasses, paintOrbit, planeOrbits,
 } from '../../lib/core.js';
 import { BUILD } from './build.js';
 
@@ -101,12 +101,13 @@ let mergedNow = null;
 let paint = new Map();
 let facetIdx = null;               // facet -> its index within its plane, lazily
 /*
- * One affine texture chart per plane, transported over each plane orbit of
- * the FULL polyhedron group — how one image lands on every face as symmetric
- * copies. Geometry-only (arrangement + group), so computed once per build,
- * lazily: meshes ship it, and the renderer turns it into uv coordinates.
+ * The texture layer's plane orbits under the STELLATION group — one affine
+ * chart per plane transported over its orbit, and per orbit the stabilizer
+ * that replicates a decal over the face (planeOrbits in core.js). Geometry
+ * plus the editing group, so it is redone at build and at regroup, lazily:
+ * meshes ship it, and the renderer turns the charts into uv coordinates.
  */
-let texCharts = null;
+let texOrbits = null;
 /*
  * The group the diagram planes are classed by: the stellation symmetry, since
  * planes it carries onto each other draw the same picture. Kept because the
@@ -345,10 +346,10 @@ function meshFor(selected, split = false, merge = null) {
     // each facet's name in the paint overlay — how a click ON THE SOLID names
     // the region it paints, the same key the diagram's clicks arrive under
     faceKeys: mesh.facetRefs.map(f => f.plane + '.' + indexOfFacet(f)),
-    // one texture chart per plane, under the FULL group — the renderer maps
-    // vertices through the chart of facePlanes[i] to lay one image on every
-    // face as symmetric copies; per plane, so the split mesh needs no copying
-    texCharts: (texCharts ||= planeCharts(stel, cosetGroup)),
+    // the texture layer's orbits and charts under the stellation group — the
+    // renderer maps vertices through the chart of facePlanes[i]; per plane,
+    // so the split mesh needs no copying
+    texOrbits: (texOrbits ||= planeOrbits(stel, groupForFaces)),
     // "inside" is the solid cell this face belongs to, "outside" the empty
     // neighbor across it — which is what a click means, and what the two
     // gestures act on. The top/bottom orientation mirrors cellsAcrossFace;
@@ -588,7 +589,7 @@ self.onmessage = (e) => {
         // new facets, new identities: the app re-sends its paint on refresh
         paint = new Map();
         facetIdx = null;
-        texCharts = null;
+        texOrbits = null;
         if (!stel.planes.length) {
           const c = stel.planes.central || 0;
           throw new Error('no usable planes' +
@@ -675,11 +676,15 @@ self.onmessage = (e) => {
         faceClassStell = stel.planes.length
           ? planeClasses(stel, payload.subMatrices || payload.matrices || null).group : null;
         groupForFaces = payload.subMatrices || payload.matrices || groupForFaces;
+        // the texture layer's orbits are classed by the same group: the app
+        // carries its decals across (transportDecals) with both in hand
+        texOrbits = planeOrbits(stel, groupForFaces);
         // the coset coloring is untouched: the stellation group is the
         // editing symmetry, and editing must not repaint the figure
         reply({
           outline: outline(),
           faces: facesForMode(payload.mode || null),
+          texOrbits,
         });
         break;
       }

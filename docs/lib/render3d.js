@@ -10,6 +10,7 @@
  */
 
 import { AnimatedPointer } from './AnimatedPointer.js';
+import { TEXMIX_GLSL } from './texmix.glsl.js';
 
 const VERT = /*glsl*/`#version 300 es
 precision highp float;
@@ -18,11 +19,13 @@ in vec3 aNormal;
 // rgbA: the fourth component is the group's own opacity. Buffers that upload
 // only three (edges, cylinders, mirror discs, axes) get w = 1 by GL default.
 in vec4 aColor;
-// texture coordinates and the ink tint — the texture palette's color for
-// this facet's group. Buffers that carry neither read zeros and the sample
-// is gated off by uTexOn in the fragment shader.
+// the chart coordinates, the ink tint — the texture palette's color for this
+// facet's group — and which slice of the copy table is this facet's plane
+// orbit. Buffers that carry none of these read zeros and the sample is
+// gated off by uTexOn in the fragment shader.
 in vec2 aUV;
 in vec4 aTexTint;
+in vec2 aTexRange;
 uniform mat4 uProj;
 uniform mat4 uView;
 out vec3 vNormal;
@@ -30,6 +33,7 @@ out vec4 vColor;
 out vec3 vEye;
 out vec2 vUV;
 out vec4 vTexTint;
+flat out vec2 vTexRange;
 void main() {
   vec4 p = uView * vec4(aPos, 1.0);
   vEye = p.xyz;
@@ -37,10 +41,14 @@ void main() {
   vColor = aColor;
   vUV = aUV;
   vTexTint = aTexTint;
+  vTexRange = aTexRange;
   gl_Position = uProj * p;
 }`;
 
-const FRAG = /*glsl*/`#version 300 es
+// the fragment shader is sized to the GL limits it is compiled under: the
+// copy and decal tables are uniform arrays (see the constructor)
+const FRAG = (defs) => /*glsl*/`#version 300 es
+${defs}
 precision highp float;
 in vec3 vNormal;
 in vec4 vColor;
@@ -49,11 +57,13 @@ in vec2 vUV;
 in vec4 vTexTint;
 uniform float uEdgeDark;
 uniform float uAlpha;      // the global facet opacity: a modifier over every color
-// The face texture, folded into the color BEFORE lighting. Texels arrive
-// with rgb PREMULTIPLIED by alpha (see setTexture), which keeps every
-// formula one line and filtered glyph edges free of fringes. The ink is
-// first colorized by its group's tint (the texture palette, vTexTint) and
-// faded by the tint's own alpha times the texture opacity dial; then:
+// The face texture, folded into the color BEFORE lighting. The layer's
+// value at this fragment comes from texMix (texmix.glsl.js): every copy of
+// every decal on this face's plane orbit, depth-sorted and composited, with
+// rgb PREMULTIPLIED by alpha, which keeps every formula one line and
+// filtered glyph edges free of fringes. The ink is first colorized by its
+// group's tint (the texture palette, vTexTint) and faded by the tint's own
+// alpha times the texture opacity dial; then:
 //   tint    — the ink multiplies the face color, transparency fading the
 //             multiplier to 1: face · ((1-a) + ink)
 //   stamp   — the ink lies OVER the face, source-over: face·(1-a) + ink
@@ -61,11 +71,10 @@ uniform float uAlpha;      // the global facet opacity: a modifier over every co
 //             there at all, and the fragment carries the ink's coverage
 // uTexOn gates it per draw call — the same program also draws tubes, axes
 // and mirror discs, whose buffers carry no texture coordinates.
-uniform sampler2D uTex;
 uniform float uTexOn;
 uniform float uTexMode;    // 0 tint · 1 stamp · 2 replace
 uniform float uTexAlpha;   // the texture layer's own opacity dial
-uniform float uTexTile;    // 1: repeat everywhere · 0: one copy, clear beyond it
+${TEXMIX_GLSL}
 out vec4 fragColor;
 void main() {
   vec3 n = normalize(vNormal);
@@ -80,12 +89,7 @@ void main() {
   vec3 base = vColor.rgb;
   float aOut = vColor.a;
   if (uTexOn > 0.5) {
-    vec4 t = texture(uTex, vUV);                 // rgb premultiplied by t.a
-    // untiled, the image exists once, over the face's center: outside the
-    // unit tile the texel is simply clear — premultiplied, one multiply
-    if (uTexTile < 0.5) {
-      t *= step(0.0, vUV.x) * step(vUV.x, 1.0) * step(0.0, vUV.y) * step(vUV.y, 1.0);
-    }
+    vec4 t = texMix(vUV);                        // rgb premultiplied by t.a
     float f = vTexTint.a * uTexAlpha;
     vec3 ink = t.rgb * vTexTint.rgb * f;         // still premultiplied
     float a2 = t.a * f;
@@ -293,7 +297,17 @@ export class Renderer3D {
       { antialias: true, alpha: true, premultipliedAlpha: true });
     if (!gl) throw new Error('WebGL2 is not available in this browser');
 
-    this.prog = program(gl, VERT, FRAG);
+    /*
+     * The copy and decal tables are uniform arrays, so their size is fixed
+     * when the shader is compiled and has to fit the fragment uniform budget
+     * (224 vec4 is the WebGL2 minimum; desktops give several times that).
+     * Two vec4 per copy, two per decal, a couple of dozen spare for the rest.
+     */
+    const maxVec = gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS) || 224;
+    this.maxDecals = Math.max(8, Math.min(64, Math.floor((maxVec - 24) / 8)));
+    this.maxCopies = Math.max(16, Math.min(256, Math.floor((maxVec - 24 - 2 * this.maxDecals) / 2)));
+    this.texDefs = `#define MAX_COPIES ${this.maxCopies}\n#define MAX_DECALS ${this.maxDecals}\n#define MAX_RANGE 24`;
+    this.prog = program(gl, VERT, FRAG(this.texDefs));
     this.lineProg = program(gl, LINE_VERT, LINE_FRAG);
 
     this.vao = gl.createVertexArray();
@@ -302,22 +316,28 @@ export class Renderer3D {
     this.colBuf = gl.createBuffer();
     this.uvBuf = gl.createBuffer();
     this.texTintBuf = gl.createBuffer();
+    this.rangeBuf = gl.createBuffer();
     this.count = 0;
 
     /*
-     * The face texture: one image laid over every face through per-plane
-     * charts (see setMesh), multiplied under the face's group color. The
-     * charts come with the mesh; the image via setTexture(); texScale is a
-     * plain dial over the charts' own tile size. All three must be present
-     * for uTexOn to switch the sampler in.
+     * The texture layer: decals laid on the plane orbits and replicated by
+     * symmetry (lib/decals.js). The orbits and their charts come with the
+     * mesh (texOrbits, set by the app before setMesh, which turns them into
+     * per-vertex chart coordinates); the images arrive as one array texture
+     * via setTextures(); the placements as copy and decal tables via
+     * setDecals(). All three must be present for uTexOn to switch the
+     * sampler in.
      */
-    this.texture = null;         // the GL texture, or null for none
-    this.texCharts = null;       // per-plane {m, ox, oy, s}, set by the app
-    this.texScale = 1;
+    this.texture = null;         // the GL array texture, or null for none
+    this.texLayers = 0;
+    this.texOrbits = null;       // {charts, orbitOf, orbits}, set by the app
     this.texMode = 0;            // 0 tint (multiply) · 1 stamp (lay over) · 2 replace
     this.texAlpha = 1;           // the texture layer's own opacity dial
-    this.texTile = true;         // repeat over the wings, or one copy per face
     this._hasUV = false;         // did the LAST setMesh write real uv data
+    this._vertOrbit = null;      // per vertex, the plane orbit — for the range buffer
+    this._ranges = [];           // per orbit, [start, count] into the copy table
+    this._copyCount = 0;
+    this.texOverflow = null;     // {copies, decals} when the tables ran out of room
 
     /*
      * Edges come in two kinds, drawn from two buffers — see setMesh.
@@ -1071,13 +1091,14 @@ export class Renderer3D {
      * uv is a pure function of (plane, position), so every mesh — split
      * ones included — gets its coordinates here from nine multiplies per
      * corner, and no per-corner data ever crosses the worker boundary. The
-     * chart's own tile size s makes "scale 1" mean one image per core face;
-     * the y flip puts the image right side up (charts are y-up, images
-     * y-down). Vertices are charted UNSCALED — the chart lives in world
-     * units, modelScale is a display affair.
+     * coordinates are the chart's own, in world units: where the image lands
+     * is the copy table's business (setDecals), not the geometry's, which is
+     * what lets a drag move the picture without touching a vertex.
      */
-    const charts = this.texCharts;
-    this._hasUV = !!(charts && planes);
+    const orbs = this.texOrbits;
+    const charts = orbs?.charts;
+    this._hasUV = !!(charts && charts.length && planes);
+    const orbit = [];
 
     /*
      * The model scale is sticky.
@@ -1194,7 +1215,7 @@ export class Renderer3D {
       nx /= nl; ny /= nl; nz /= nl;
 
       const ch = this._hasUV ? charts[planes[fi]] : null;
-      const k = ch ? 1 / (ch.s * (this.texScale > 0 ? this.texScale : 1)) : 0;
+      const orb = ch ? orbs.orbitOf[planes[fi]] : -1;
       // the texture palette's answer for this group — the INK color the
       // sampled image is multiplied by, white (no tint) unless edited
       const tc = ch ? faceColor('tex.' + this.colorMode, groupOf(fi), top) : [1, 1, 1, 1];
@@ -1205,10 +1226,11 @@ export class Renderer3D {
           norm.push(nx, ny, nz);
           col.push(c[0], c[1], c[2], c[3]);
           tint.push(tc[0], tc[1], tc[2], tc[3]);
+          orbit.push(orb);
           if (ch) {
             const m = ch.m;
-            uv.push((m[0] * v.x + m[1] * v.y + m[2] * v.z - ch.ox) * k + 0.5,
-                    0.5 - (m[3] * v.x + m[4] * v.y + m[5] * v.z - ch.oy) * k);
+            uv.push(m[0] * v.x + m[1] * v.y + m[2] * v.z - ch.ox,
+                    m[3] * v.x + m[4] * v.y + m[5] * v.z - ch.oy);
           } else uv.push(0, 0);
         }
         this.pickTris.push({
@@ -1272,6 +1294,8 @@ export class Renderer3D {
     upload(this.vao, this.colBuf, 'aColor', col, 4, this.prog);
     upload(this.vao, this.uvBuf, 'aUV', uv, 2, this.prog);
     upload(this.vao, this.texTintBuf, 'aTexTint', tint, 4, this.prog);
+    this._vertOrbit = orbit;
+    this._uploadRanges();
     this.count = pos.length / 3;
     this._sortData = null;         // new geometry: the translucency order tables are stale
     // kept for the cylinder edges, built lazily so line mode never pays for them
@@ -1316,47 +1340,131 @@ export class Renderer3D {
   }
 
   /**
-   * The face texture: any TexImageSource (an ImageBitmap, image, canvas), or
-   * null to go back to plain colors. Repeat-wrapped and mipmapped — the
-   * charts tile the image outward from each face's pole, and the far wings
-   * of a star sample it at grazing angles, which is what the anisotropy is
-   * for. The geometry and its uv coordinates are untouched: turning the
-   * texture on or off costs one redraw.
+   * The images, as one array texture: a list of canvases (or other
+   * TexImageSources), one layer each, or an empty list / null for none. Every
+   * layer has the same square size — the largest image's, capped — and an
+   * image is stretched onto it; the decal's own aspect undoes the stretch
+   * (decalTransform), so nothing is lost but memory. Mipmapped and clamped:
+   * a copy ends at its edge, and the far wings of a star sample it at
+   * grazing angles, which is what the anisotropy is for. The geometry and
+   * its uv coordinates are untouched.
    */
-  setTexture(image) {
+  setTextures(images) {
     const gl = this.gl;
-    if (!image) {
+    const list = (images || []).filter(Boolean);
+    if (!list.length) {
       if (this.texture) gl.deleteTexture(this.texture);
       this.texture = null;
+      this.texLayers = 0;
       this.draw();
       return;
     }
-    if (!this.texture) this.texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    const cap = Math.min(2048, gl.getParameter(gl.MAX_TEXTURE_SIZE) || 2048);
+    let size = 1;
+    for (const im of list) size = Math.max(size, im.width || 0, im.height || 0);
+    size = Math.min(cap, size);
+    if (this.texture) gl.deleteTexture(this.texture);
+    this.texture = gl.createTexture();
+    this.texLayers = list.length;
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.texture);
+    const levels = 1 + Math.floor(Math.log2(size));
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, levels, gl.RGBA8, size, size, list.length);
     /*
-     * Premultiplied on the way in, deliberately. The shader's two blend
+     * Premultiplied on the way in, deliberately. The shader's blend
      * formulas consume premultiplied rgb directly, and — the real reason —
      * filtering and mipmapping average texels: averaged straight-alpha
      * texels bleed a transparent pixel's meaningless color into every glyph
      * edge (the classic dark fringe), while averaged premultiplied texels
-     * are simply correct. The app hands in a canvas, whose backing store is
-     * premultiplied by definition, so this flag is a passthrough.
+     * are simply correct. The images are drawn onto a scratch canvas, whose
+     * backing store is premultiplied by definition, so the flag is a
+     * passthrough — and the scratch is what stretches them to the layer.
      */
+    const scratch = document.createElement('canvas');
+    scratch.width = scratch.height = size;
+    const ctx = scratch.getContext('2d');
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    list.forEach((im, i) => {
+      ctx.clearRect(0, 0, size, size);
+      ctx.drawImage(im, 0, 0, size, size);
+      gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, size, size, 1,
+        gl.RGBA, gl.UNSIGNED_BYTE, scratch);
+    });
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-    gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     const aniso = gl.getExtension('EXT_texture_filter_anisotropic');
     if (aniso) {
-      gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT,
+      gl.texParameterf(gl.TEXTURE_2D_ARRAY, aniso.TEXTURE_MAX_ANISOTROPY_EXT,
         Math.min(8, gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
     }
-    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
     this.draw();
+  }
+
+  /**
+   * The placements: per plane orbit (indexed like texOrbits.orbits), the
+   * output of decalCopies — { copies: [{A, decal}], decals: [{layer, z,
+   * tilt, tiltAmount, tile, opacity}] } — or null for an orbit with none.
+   * Packed into the two uniform tables and uploaded at once; the per-vertex
+   * range buffer is rewritten only when an orbit's slice moved. A drag that
+   * changes placements but not counts costs exactly one uniform upload.
+   */
+  setDecals(perOrbit) {
+    const gl = this.gl;
+    const copies = [], decals = [];
+    const ranges = [];
+    let overflow = null;
+    (perOrbit || []).forEach((o, oi) => {
+      const start = copies.length;
+      if (o && o.copies.length) {
+        const base = decals.length;
+        if (base + o.decals.length > this.maxDecals ||
+            start + o.copies.length > this.maxCopies) {
+          overflow = { copies: start + o.copies.length, decals: base + o.decals.length };
+          ranges[oi] = [0, 0];
+          return;
+        }
+        for (const d of o.decals) {
+          decals.push(d.layer, d.z, d.tilt[0], d.tilt[1], d.tiltAmount, d.tile ? 1 : 0, d.opacity, 0);
+        }
+        for (const c of o.copies) {
+          const A = c.A;
+          copies.push(A[0], A[1], A[2], base + c.decal, A[3], A[4], A[5], 0);
+        }
+      }
+      ranges[oi] = [start, copies.length / 8 - start];
+    });
+    this.texOverflow = overflow;
+    this._copyCount = copies.length / 8;
+    const moved = ranges.length !== this._ranges.length ||
+      ranges.some((r, i) => !this._ranges[i] || r[0] !== this._ranges[i][0] || r[1] !== this._ranges[i][1]);
+    this._ranges = ranges;
+    gl.useProgram(this.prog);
+    if (copies.length) gl.uniform4fv(gl.getUniformLocation(this.prog, 'uCopy'), new Float32Array(copies));
+    if (decals.length) gl.uniform4fv(gl.getUniformLocation(this.prog, 'uDecal'), new Float32Array(decals));
+    if (moved) this._uploadRanges();
+    this.draw();
+  }
+
+  /** the per-vertex (start, count) of each vertex's orbit in the copy table */
+  _uploadRanges() {
+    const gl = this.gl;
+    const vo = this._vertOrbit;
+    if (!vo) return;
+    const data = new Float32Array(vo.length * 2);
+    for (let i = 0; i < vo.length; i++) {
+      const r = vo[i] >= 0 ? this._ranges[vo[i]] : null;
+      if (r) { data[2 * i] = r[0]; data[2 * i + 1] = r[1]; }
+    }
+    gl.bindVertexArray(this.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.rangeBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    const l = gl.getAttribLocation(this.prog, 'aTexRange');
+    if (l >= 0) { gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 2, gl.FLOAT, false, 0, 0); }
+    gl.bindVertexArray(null);
   }
 
   /**
@@ -1617,14 +1725,13 @@ export class Renderer3D {
      * elements, axes, discs) has no texture coordinates and must stay plain,
      * so the flag is raised around the two solid draws and lowered after.
      */
-    const texOn = this.texture && this._hasUV ? 1 : 0;
+    const texOn = this.texture && this._hasUV && this._copyCount ? 1 : 0;
     if (texOn) {
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, this.texture);
-      gl.uniform1i(gl.getUniformLocation(this.prog, 'uTex'), 0);
+      gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.texture);
+      gl.uniform1i(gl.getUniformLocation(this.prog, 'uTexArr'), 0);
       gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexMode'), this.texMode);
       gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexAlpha'), this.texAlpha);
-      gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexTile'), this.texTile ? 1 : 0);
     }
     gl.uniform1f(gl.getUniformLocation(this.prog, 'uTexOn'), 0);
     gl.bindVertexArray(this.vao);

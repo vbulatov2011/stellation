@@ -35,12 +35,16 @@ const $$ = sel => [...document.querySelectorAll(sel)];
  * happening; this makes it checkable when it does.
  */
 import { BUILD } from './build.js';
+import { decalCopies, makeDecal } from '../../lib/decals.js';
 export { BUILD };
 
 const state = {
   catalog: null, symmetry: null, geometry: null,
   current: null,
   polySym: 'Ih', stellSym: 'I',
+  // the texture layer: plane-orbit representative -> its decals, under the
+  // stellation grouping on screen (lib/decals.js)
+  decals: new Map(),
   depth: 20,
   depthAuto: true,          // until the user moves the slider
   outline: null,
@@ -1672,28 +1676,69 @@ async function loadTextureImage(file) {
   return cv;
 }
 
-/** put the chosen image (or none) on the renderer, fetching it once */
+/** the decals the panel's one choice makes: the same image, size and tiling
+    on every plane orbit, centered on the pole — "none" is an empty map */
+function decalsFromControls() {
+  const orbits = state.mesh?.texOrbits?.orbits;
+  const file = $('#texSelect')?.value || '';
+  const map = new Map();
+  if (!orbits || !file) return map;
+  const size = texScaleValue(), tile = $('#texTile')?.checked !== false;
+  for (const o of orbits) map.set(o.rep, [makeDecal({ file, size, tile })]);
+  return map;
+}
+
+/** put the panel's choice on the solid: the blend dials, then the decals */
 async function applyTexture() {
   if (!renderer) return;
-  const file = $('#texSelect')?.value || '';
-  renderer.texScale = texScaleValue();
   renderer.texMode = TEX_MODES[$('#texBlend')?.value] ?? 0;
   renderer.texAlpha = texOpacityValue();
-  renderer.texTile = $('#texTile')?.checked !== false;
-  if (!file) { renderer.setTexture(null); return; }
-  let bmp = texBitmaps.get(file);
-  if (!bmp) {
-    try {
-      bmp = await loadTextureImage(file);
-      texBitmaps.set(file, bmp);
-    } catch (err) {
-      setStatus(`texture "${file}" failed to load (${err && err.message || err})`, false);
-      renderer.setTexture(null);
-      return;
+  state.decals = decalsFromControls();
+  await syncTextures();
+}
+
+let texLayerOf = new Map();     // file -> {layer, aspect}: the array texture's layout
+let texSync = 0;                // the latest sync's ticket; a superseded one stands down
+
+/*
+ * Everything the renderer needs from state.decals: the images as the layers
+ * of one array texture — fetched once, re-uploaded only when the SET of
+ * files changes — and the copy tables per plane orbit. Async only for the
+ * fetch; with the images in hand a placement change is synchronous work,
+ * which is what keeps a handle drag live.
+ */
+async function syncTextures() {
+  if (!renderer) return;
+  const ticket = ++texSync;
+  const files = [...new Set([...state.decals.values()].flat().map(d => d.file).filter(Boolean))].sort();
+  for (const f of files) {
+    if (texBitmaps.has(f)) continue;
+    try { texBitmaps.set(f, await loadTextureImage(f)); }
+    catch (err) {
+      setStatus(`texture "${f}" failed to load (${err && err.message || err})`, false);
+      texBitmaps.set(f, null);      // remembered as unloadable, not retried every sync
     }
   }
-  // the fetch was awaited: only the still-current choice may land
-  if (($('#texSelect')?.value || '') === file) renderer.setTexture(bmp);
+  if (ticket !== texSync) return;   // a newer sync took over while this one fetched
+  const usable = files.filter(f => texBitmaps.get(f));
+  if (usable.join('\n') !== [...texLayerOf.keys()].join('\n')) {
+    texLayerOf = new Map(usable.map((f, i) => {
+      const im = texBitmaps.get(f);
+      return [f, { layer: i, aspect: im.width / Math.max(1, im.height) }];
+    }));
+    renderer.setTextures(usable.map(f => texBitmaps.get(f)));
+  }
+  const orbits = state.mesh?.texOrbits;
+  if (!orbits) return;
+  const info = (f) => texLayerOf.get(f) || null;
+  const perOrbit = orbits.orbits.map(o => {
+    const list = (state.decals.get(o.rep) || []).filter(d => texLayerOf.has(d.file));
+    return list.length ? decalCopies(o, list, info) : null;
+  });
+  renderer.setDecals(perOrbit);
+  if (renderer.texOverflow) {
+    setStatus(`too many image copies for this GPU (${renderer.texOverflow.copies} of ${renderer.maxCopies}) — some planes go without`, false);
+  }
 }
 
 /*
@@ -2381,8 +2426,9 @@ async function refresh() {
 
   state.mesh = mesh;
   syncMergeInfo();
-  // the per-plane texture charts ride the mesh; setMesh turns them into uv
-  if (renderer) renderer.texCharts = mesh.texCharts || null;
+  // the texture layer's orbits and charts ride the mesh; setMesh turns the
+  // charts into uv coordinates
+  if (renderer) renderer.texOrbits = mesh.texOrbits || null;
   renderer?.setMesh(mesh, mesh.faceLayers,
     { classes: mesh.faceClasses, classesStell: mesh.faceClassesStell,
       cosets: mesh.faceCosets, cosetsL: mesh.faceCosetsL, cosetsM: mesh.faceCosetsM,
@@ -2405,6 +2451,9 @@ async function refresh() {
     if (mark) mark.hidden = !hasColorOverrides($('#colorMode').value)
       && !hasColorOverrides('tex.' + $('#colorMode').value);
   }
+  // the decals, on the orbits this mesh came with
+  applyTexture().catch(err =>
+    setStatus('texture failed: ' + (err && err.message || err), false));
   diagram.setData(dia);
   state.diagramFrame = dia?.frame || null;
   refreshDiagramOverlay();
@@ -2675,8 +2724,9 @@ function wireControls() {
   };
   $('#texScale').onchange = () => {
     touch();
-    // the image is untouched; only the uv coordinates carry the scale
-    if (renderer) { renderer.texScale = texScaleValue(); renderer.refreshColors(); }
+    // the image and the geometry are untouched; only the copy tables move
+    applyTexture().catch(err =>
+      setStatus('texture failed: ' + (err && err.message || err), false));
   };
   $('#texBlend').onchange = () => {
     touch();
@@ -2689,7 +2739,8 @@ function wireControls() {
   };
   $('#texTile').onchange = () => {
     touch();
-    if (renderer) { renderer.texTile = $('#texTile').checked; renderer.draw(); }
+    applyTexture().catch(err =>
+      setStatus('texture failed: ' + (err && err.message || err), false));
   };
   fillTextureSelect().catch(() => {});
   $('#colorMix').onchange = (e) => {
