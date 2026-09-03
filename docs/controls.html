@@ -323,36 +323,55 @@
         &mdash; and its tooltip says where to find it working. Both views
         and both exports follow, like everything else the palette decides;
         the dial is saved with the document.</p>
-        <p><b>texture</b> lays one image over every face of the solid,
-        replicated by the polyhedron&rsquo;s symmetry: each face wears an
-        exact symmetric copy, centered on the face, mirrored where the
-        symmetry that carries it there is a reflection. <b>blend</b> says
-        how the image meets the face colors. <em>tint</em>, the default,
-        multiplies them &mdash; white shows the coset color pure, dark ink
-        shades it, which is why the bundled patterns are light.
-        <em>stamp</em> lays the image over the face in its own colors, a
-        white glyph staying white. <em>replace</em> makes the image the
-        face itself: where it is transparent there is no face at all, and
-        the glyphs float in the air. Transparency is honored throughout
-        &mdash; a transparent background leaves the face color untouched,
-        semi-transparent pixels blend by their alpha &mdash; so the bundled
-        arrow reads as outline ink under <em>tint</em>, pops as itself
-        under <em>stamp</em>, and hangs alone under <em>replace</em>.
-        <b>opacity</b> is the texture layer&rsquo;s own dial, independent
-        of the faces&rsquo;; <b>scale</b> is the size of one tile in face
-        widths; and <b>tile the image</b> chooses between repeating over
-        the star&rsquo;s wings (right for patterns) and existing exactly
-        once per face, clear beyond its edge (right for a glyph or an
-        emblem). The image can also be <em>colorized per group</em>: the
-        Colors panel gains an <em>editing</em> switch while a texture is
+        <p><b>image</b> places a picture on the plane the diagram shows
+        &mdash; one image per class of plane, so a truncated cube can wear
+        one on its octagons and another on its triangles &mdash; and the
+        stellation symmetry does the rest: the face wears as many copies as
+        it has symmetries (a cube face four under <em>O</em>, eight under
+        <em>Oh</em>, the mirror images among them), and every plane of the
+        class wears the same picture, carried there by the group. Where
+        the image lands is yours: <b>size</b> in face widths,
+        <b>position</b> and <b>angle</b> in the diagram&rsquo;s own frame,
+        <b>mirror</b> to flip it, or <b>place by hand</b>, which puts
+        handles on the copies in the diagram &mdash; drag inside a box to
+        move the image, a corner to turn and scale it about the pivot, the
+        pivot to move that center (double-click resets it), the tip of the
+        orange arrow to set the tilt; any copy can be grabbed, the arrow
+        keys nudge, and the solid follows every step. Where copies overlap,
+        <b>stack</b> and <b>tilt</b> decide: a higher stack lies on top,
+        and a tilt &mdash; a direction within the image and an amount
+        &mdash; lets the copies of one image weave over and under one
+        another, each passing over one neighbor and under the next, instead
+        of blending; flat copies at the same stack blend evenly, as coset
+        colors do. <b>tile the image</b> repeats it endlessly over the
+        plane, for patterns. A change of stellation symmetry keeps every
+        copy on the solid: under a smaller group they become separate
+        images (the <b>which</b> menu picks the one to edit), under a
+        larger one they fold back together.</p>
+        <p><b>blend</b> says how the images meet the face colors.
+        <em>tint</em>, the default, multiplies them &mdash; white shows the
+        coset color pure, dark ink shades it, which is why the bundled
+        patterns are light. <em>stamp</em> lays the image over the face in
+        its own colors, a white glyph staying white. <em>replace</em> makes
+        the image the face itself: where it is transparent there is no face
+        at all, and the glyphs float in the air. Transparency is honored
+        throughout &mdash; a transparent background leaves the face color
+        untouched, semi-transparent pixels blend by their alpha &mdash; so
+        the bundled arrow reads as outline ink under <em>tint</em>, pops as
+        itself under <em>stamp</em>, and hangs alone under <em>replace</em>.
+        <b>opacity</b> is the layer&rsquo;s own dial, independent of the
+        faces&rsquo;. The images can also be <em>colorized per group</em>:
+        the Colors panel gains an <em>editing</em> switch while an image is
         armed, and its <em>texture ink</em> palette is a second color and
         opacity per coset, defaulting to white &mdash; so a red face can
         carry green arrows and a green face red ones, independent of the
-        face colors entirely. The images live in
+        face colors entirely. The diagram shows the layer on its plane
+        exactly as the solid wears it. The images live in
         <code>img/textures/</code>; drop a file there and rerun
         <code>node docs/tools/make-textures.mjs</code> to list it in the
-        menu. Everything &mdash; file, scale, blend, opacity, tiling and
-        the ink palette &mdash; is saved with the document.</p>
+        menu. Everything &mdash; every plane&rsquo;s images and placements,
+        blend, opacity and the ink palette &mdash; is saved with the
+        document.</p>
         <p>To read a mix back, rest the pointer on the facet. Each view
         answers along its own bottom edge, once the pointer has been still for
         a moment &mdash; so that sweeping across a figure never fires it. The

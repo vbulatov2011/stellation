@@ -541,22 +541,57 @@
   <section id="texture">
     <h2>An image on every face</h2>
     <p>
-      Everything above assigns colors; <b>texture</b>, beside the merge dial,
-      assigns a picture. One image is laid over the solid&rsquo;s faces,
-      replicated by the polyhedron&rsquo;s full symmetry: each plane orbit
-      keeps a single chart, drawn on one representative face and carried onto
-      every other by a group element, so what lands on any face is an
-      <em>exact symmetric copy</em> of what lands on the first &mdash;
-      centered on the face&rsquo;s own center, turned as the symmetry turns
-      it, and mirrored where the element that carries it there is a
-      reflection, because a reflected copy of a picture is its mirror image.
-      The chart belongs to the plane, so the picture runs unbroken across a
-      face&rsquo;s facets, over every layer of the stellation alike, and out
-      along the star&rsquo;s wings, where the image simply repeats as a tile.
-      <b>scale</b> sets the size of one tile in face widths.
+      Everything above assigns colors; <b>image</b>, beside the merge dial,
+      assigns a picture &mdash; to the plane the diagram shows, which is to
+      say to its whole class: one image for the octagons of a truncated
+      cube, another for its triangles. The picture is placed once, and the
+      stellation symmetry replicates it. Each plane orbit keeps one chart,
+      drawn on a representative face with its origin at the face&rsquo;s
+      center; the face&rsquo;s own symmetries &mdash; its stabilizer in
+      the group &mdash; carry the placement to every copy the face can
+      hold, and a group element carries the whole family onto every other
+      plane of the orbit. So a cube face wears four copies under
+      <em>O</em> and eight under <em>Oh</em>, the mirror images among them,
+      because a reflected copy of a picture is its mirror image; and the
+      solid is exactly as symmetric as the group you are building under,
+      whatever the picture and wherever you put it. The chart belongs to
+      the plane, so a picture runs unbroken across a face&rsquo;s facets,
+      over every layer of the stellation alike, and out along the
+      star&rsquo;s wings.
     </p>
     <p>
-      How the image meets the colors is the <b>blend</b>. Under
+      Where the picture lands is the placement: <b>size</b> in face widths,
+      <b>position</b> and <b>angle</b> read in the diagram&rsquo;s own
+      frame so the numbers match what you see, and <b>mirror</b>. Or place
+      it by hand &mdash; the diagram grows handles on every copy: drag
+      inside a box to move the image, a corner to turn and scale it about
+      the pivot, the pivot itself to move that center, the tip of the
+      orange arrow to set the tilt; the solid follows every step, since a
+      placement is a few numbers the shader reads and not a change to the
+      geometry. Any copy can be grabbed, and a gesture on a mirror-image
+      copy writes back through the reflection, which is why dragging one
+      arrow moves them all in concert. The diagram also shows the layer on
+      its plane exactly as the solid wears it, drawn by the same code.
+    </p>
+    <p>
+      Copies overlap, and something has to decide. Whatever it is must be
+      the same for every copy, or the overlap would break the symmetry the
+      copies were made for &mdash; a plain <em>last one on top</em> would
+      pick a favorite. So each image has a <b>stack</b> level, and images
+      of different levels composite in order; and each has a <b>tilt</b>,
+      a direction within the image and an amount, so that a copy&rsquo;s
+      depth varies across it, rising toward one edge. The tilt travels
+      with the copies, and where two overlap the one whose raised edge is
+      there lies on top: symmetric copies weave over and under one
+      another, each passing over one neighbor and under the next, the way
+      sympix lays its tiles. Copies at exactly the same depth &mdash; the
+      flat copies of one image &mdash; cannot be ordered, and are mixed the
+      way coset colors are, alpha-weighted in Oklab under the union of
+      their coverages: the one commutative answer left when depth cannot
+      decide.
+    </p>
+    <p>
+      How the images meet the colors is the <b>blend</b>. Under
       <em>tint</em>, the default, the image is <em>multiplied</em> under the
       face colors &mdash; sampled where the surface sits in the chart, then
       tinted by whatever the current coloring says there, and lit like any
@@ -573,28 +608,28 @@
       than lend its shape. And under <em>replace</em> the image <em>is</em>
       the face: its alpha becomes the surface&rsquo;s, so where the picture
       is clear there is nothing there at all, and a glyph on a transparent
-      ground hangs in the air, forty-eight symmetric copies deep.
+      ground hangs in the air, as many symmetric copies deep as the group
+      makes.
     </p>
     <p>
       The two layers are independent. The faces keep their palette &mdash;
       color and opacity per group, in the Colors panel as always &mdash;
-      and the texture carries its own: an <b>opacity</b> dial for the whole
+      and the images carry their own: an <b>opacity</b> dial for the whole
       layer, and an <em>ink palette</em>, a second color and opacity per
       group that the sampled image is multiplied by before it meets the
-      face. The Colors panel gains an <em>editing</em> switch while a
-      texture is armed &mdash; <em>face colors</em> or <em>texture
-      ink</em> &mdash; and the ink rows default to white, no tint. Which is
-      what makes the crossed picture possible: a solid red face carrying
-      green arrows beside a solid green face carrying red ones, each layer
+      face. The Colors panel gains an <em>editing</em> switch while an
+      image is armed &mdash; <em>face colors</em> or <em>texture ink</em>
+      &mdash; and the ink rows default to white, no tint. Which is what
+      makes the crossed picture possible: a solid red face carrying green
+      arrows beside a solid green face carrying red ones, each layer
       colored by cosets, neither consulting the other. <b>tile the
-      image</b> is the last dial: on, the image repeats endlessly over the
-      wings, the right reading for a pattern; off, it exists exactly once
-      per face, centered and clear beyond its edge, the right reading for
-      an emblem &mdash; and under <em>replace</em>, one floating figure per
-      face.
+      image</b> repeats it endlessly over the plane from where it is placed,
+      the right reading for a pattern; off, each copy exists exactly once
+      and is clear beyond its edge, the right reading for an emblem &mdash;
+      and under <em>replace</em>, floating figures.
     </p>
     <p>
-      Transparency is honored in both blends. A transparent background
+      Transparency is honored in every blend. A transparent background
       leaves the face color exactly as it was &mdash; under tint the alpha
       fades the multiplier to one, under stamp it fades the cover to
       nothing &mdash; and semi-transparent pixels blend by their alpha. So
@@ -607,11 +642,20 @@
       exist.
     </p>
     <p>
-      The images live in <code>img/textures/</code> and the menu lists what
+      The symmetry you build under is an editing symmetry here too. Change
+      it and every copy stays where it is on the solid: under a smaller
+      group the copies one image made become several images (the
+      <b>which</b> menu says which one the controls edit), under a larger
+      one they fold back into one, and images placed on planes the larger
+      group carries onto each other are gathered and symmetrized. The
+      images live in <code>img/textures/</code> and the menu lists what
       its <code>index.json</code> names; drop a file in the folder and rerun
-      <code>node docs/tools/make-textures.mjs</code> to include it. The
-      chosen file and scale are saved with the document &mdash; a reader
-      without this feature draws the same figure in plain colors.
+      <code>node docs/tools/make-textures.mjs</code> to include it. Every
+      plane&rsquo;s images and placements are saved with the document, the
+      layer&rsquo;s dials beside them; a document from before this had one
+      image for the whole solid, and opens with that image on every plane,
+      now symmetrized &mdash; a reader without the feature draws the same
+      figure in plain colors.
     </p>
   </section>
 

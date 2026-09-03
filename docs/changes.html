@@ -69,6 +69,33 @@
   </div>
   <ul class="done">
     <li><div>
+      <b>An image per plane, placed by hand, replicated by the symmetry.</b>
+      The texture layer becomes decals: a picture is placed on one plane
+      class — the plane the diagram shows — and the stellation symmetry
+      does the rest, the face wearing as many copies as it has symmetries
+      (a cube face four under O, eight under Oh, mirror images among them)
+      and every plane of the class the same picture. The engine is
+      <code>planeOrbits</code>: each orbit's chart comes with its
+      representative's stabilizer as 2×2 maps of the chart, and a decal's
+      copies are its placement through each of them. The copies reach the
+      fragment shader as uniform tables sized to the GPU's budget, the
+      vertex data carrying only chart coordinates and the orbit's slice,
+      so a drag is one uniform upload. Overlaps are sorted by depth the
+      sympix way — a stack level plus a tilt in the image's own frame, so
+      symmetric copies weave over and under each other without a draw
+      order — and exact ties are mixed as coset colors are, in Oklab under
+      the union of coverages. <i>Place by hand</i> puts SymmHub's transform
+      rig on the copies in the diagram (move, turn-and-scale about a pivot,
+      the pivot, and a tilt arrow); a gesture on any copy writes back
+      through its stabilizer element. The diagram shows the layer through
+      the same shader, read back from an offscreen pass. A symmetry change
+      carries the decals across losslessly — copies become decals under a
+      smaller group and fold back under a larger. Documents carry
+      <code>display.textures</code>, per representative plane with defaults
+      absent; the old one-image form opens as a decal on every plane.
+      <span class="src">lib/core.js · lib/decals.js · lib/decalrig.js · lib/texmix.glsl.js · lib/render3d.js · lib/diagram.js · app/js/worker.js · app/js/app.js · app/js/preset.js · test/decals.mjs · test/docformat.mjs</span>
+    </div></li>
+    <li><div>
       <b>Two layers, each its own: the replace blend, the ink palette,
       texture opacity and tiling.</b>
       The texture becomes a full second layer over the faces, independently
