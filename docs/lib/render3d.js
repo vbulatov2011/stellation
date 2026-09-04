@@ -10,7 +10,7 @@
  */
 
 import { AnimatedPointer } from './AnimatedPointer.js';
-import { TEXMIX_GLSL } from './texmix.glsl.js';
+import { TEXMIX_GLSL } from './texmix.glsl.mjs';
 
 const VERT = /*glsl*/`#version 300 es
 precision highp float;
@@ -89,7 +89,7 @@ in vec4 vTexTint;
 uniform float uEdgeDark;
 uniform float uAlpha;      // the global facet opacity: a modifier over every color
 // The face texture, folded into the color BEFORE lighting. The layer's
-// value at this fragment comes from texMix (texmix.glsl.js): every copy of
+// value at this fragment comes from texMix (texmix.glsl.mjs): every copy of
 // every decal on this face's plane orbit, depth-sorted and composited, with
 // rgb PREMULTIPLIED by alpha, which keeps every formula one line and
 // filtered glyph edges free of fringes. The ink is first colorized by its
